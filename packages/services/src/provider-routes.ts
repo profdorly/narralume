@@ -37,6 +37,8 @@ import {
   requireProviderDisablable,
 } from "@narralume/services";
 
+import { withoutProbedCapabilities } from "./probed-capabilities.js";
+
 const ProviderParamsSchema = z.object({ providerId: z.string().trim().min(1) });
 const ModelParamsSchema = z.object({ modelId: z.string().trim().min(1) });
 const AssignmentParamsSchema = z.object({ role: AssignmentRoleSchema });
@@ -492,25 +494,6 @@ export class ProviderRouteError extends Error {
 
 /** Synthetic env var used to hand a resolved raw key to the probe. */
 const PROBE_KEY_ENV = "NARRATIVE_CONNECTION_PROBE_API_KEY";
-
-/** Capability flags the connection probe writes (see POST /api/providers/test). */
-const PROBED_CAPABILITY_KEYS = [
-  "streaming",
-  "tools",
-  "structuredOutput",
-  "structuredOutputNative",
-  "structuredOutputJsonMode",
-  "samplingParameters",
-  "maxCompletionTokens",
-] as const;
-
-function withoutProbedCapabilities(
-  capabilities: Readonly<Record<string, boolean>>,
-): Record<string, boolean> {
-  const remaining = { ...capabilities };
-  for (const key of PROBED_CAPABILITY_KEYS) delete remaining[key];
-  return remaining;
-}
 
 /**
  * Adapts a provider/model pair to the transport-neutral probe shape. The

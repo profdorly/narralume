@@ -5,6 +5,7 @@ import {
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
+import { withoutProbedCapabilities } from "./probed-capabilities.js";
 import { resolveProviderDefaults } from "./provider-defaults.js";
 
 /**
@@ -66,6 +67,14 @@ export function seedEnvironmentModelConfig(
     if (!apiKeyEnv || !baseUrl || !model) continue;
 
     const existingProvider = providers.get(definition.id);
+    // Environment variables can re-point an existing environment Provider at
+    // another upstream between starts. Like a manual transport edit, that
+    // returns the probe-written flags of every model under it to unknown.
+    const providerRepointed = Boolean(
+      existingProvider &&
+      (existingProvider.baseUrl !== baseUrl ||
+        existingProvider.wireApi !== definition.wireApi),
+    );
     providers.upsert({
       id: definition.id,
       name: definition.name,
@@ -83,6 +92,19 @@ export function seedEnvironmentModelConfig(
       updatedAt: now,
     });
     const existingModel = models.get(definition.id);
+    if (providerRepointed) {
+      for (const sibling of models.listByProvider(definition.id)) {
+        if (sibling.id === definition.id) continue;
+        models.upsert({
+          ...sibling,
+          capabilities: withoutProbedCapabilities(sibling.capabilities),
+          updatedAt: now,
+        });
+      }
+    }
+    const modelRepointed =
+      providerRepointed ||
+      (existingModel !== null && existingModel.modelId !== model);
     const hasEnvironmentContext = Boolean(
       environment[definition.contextEnv]?.trim() ||
       environment.NARRATIVE_LLM_CONTEXT_WINDOW?.trim(),
@@ -110,8 +132,13 @@ export function seedEnvironmentModelConfig(
       maxOutputTokens,
       sampling: existingModel?.sampling ?? {},
       // An unprobed capability is unknown, not false. Only the explicit
-      // connection probe may persist negative capability evidence.
-      capabilities: existingModel?.capabilities ?? {},
+      // connection probe may persist negative capability evidence, and that
+      // evidence is dropped once the environment re-points the model.
+      capabilities: existingModel
+        ? modelRepointed
+          ? withoutProbedCapabilities(existingModel.capabilities)
+          : existingModel.capabilities
+        : {},
       metadataSource: "environment",
       metadataVerifiedAt:
         hasEnvironmentContext && hasEnvironmentOutput
