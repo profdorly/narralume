@@ -241,6 +241,9 @@ export function commitDocumentVersion(
     triggerSettlement: boolean;
     environment: Readonly<Record<string, string | undefined>>;
     coordinatorWake: () => void;
+    /** See startManualSettlementRun: a Story Bible completion re-target. */
+    interruptRun?: (runId: string, reason: string) => void;
+    bibleBackfillWake?: () => void;
   },
 ) {
   const documents = new SqliteDocumentRepository(database);
@@ -297,6 +300,10 @@ export function commitDocumentVersion(
       database,
       environment: input.environment,
       coordinatorWake: input.coordinatorWake,
+      ...(input.interruptRun ? { interruptRun: input.interruptRun } : {}),
+      ...(input.bibleBackfillWake
+        ? { bibleBackfillWake: input.bibleBackfillWake }
+        : {}),
       projectId: input.projectId,
       document,
       versionId: version.id,

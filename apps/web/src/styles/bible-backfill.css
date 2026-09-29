@@ -231,6 +231,21 @@
   letter-spacing: 0.04em;
 }
 
+.bible-backfill__item-note {
+  grid-column: 2 / -1;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.bible-backfill__review-targets {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+}
+
 .bible-backfill__items-details summary {
   cursor: pointer;
   color: var(--ink-faint);

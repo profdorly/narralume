@@ -94,6 +94,7 @@ function item(
     status,
     skipReason: null,
     error: null,
+    note: null,
     updatedAt: NOW,
     ...overrides,
   };
@@ -686,6 +687,217 @@ describe("Complete Story Bible from manuscript", () => {
     expect(screen.queryByRole("button", { name: "Start" })).not.toBeInTheDocument();
     fireEvent.click(toggle);
     expect(screen.getByText("It will process every imported chapter that has manuscript text.")).toBeInTheDocument();
+  });
+});
+
+describe("Story Bible completion around mid-job edits and author canon", () => {
+  const currentCalls = (calls: Recorded[]) =>
+    calls.filter((call) => call.url === "/api/projects/p-1/bible-backfills/current").length;
+
+  it("polls only while it is reading, and relies on events while it waits", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const running = detail(job({ currentOrdinal: 1 }), [
+        item(0, "applied"),
+        item(1, "settling", { runId: "run-2" }),
+        item(2, "pending"),
+      ], ["pause", "cancel", "skip_item"]);
+      let current = running;
+      const { calls } = stubApi({ current: () => current });
+      renderPanel();
+      expect(await screen.findByText("Reading chapter 2 of 3: Chapter Two")).toBeInTheDocument();
+      const before = currentCalls(calls);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6_000);
+      });
+      expect(currentCalls(calls)).toBeGreaterThan(before);
+      cleanup();
+
+      for (const status of ["paused", "awaiting_user", "awaiting_decision"] as const) {
+        current = detail(job({ status, currentOrdinal: 1 }), [
+          item(0, "applied"),
+          item(1, status === "paused" ? "pending" : "awaiting_decision", { changeSetId: "ccs-2" }),
+          item(2, "pending"),
+        ], ["resume", "cancel", "skip_item"]);
+        const waiting = stubApi({ current: () => current, changeSets: () => [CHANGE_SET] });
+        renderPanel();
+        await screen.findByText(
+          status === "paused"
+            ? "Paused. Progress is saved; resume whenever you're ready."
+            : status === "awaiting_user"
+              ? "Stopped · needs your attention"
+              : "Waiting for your review of chapter 2",
+        );
+        const settled = currentCalls(waiting.calls);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(10_000);
+        });
+        expect(currentCalls(waiting.calls)).toBe(settled);
+        cleanup();
+        vi.unstubAllGlobals();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops auto-apply for review of records it did not create, then resumes after the decision", async () => {
+    let current = detail(
+      job({
+        status: "awaiting_user",
+        mode: "auto_apply_stop_on_conflict",
+        currentOrdinal: 1,
+        error: {
+          code: "bible_backfill.review_required",
+          message: "This chapter would change existing Story Bible records",
+          ordinal: 1,
+          changeSetId: "ccs-2",
+          targets: [
+            { path: "factCandidates.0", kind: "fact", action: "supersede", id: "f-1", label: "Shen Yan · role: postman" },
+            { path: "foreshadowCandidates.0", kind: "foreshadow", action: "resolve", id: "fs-1", label: "Blank letter" },
+          ],
+        },
+      }),
+      [
+        item(0, "applied"),
+        item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+        item(2, "pending"),
+      ],
+      ["resume", "cancel", "skip_item"],
+    );
+    const { calls } = stubApi({
+      current: () => current,
+      changeSets: () => [CHANGE_SET],
+      onDecision: () => json({ changeSet: { ...CHANGE_SET, status: "applied" } }),
+      onAction: () => {
+        current = detail(job({ status: "running", mode: "auto_apply_stop_on_conflict", currentOrdinal: 2 }), [
+          item(0, "applied"),
+          item(1, "applied"),
+          item(2, "settling"),
+        ], ["pause", "cancel"]);
+        return actionResponse(current);
+      },
+    });
+    renderPanel();
+
+    expect(
+      await screen.findByRole("heading", { name: "Chapter 2 would change records this completion didn't create" }),
+    ).toBeInTheDocument();
+    const targets = screen.getByRole("list", { name: "Existing records this chapter would change" });
+    expect(within(targets).getByText("Replace fact")).toBeInTheDocument();
+    expect(within(targets).getByText(/Shen Yan · role: postman/)).toBeInTheDocument();
+    expect(within(targets).getByText("Resolve foreshadow")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Force apply & continue" })).not.toBeInTheDocument();
+    expect(screen.getByText(/this chapter's change set stays undecided in Studio/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Apply & continue" }));
+
+    expect(await screen.findByText("Reading chapter 3 of 3: Chapter Three")).toBeInTheDocument();
+    const decision = calls.find((call) => call.url.endsWith("/decisions"));
+    expect(decision?.body).toMatchObject({ action: "apply", conflictPolicy: "reject" });
+    const resume = calls.find((call) => call.url.endsWith("/job-1/actions"));
+    expect(resume?.body).toEqual({ requestId: expect.any(String), action: "resume" });
+    expect(calls.indexOf(decision!)).toBeLessThan(calls.indexOf(resume!));
+  });
+
+  it("explains review stops, re-targeted chapters and the Studio change sets they leave in Chinese", async () => {
+    setLocale("zh-CN");
+    stubApi({
+      current: () =>
+        detail(
+          job({
+            status: "awaiting_user",
+            mode: "auto_apply_stop_on_conflict",
+            currentOrdinal: 1,
+            error: {
+              code: "bible_backfill.review_required",
+              ordinal: 1,
+              changeSetId: "ccs-2",
+              targets: [{ path: "factCandidates.0", kind: "fact", action: "withdraw", id: "f-1", label: "沈焰 · 身份: 邮差" }],
+            },
+          }),
+          [
+            item(0, "applied", {
+              note: {
+                code: "bible_backfill.item.retargeted",
+                retargetedFromVersionId: "ver-0",
+                supersededChangeSetId: "ccs-old",
+              },
+            }),
+            item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
+            item(2, "pending"),
+          ],
+          ["resume", "cancel", "skip_item"],
+        ),
+      changeSets: () => [CHANGE_SET],
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("heading", { name: "第 2 章要改动不是本次补全创建的记录" })).toBeInTheDocument();
+    expect(screen.getByText("撤回事实")).toBeInTheDocument();
+    expect(
+      screen.getByText("补全期间被修改过，读取的是最新正文。 旧正文的变更集仍未裁定，留在写作台的“故事变化”面板。"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/跳过只是让补全继续往下读/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("bible_backfill.review_required");
+  });
+
+  it("tells the author a skipped review chapter stays reviewable in Studio", async () => {
+    stubApi({
+      current: () =>
+        detail(job({ status: "awaiting_decision", currentOrdinal: 1 }), [
+          item(0, "applied"),
+          item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+          item(2, "pending"),
+        ], ["pause", "cancel", "skip_item"]),
+      changeSets: () => [CHANGE_SET],
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("button", { name: "Skip chapter" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Skipping only moves the completion on: this chapter's change set stays undecided in Studio's “Story changes” panel, where you can still apply or reject it.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("records adopted, detached and handed-back settlements and chapters left for review", async () => {
+    stubApi({
+      current: () =>
+        detail(job({ status: "cancelled", currentOrdinal: null }), [
+          item(0, "awaiting_decision", {
+            changeSetId: "ccs-1",
+            note: {
+              code: "bible_backfill.item.adopted",
+              adoptedRunId: "run-w",
+              adoptedChangeSetId: "ccs-1",
+              adoptedOutcome: "candidate",
+            },
+          }),
+          item(1, "pending", {
+            note: { code: "bible_backfill.item.detached", detachedRunId: "run-s" },
+          }),
+          item(2, "pending", {
+            note: {
+              code: "bible_backfill.item.handed_back",
+              retargetedFromVersionId: "ver-0",
+              handedBackRunId: "run-h",
+            },
+          }),
+        ]),
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("heading", { name: "Story Bible completion was cancelled" })).toBeInTheDocument();
+    const results = screen.getByLabelText("Results");
+    expect(within(results).getByText("Left for review in Studio").nextSibling).toHaveTextContent("1");
+    fireEvent.click(screen.getByText("Chapter progress · 3"));
+    expect(screen.getByText("Uses the change set Studio already produced for this text.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Its Studio settlement keeps running; the result appears in Studio's “Story changes” panel."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/its latest text is settled in Studio instead/)).toBeInTheDocument();
+    expect(screen.queryByText(/the latest text is read/)).not.toBeInTheDocument();
   });
 });
 

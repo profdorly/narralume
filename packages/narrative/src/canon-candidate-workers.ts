@@ -1,4 +1,5 @@
 import { CanonSpreadSchema, type CanonSpread } from "@narralume/contracts";
+import { estimateTokens } from "@narralume/context";
 import type {
   NarrativeRunStep,
   NarrativeSummary,
@@ -156,13 +157,36 @@ export class CanonCandidateWorkerSuite {
           aliases: entity.aliases,
           description: entity.description,
         })),
-        chapterSummaries: boundedChapterSummaries(
-          this.state.listLatestSummaries(project.id, "chapter"),
-          outline,
-        ),
+        chapterSummaries: {
+          omittedEarlierChapters: 0,
+          chapters: [] as ReturnType<
+            typeof boundedChapterSummaries
+          >["chapters"],
+        },
       },
       recentManuscript: documents,
     };
+    const contextWindow =
+      this.model.effectiveContextWindow?.(snapshot.run, "canon-revision") ??
+      64_000;
+    packet.supportingIndex.chapterSummaries = boundedChapterSummaries(
+      this.state.listLatestSummaries(project.id, "chapter"),
+      outline,
+      chapterSummaryTokenBudget({
+        contextWindow,
+        outputReserve: Math.min(
+          policyNumber(
+            snapshot.run.policy,
+            "canonMaxOutputTokens",
+            CANON_MAX_OUTPUT_TOKENS,
+          ),
+          this.model.effectiveOutputLimit?.(snapshot.run, "canon-revision") ??
+            CANON_MAX_OUTPUT_TOKENS,
+          Math.floor(contextWindow * 0.4),
+        ),
+        basePromptTokens: estimateTokens(JSON.stringify(packet)),
+      }),
+    );
     return {
       artifactKind: "canon-context",
       output: {
@@ -217,7 +241,7 @@ export class CanonCandidateWorkerSuite {
         maxOutputTokens: policyNumber(
           snapshot.run.policy,
           "canonMaxOutputTokens",
-          6_000,
+          CANON_MAX_OUTPUT_TOKENS,
         ),
       },
       CANON_CANDIDATE_MODEL_CONTRACT,
@@ -348,19 +372,63 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-const CHAPTER_SUMMARY_BUDGET = 60_000;
+const CHAPTER_SUMMARY_CHAR_BUDGET = 60_000;
 const CHAPTER_SUMMARY_MAX = 800;
 const CHAPTER_SUMMARY_MIN = 120;
+/** Per-summary lengths tried from longest to shortest. */
+const CHAPTER_SUMMARY_LENGTHS = [
+  CHAPTER_SUMMARY_MAX,
+  480,
+  280,
+  CHAPTER_SUMMARY_MIN,
+];
+/** Largest share of the effective context window the summaries may take. */
+const CHAPTER_SUMMARY_WINDOW_SHARE = 0.25;
+/** JSON wrapper of one summary entry (keys, id, quotes) beyond its text. */
+const CHAPTER_SUMMARY_ENTRY_TOKENS = 24;
+/** Held back for the instructions and the structured-output contract. */
+const CANON_INSTRUCTION_RESERVE_TOKENS = 4_000;
+const CANON_MAX_OUTPUT_TOKENS = 6_000;
+
+/**
+ * Tokens the chapter summaries may use in a spread revision prompt. It
+ * mirrors the model client's input check (estimate ×1.12 + 256 plus a safety
+ * band of max(1,024, 2% of the window)) and keeps the output reserve free, so
+ * the finished prompt fits the effective context window of the assigned
+ * model instead of failing with model.context_length.
+ */
+function chapterSummaryTokenBudget(input: {
+  contextWindow: number;
+  outputReserve: number;
+  basePromptTokens: number;
+}): number {
+  const safety = Math.max(1_024, Math.ceil(input.contextWindow * 0.02));
+  const inputCapacity = Math.floor(
+    (input.contextWindow - input.outputReserve - safety - 256) / 1.12,
+  );
+  const available =
+    inputCapacity - input.basePromptTokens - CANON_INSTRUCTION_RESERVE_TOKENS;
+  return Math.max(
+    0,
+    Math.min(
+      available,
+      Math.floor(input.contextWindow * CHAPTER_SUMMARY_WINDOW_SHARE),
+    ),
+  );
+}
 
 /**
  * Whole-book chapter summaries in reading order, so a spread revision sees
- * more than the last few manuscripts. Each summary shares a fixed character
- * budget; beyond what the budget can hold at the minimum length only the most
- * recent chapters are kept and the omission is stated.
+ * more than the last few manuscripts. They share a token budget derived from
+ * the model's effective context window (and a fixed character ceiling):
+ * each summary is shortened step by step towards a minimum length; when even
+ * that does not fit, only the most recent chapters are kept and the omission
+ * is stated.
  */
 function boundedChapterSummaries(
   summaries: readonly NarrativeSummary[],
   outline: readonly OutlineNode[],
+  tokenBudget: number,
 ): {
   omittedEarlierChapters: number;
   chapters: { outlineNodeId: string; title: string; summary: string }[];
@@ -376,22 +444,38 @@ function boundedChapterSummaries(
       (left, right) =>
         chapters.get(left.scopeId)!.index - chapters.get(right.scopeId)!.index,
     );
-  const capacity = Math.floor(CHAPTER_SUMMARY_BUDGET / CHAPTER_SUMMARY_MIN);
-  const kept = ordered.slice(-capacity);
-  const perSummary = Math.max(
-    CHAPTER_SUMMARY_MIN,
-    Math.min(
-      CHAPTER_SUMMARY_MAX,
-      Math.floor(CHAPTER_SUMMARY_BUDGET / Math.max(1, kept.length)),
-    ),
-  );
+  const entry = (summary: NarrativeSummary, limit: number) => ({
+    outlineNodeId: summary.scopeId,
+    title: chapters.get(summary.scopeId)!.node.title,
+    summary: clipText(summary.summary, limit),
+  });
+  /* Most recent chapters that fit at this length, oldest first. */
+  const fitting = (limit: number) => {
+    const kept: ReturnType<typeof entry>[] = [];
+    let tokens = 0;
+    let characters = 0;
+    for (let index = ordered.length - 1; index >= 0; index -= 1) {
+      const next = entry(ordered[index]!, limit);
+      tokens +=
+        estimateTokens(next.title) +
+        estimateTokens(next.summary) +
+        CHAPTER_SUMMARY_ENTRY_TOKENS;
+      characters += next.summary.length;
+      if (tokens > tokenBudget || characters > CHAPTER_SUMMARY_CHAR_BUDGET) {
+        break;
+      }
+      kept.push(next);
+    }
+    return kept.reverse();
+  };
+  let kept: ReturnType<typeof entry>[] = [];
+  for (const limit of CHAPTER_SUMMARY_LENGTHS) {
+    kept = fitting(limit);
+    if (kept.length === ordered.length) break;
+  }
   return {
     omittedEarlierChapters: ordered.length - kept.length,
-    chapters: kept.map((summary) => ({
-      outlineNodeId: summary.scopeId,
-      title: chapters.get(summary.scopeId)!.node.title,
-      summary: clipText(summary.summary, perSummary),
-    })),
+    chapters: kept,
   };
 }
 

@@ -56,6 +56,7 @@ import {
   type GroundedParagraphEvidence,
 } from "./paragraph-locator.js";
 import {
+  SETTLED_OUTLINE_NODE_KEY,
   SettlementApplicationService,
   SettlementConflictError,
 } from "./settlement-application-service.js";
@@ -1873,7 +1874,12 @@ export class ChapterWorkerSuite {
           projectId: run.projectId,
           runId: run.id,
           stepId: step.id,
-          changes: boundSettlement,
+          /* 锚点章节在结算时就确定：之后文档改绑或删除都不会移动或阻断它
+             （见 SettlementApplicationService.settlementAnchor）。 */
+          changes: {
+            ...boundSettlement,
+            [SETTLED_OUTLINE_NODE_KEY]: manual.outlineNode.id,
+          },
           status: "candidate",
           createdAt: now,
         });

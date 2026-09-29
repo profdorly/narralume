@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCanonFact } from "@narralume/domain";
+import { createCanonEntity, createCanonFact } from "@narralume/domain";
 import {
   SettlementApplicationService,
   type NarrativeModelClient,
@@ -11,6 +11,7 @@ import {
   SqliteBibleBackfillRepository,
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
+  SqliteReviewRepository,
   SqliteStoryRepository,
 } from "@narralume/persistence";
 import { NodeNarrativeDatabase } from "@narralume/persistence/node";
@@ -285,6 +286,7 @@ interface BackfillDetail {
     status: string;
     skipReason: string | null;
     error: Record<string, unknown> | null;
+    note: Record<string, unknown> | null;
   }[];
   counts: Record<string, number>;
   usage: {
@@ -1171,3 +1173,778 @@ async function waitFor(
     `backfill did not reach the expected state: ${JSON.stringify(last)}`,
   );
 }
+
+async function commitChapter(
+  app: App,
+  projectId: string,
+  documentId: string,
+  content: string,
+  expectedCurrentVersionId: string,
+): Promise<string> {
+  const response = await app.inject({
+    method: "POST",
+    url: `/api/projects/${projectId}/documents/${documentId}/versions`,
+    payload: { content, source: "manual", expectedCurrentVersionId },
+  });
+  expect(response.statusCode, response.body).toBe(201);
+  return response.json().id as string;
+}
+
+function originOf(run: { policy: Record<string, unknown> }): string {
+  return (run.policy.origin as { surface: string }).surface;
+}
+
+describe("Story Bible backfill with mid-job edits and author canon", () => {
+  it("re-targets a chapter edited while it waits and settles only its current text", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) =>
+        settlement([
+          fact(
+            heroId,
+            `第${Number(call.policy.bibleBackfillOrdinal) + 1}章状态`,
+            "清醒",
+          ),
+        ]),
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+
+    // Chapter 1 is the next item to start; chapter 2 waits behind it.
+    const first = await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[0]!.documentId,
+      "雾退了。\n\n林昼推开灯塔的门，看见一条新的航线。",
+      book.chapters[0]!.versionId,
+    );
+    const second = await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[1]!.documentId,
+      "旧邮局改成了灯塔的仓库。\n\n林昼把空白信交给了父亲。",
+      book.chapters[1]!.versionId,
+    );
+    // No separate writing-path settlement was started for either edit.
+    expect(await settlementRuns(app, book.projectId)).toEqual([]);
+    let detail = await current(app, book.projectId);
+    expect(detail.items[0]).toMatchObject({
+      status: "pending",
+      versionId: first,
+      note: {
+        code: "bible_backfill.item.retargeted",
+        retargetedFromVersionId: book.chapters[0]!.versionId,
+      },
+    });
+    expect(detail.items[1]).toMatchObject({
+      status: "pending",
+      versionId: second,
+      note: {
+        code: "bible_backfill.item.retargeted",
+        retargetedFromVersionId: book.chapters[1]!.versionId,
+      },
+    });
+
+    detail = await settle(app, book.projectId, jobId);
+    const runs = await settlementRuns(app, book.projectId);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      id: detail.items[0]!.runId,
+      policy: {
+        documentVersionId: first,
+        origin: { surface: "bible-backfill" },
+      },
+    });
+    expect(await driveRun(app, book.projectId, runs[0]!.id)).toBe("completed");
+    expect(script.calls).toHaveLength(1);
+    expect(script.calls[0]!.content).toContain("新的航线");
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[0]).toMatchObject({ status: "awaiting_decision" });
+    // The change set records the chapter it settled, for anchoring at apply.
+    expect(
+      new SqliteReviewRepository(database).requireCanonChangeSet(
+        book.projectId,
+        detail.items[0]!.changeSetId!,
+      ).changes,
+    ).toMatchObject({ settledOutlineNodeId: book.chapters[0]!.outlineNodeId });
+  });
+
+  it("re-targets a chapter edited while it is settled or awaiting review", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: () => settlement([fact(heroId, "状态", "清醒")]),
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    const chapter = book.chapters[0]!;
+
+    let detail = await settle(app, book.projectId, jobId);
+    const superseded = detail.items[0]!.runId!;
+    expect(detail.items[0]!.status).toBe("settling");
+
+    // Edited while its settlement is queued: the job's run is cancelled and
+    // the job settles the new text instead.
+    const v2 = await commitChapter(
+      app,
+      book.projectId,
+      chapter.documentId,
+      "第二稿：雾退了，灯塔亮着。\n\n林昼沿着码头走回家。",
+      chapter.versionId,
+    );
+    detail = await current(app, book.projectId);
+    expect(detail.items[0]).toMatchObject({
+      status: "pending",
+      versionId: v2,
+      runId: null,
+      note: {
+        code: "bible_backfill.item.retargeted",
+        retargetedFromVersionId: chapter.versionId,
+        supersededRunId: superseded,
+        supersededRunAction: "cancelled",
+      },
+    });
+    let runs = await settlementRuns(app, book.projectId);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ id: superseded, status: "cancelled" });
+
+    detail = await settle(app, book.projectId, jobId);
+    const secondRun = detail.items[0]!.runId!;
+    expect(secondRun).not.toBe(superseded);
+    expect(await driveRun(app, book.projectId, secondRun)).toBe("completed");
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("awaiting_decision");
+    const staleChangeSet = detail.items[0]!.changeSetId!;
+
+    // Edited while its change set awaits review: the undecided change set
+    // stays reviewable in Studio and the job reads the newest text.
+    const v3 = await commitChapter(
+      app,
+      book.projectId,
+      chapter.documentId,
+      "第三稿：雾散尽，港口的钟重新敲响。\n\n林昼终于睡着了。",
+      v2,
+    );
+    detail = await current(app, book.projectId);
+    expect(detail.job!.status).toBe("running");
+    expect(detail.items[0]).toMatchObject({
+      status: "pending",
+      versionId: v3,
+      changeSetId: null,
+      note: {
+        code: "bible_backfill.item.retargeted",
+        retargetedFromVersionId: v2,
+        supersededRunId: secondRun,
+        supersededRunAction: "finished",
+        supersededChangeSetId: staleChangeSet,
+      },
+    });
+    expect(
+      new SqliteReviewRepository(database).requireCanonChangeSet(
+        book.projectId,
+        staleChangeSet,
+      ).status,
+    ).toBe("candidate");
+    detail = await settle(app, book.projectId, jobId);
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    runs = await settlementRuns(app, book.projectId);
+    expect(runs.map(originOf)).toEqual([
+      "bible-backfill",
+      "bible-backfill",
+      "bible-backfill",
+    ]);
+    // The cancelled run never reached the model; each later text once.
+    expect(script.calls.map((call) => call.runId)).toEqual([
+      secondRun,
+      detail.items[0]!.runId,
+    ]);
+    expect(script.calls[1]!.content).toContain("港口的钟重新敲响");
+  });
+
+  it("adopts an undecided Studio settlement of the same text instead of settling it again", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) =>
+        originOf(call) === "writing"
+          ? settlement([fact(heroId, "信件", "空白信")])
+          : settlement([
+              fact(
+                heroId,
+                `第${Number(call.policy.bibleBackfillOrdinal) + 1}章状态`,
+                "清醒",
+              ),
+            ]),
+    };
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    // Before the completion: chapter 2 is revised in Studio and settled
+    // there; its change set is still undecided.
+    const revised = await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[1]!.documentId,
+      "旧邮局的柜台积着盐霜。\n\n林昼找到一封写给自己的空白信。",
+      book.chapters[1]!.versionId,
+    );
+    const studioRun = (await settlementRuns(app, book.projectId))[0]!;
+    expect(originOf(studioRun)).toBe("writing");
+    expect(await driveRun(app, book.projectId, studioRun.id)).toBe("completed");
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const createdDetail = created.json() as BackfillDetail;
+    expect(createdDetail.items[1]).toMatchObject({
+      versionId: revised,
+      status: "pending",
+      skipReason: null,
+    });
+    const jobId = createdDetail.job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(
+      (
+        await decide(
+          app,
+          book.projectId,
+          detail.items[0]!.changeSetId!,
+          "apply",
+        )
+      ).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    const studioChangeSet = `${studioRun.id}:canon-change-set`;
+    expect(detail.job!.status).toBe("awaiting_decision");
+    expect(detail.items[1]).toMatchObject({
+      status: "awaiting_decision",
+      runId: studioRun.id,
+      changeSetId: studioChangeSet,
+      note: {
+        code: "bible_backfill.item.adopted",
+        adoptedRunId: studioRun.id,
+        adoptedChangeSetId: studioChangeSet,
+        adoptedOutcome: "candidate",
+      },
+    });
+    // The same text was not settled a second time.
+    expect(await settlementRuns(app, book.projectId)).toHaveLength(2);
+    expect(script.calls).toHaveLength(2);
+
+    expect(
+      (await decide(app, book.projectId, studioChangeSet, "apply")).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[1]!.status).toBe("applied");
+    expect(detail.items[2]!.status).toBe("settling");
+  });
+
+  it("adopts an in-flight Studio settlement and detaches it on cancel", async () => {
+    const script: ModelScript = { calls: [], respond: () => settlement() };
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    const revised = await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[0]!.documentId,
+      "雾从海面推上石阶。\n\n林昼听见第三下钟声。",
+      book.chapters[0]!.versionId,
+    );
+    const studioRun = (await settlementRuns(app, book.projectId))[0]!;
+    expect(studioRun).toMatchObject({
+      status: "pending",
+      policy: { documentVersionId: revised },
+    });
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    const detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[0]).toMatchObject({
+      status: "settling",
+      runId: studioRun.id,
+      note: {
+        code: "bible_backfill.item.adopted",
+        adoptedRunId: studioRun.id,
+        adoptedOutcome: "in_progress",
+      },
+    });
+    expect(await settlementRuns(app, book.projectId)).toHaveLength(1);
+
+    const cancelled = await act(app, book.projectId, jobId, {
+      action: "cancel",
+    });
+    expect(cancelled.statusCode, cancelled.body).toBe(200);
+    expect(cancelled.json()).toMatchObject({
+      job: { status: "cancelled" },
+      items: [
+        {
+          status: "pending",
+          runId: null,
+          note: {
+            code: "bible_backfill.item.detached",
+            detachedRunId: studioRun.id,
+          },
+        },
+        { status: "pending" },
+        { status: "pending" },
+      ],
+    });
+    // The author's Studio settlement was left running and still finishes.
+    expect(
+      (await settlementRuns(app, book.projectId)).find(
+        (run) => run.id === studioRun.id,
+      )?.status,
+    ).toBe("pending");
+    expect(await driveRun(app, book.projectId, studioRun.id)).toBe("completed");
+  });
+
+  it("hands an edited chapter it never read back to the writing path on cancel", async () => {
+    const script: ModelScript = { calls: [], respond: () => settlement() };
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    const revised = await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[1]!.documentId,
+      "旧邮局改成了灯塔的仓库。\n\n林昼把空白信交给了父亲。",
+      book.chapters[1]!.versionId,
+    );
+    expect(await settlementRuns(app, book.projectId)).toEqual([]);
+
+    const cancelled = await act(app, book.projectId, jobId, {
+      action: "cancel",
+    });
+    expect(cancelled.statusCode, cancelled.body).toBe(200);
+    const detail = cancelled.json() as BackfillDetail;
+    const runs = await settlementRuns(app, book.projectId);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      status: "pending",
+      policy: { documentVersionId: revised, origin: { surface: "writing" } },
+    });
+    expect(detail.items[1]).toMatchObject({
+      status: "pending",
+      note: {
+        code: "bible_backfill.item.handed_back",
+        retargetedFromVersionId: book.chapters[1]!.versionId,
+        handedBackRunId: runs[0]!.id,
+      },
+    });
+    // Chapters that were never edited are not settled behind the author's back.
+    expect(detail.items[0]!.note).toBeNull();
+    expect(detail.items[2]!.note).toBeNull();
+    expect(await driveRun(app, book.projectId, runs[0]!.id)).toBe("completed");
+  });
+
+  it("keeps a finished chapter's real outcome when the job is cancelled", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: () => settlement([fact(heroId, "状态", "清醒")]),
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    const detail = await settle(app, book.projectId, jobId);
+    const runId = detail.items[0]!.runId!;
+    // The run finishes, but the job is cancelled before it reconciles.
+    expect(await driveRun(app, book.projectId, runId)).toBe("completed");
+    const cancelled = await act(app, book.projectId, jobId, {
+      action: "cancel",
+    });
+    expect(cancelled.statusCode, cancelled.body).toBe(200);
+    const changeSetId = `${runId}:canon-change-set`;
+    expect(cancelled.json()).toMatchObject({
+      job: { status: "cancelled" },
+      items: [
+        { status: "awaiting_decision", changeSetId, error: null },
+        { status: "pending" },
+        { status: "pending" },
+      ],
+      counts: { awaitingDecision: 1, failed: 0 },
+    });
+    // Its change set stays reviewable in Studio.
+    expect(
+      new SqliteReviewRepository(database).requireCanonChangeSet(
+        book.projectId,
+        changeSetId,
+      ).status,
+    ).toBe("candidate");
+  });
+
+  it("pauses while awaiting a decision, takes a Studio decision and resumes", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: () => settlement([fact(heroId, "状态", "清醒")]),
+    };
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("awaiting_decision");
+
+    const paused = await act(app, book.projectId, jobId, { action: "pause" });
+    expect(paused.statusCode, paused.body).toBe(200);
+    expect(paused.json()).toMatchObject({ job: { status: "paused" } });
+    // Decided in Studio while paused: recorded, but nothing advances.
+    expect(
+      (
+        await decide(
+          app,
+          book.projectId,
+          detail.items[0]!.changeSetId!,
+          "apply",
+        )
+      ).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("paused");
+    expect(detail.items.map((item) => item.status)).toEqual([
+      "awaiting_decision",
+      "pending",
+      "pending",
+    ]);
+    expect(await settlementRuns(app, book.projectId)).toHaveLength(1);
+
+    const resumed = await act(app, book.projectId, jobId, {
+      action: "resume",
+    });
+    expect(resumed.statusCode, resumed.body).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("running");
+    expect(detail.items[0]!.status).toBe("applied");
+    expect(detail.items[1]!.status).toBe("settling");
+  });
+
+  it("stops auto-apply before it changes records this job and the import did not create", async () => {
+    let heroId = "";
+    let projectId = "";
+    let readCanon: () => SqliteCanonRepository = () => {
+      throw new Error("not ready");
+    };
+    const now = new Date().toISOString();
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) => {
+        const ordinal = call.policy.bibleBackfillOrdinal;
+        if (ordinal === 0) return settlement([fact(heroId, "航线", "北方")]);
+        if (ordinal === 1) {
+          const route = readCanon()
+            .listEffectiveFacts(projectId)
+            .find((candidate) => candidate.predicate === "航线");
+          return {
+            ...settlement([
+              fact(heroId, "航线", "南方", {
+                operation: "supersede",
+                factId: route?.id ?? null,
+              }),
+            ]),
+            relationshipCandidates: [
+              {
+                action: "end",
+                relationshipId: "imported-relation",
+                fromEntityId: heroId,
+                toEntityId: "rival",
+                relation: "对手",
+                change: "两人在旧邮局和解",
+                evidenceParagraphs: [1],
+              },
+            ],
+          };
+        }
+        return {
+          ...settlement([
+            fact(heroId, "身份", "守灯人", {
+              operation: "supersede",
+              factId: "author-identity",
+              knowledgeScope: "omniscient",
+              knowledgeSubjectId: null,
+            }),
+          ]),
+          foreshadowCandidates: [
+            {
+              foreshadowId: "imported-foreshadow",
+              title: "空白信",
+              action: "resolve",
+              expectedStatus: "planted",
+              importance: 3,
+              targetFromNodeId: null,
+              targetToNodeId: null,
+              evidenceParagraphs: [1],
+            },
+          ],
+        };
+      },
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const canon = new SqliteCanonRepository(database);
+    const state = new SqliteNarrativeStateRepository(
+      database,
+      canon,
+      new SqliteStoryRepository(database),
+    );
+    readCanon = () => canon;
+    projectId = book.projectId;
+    canon.insertEntity(
+      createCanonEntity({
+        id: "rival",
+        projectId: book.projectId,
+        type: "character",
+        name: "沈潮",
+        now,
+      }),
+    );
+    // An author-entered, unlocked fact.
+    canon.insertFact(
+      createCanonFact({
+        id: "author-identity",
+        projectId: book.projectId,
+        subjectId: heroId,
+        predicate: "身份",
+        value: "邮差",
+        authority: "confirmed",
+        sourceType: "author",
+        now,
+      }),
+    );
+    // A relationship the manuscript import created (sourced from its candidate).
+    const batch = database.raw
+      .prepare("SELECT id FROM import_batches WHERE target_project_id = ?")
+      .get(book.projectId) as { id: string };
+    database.raw
+      .prepare(
+        `INSERT INTO import_candidates(
+           id, batch_id, kind, ordinal, title, payload_json, status, created_at, updated_at
+         ) VALUES (?, ?, 'relationship', 900, ?, '{}', 'applied', ?, ?)`,
+      )
+      .run("imported-relation-candidate", batch.id, "林昼与沈潮", now, now);
+    state.insertRelationship({
+      id: "imported-relation",
+      projectId: book.projectId,
+      fromEntityId: heroId,
+      toEntityId: "rival",
+      relation: "对手",
+      intensity: null,
+      state: {},
+      outlineNodeId: null,
+      storyTime: null,
+      sourceId: "imported-relation-candidate",
+      supersedesEventId: null,
+      createdAt: now,
+    });
+    // Foreshadows keep no provenance, so an imported one counts as foreign.
+    state.insertForeshadow({
+      id: "imported-foreshadow",
+      projectId: book.projectId,
+      title: "空白信",
+      description: "无人认领的空白信。",
+      status: "planted",
+      importance: 3,
+      targetFromNodeId: null,
+      targetToNodeId: null,
+      dependencies: [],
+      evidenceNodeIds: [],
+      resolutionNodeId: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(created.statusCode, created.body).toBe(202);
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[0]!.status).toBe("applied");
+    // Chapter 2 replaces this job's own fact and ends the imported
+    // relationship: applied without stopping.
+    expect(await driveRun(app, book.projectId, detail.items[1]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[1]!.status).toBe("applied");
+    expect(
+      canon
+        .listEffectiveFacts(book.projectId)
+        .filter((candidate) => candidate.predicate === "航线")
+        .map((candidate) => candidate.value),
+    ).toEqual(["南方"]);
+    expect(
+      state
+        .listCurrentRelationships(book.projectId)
+        .find((event) => event.supersedesEventId === "imported-relation")
+        ?.state,
+    ).toMatchObject({ status: "ended" });
+
+    // Chapter 3 would replace the author's fact and resolve a foreshadow of
+    // unknown origin: the job stops for review and changes nothing.
+    expect(await driveRun(app, book.projectId, detail.items[2]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    const changeSetId = detail.items[2]!.changeSetId!;
+    expect(detail.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "bible_backfill.review_required",
+        ordinal: 2,
+        changeSetId,
+        targets: [
+          {
+            path: "factCandidates.0",
+            kind: "fact",
+            action: "supersede",
+            id: "author-identity",
+            label: "林昼 · 身份: 邮差",
+          },
+          {
+            path: "foreshadowCandidates.0",
+            kind: "foreshadow",
+            action: "resolve",
+            id: "imported-foreshadow",
+            label: "空白信",
+          },
+        ],
+      },
+    });
+    expect(detail.items[2]!.status).toBe("awaiting_decision");
+    expect(canon.getFact(book.projectId, "author-identity")).toBeTruthy();
+    expect(
+      canon
+        .listEffectiveFacts(book.projectId)
+        .find((candidate) => candidate.predicate === "身份")?.id,
+    ).toBe("author-identity");
+    expect(
+      state
+        .listForeshadows(book.projectId)
+        .find((item) => item.id === "imported-foreshadow")?.status,
+    ).toBe("planted");
+
+    // Resuming without a review stops again, explicitly.
+    expect(
+      (await act(app, book.projectId, jobId, { action: "resume" })).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.error).toMatchObject({
+      code: "bible_backfill.review_required",
+    });
+
+    // The author reviews and applies the chapter, then the job finishes.
+    expect(
+      (await decide(app, book.projectId, changeSetId, "apply")).statusCode,
+    ).toBe(200);
+    expect(
+      (await act(app, book.projectId, jobId, { action: "resume" })).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail).toMatchObject({
+      job: { status: "completed" },
+      counts: { applied: 3 },
+    });
+    expect(
+      canon
+        .listEffectiveFacts(book.projectId)
+        .find((candidate) => candidate.predicate === "身份"),
+    ).toMatchObject({ value: "守灯人", supersedesFactId: "author-identity" });
+  });
+
+  it("stops auto-apply on a non-conflict settlement error and continues past a skipped chapter", async () => {
+    let heroId = "";
+    const script: ModelScript = {
+      calls: [],
+      respond: () => settlement([fact(heroId, "状态", "清醒")]),
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    const runId = detail.items[0]!.runId!;
+    expect(await driveRun(app, book.projectId, runId)).toBe("completed");
+    // The recorded change set can no longer be read as a settlement.
+    const changeSetId = `${runId}:canon-change-set`;
+    database.raw
+      .prepare("UPDATE canon_change_sets SET changes_json = ? WHERE id = ?")
+      .run(JSON.stringify({ summary: "损坏的变更集" }), changeSetId);
+
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "settlement.changes.invalid",
+        ordinal: 0,
+        changeSetId,
+      },
+    });
+    expect(detail.items[0]!.status).toBe("awaiting_decision");
+    expect(detail.availableActions).toEqual(
+      expect.arrayContaining(["resume", "skip_item", "cancel"]),
+    );
+
+    const skipped = await act(app, book.projectId, jobId, {
+      action: "skip_item",
+      ordinal: 0,
+    });
+    expect(skipped.statusCode, skipped.body).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("running");
+    expect(detail.items[0]).toMatchObject({
+      status: "skipped",
+      skipReason: "author_skipped",
+    });
+    expect(detail.items[1]!.status).toBe("settling");
+    expect(
+      new SqliteReviewRepository(database).requireCanonChangeSet(
+        book.projectId,
+        changeSetId,
+      ).status,
+    ).toBe("candidate");
+  });
+});

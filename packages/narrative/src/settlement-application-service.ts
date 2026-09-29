@@ -20,6 +20,37 @@ import {
 
 export type SettlementConflictPolicy = "reject" | "force";
 
+/**
+ * Change-set payload key holding the outline chapter a manual settlement
+ * settled, recorded when the change set is committed (workers.ts
+ * commitManualSettlement) so the anchor does not depend on the document's
+ * binding at apply time.
+ */
+export const SETTLED_OUTLINE_NODE_KEY = "settledOutlineNodeId";
+
+/**
+ * An existing record a change set would withdraw, supersede, update, end or
+ * resolve when applied, with the provenance the store keeps for it.
+ */
+export interface SettlementChangedRecord {
+  /** Candidate path inside the change set, e.g. `factCandidates.0`. */
+  path: string;
+  kind: "fact" | "relationship" | "foreshadow";
+  action: "withdraw" | "supersede" | "update" | "end" | "resolve";
+  id: string;
+  /** Short author-facing description of the record. */
+  label: string;
+  /**
+   * Change set that created the record, when its provenance says so (a fact's
+   * source, a relationship's source id, a settlement-created foreshadow's id);
+   * null when it came from elsewhere or the store keeps no provenance.
+   */
+  createdByChangeSetId: string | null;
+  /** The record's own source reference; null when none is stored. */
+  sourceType: string | null;
+  sourceId: string | null;
+}
+
 export interface SettlementApplicationResult {
   changeSet: CanonChangeSetView;
   applied: {
@@ -147,6 +178,144 @@ export class SettlementApplicationService {
       status: "rejected",
       now: input.now ?? new Date().toISOString(),
     });
+  }
+
+  /**
+   * Existing records applying a candidate change set now would withdraw,
+   * supersede, update, end or resolve. Only targets apply() would actually
+   * change are listed: a missing, stale, locked, mismatched or
+   * status-changed target is reported by apply() as a conflict instead. A
+   * payload apply() cannot read lists nothing (apply() refuses it).
+   */
+  changedExistingRecords(
+    projectId: string,
+    changeSetId: string,
+  ): SettlementChangedRecord[] {
+    const changeSet = this.reviews.requireCanonChangeSet(
+      projectId,
+      changeSetId,
+    );
+    const parsed = GroundedSettlementSchema.safeParse(changeSet.changes);
+    if (!parsed.success) return [];
+    const settlement = parsed.data;
+    const records: SettlementChangedRecord[] = [];
+    const name = (entityId: string | null) =>
+      entityId
+        ? (this.canon.getEntity(projectId, entityId)?.name ?? entityId)
+        : "";
+
+    settlement.factCandidates.forEach((candidate, index) => {
+      if (candidate.operation === "assert" || !candidate.factId) return;
+      const current = this.canon.getFact(projectId, candidate.factId);
+      if (
+        !current ||
+        !this.isEffectiveFact(current) ||
+        current.subjectId !== candidate.subjectId ||
+        current.predicate !== candidate.predicate ||
+        current.authority === "locked"
+      ) {
+        return;
+      }
+      const value = current.objectEntityId
+        ? name(current.objectEntityId)
+        : typeof current.value === "string"
+          ? current.value
+          : JSON.stringify(current.value);
+      records.push({
+        path: `factCandidates.${index}`,
+        kind: "fact",
+        action: candidate.operation,
+        id: current.id,
+        label: `${name(current.subjectId)} · ${current.predicate}: ${value}`,
+        // Applied settlement facts are `${changeSetId}:fact:${index}`.
+        createdByChangeSetId:
+          current.sourceType === "canon_change_set"
+            ? this.creatingChangeSet(
+                projectId,
+                current.id,
+                current.sourceId,
+                "fact",
+              )
+            : null,
+        sourceType: current.sourceType,
+        sourceId: current.sourceId,
+      });
+    });
+
+    const currentRelationships = this.state.listCurrentRelationships(projectId);
+    settlement.relationshipCandidates.forEach((candidate, index) => {
+      if (candidate.action === "start" || !candidate.relationshipId) return;
+      const previous = currentRelationships.find(
+        (event) => event.id === candidate.relationshipId,
+      );
+      if (
+        !previous ||
+        previous.fromEntityId !== candidate.fromEntityId ||
+        previous.toEntityId !== candidate.toEntityId
+      ) {
+        return;
+      }
+      records.push({
+        path: `relationshipCandidates.${index}`,
+        kind: "relationship",
+        action: candidate.action,
+        id: previous.id,
+        label: `${name(previous.fromEntityId)} → ${name(previous.toEntityId)}: ${previous.relation}`,
+        // Settlement-created rows are `${changeSetId}:relationship:${index}`.
+        createdByChangeSetId: this.creatingChangeSet(
+          projectId,
+          previous.id,
+          previous.sourceId,
+          "relationship",
+        ),
+        sourceType: null,
+        sourceId: previous.sourceId,
+      });
+    });
+
+    const foreshadows = this.state.listForeshadows(projectId);
+    settlement.foreshadowCandidates.forEach((candidate, index) => {
+      if (candidate.action !== "resolve" || !candidate.foreshadowId) return;
+      const existing = foreshadows.find(
+        (item) => item.id === candidate.foreshadowId,
+      );
+      if (!existing || candidate.expectedStatus !== existing.status) return;
+      // Foreshadows keep no source column; only the id of a
+      // settlement-created one (`${changeSetId}:foreshadow:${index}`) says
+      // where it came from.
+      const prefix = /^(.+):foreshadow:\d+$/.exec(existing.id)?.[1] ?? null;
+      records.push({
+        path: `foreshadowCandidates.${index}`,
+        kind: "foreshadow",
+        action: "resolve",
+        id: existing.id,
+        label: existing.title,
+        createdByChangeSetId: this.creatingChangeSet(
+          projectId,
+          existing.id,
+          prefix,
+          "foreshadow",
+        ),
+        sourceType: null,
+        sourceId: null,
+      });
+    });
+    return records;
+  }
+
+  /** The change set whose application created a row, verified by its id shape. */
+  private creatingChangeSet(
+    projectId: string,
+    rowId: string,
+    changeSetId: string | null,
+    kind: "fact" | "relationship" | "foreshadow",
+  ): string | null {
+    if (!changeSetId || !rowId.startsWith(`${changeSetId}:${kind}:`)) {
+      return null;
+    }
+    return this.reviews.getCanonChangeSet(projectId, changeSetId)
+      ? changeSetId
+      : null;
   }
 
   private applyChapterSettlement(
@@ -422,21 +591,34 @@ export class SettlementApplicationService {
    * The chapter a settlement's facts, knowledge, timeline, relationship and
    * foreshadow rows are anchored to. Chapter-production runs carry it as
    * targetOutlineNodeId. Manual settlements deliberately keep that null (they
-   * must not take the writing-chain mutex), so their anchor is the outline
-   * node of the settled document. A manual settlement whose chapter can no
-   * longer be resolved is refused instead of being applied unanchored.
+   * must not take the writing-chain mutex); their change set records the
+   * chapter that was settled (SETTLED_OUTLINE_NODE_KEY), so re-binding or
+   * deleting the document afterwards neither moves nor blocks the anchor. A
+   * manual settlement whose chapter no longer exists is refused instead of
+   * being applied unanchored.
    */
   private settlementAnchor(changeSet: CanonChangeSetView): string | null {
     const run = this.runs.getRun(changeSet.runId);
     if (!run) return null;
     if (run.targetOutlineNodeId) return run.targetOutlineNodeId;
     if (run.recipe !== "manual-settlement") return null;
-    const documentId =
-      typeof run.policy.documentId === "string" ? run.policy.documentId : null;
-    const document = documentId
-      ? this.documents.get(changeSet.projectId, documentId)
-      : null;
-    const outlineNodeId = document?.outlineNodeId ?? null;
+    const recorded = changeSet.changes[SETTLED_OUTLINE_NODE_KEY];
+    let outlineNodeId: string | null;
+    if (typeof recorded === "string" && recorded) {
+      outlineNodeId = recorded;
+    } else {
+      // Legacy fallback, only for manual change sets committed before the
+      // settled chapter was recorded in the payload: resolve it from the
+      // document's current outline binding.
+      const documentId =
+        typeof run.policy.documentId === "string"
+          ? run.policy.documentId
+          : null;
+      const document = documentId
+        ? this.documents.get(changeSet.projectId, documentId)
+        : null;
+      outlineNodeId = document?.outlineNodeId ?? null;
+    }
     if (
       !outlineNodeId ||
       !this.story.getOutlineNode(changeSet.projectId, outlineNodeId)

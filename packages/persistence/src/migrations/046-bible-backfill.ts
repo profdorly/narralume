@@ -2,6 +2,7 @@
  * 「从正文补全故事圣经」任务：按章节顺序逐章走手动结算管线。
  * 每个项目同时最多一个未结束任务（部分唯一索引）；条目按 ordinal 严格串行，
  * 章节身份（大纲节点、文档、版本）在建任务时快照，处理时再校验。
+ * note_json 记录条目上发生过的事：改投到新版本、沿用已有结算、取消时脱离。
  */
 export const migration046 = {
   version: 46,
@@ -45,6 +46,7 @@ export const migration046 = {
       )),
       skip_reason TEXT CHECK (skip_reason IS NULL OR skip_reason IN ('already_settled','author_skipped')),
       error_json TEXT CHECK (error_json IS NULL OR json_valid(error_json)),
+      note_json TEXT CHECK (note_json IS NULL OR json_valid(note_json)),
       updated_at TEXT NOT NULL,
       PRIMARY KEY(job_id, ordinal),
       CHECK ((status = 'skipped') = (skip_reason IS NOT NULL))

@@ -8,7 +8,12 @@ import {
   type BibleBackfillUsageDto,
   type CreateBibleBackfillRequest,
 } from "@narralume/contracts";
-import type { DocumentVersion } from "@narralume/domain";
+import type {
+  DocumentVersion,
+  NarrativeRun,
+  RunSnapshot,
+} from "@narralume/domain";
+import { classifyStepError } from "@narralume/harness";
 import {
   SqliteBibleBackfillRepository,
   SqliteDocumentRepository,
@@ -21,13 +26,23 @@ import {
   SqliteStoryRepository,
   TERMINAL_BIBLE_BACKFILL_STATUSES,
   type BibleBackfillItem,
+  type BibleBackfillItemPatch,
   type BibleBackfillItemSeed,
   type BibleBackfillJob,
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
-import { deterministicRequestId, hashRequest } from "./request-idempotency.js";
-import { requireWritingAssignment } from "./run-policy.js";
+import { createManualSettlementRun } from "./manual-settlement-run.js";
+import {
+  deterministicRequestId,
+  deterministicUuid,
+  hashRequest,
+} from "./request-idempotency.js";
+import {
+  committedChangeSetId,
+  hasWritingAssignment,
+  requireWritingAssignment,
+} from "./run-policy.js";
 import { ServiceError } from "./service-error.js";
 
 export class BibleBackfillError extends ServiceError {
@@ -337,6 +352,7 @@ export class BibleBackfillService {
         status: item.status,
         skipReason: item.skipReason,
         error: item.error,
+        note: item.note,
         updatedAt: item.updatedAt,
       })),
       counts,
@@ -503,15 +519,19 @@ export class BibleBackfillService {
     this.backfills.setJobStatus(job.id, "running", now);
   }
 
-  /** Returns a running child run to interrupt once the transaction commits. */
+  /**
+   * Returns a running child run to interrupt once the transaction commits.
+   * Only a settlement run this job created is cancelled; a Studio settlement
+   * it adopted keeps running and is detached (finalizeBackfillCancellation).
+   */
   private cancel(job: BibleBackfillJob, now: string): string | null {
     this.backfills.requestControl(job.id, "cancel", now);
     const child = this.activeChild(job);
-    if (child?.status === "running") {
-      if (!child.cancelRequested) this.runs.requestCancel(child.id, now);
-      return child.id;
-    }
-    if (child) {
+    if (child && isOwnBackfillRun(child, job.id)) {
+      if (child.status === "running") {
+        if (!child.cancelRequested) this.runs.requestCancel(child.id, now);
+        return child.id;
+      }
       this.runs.setRunStatus(
         child.id,
         "cancelled",
@@ -519,7 +539,7 @@ export class BibleBackfillService {
         "bible_backfill_cancelled",
       );
     }
-    finalizeBackfillCancellation(this.backfills, job.id, now);
+    finalizeBackfillCancellation(this.database, this.environment, job.id, now);
     return null;
   }
 
@@ -628,33 +648,374 @@ export class BibleBackfillService {
   }
 }
 
+/** Settlement runs this job created itself (as opposed to adopted Studio runs). */
+export function isOwnBackfillRun(run: NarrativeRun, jobId: string): boolean {
+  return run.policy.bibleBackfillJobId === jobId;
+}
+
+const TERMINAL_RUN_STATUSES: ReadonlySet<string> = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+/** What a settlement run produced, as far as the job is concerned. */
+export type SettlementRunOutcome =
+  | { kind: "in_progress" }
+  | { kind: "empty" }
+  | { kind: "failed" }
+  | { kind: "cancelled" }
+  /** status is null when the recorded change set no longer exists. */
+  | { kind: "change_set"; changeSetId: string; status: string | null };
+
+export function settlementRunOutcome(
+  database: NarrativeDatabase,
+  projectId: string,
+  run: NarrativeRun,
+): SettlementRunOutcome {
+  if (!TERMINAL_RUN_STATUSES.has(run.status)) return { kind: "in_progress" };
+  if (run.status === "failed") return { kind: "failed" };
+  if (run.status === "cancelled") return { kind: "cancelled" };
+  const changeSetId = committedChangeSetId(
+    new SqliteRunRepository(database).getSnapshot(run.id),
+  );
+  if (!changeSetId) return { kind: "empty" };
+  const changeSet = new SqliteReviewRepository(database).getCanonChangeSet(
+    projectId,
+    changeSetId,
+  );
+  return { kind: "change_set", changeSetId, status: changeSet?.status ?? null };
+}
+
+/** The item error recorded for a failed settlement run. */
+export function childFailureError(
+  snapshot: RunSnapshot,
+): Record<string, unknown> & { code: string } {
+  const failedStep = [...snapshot.steps]
+    .reverse()
+    .find((step) => step.status === "failed");
+  const classification = classifyStepError(failedStep?.error ?? null);
+  return {
+    code: classification.kind === "fatal" ? "child.fatal" : "child.failed",
+    message: failedStep?.error?.message ?? "The settlement run failed",
+    category: classification.category,
+    runId: snapshot.run.id,
+    stepId: failedStep?.id ?? null,
+  };
+}
+
+const CANCELLED_ITEM_ERROR = {
+  code: "bible_backfill.cancelled",
+  message: "The Story Bible completion was cancelled",
+} as const;
+
 /**
- * Marks an interrupted chapter as failed(cancelled) and ends the job;
- * `error` records why the job ended when that was not the author's cancel alone.
+ * Ends the job as cancelled; `error` records why when that was not the
+ * author's cancel alone. A chapter still settling keeps its real outcome:
+ * a finished run's change set stays awaiting a decision (reviewable in
+ * Studio), is applied/rejected, or the chapter had no changes; a failed run
+ * keeps its failure; only a run that was actually cancelled reads as
+ * cancelled. A Studio settlement the job adopted and that is still running
+ * is detached — it continues in Studio and the chapter returns to pending.
+ * A chapter edited during the job whose settlement the job took over
+ * (retargetBackfillChapter) but never started is handed back to the writing
+ * path, which starts the settlement its commit would have started.
+ * Returns the ids of settlement runs created for that hand-back.
  */
 export function finalizeBackfillCancellation(
-  backfills: SqliteBibleBackfillRepository,
+  database: NarrativeDatabase,
+  environment: Readonly<Record<string, string | undefined>>,
   jobId: string,
   now: string,
   error: Readonly<Record<string, unknown>> | null = null,
-): void {
+): string[] {
+  const backfills = new SqliteBibleBackfillRepository(database);
+  const runs = new SqliteRunRepository(database);
+  const job = backfills.requireJob(jobId);
   for (const item of backfills.listItems(jobId)) {
-    if (item.status === "settling") {
+    if (item.status !== "settling") continue;
+    const run = item.runId ? runs.getRun(item.runId) : null;
+    const outcome = run
+      ? settlementRunOutcome(database, job.projectId, run)
+      : null;
+    if (
+      run &&
+      outcome?.kind === "in_progress" &&
+      !isOwnBackfillRun(run, jobId)
+    ) {
       backfills.updateItem(
         jobId,
         item.ordinal,
         {
-          status: "failed",
-          error: {
-            code: "bible_backfill.cancelled",
-            message: "The Story Bible completion was cancelled",
+          status: "pending",
+          runId: null,
+          changeSetId: null,
+          note: {
+            ...item.note,
+            code: "bible_backfill.item.detached",
+            detachedRunId: run.id,
           },
         },
         now,
       );
+      continue;
+    }
+    backfills.updateItem(
+      jobId,
+      item.ordinal,
+      cancelledItemOutcome(database, outcome, run),
+      now,
+    );
+  }
+  const handedBack = handBackRetargetedChapters(
+    database,
+    environment,
+    job,
+    now,
+  );
+  backfills.setJobStatus(jobId, "cancelled", now, error);
+  return handedBack;
+}
+
+/**
+ * Chapters committed during the job and left pending: without the job their
+ * commit would have started a writing-path settlement, so start it now —
+ * under the writing path's own rule (nothing without a writing model) and
+ * only when no settlement of that text exists yet.
+ */
+function handBackRetargetedChapters(
+  database: NarrativeDatabase,
+  environment: Readonly<Record<string, string | undefined>>,
+  job: BibleBackfillJob,
+  now: string,
+): string[] {
+  const backfills = new SqliteBibleBackfillRepository(database);
+  const runs = new SqliteRunRepository(database);
+  const documents = new SqliteDocumentRepository(database);
+  const created: string[] = [];
+  for (const item of backfills.listItems(job.id)) {
+    if (
+      item.status !== "pending" ||
+      typeof item.note?.retargetedFromVersionId !== "string" ||
+      runs.listRunsForDocumentVersion(
+        job.projectId,
+        "manual-settlement",
+        item.versionId,
+      ).length > 0 ||
+      !hasWritingAssignment(database, environment)
+    ) {
+      continue;
+    }
+    const document = documents.get(job.projectId, item.documentId);
+    if (
+      document?.kind !== "chapter" ||
+      document.outlineNodeId !== item.outlineNodeId ||
+      document.currentVersionId !== item.versionId
+    ) {
+      continue;
+    }
+    const run = createManualSettlementRun({
+      database,
+      environment,
+      runId: deterministicUuid(
+        `bible-backfill-hand-back\0${job.id}\0${item.versionId}`,
+      ),
+      projectId: job.projectId,
+      document,
+      versionId: item.versionId,
+      origin: { surface: "writing", documentId: document.id },
+      now,
+    });
+    backfills.updateItem(
+      job.id,
+      item.ordinal,
+      {
+        note: {
+          ...item.note,
+          code: "bible_backfill.item.handed_back",
+          handedBackRunId: run.id,
+        },
+      },
+      now,
+    );
+    created.push(run.id);
+  }
+  return created;
+}
+
+function cancelledItemOutcome(
+  database: NarrativeDatabase,
+  outcome: SettlementRunOutcome | null,
+  run: NarrativeRun | null,
+): BibleBackfillItemPatch {
+  switch (outcome?.kind) {
+    case "empty":
+      return { status: "empty", changeSetId: null };
+    case "change_set":
+      if (outcome.status === "candidate") {
+        return {
+          status: "awaiting_decision",
+          changeSetId: outcome.changeSetId,
+        };
+      }
+      if (outcome.status === "rejected") {
+        return { status: "rejected", changeSetId: outcome.changeSetId };
+      }
+      if (outcome.status !== null) {
+        return { status: "applied", changeSetId: outcome.changeSetId };
+      }
+      return { status: "failed", error: { ...CANCELLED_ITEM_ERROR } };
+    case "failed":
+      return {
+        status: "failed",
+        error: childFailureError(
+          new SqliteRunRepository(database).getSnapshot(run!.id),
+        ),
+      };
+    default:
+      return { status: "failed", error: { ...CANCELLED_ITEM_ERROR } };
+  }
+}
+
+/** Outcome of routing a chapter commit to an active Story Bible completion. */
+export interface BackfillRetarget {
+  /** The job settles this version itself; start no separate settlement. */
+  handled: boolean;
+  /** A superseded running child run to interrupt once the commit lands. */
+  interruptRunId: string | null;
+}
+
+const RETARGETABLE_ITEM_STATUSES: ReadonlySet<string> = new Set([
+  "pending",
+  "settling",
+  "awaiting_decision",
+]);
+
+/**
+ * A chapter version committed while the project's active completion still
+ * has to settle that chapter (its item is pending, settling, or awaiting a
+ * decision on a still undecided change set) is settled by the job — once, at
+ * the new version — instead of by a second writing-path settlement. The item
+ * is re-targeted: a superseded run the job created is cancelled, a Studio run
+ * it adopted is detached (it keeps running), a superseded undecided change
+ * set stays reviewable in Studio, and all of it is recorded on the item note.
+ * A stop that concerned the superseded text is lifted so the job reads the
+ * new version; a pause stays in place.
+ */
+export function retargetBackfillChapter(
+  database: NarrativeDatabase,
+  input: {
+    projectId: string;
+    documentId: string;
+    outlineNodeId: string;
+    versionId: string;
+    now: string;
+  },
+): BackfillRetarget {
+  const notHandled = { handled: false, interruptRunId: null };
+  const backfills = new SqliteBibleBackfillRepository(database);
+  const job = backfills.findActiveJob(input.projectId);
+  if (!job || job.cancelRequested) return notHandled;
+  const items = backfills.listItems(job.id);
+  const item = items.find(
+    (candidate) =>
+      candidate.documentId === input.documentId &&
+      candidate.outlineNodeId === input.outlineNodeId &&
+      RETARGETABLE_ITEM_STATUSES.has(candidate.status),
+  );
+  if (!item) return notHandled;
+  if (item.versionId === input.versionId) {
+    return { handled: true, interruptRunId: null };
+  }
+  const runs = new SqliteRunRepository(database);
+  const { now } = input;
+  const note: Record<string, unknown> = {
+    ...withoutSupersededFields(item.note),
+    code: "bible_backfill.item.retargeted",
+    retargetedFromVersionId: item.versionId,
+  };
+  let interruptRunId: string | null = null;
+  const run = item.runId ? runs.getRun(item.runId) : null;
+  if (item.status === "awaiting_decision") {
+    const changeSet = item.changeSetId
+      ? new SqliteReviewRepository(database).getCanonChangeSet(
+          job.projectId,
+          item.changeSetId,
+        )
+      : null;
+    // Already decided: the job records that decision; the new text is
+    // settled like any later edit.
+    if (changeSet && changeSet.status !== "candidate") return notHandled;
+    if (run) {
+      note.supersededRunId = run.id;
+      note.supersededRunAction = "finished";
+    }
+    if (changeSet) note.supersededChangeSetId = changeSet.id;
+  } else if (item.status === "settling" && run) {
+    note.supersededRunId = run.id;
+    const outcome = settlementRunOutcome(database, job.projectId, run);
+    if (outcome.kind === "in_progress") {
+      if (isOwnBackfillRun(run, job.id)) {
+        if (run.status === "running") {
+          if (!run.cancelRequested) runs.requestCancel(run.id, now);
+          interruptRunId = run.id;
+        } else {
+          runs.setRunStatus(
+            run.id,
+            "cancelled",
+            now,
+            "bible_backfill_retargeted",
+          );
+        }
+        note.supersededRunAction = "cancelled";
+      } else {
+        note.supersededRunAction = "detached";
+      }
+    } else {
+      note.supersededRunAction = "finished";
+      if (outcome.kind === "change_set" && outcome.status === "candidate") {
+        note.supersededChangeSetId = outcome.changeSetId;
+      }
     }
   }
-  backfills.setJobStatus(jobId, "cancelled", now, error);
+  backfills.updateItem(
+    job.id,
+    item.ordinal,
+    {
+      status: "pending",
+      versionId: input.versionId,
+      runId: null,
+      changeSetId: null,
+      error: null,
+      note,
+    },
+    now,
+  );
+  if (
+    currentBackfillItem(items)?.ordinal === item.ordinal &&
+    (job.status === "awaiting_decision" ||
+      (job.status === "awaiting_user" && job.error?.ordinal === item.ordinal))
+  ) {
+    backfills.setJobStatus(job.id, "running", now);
+  }
+  return { handled: true, interruptRunId };
+}
+
+const SUPERSEDED_NOTE_FIELDS = [
+  "supersededRunId",
+  "supersededRunAction",
+  "supersededChangeSetId",
+] as const;
+
+/** A note without what an earlier re-target superseded. */
+function withoutSupersededFields(
+  note: Readonly<Record<string, unknown>> | null,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(note ?? {}).filter(
+      ([key]) => !(SUPERSEDED_NOTE_FIELDS as readonly string[]).includes(key),
+    ),
+  );
 }
 
 function availableActions(

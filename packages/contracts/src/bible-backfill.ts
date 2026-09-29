@@ -104,6 +104,27 @@ export const BibleBackfillErrorSchema = z
   .object({ code: z.string(), message: z.string().optional() })
   .catchall(z.unknown());
 
+/**
+ * What happened to a chapter besides its status; `code` is the latest event:
+ * - `bible_backfill.item.retargeted` — the chapter was edited during the job,
+ *   which reads the current text instead (`retargetedFromVersionId`; a
+ *   superseded run is `supersededRunId` + `supersededRunAction`
+ *   cancelled|detached|finished, a superseded change set that stays
+ *   reviewable in Studio is `supersededChangeSetId`);
+ * - `bible_backfill.item.adopted` — an existing settlement of exactly this
+ *   text was used instead of settling it again (`adoptedRunId`,
+ *   `adoptedChangeSetId`, `adoptedOutcome` in_progress|candidate|applied|empty);
+ * - `bible_backfill.item.detached` — the job was cancelled while an adopted
+ *   Studio settlement was still running; it continues in Studio
+ *   (`detachedRunId`);
+ * - `bible_backfill.item.handed_back` — the job was cancelled before it read
+ *   a chapter edited during the job, so the writing-path settlement that
+ *   edit would have started was started (`handedBackRunId`).
+ */
+export const BibleBackfillNoteSchema = z
+  .object({ code: z.string() })
+  .catchall(z.unknown());
+
 export const BibleBackfillJobSchema = z.object({
   id: IdSchema,
   projectId: IdSchema,
@@ -133,6 +154,7 @@ export const BibleBackfillItemSchema = z.object({
   status: BibleBackfillItemStatusSchema,
   skipReason: BibleBackfillSkipReasonSchema.nullable(),
   error: BibleBackfillErrorSchema.nullable(),
+  note: BibleBackfillNoteSchema.nullable(),
   updatedAt: z.string(),
 });
 export type BibleBackfillItemDto = z.infer<typeof BibleBackfillItemSchema>;

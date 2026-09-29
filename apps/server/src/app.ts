@@ -340,10 +340,14 @@ export async function buildApp(
   });
 
   const routes = fastifyRouteApp(app);
+  const bibleBackfillWake = () => {
+    if (enableBackgroundWorker) bibleBackfillCoordinator.wake();
+  };
   registerStoryRoutes(routes, database, {
     coordinator,
     enableBackgroundWorker,
     environment,
+    bibleBackfillWake,
   });
   registerProjectCoverRoutes(routes, database);
   registerAgentSkillRoutes(routes, database);
@@ -394,6 +398,7 @@ export async function buildApp(
     coordinator,
     enableBackgroundWorker,
     environment,
+    bibleBackfillWake,
   });
   registerDeliveryRoutes(routes, database, {
     coordinator,

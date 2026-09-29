@@ -49,6 +49,12 @@ export interface BibleBackfillItem {
   status: BibleBackfillItemStatus;
   skipReason: BibleBackfillSkipReason | null;
   error: Record<string, unknown> | null;
+  /**
+   * What happened to the chapter besides its status (`code` plus fields):
+   * re-targeted to a newer version, an existing settlement adopted, or a
+   * Studio settlement detached on cancel. Never cleared by a status change.
+   */
+  note: Record<string, unknown> | null;
   updatedAt: string;
 }
 
@@ -77,6 +83,7 @@ export type BibleBackfillItemPatch = Partial<
     | "changeSetId"
     | "skipReason"
     | "error"
+    | "note"
   >
 >;
 
@@ -267,7 +274,7 @@ export class SqliteBibleBackfillRepository {
       .prepare(
         `UPDATE bible_backfill_items SET
            status = ?, version_id = ?, attempt = ?, run_id = ?, change_set_id = ?,
-           skip_reason = ?, error_json = ?, updated_at = ?
+           skip_reason = ?, error_json = ?, note_json = ?, updated_at = ?
          WHERE job_id = ? AND ordinal = ?`,
       )
       .run(
@@ -278,6 +285,7 @@ export class SqliteBibleBackfillRepository {
         next.changeSetId,
         next.skipReason,
         next.error ? JSON.stringify(next.error) : null,
+        next.note ? JSON.stringify(next.note) : null,
         now,
         jobId,
         ordinal,
@@ -395,6 +403,7 @@ interface ItemRow {
   status: BibleBackfillItemStatus;
   skip_reason: BibleBackfillSkipReason | null;
   error_json: string | null;
+  note_json: string | null;
   updated_at: string;
 }
 
@@ -427,6 +436,7 @@ function mapItem(row: ItemRow): BibleBackfillItem {
     status: row.status,
     skipReason: row.skip_reason,
     error: parseRecord(row.error_json),
+    note: parseRecord(row.note_json),
     updatedAt: row.updated_at,
   };
 }

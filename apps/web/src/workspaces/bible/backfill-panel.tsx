@@ -94,13 +94,13 @@ export function BibleBackfillPanel({
   const bodyId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const queryKey = bibleBackfillQueryKey(projectId);
+  /* 只在读取进行中（running，含正在结算的章节）时轮询；暂停、等待审阅或
+     等待处理时进度不会自己变化，靠 SSE 与操作后的刷新即可。 */
   const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getCurrentBibleBackfill(projectId, signal),
     refetchInterval: (current) =>
-      current.state.data?.job && ACTIVE_STATUSES.has(current.state.data.job.status)
-        ? POLL_INTERVAL_MS
-        : false,
+      current.state.data?.job?.status === "running" ? POLL_INTERVAL_MS : false,
   });
   const detail = query.data;
   const job = detail?.job ?? null;
@@ -543,9 +543,13 @@ function ActiveState({
     job.status === "awaiting_user" && job.error?.code === "settlement.conflict"
       ? parseSettlementConflicts(errorPayload(job.error))
       : null;
-  const conflictChangeSetId = conflict
-    ? stringField(job.error, "changeSetId")
-    : null;
+  const review =
+    job.status === "awaiting_user" &&
+    job.error?.code === "bible_backfill.review_required"
+      ? reviewTargets(job.error)
+      : null;
+  const conflictChangeSetId =
+    conflict || review ? stringField(job.error, "changeSetId") : null;
   const reviewChangeSetId =
     job.status === "awaiting_decision"
       ? (current?.changeSetId ?? null)
@@ -621,17 +625,20 @@ function ActiveState({
             onDecided={onDecided}
           />
           {canSkipCurrent && current ? (
-            <div className="bible-backfill__actions">
-              <button
-                type="button"
-                className="btn"
-                disabled={actionPending}
-                onClick={() => onAct("skip_item", current.ordinal)}
-              >
-                <SkipForward size={12} aria-hidden="true" />
-                {t("bible.backfill.actions.skip")}
-              </button>
-            </div>
+            <>
+              <div className="bible-backfill__actions">
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={actionPending}
+                  onClick={() => onAct("skip_item", current.ordinal)}
+                >
+                  <SkipForward size={12} aria-hidden="true" />
+                  {t("bible.backfill.actions.skip")}
+                </button>
+              </div>
+              <SkipHint item={current} />
+            </>
           ) : null}
         </div>
       ) : null}
@@ -643,6 +650,7 @@ function ActiveState({
           current={current}
           position={position}
           conflict={conflict}
+          review={review}
           conflictChangeSetId={conflictChangeSetId}
           entityNames={entityNames}
           canRetry={Boolean(
@@ -772,6 +780,7 @@ function AttentionState({
   current,
   position,
   conflict,
+  review,
   conflictChangeSetId,
   entityNames,
   canRetry,
@@ -786,6 +795,8 @@ function AttentionState({
   current: BibleBackfillItemDto | null;
   position: number;
   conflict: ReturnType<typeof parseSettlementConflicts>;
+  /** Records a review_required stop lists; null for any other stop. */
+  review: ReviewTarget[] | null;
   conflictChangeSetId: string | null;
   entityNames: Map<string, string>;
   canRetry: boolean;
@@ -807,7 +818,9 @@ function AttentionState({
 
   const title = conflict
     ? t("bible.backfill.attention.conflictTitle", { current: position })
-    : itemFailed
+    : review
+      ? t("bible.backfill.attention.reviewTitle", { current: position })
+      : itemFailed
       ? t("bible.backfill.attention.failedTitle", { current: position })
       : t("bible.backfill.attention.stoppedTitle");
 
@@ -831,6 +844,36 @@ function AttentionState({
               forceApply: t("bible.backfill.attention.force"),
             }}
             forceAllowed={conflict.forceAllowed && canResume}
+            disabled={actionPending}
+            onDecided={onDecided}
+          />
+        </>
+      ) : review ? (
+        <>
+          <p>{t("bible.backfill.attention.reviewIntro")}</p>
+          {review.length > 0 ? (
+            <ul
+              className="bible-backfill__review-targets"
+              aria-label={t("bible.backfill.attention.reviewTargetsLabel")}
+            >
+              {review.map((target) => (
+                <li key={target.path}>
+                  <strong>{t(REVIEW_ACTIONS[target.action])}</strong>
+                  {target.label ? ` · ${target.label}` : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <ChangeSetSlot
+            projectId={projectId}
+            changeSetId={conflictChangeSetId}
+            entityNames={entityNames}
+            labels={{
+              apply: t("bible.backfill.attention.apply"),
+              defer: t("bible.backfill.attention.reject"),
+              forceApply: t("bible.backfill.attention.force"),
+            }}
+            forceAllowed={false}
             disabled={actionPending}
             onDecided={onDecided}
           />
@@ -877,7 +920,17 @@ function AttentionState({
           </Link>
         ) : null}
       </div>
+      {canSkip && current ? <SkipHint item={current} /> : null}
     </div>
+  );
+}
+
+/** 跳过待裁定章节不会裁定它：变更集仍留在写作台可审阅。 */
+function SkipHint({ item }: { item: BibleBackfillItemDto }) {
+  const { t } = useI18n();
+  if (item.status !== "awaiting_decision" || !item.changeSetId) return null;
+  return (
+    <p className="bible-backfill__detail">{t("bible.backfill.decision.skipHint")}</p>
   );
 }
 
@@ -910,6 +963,14 @@ function FinishedState({
     { key: "bible.backfill.finished.counts.empty", value: detail.counts.empty },
     { key: "bible.backfill.finished.counts.skipped", value: detail.counts.skipped },
     { key: "bible.backfill.finished.counts.failed", value: detail.counts.failed },
+    ...(detail.counts.awaitingDecision > 0
+      ? [
+          {
+            key: "bible.backfill.finished.counts.awaitingDecision" as const,
+            value: detail.counts.awaitingDecision,
+          },
+        ]
+      : []),
   ];
   /* 取消途中遇到意外错误时，任务以 cancelled 结束并记下原因。 */
   const reason = job.status === "cancelled" && job.error ? stopReason(job.error, t) : null;
@@ -1000,6 +1061,7 @@ function ItemList({
             <ItemStatusIcon status={item.status} />
             <span className="bible-backfill__item-title">{title}</span>
             <span className="bible-backfill__item-status">{status}</span>
+            <ItemNote item={item} />
           </li>
         );
       })}
@@ -1014,6 +1076,47 @@ function ItemList({
       {list}
     </details>
   );
+}
+
+/** 条目上发生过的事（改投新版本、沿用已有结算、取消时脱离），逐句说明。 */
+function ItemNote({ item }: { item: BibleBackfillItemDto }) {
+  const { t } = useI18n();
+  const lines = itemNoteKeys(item).map((key) => t(key));
+  if (lines.length === 0) return null;
+  return <span className="bible-backfill__item-note">{lines.join(" ")}</span>;
+}
+
+function itemNoteKeys(item: BibleBackfillItemDto): MessageKey[] {
+  const note = item.note;
+  if (!note) return [];
+  const keys: MessageKey[] = [];
+  if (
+    typeof note.retargetedFromVersionId === "string" &&
+    (note.code === "bible_backfill.item.retargeted" ||
+      note.code === "bible_backfill.item.adopted")
+  ) {
+    keys.push("bible.backfill.itemNote.retargeted");
+    if (typeof note.supersededChangeSetId === "string")
+      keys.push("bible.backfill.itemNote.supersededChangeSet");
+    if (note.supersededRunAction === "detached")
+      keys.push("bible.backfill.itemNote.supersededRunDetached");
+  }
+  if (note.code === "bible_backfill.item.adopted") {
+    const adopted: Record<string, MessageKey> = {
+      in_progress: "bible.backfill.itemNote.adoptedInProgress",
+      candidate: "bible.backfill.itemNote.adoptedCandidate",
+      applied: "bible.backfill.itemNote.adoptedApplied",
+      empty: "bible.backfill.itemNote.adoptedEmpty",
+    };
+    const key =
+      typeof note.adoptedOutcome === "string" ? adopted[note.adoptedOutcome] : undefined;
+    if (key) keys.push(key);
+  }
+  if (note.code === "bible_backfill.item.detached")
+    keys.push("bible.backfill.itemNote.detached");
+  if (note.code === "bible_backfill.item.handed_back")
+    keys.push("bible.backfill.itemNote.handedBack");
+  return keys;
 }
 
 function ItemStatusIcon({ status }: { status: BibleBackfillItemDto["status"] }) {
@@ -1106,10 +1209,44 @@ const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
   "bible_backfill.run.missing": { key: "bible.backfill.stopReason.runMissing" },
   "bible_backfill.unexpected": { key: "bible.backfill.stopReason.unexpected", detail: true },
   "bible_backfill.cancelled": { key: "bible.backfill.stopReason.cancelled" },
+  "bible_backfill.review_required": { key: "bible.backfill.stopReason.reviewRequired" },
   "settlement.anchor.missing": { key: "bible.backfill.stopReason.anchorMissing" },
   "canon_change_set.not_found": { key: "bible.backfill.stopReason.changeSetMissing" },
   "document.version.not_found": { key: "bible.backfill.stopReason.versionMissing" },
 };
+
+/** review_required 停机列出的、本章要改动的现有记录。 */
+interface ReviewTarget {
+  path: string;
+  action: "withdraw" | "supersede" | "update" | "end" | "resolve";
+  label: string | null;
+}
+
+const REVIEW_ACTIONS: Record<ReviewTarget["action"], MessageKey> = {
+  withdraw: "bible.backfill.attention.reviewAction.withdraw",
+  supersede: "bible.backfill.attention.reviewAction.supersede",
+  update: "bible.backfill.attention.reviewAction.update",
+  end: "bible.backfill.attention.reviewAction.end",
+  resolve: "bible.backfill.attention.reviewAction.resolve",
+};
+
+function reviewTargets(error: BackfillError): ReviewTarget[] {
+  const targets = errorPayload(error).targets;
+  if (!Array.isArray(targets)) return [];
+  return targets.flatMap((target, index): ReviewTarget[] => {
+    if (!target || typeof target !== "object") return [];
+    const record = target as Record<string, unknown>;
+    const action = record.action;
+    if (typeof action !== "string" || !(action in REVIEW_ACTIONS)) return [];
+    return [
+      {
+        path: typeof record.path === "string" ? record.path : String(index),
+        action: action as ReviewTarget["action"],
+        label: typeof record.label === "string" && record.label ? record.label : null,
+      },
+    ];
+  });
+}
 
 interface StopReason {
   message: string;

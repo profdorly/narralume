@@ -1,11 +1,13 @@
-import { classifyStepError } from "@narralume/harness";
+import type { NarrativeRun } from "@narralume/domain";
 import {
   SettlementApplicationError,
   SettlementApplicationService,
   SettlementConflictError,
+  type SettlementChangedRecord,
 } from "@narralume/narrative";
 import {
   SqliteBibleBackfillRepository,
+  SqliteDeliveryRepository,
   SqliteDocumentRepository,
   SqliteProjectRepository,
   SqliteReviewRepository,
@@ -17,14 +19,15 @@ import {
 
 import {
   BibleBackfillService,
+  childFailureError,
   currentBackfillItem,
   finalizeBackfillCancellation,
+  isOwnBackfillRun,
   isTerminalBackfillJob,
+  settlementRunOutcome,
+  type SettlementRunOutcome,
 } from "./bible-backfill-service.js";
-import {
-  createManualSettlementRun,
-  findActiveManualSettlementRun,
-} from "./manual-settlement.js";
+import { createManualSettlementRun } from "./manual-settlement-run.js";
 import type { RunCoordinator } from "./run-coordinator.js";
 import { deterministicUuid } from "./request-idempotency.js";
 import {
@@ -59,6 +62,7 @@ export class BibleBackfillCoordinator {
   private readonly reviews: SqliteReviewRepository;
   private readonly documents: SqliteDocumentRepository;
   private readonly projects: SqliteProjectRepository;
+  private readonly deliveries: SqliteDeliveryRepository;
   private readonly service: BibleBackfillService;
   private readonly settlementApplication: SettlementApplicationService;
   readonly #controller = new AbortController();
@@ -82,6 +86,7 @@ export class BibleBackfillCoordinator {
     this.reviews = new SqliteReviewRepository(database);
     this.documents = new SqliteDocumentRepository(database);
     this.projects = new SqliteProjectRepository(database);
+    this.deliveries = new SqliteDeliveryRepository(database);
     this.service = new BibleBackfillService(database, options.environment);
     this.settlementApplication = new SettlementApplicationService(database);
   }
@@ -174,7 +179,7 @@ export class BibleBackfillCoordinator {
         ...(item ? { ordinal: item.ordinal } : {}),
       };
       if (job.cancelRequested) {
-        finalizeBackfillCancellation(this.backfills, job.id, now, record);
+        this.finalizeCancellation(job.id, now, record);
         return this.changed(job.id, "job.cancelled");
       }
       this.backfills.setJobStatus(job.id, "awaiting_user", now, record);
@@ -198,7 +203,9 @@ export class BibleBackfillCoordinator {
       !["completed", "failed", "cancelled"].includes(child.status);
 
     if (job.cancelRequested) {
-      if (childActive) {
+      // Only a run this job created is cancelled; an adopted Studio
+      // settlement is detached by finalizeBackfillCancellation.
+      if (childActive && isOwnBackfillRun(child, job.id)) {
         if (child.status === "running") {
           if (child.cancelRequested) return false;
           this.runs.requestCancel(child.id, now);
@@ -215,7 +222,7 @@ export class BibleBackfillCoordinator {
           "bible_backfill_cancelled",
         );
       }
-      finalizeBackfillCancellation(this.backfills, job.id, now);
+      this.finalizeCancellation(job.id, now);
       return this.changed(job.id, "job.cancelled");
     }
 
@@ -276,37 +283,68 @@ export class BibleBackfillCoordinator {
           "The chapter manuscript no longer matches the outline chapter it was queued for",
       });
     }
-    let versionId = item.versionId;
-    if (document.currentVersionId !== item.versionId) {
-      // The author revised the chapter after the job was created: settle the
-      // current text, unless that version has been settled already.
-      const version = this.documents.getVersion(
-        job.projectId,
-        document.id,
-        document.currentVersionId,
+    const version = this.documents.getVersion(
+      job.projectId,
+      document.id,
+      document.currentVersionId,
+    );
+    if (!version) {
+      return this.failItem(job, item, now, {
+        code: "document.version.not_found",
+        message: "The chapter's current manuscript version does not exist",
+      });
+    }
+    const versionId = version.id;
+    // The author revised the chapter after it was queued: the job settles the
+    // current text instead, and says so on the item.
+    let note = item.note;
+    if (versionId !== item.versionId) {
+      note = {
+        ...note,
+        code: "bible_backfill.item.retargeted",
+        retargetedFromVersionId: item.versionId,
+      };
+    }
+    // A settlement of exactly this text that already exists — in flight,
+    // still undecided, applied, or empty — is adopted instead of settling
+    // the same text twice.
+    const adopted = this.existingSettlement(job, versionId);
+    if (adopted) {
+      const { run, adoption } = adopted;
+      const { status, changeSetId } = adoption;
+      const adoptedNote = {
+        ...note,
+        code: "bible_backfill.item.adopted",
+        adoptedRunId: run.id,
+        adoptedChangeSetId: changeSetId,
+        adoptedOutcome: adoption.outcome,
+      };
+      this.backfills.updateItem(
+        job.id,
+        item.ordinal,
+        {
+          versionId,
+          status,
+          runId: run.id,
+          changeSetId,
+          error: null,
+          note: adoptedNote,
+        },
+        now,
       );
-      if (!version) {
-        return this.failItem(job, item, now, {
-          code: "document.version.not_found",
-          message: "The chapter's current manuscript version does not exist",
-        });
-      }
-      versionId = version.id;
-      if (
-        this.service.isVersionSettled(
-          job.projectId,
-          item.outlineNodeId,
-          version,
-        )
-      ) {
-        this.backfills.updateItem(
-          job.id,
-          item.ordinal,
-          { versionId, status: "skipped", skipReason: "already_settled" },
-          now,
-        );
-        return this.changed(job.id, "item.skipped");
-      }
+      if (status === "settling") this.wakeRunWorker();
+      return this.changed(job.id, `item.adopted.${adoption.outcome}`);
+    }
+    if (
+      this.service.isVersionSettled(job.projectId, item.outlineNodeId, version)
+    ) {
+      this.backfills.updateItem(
+        job.id,
+        item.ordinal,
+        { versionId, status: "skipped", skipReason: "already_settled", note },
+        now,
+      );
+      return this.changed(job.id, "item.skipped");
     }
     try {
       requireWritingAssignment(this.database, this.options.environment);
@@ -318,16 +356,8 @@ export class BibleBackfillCoordinator {
         ordinal: item.ordinal,
       });
     }
-    // A writing-path settlement of the same version already in flight is
-    // adopted instead of settling the same text twice.
-    const existing = findActiveManualSettlementRun(
-      this.database,
-      job.projectId,
-      versionId,
-    );
-    const runId =
-      existing?.id ?? bibleBackfillRunId(job.id, versionId, item.attempt);
-    if (!existing && !this.runs.getRun(runId)) {
+    const runId = bibleBackfillRunId(job.id, versionId, item.attempt);
+    if (!this.runs.getRun(runId)) {
       createManualSettlementRun({
         database: this.database,
         environment: this.options.environment,
@@ -347,11 +377,49 @@ export class BibleBackfillCoordinator {
     this.backfills.updateItem(
       job.id,
       item.ordinal,
-      { versionId, status: "settling", runId, changeSetId: null, error: null },
+      {
+        versionId,
+        status: "settling",
+        runId,
+        changeSetId: null,
+        error: null,
+        note,
+      },
       now,
     );
     this.wakeRunWorker();
     return this.changed(job.id, "item.settling");
+  }
+
+  /**
+   * The settlement of one version worth adopting, from any origin: an applied
+   * change set wins (the text's changes were kept once already); otherwise
+   * the newest run still in flight, with an undecided change set, or that
+   * found nothing. Rejected, failed and cancelled settlements are passed
+   * over, so such a text is settled again.
+   */
+  private existingSettlement(
+    job: BibleBackfillJob,
+    versionId: string,
+  ): { run: NarrativeRun; adoption: Adoption } | null {
+    const candidates = this.runs
+      .listRunsForDocumentVersion(job.projectId, "manual-settlement", versionId)
+      // This job's own runs are its attempts, not settlements to adopt.
+      .filter((run) => !isOwnBackfillRun(run, job.id))
+      .map((run) => ({
+        run,
+        adoption: adoptionOf(
+          settlementRunOutcome(this.database, job.projectId, run),
+        ),
+      }));
+    const found =
+      candidates.find(({ adoption }) => adoption?.outcome === "applied") ??
+      candidates.find(
+        ({ adoption }) => adoption !== null && adoption.outcome !== "applied",
+      );
+    return found?.adoption
+      ? { run: found.run, adoption: found.adoption }
+      : null;
   }
 
   private reconcileChild(
@@ -398,17 +466,7 @@ export class BibleBackfillCoordinator {
       });
     }
     if (child.status === "failed") {
-      const failedStep = [...snapshot.steps]
-        .reverse()
-        .find((step) => step.status === "failed");
-      const classification = classifyStepError(failedStep?.error ?? null);
-      return this.failItem(job, item, now, {
-        code: classification.kind === "fatal" ? "child.fatal" : "child.failed",
-        message: failedStep?.error?.message ?? "The settlement run failed",
-        category: classification.category,
-        runId: child.id,
-        stepId: failedStep?.id ?? null,
-      });
+      return this.failItem(job, item, now, childFailureError(snapshot));
     }
     // completed: an empty settlement records no change set and moves on.
     const changeSetId = committedChangeSetId(snapshot);
@@ -463,6 +521,26 @@ export class BibleBackfillCoordinator {
       this.backfills.setJobStatus(job.id, "awaiting_decision", now);
       return this.changed(job.id, "job.awaiting_decision");
     }
+    // Auto mode only adds to what this job and the import produced: a change
+    // that would withdraw, supersede, end, change or resolve anything else
+    // (for example a fact the author entered) waits for the author.
+    const reviewTargets = this.recordsNeedingReview(job, changeSet.id);
+    if (reviewTargets.length > 0) {
+      return this.park(job, now, {
+        code: "bible_backfill.review_required",
+        message:
+          "This chapter would change existing Story Bible records that this completion did not create; review it before continuing",
+        ordinal: item.ordinal,
+        changeSetId: changeSet.id,
+        targets: reviewTargets.map((target) => ({
+          path: target.path,
+          kind: target.kind,
+          action: target.action,
+          id: target.id,
+          label: target.label,
+        })),
+      });
+    }
     try {
       this.settlementApplication.apply({
         projectId: job.projectId,
@@ -497,6 +575,48 @@ export class BibleBackfillCoordinator {
     return this.changed(job.id, "item.applied");
   }
 
+  /**
+   * Existing records the change set would withdraw, supersede, end, change
+   * or resolve that were created neither by this job's earlier applied
+   * change sets nor by the manuscript import. Import provenance is known only
+   * for relationships (their source is the import candidate); imports create
+   * no facts, and foreshadows keep no source at all, so an imported or
+   * author-entered foreshadow always counts as needing review.
+   */
+  private recordsNeedingReview(
+    job: BibleBackfillJob,
+    changeSetId: string,
+  ): SettlementChangedRecord[] {
+    const jobChangeSets = new Set(
+      this.backfills
+        .listItems(job.id)
+        .filter((item) => item.status === "applied" && item.changeSetId)
+        .map((item) => item.changeSetId!),
+    );
+    return this.settlementApplication
+      .changedExistingRecords(job.projectId, changeSetId)
+      .filter(
+        (target) =>
+          !(
+            target.createdByChangeSetId &&
+            jobChangeSets.has(target.createdByChangeSetId)
+          ) && !this.isImportedRelationship(job.projectId, target),
+      );
+  }
+
+  private isImportedRelationship(
+    projectId: string,
+    target: SettlementChangedRecord,
+  ): boolean {
+    if (target.kind !== "relationship" || !target.sourceId) return false;
+    const candidate = this.deliveries.getImportCandidate(target.sourceId);
+    if (candidate?.kind !== "relationship" || candidate.status !== "applied") {
+      return false;
+    }
+    const batch = this.deliveries.getImportBatch(candidate.batchId);
+    return (batch?.appliedProjectId ?? batch?.targetProjectId) === projectId;
+  }
+
   private failItem(
     job: BibleBackfillJob,
     item: BibleBackfillItem,
@@ -527,6 +647,21 @@ export class BibleBackfillCoordinator {
     return this.changed(job.id, "job.awaiting_user");
   }
 
+  private finalizeCancellation(
+    jobId: string,
+    now: string,
+    error: Readonly<Record<string, unknown>> | null = null,
+  ): void {
+    const handedBack = finalizeBackfillCancellation(
+      this.database,
+      this.options.environment,
+      jobId,
+      now,
+      error,
+    );
+    if (handedBack.length > 0) this.wakeRunWorker();
+  }
+
   private wakeRunWorker(): void {
     if (this.options.autoRunWorker) {
       this.database.afterCommit(() => this.runCoordinator.wake());
@@ -541,6 +676,44 @@ export class BibleBackfillCoordinator {
 
   private now(): string {
     return (this.options.now?.() ?? new Date()).toISOString();
+  }
+}
+
+/** How an adopted settlement maps onto the item; null when not adoptable. */
+interface Adoption {
+  outcome: "in_progress" | "candidate" | "applied" | "empty";
+  status: "settling" | "awaiting_decision" | "applied" | "empty";
+  changeSetId: string | null;
+}
+
+function adoptionOf(outcome: SettlementRunOutcome): Adoption | null {
+  switch (outcome.kind) {
+    case "in_progress":
+      return { outcome: "in_progress", status: "settling", changeSetId: null };
+    case "empty":
+      return { outcome: "empty", status: "empty", changeSetId: null };
+    case "change_set":
+      if (outcome.status === "candidate") {
+        return {
+          outcome: "candidate",
+          status: "awaiting_decision",
+          changeSetId: outcome.changeSetId,
+        };
+      }
+      if (
+        outcome.status === "applied" ||
+        outcome.status === "partially_applied"
+      ) {
+        return {
+          outcome: "applied",
+          status: "applied",
+          changeSetId: outcome.changeSetId,
+        };
+      }
+      return null;
+    default:
+      // Rejected, failed, cancelled or missing: settle the text again.
+      return null;
   }
 }
 

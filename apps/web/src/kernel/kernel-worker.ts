@@ -267,10 +267,12 @@ async function boot(): Promise<void> {
   });
 
   const table = new RouteTable();
+  const bibleBackfillWake = () => bibleBackfillCoordinator.wake();
   registerStoryRoutes(table, database, {
     coordinator,
     enableBackgroundWorker: true,
     environment: {},
+    bibleBackfillWake,
   });
   registerProjectCoverRoutes(table, database);
   registerAgentSkillRoutes(table, database);
@@ -339,6 +341,7 @@ async function boot(): Promise<void> {
     coordinator,
     enableBackgroundWorker: true,
     environment: {},
+    bibleBackfillWake,
   });
   registerDeliveryRoutes(table, database, {
     coordinator,

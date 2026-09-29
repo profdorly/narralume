@@ -128,6 +128,8 @@ export function registerStudioRoutes(
     coordinator: RunCoordinator;
     enableBackgroundWorker: boolean;
     environment: Readonly<Record<string, string | undefined>>;
+    /** Wakes the Story Bible completion after a commit re-targeted it. */
+    bibleBackfillWake?: () => void;
   },
 ): void {
   const creative = new SqliteCreativeRepository(database);
@@ -1368,6 +1370,11 @@ export function registerStudioRoutes(
           now,
           environment: options.environment,
           coordinatorWake: () => wake(options),
+          interruptRun: (runId, reason) =>
+            options.coordinator.interrupt(runId, reason),
+          ...(options.bibleBackfillWake
+            ? { bibleBackfillWake: options.bibleBackfillWake }
+            : {}),
         });
         const result = EditProposalSchema.parse(decided);
         requestReplays.insert({
