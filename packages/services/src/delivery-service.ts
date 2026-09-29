@@ -16,6 +16,7 @@ import {
   htmlToText,
   inferStylePayload,
   splitManuscriptSections,
+  trimLineEnds,
 } from "./manuscript-import.js";
 import {
   bytesToText,
@@ -3203,11 +3204,12 @@ function renderText(
 }
 
 function normalizeImportedText(value: string) {
-  return value
-    .replace(/^\uFEFF/u, "")
-    .replace(/\0/gu, "")
-    .replace(/\r\n?/gu, "\n")
-    .replace(/[ \t]+$/gmu, "")
+  return trimLineEnds(
+    value
+      .replace(/^\uFEFF/u, "")
+      .replace(/\0/gu, "")
+      .replace(/\r\n?/gu, "\n"),
+  )
     .replace(/\n{4,}/gu, "\n\n\n")
     .trim();
 }

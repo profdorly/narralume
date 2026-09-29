@@ -6,12 +6,23 @@ export interface ManuscriptSection {
   content: string;
 }
 
-/** 非 Markdown 标题行的长度上限（按码点）；超过即视为正文段落。 */
+/** 关键词标题行（pt / es / en 与强调包裹形式）的长度上限（按码点）；超过即视为正文段落。
+ *  既有的“第 N 章”与“Chapter + 数字”形式不受此限。 */
 export const HEADING_MAX_CHARACTERS = 80;
 
-const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*?)\s*$/u;
-const CJK_HEADING = /^第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]/u;
+// 标题捕获用贪婪的 (\S.*)$ 再去尾部空白：惰性的 (\S.*?)\s*$ 在长空白串上是平方级。
+const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*)$/u;
+/** 既有标题形式，行为与引入关键词语法前一致：“第 N 章 / 节 / 卷 / 部 / 回”与
+ *  “Chapter + 阿拉伯数字”（不区分大小写），不限长度，整行（去首尾空白）作为标题，
+ *  也不识别强调包裹（**第一章** 仍是正文）。 */
+const LEGACY_HEADING =
+  /^\s*(?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|chapter\s+\d)/iu;
 const EMPHASIS_WRAPPED = /^(\*{1,2}|_{1,2})(\S(?:.*\S)?)\1$/u;
+/** 独占一段的场景分隔符（#、###、***、* * *、⁂）。它们是正文，不是标题。 */
+const SCENE_BREAK = /^(?:(?:#[ \t]*)+|(?:\*[ \t]*){3,}|⁂)$/u;
+
+/** 首个标题之前文字的固定称谓；仅用于以 CJK 为主的原稿，与既有行为一致。 */
+const CJK_FRONT_MATTER_TITLE = "卷首";
 
 /** 必须带序号的分部关键词（pt / es / en）。按去除变音符后的小写形式书写。 */
 const NUMBERED_KEYWORDS = [
@@ -209,20 +220,28 @@ function isKeywordHeading(line: string): boolean {
   return true;
 }
 
-/** 判断一行是否为章节标题，返回标题文本；否则返回 null。 */
-export function manuscriptHeadingTitle(line: string): string | null {
-  const markdown = MARKDOWN_HEADING.exec(line);
-  if (markdown) return markdown[1]!;
-  const trimmed = line.trim();
-  if (!trimmed || [...trimmed].length > HEADING_MAX_CHARACTERS) return null;
-  const candidate = EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
-  if (CJK_HEADING.test(candidate) || isKeywordHeading(candidate))
-    return candidate;
-  return null;
+function exceedsCodePoints(value: string, limit: number): boolean {
+  if (value.length <= limit) return false;
+  if (value.length > limit * 2) return true;
+  return [...value].length > limit;
 }
 
-/** 按章节标题切分正文。首个标题前的文字（扉页、题记等）以作品标题命名，
- *  不引入特定语言的固定称谓；没有标题时整部正文作为一个分段。 */
+/** 判断一行是否为章节标题，返回标题文本；否则返回 null。
+ *  既有形式（Markdown、第 N 章、Chapter + 数字）先于长度上限判断，保持原有切分；
+ *  长度上限、强调包裹与关键词语法只作用于新增的 pt / es / en 标题形式。 */
+export function manuscriptHeadingTitle(line: string): string | null {
+  const markdown = MARKDOWN_HEADING.exec(line);
+  if (markdown) return markdown[1]!.trimEnd();
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  if (LEGACY_HEADING.test(trimmed)) return trimmed;
+  if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
+  const candidate = EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
+  return isKeywordHeading(candidate) ? candidate : null;
+}
+
+/** 按章节标题切分正文。首个标题前的文字（扉页、题记等）在以 CJK 为主的原稿中
+ *  沿用“卷首”，其他文字的原稿以作品标题命名；没有标题时整部正文作为一个分段。 */
 export function splitManuscriptSections(
   text: string,
   fallbackTitle: string,
@@ -240,7 +259,11 @@ export function splitManuscriptSections(
   if (!headings.length) return [{ title: fallbackTitle, content: text.trim() }];
   const sections: ManuscriptSection[] = [];
   const prefix = text.slice(0, headings[0]!.start).trim();
-  if (prefix) sections.push({ title: fallbackTitle, content: prefix });
+  if (prefix)
+    sections.push({
+      title: isCjkManuscript(text) ? CJK_FRONT_MATTER_TITLE : fallbackTitle,
+      content: prefix,
+    });
   headings.forEach((heading, index) => {
     const end = headings[index + 1]?.start ?? text.length;
     const content = text.slice(heading.end, end).trim();
@@ -257,32 +280,229 @@ interface DocxStyle {
   outlineLevel: string | null;
 }
 
-const XML_VALUE_PATTERNS = new Map<string, RegExp>();
+/* ---- 线性标记扫描 ----
+ * 导入的 XML / HTML 可能含未闭合标签。惰性正则（<a>[\s\S]*?</a>、[^>]*）在找不到
+ * 闭合标记时会从每个起点扫描到文末，成本随“出现次数 × 长度”增长；DOCX 压缩后
+ * 几 KB 即可展开成这样的输入。下面的扫描只向前推进，并缓存“之后没有闭合标记”，
+ * 总成本与输入长度成线性。 */
 
-function xmlValue(xml: string, tag: string): string | null {
-  let pattern = XML_VALUE_PATTERNS.get(tag);
-  if (!pattern) {
-    pattern = new RegExp(`<${tag}\\b[^>]*?\\bw:val=["']([^"']*)["']`, "u");
-    XML_VALUE_PATTERNS.set(tag, pattern);
-  }
-  return pattern.exec(xml)?.[1] ?? null;
+type Finder = (from: number) => RegExpExecArray | null;
+
+/** 在 text 中从 from 起查找 pattern（须带 g 标志）的首个匹配，并缓存结果：
+ *  起点单调不减时，每段文本至多扫描一次；一旦找不到，之后的查询直接返回 null。 */
+function forwardFinder(text: string, pattern: RegExp): Finder {
+  const regex = new RegExp(pattern.source, pattern.flags);
+  let searchedFrom = -1;
+  let found: RegExpExecArray | null = null;
+  return (from) => {
+    if (
+      searchedFrom < 0 ||
+      from < searchedFrom ||
+      (found !== null && from > found.index)
+    ) {
+      regex.lastIndex = from;
+      found = regex.exec(text);
+      searchedFrom = from;
+    }
+    return found;
+  };
 }
+
+interface ElementPattern {
+  /** 匹配 "<name"（须带 g 标志与词边界），不含属性与 ">"。 */
+  open: RegExp;
+  /** 该开始标签对应的结束标签（须带 g 标志）；同一种结束标签须返回同一对象。 */
+  close: (open: RegExpExecArray) => RegExp;
+  /** true 时跳过自闭合开始标签；false 与旧正则的 <name[^>]*> 一致，视作开始标签。 */
+  skipSelfClosing: boolean;
+  /** 元素体的最大长度（UTF-16 码元）；超过时不视为元素，留给后续按普通标签处理。 */
+  maxBody?: number;
+}
+
+interface MarkupElement {
+  start: number;
+  end: number;
+  open: RegExpExecArray;
+  /** "<name" 与 ">" 之间的属性文本。 */
+  attributes: string;
+  body: string;
+}
+
+/** 依次产出不重叠的 <name …>body</name> 元素，语义同惰性正则的逐个匹配：
+ *  开始标签到其后第一个 ">"，元素体到其后第一个结束标签。缺少 ">" 或结束标签时，
+ *  该处及之后同类元素都不再匹配，文本原样保留。 */
+function* markupElements(
+  text: string,
+  pattern: ElementPattern,
+): Generator<MarkupElement> {
+  const nextOpen = forwardFinder(text, pattern.open);
+  const nextTagEnd = forwardFinder(text, />/gu);
+  const closers = new Map<RegExp, Finder>();
+  let from = 0;
+  for (;;) {
+    const open = nextOpen(from);
+    if (!open) return;
+    const attributesStart = open.index + open[0].length;
+    const tagEnd = nextTagEnd(attributesStart);
+    if (!tagEnd) return;
+    const bodyStart = tagEnd.index + 1;
+    from = bodyStart;
+    if (pattern.skipSelfClosing && text[tagEnd.index - 1] === "/") continue;
+    const closeRegex = pattern.close(open);
+    let nextClose = closers.get(closeRegex);
+    if (!nextClose) {
+      nextClose = forwardFinder(text, closeRegex);
+      closers.set(closeRegex, nextClose);
+    }
+    const close = nextClose(bodyStart);
+    if (!close || close.index - bodyStart > (pattern.maxBody ?? Infinity))
+      continue;
+    const end = close.index + close[0].length;
+    yield {
+      start: open.index,
+      end,
+      open,
+      attributes: text.slice(attributesStart, tagEnd.index),
+      body: text.slice(bodyStart, close.index),
+    };
+    from = end;
+  }
+}
+
+function replaceElements(
+  text: string,
+  pattern: ElementPattern,
+  replace: (element: MarkupElement) => string,
+): string {
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const element of markupElements(text, pattern)) {
+    parts.push(text.slice(cursor, element.start), replace(element));
+    cursor = element.end;
+  }
+  parts.push(text.slice(cursor));
+  return parts.join("");
+}
+
+/** "<" 之后是字母、/、!、? 时才开始一个标签（同 HTML 分词规则），否则按文本保留，
+ *  例如未转义的 "a < b"。# 只用于 DOCX 转换内部的标题标记。 */
+function startsTag(text: string, index: number): boolean {
+  const next = text.charCodeAt(index + 1);
+  return (
+    (next >= 0x41 && next <= 0x5a) ||
+    (next >= 0x61 && next <= 0x7a) ||
+    next === 0x2f ||
+    next === 0x21 ||
+    next === 0x3f ||
+    next === 0x23
+  );
+}
+
+/** 把标记切成文本与标签：标签从 "<" 到其后第一个 ">"（同 /<[^>]+>/）。
+ *  之后再没有 ">" 时，余下内容全部按文本处理。 */
+function forEachMarkupToken(
+  text: string,
+  onText: (value: string) => void,
+  onTag: (value: string) => void,
+): void {
+  let cursor = 0;
+  let search = 0;
+  for (;;) {
+    const start = text.indexOf("<", search);
+    if (start < 0) break;
+    if (!startsTag(text, start)) {
+      search = start + 1;
+      continue;
+    }
+    const end = text.indexOf(">", start + 1);
+    if (end < 0) break;
+    if (start > cursor) onText(text.slice(cursor, start));
+    onTag(text.slice(start, end + 1));
+    cursor = search = end + 1;
+  }
+  if (cursor < text.length) onText(text.slice(cursor));
+}
+
+function mapTags(text: string, tagText: (tag: string) => string): string {
+  const parts: string[] = [];
+  forEachMarkupToken(
+    text,
+    (value) => parts.push(value),
+    (tag) => {
+      const value = tagText(tag);
+      if (value) parts.push(value);
+    },
+  );
+  return parts.join("");
+}
+
+function isWordCharacter(char: string | undefined): boolean {
+  return char !== undefined && /[A-Za-z0-9_]/u.test(char);
+}
+
+/** 读取 name="value" 或 name='value'，语义同 /\bname=["']([^"']*)["']/。 */
+function attributeValue(source: string, name: string): string | null {
+  const needle = `${name}=`;
+  for (
+    let at = source.indexOf(needle);
+    at >= 0;
+    at = source.indexOf(needle, at + 1)
+  ) {
+    if (isWordCharacter(source[at - 1])) continue;
+    const quote = source[at + needle.length];
+    if (quote !== '"' && quote !== "'") continue;
+    const valueStart = at + needle.length + 1;
+    for (let index = valueStart; index < source.length; index += 1) {
+      const char = source[index];
+      if (char === '"' || char === "'") return source.slice(valueStart, index);
+    }
+    // 其后再没有引号，后面的同名属性也不可能闭合。
+    return null;
+  }
+  return null;
+}
+
+/** 第一个带 w:val 的 <tag …> 的值，语义同 /<tag\b[^>]*?\bw:val=["']([^"']*)["']/。 */
+function xmlValue(xml: string, tag: string): string | null {
+  const needle = `<${tag}`;
+  let at = xml.indexOf(needle);
+  while (at >= 0) {
+    const nameEnd = at + needle.length;
+    if (isWordCharacter(xml[nameEnd])) {
+      at = xml.indexOf(needle, nameEnd);
+      continue;
+    }
+    const tagEnd = xml.indexOf(">", nameEnd);
+    const value = attributeValue(
+      xml.slice(nameEnd, tagEnd < 0 ? xml.length : tagEnd),
+      "w:val",
+    );
+    if (value !== null) return value;
+    if (tagEnd < 0) return null;
+    // 同一 ">" 之前的后续开始标签只是本标签属性文本的后缀，不会有新的匹配。
+    at = xml.indexOf(needle, tagEnd + 1);
+  }
+  return null;
+}
+
+const DOCX_STYLE_CLOSE = /<\/w:style>/gu;
+const DOCX_STYLE: ElementPattern = {
+  open: /<w:style\b/gu,
+  close: () => DOCX_STYLE_CLOSE,
+  skipSelfClosing: true,
+};
 
 function parseDocxStyles(stylesXml: string | null): Map<string, DocxStyle> {
   const styles = new Map<string, DocxStyle>();
   if (!stylesXml) return styles;
-  for (const match of stylesXml.matchAll(
-    /<w:style\b([^>]*?)(?<!\/)>([\s\S]*?)<\/w:style>/gu,
-  )) {
-    const attributes = match[1] ?? "";
-    const body = match[2] ?? "";
-    const type = /\bw:type=["']([^"']+)["']/u.exec(attributes)?.[1];
-    const id = /\bw:styleId=["']([^"']+)["']/u.exec(attributes)?.[1];
+  for (const style of markupElements(stylesXml, DOCX_STYLE)) {
+    const type = attributeValue(style.attributes, "w:type");
+    const id = attributeValue(style.attributes, "w:styleId");
     if (!id || (type && type !== "paragraph")) continue;
     styles.set(id, {
-      name: xmlValue(body, "w:name"),
-      basedOn: xmlValue(body, "w:basedOn"),
-      outlineLevel: xmlValue(body, "w:outlineLvl"),
+      name: xmlValue(style.body, "w:name"),
+      basedOn: xmlValue(style.body, "w:basedOn"),
+      outlineLevel: xmlValue(style.body, "w:outlineLvl"),
     });
   }
   return styles;
@@ -329,53 +549,157 @@ function paragraphHeadingLevel(
   return styleId === null ? null : styleHeadingLevel(styleId, styles);
 }
 
-/** 把 DOCX 正文转为纯文本；标题样式或大纲级别 0–2 的段落加 Markdown 标题前缀。 */
+const DOCX_PPR_CHANGE_CLOSE = /<\/w:pPrChange>/gu;
+const DOCX_PPR_CLOSE = /<\/w:pPr>/gu;
+/** 段落属性的修订记录保存的是旧属性：先整体移除，避免其中嵌套的 <w:pPr> 被当作现行属性。 */
+const DOCX_PPR_CHANGE: ElementPattern = {
+  open: /<w:pPrChange\b/gu,
+  close: () => DOCX_PPR_CHANGE_CLOSE,
+  skipSelfClosing: true,
+};
+const DOCX_PPR: ElementPattern = {
+  open: /<w:pPr\b/gu,
+  close: () => DOCX_PPR_CLOSE,
+  skipSelfClosing: true,
+};
+/** 标题段落在属性位置留下的内部标记。XML 名称不能以 # 开头，合法文档里不会出现。 */
+const DOCX_HEADING_MARK = /^<#([1-3])>$/u;
+
+function docxTagText(tag: string): string {
+  // 先按首字符分流，绝大多数标签（w:r、w:t、w:rPr…）不必逐个正则比较。
+  const first = tag[1] === "/" ? tag[4] : tag[3];
+  if (first === "t" || first === "T") {
+    if (/^<w:tab\b[^>]*\/>$/iu.test(tag)) return "\t";
+    if (/^<\/w:tr>$/iu.test(tag)) return "\n";
+    if (/^<\/w:tc>$/iu.test(tag)) return "\t";
+  } else if (
+    (first === "b" || first === "B") &&
+    /^<w:br\b[^>]*\/>$/iu.test(tag)
+  )
+    return "\n";
+  return "";
+}
+
+/** 把 DOCX 正文转为纯文本；标题样式或大纲级别 0–2 的段落加 Markdown 标题前缀。
+ *  前缀在段落结束时才决定：空标题段落不加前缀，套了标题样式的场景分隔符
+ *  （#、***、* * *、⁂）按正文保留。作者自己的 # 段落从不删除。 */
 export function docxDocumentText(
   documentXml: string,
   stylesXml: string | null,
 ): string {
   const styles = parseDocxStyles(stylesXml);
-  return decodeXml(
-    documentXml
-      .replace(/<w:pPrChange\b[\s\S]*?<\/w:pPrChange>/gu, "")
-      .replace(
-        /<w:pPr\b[^>]*?(?<!\/)>([\s\S]*?)<\/w:pPr>/gu,
-        (_, properties: string) => {
-          const level = paragraphHeadingLevel(properties, styles);
-          return level === null ? "" : `\n${"#".repeat(level)} `;
-        },
-      )
-      .replace(/<w:tab\b[^>]*\/>/giu, "\t")
-      .replace(/<w:br\b[^>]*\/>/giu, "\n")
-      .replace(/<\/w:p>/giu, "\n\n")
-      .replace(/<\/w:tr>/giu, "\n")
-      .replace(/<\/w:tc>/giu, "\t")
-      .replace(/<[^>]+>/gu, ""),
-  ).replace(/^#{1,3}[ \t]*$/gmu, "");
+  const marked = replaceElements(
+    replaceElements(documentXml, DOCX_PPR_CHANGE, () => ""),
+    DOCX_PPR,
+    ({ body }) => {
+      const level = paragraphHeadingLevel(body, styles);
+      return level === null ? "" : `<#${level}>`;
+    },
+  );
+  const parts: string[] = [];
+  let heading: { level: number; index: number } | null = null;
+  const closeHeading = () => {
+    if (!heading) return;
+    const content = parts.splice(heading.index).join("");
+    const visible = decodeXml(content).trim();
+    parts.push(
+      visible && !SCENE_BREAK.test(visible)
+        ? `\n${"#".repeat(heading.level)} ${content.trimStart()}`
+        : content,
+    );
+    heading = null;
+  };
+  forEachMarkupToken(
+    marked,
+    (value) => parts.push(value),
+    (tag) => {
+      const mark = tag[1] === "#" ? DOCX_HEADING_MARK.exec(tag) : null;
+      if (mark) {
+        closeHeading();
+        heading = { level: Number(mark[1]), index: parts.length };
+      } else if (tag.length === 6 && /^<\/w:p>$/iu.test(tag)) {
+        closeHeading();
+        parts.push("\n\n");
+      } else {
+        const value = docxTagText(tag);
+        if (value) parts.push(value);
+      }
+    },
+  );
+  closeHeading();
+  return decodeXml(parts.join(""));
+}
+
+const HTML_HEAD_CLOSE = /<\/head>/giu;
+const HTML_SCRIPT_CLOSE = /<\/script>/giu;
+const HTML_STYLE_CLOSE = /<\/style>/giu;
+/** 与各自开始标签配对移除的元素：文档头（含 <title>）、脚本与样式。 */
+const HTML_REMOVED_ELEMENTS: readonly ElementPattern[] = [
+  { open: /<head\b/giu, close: () => HTML_HEAD_CLOSE, skipSelfClosing: false },
+  {
+    open: /<script\b/giu,
+    close: () => HTML_SCRIPT_CLOSE,
+    skipSelfClosing: false,
+  },
+  {
+    open: /<style\b/giu,
+    close: () => HTML_STYLE_CLOSE,
+    skipSelfClosing: false,
+  },
+];
+const HTML_HEADING_CLOSE = [
+  /<\/h1\s*>/giu,
+  /<\/h2\s*>/giu,
+  /<\/h3\s*>/giu,
+] as const;
+/** 标题标记内容上限；超长或未闭合的标题退回只加前缀。 */
+const HTML_HEADING: ElementPattern = {
+  open: /<h([1-3])\b/giu,
+  close: (open) => HTML_HEADING_CLOSE[Number(open[1]) - 1]!,
+  skipSelfClosing: false,
+  maxBody: 2000,
+};
+
+function htmlTagText(tag: string): string {
+  // 先按首字符分流，多数标签不必逐个正则比较。
+  const first = tag[1];
+  if (first === "/") {
+    if (/^<\/(?:h[1-6]|p|div|li|blockquote)>$/iu.test(tag)) return "\n\n";
+  } else if (first === "h" || first === "H") {
+    if (/^<h[1-3]\b[^>]*>$/iu.test(tag)) return "\n# ";
+  } else if ((first === "b" || first === "B") && /^<br\s*\/?>$/iu.test(tag))
+    return "\n";
+  return "";
 }
 
 export function htmlToText(html: string): string {
-  return decodeXml(
-    html
-      .replace(/<head\b[^>]*>[\s\S]*?<\/head>/giu, "")
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, "")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, "")
-      // 标题标记内容限长，避免未闭合标签让惰性匹配扫描整页；超长时退回只加前缀。
-      .replace(
-        /<h([1-3])\b[^>]*>([\s\S]{0,2000}?)<\/h\1\s*>/giu,
-        (_, level: string, inner: string) => {
-          const title = inner
-            .replace(/<[^>]+>/gu, " ")
-            .replace(/\s+/gu, " ")
-            .trim();
-          return title ? `\n\n${"#".repeat(Number(level))} ${title}\n\n` : "";
-        },
-      )
-      .replace(/<h[1-3]\b[^>]*>/giu, "\n# ")
-      .replace(/<\/(?:h[1-6]|p|div|li|blockquote)>/giu, "\n\n")
-      .replace(/<br\s*\/?>/giu, "\n")
-      .replace(/<[^>]+>/gu, ""),
-  );
+  let text = html;
+  for (const pattern of HTML_REMOVED_ELEMENTS)
+    text = replaceElements(text, pattern, () => "");
+  text = replaceElements(text, HTML_HEADING, ({ open, body }) => {
+    const title = mapTags(body, () => " ")
+      .replace(/\s+/gu, " ")
+      .trim();
+    if (!title) return "";
+    // 套了标题标记的场景分隔符（* * *、⁂）按正文段落保留。
+    if (SCENE_BREAK.test(decodeXml(title))) return `\n\n${title}\n\n`;
+    return `\n\n${"#".repeat(Number(open[1]))} ${title}\n\n`;
+  });
+  return decodeXml(mapTags(text, htmlTagText));
+}
+
+/** 去掉每行行尾的空格与制表符。逐行从尾部回扫，线性时间；
+ *  /[ \t]+$/gm 在长空白串上会从每个起点重扫，是平方级。 */
+export function trimLineEnds(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      let end = line.length;
+      while (end > 0 && (line[end - 1] === " " || line[end - 1] === "\t"))
+        end -= 1;
+      return end === line.length ? line : line.slice(0, end);
+    })
+    .join("\n");
 }
 
 function decodeXml(value: string) {

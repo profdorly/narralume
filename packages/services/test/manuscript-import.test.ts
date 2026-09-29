@@ -7,6 +7,7 @@ import {
   inferStylePayload,
   manuscriptHeadingTitle,
   splitManuscriptSections,
+  trimLineEnds,
 } from "../src/manuscript-import.js";
 
 describe("manuscript chapter headings", () => {
@@ -66,7 +67,11 @@ describe("manuscript chapter headings", () => {
     "Capítulo",
     "— Capítulo 1 — disse ele.",
     `Capítulo 1: ${"a".repeat(HEADING_MAX_CHARACTERS)}`,
-    `第一章${"很".repeat(HEADING_MAX_CHARACTERS)}`,
+    "**第一章**",
+    "#",
+    "***",
+    "* * *",
+    "⁂",
   ])("rejects %j", (line) => {
     expect(manuscriptHeadingTitle(line)).toBeNull();
   });
@@ -119,6 +124,110 @@ describe("manuscript chapter headings", () => {
     ).toEqual([
       { title: "第一章 退潮信", content: "沈砚发现空白信。" },
       { title: "第二章 无名地址", content: "她把信举到灯前。" },
+    ]);
+  });
+});
+
+/** main 上 delivery-service 的 splitIntoSections 原样副本，作为既有标题形式的行为基准。 */
+function mainSplitIntoSections(text: string, fallbackTitle: string) {
+  const heading =
+    /^(?:#{1,3}\s+(.+)|\s*((?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|Chapter\s+\d+)\s*[^\n]*))\s*$/gimu;
+  const matches = [...text.matchAll(heading)];
+  if (!matches.length) return [{ title: fallbackTitle, content: text.trim() }];
+  const sections: { title: string; content: string }[] = [];
+  const prefix = text.slice(0, matches[0]!.index).trim();
+  if (prefix) sections.push({ title: "卷首", content: prefix });
+  for (let index = 0; index < matches.length; index += 1) {
+    const match = matches[index]!;
+    const next = matches[index + 1];
+    const start = (match.index ?? 0) + match[0].length;
+    const end = next?.index ?? text.length;
+    const title = (match[1] ?? match[2] ?? `章节 ${index + 1}`).trim();
+    const content = text.slice(start, end).trim();
+    if (content) sections.push({ title, content });
+  }
+  return sections.length
+    ? sections
+    : [{ title: fallbackTitle, content: text.trim() }];
+}
+
+describe("legacy heading forms keep their previous behavior", () => {
+  const longChineseHeading = `第一章 ${"长".repeat(HEADING_MAX_CHARACTERS + 10)}`;
+  const longChapterHeading = `CHAPTER 14 ${"long ".repeat(30).trim()}`;
+
+  it.each([
+    [
+      "Chinese front matter",
+      "楔子\n\n风从海上来。\n\n第一章 退潮信\n沈砚发现空白信。\n\n第二章 无名地址\n她把信举到灯前。",
+    ],
+    [
+      "a Chinese heading longer than the keyword cap",
+      `序\n\n题记。\n\n${longChineseHeading}\n正文。\n\n第二章 终\n更多。`,
+    ],
+    [
+      "an emphasis-wrapped Chinese heading",
+      "**第一章**\n\n强调包裹不是标题。\n\n第二章 真正的标题\n正文。",
+    ],
+    [
+      "节 / 卷 / 部 / 回 with full-width indentation",
+      "　　第一节 全角缩进\n正文一。\n\n第二卷 卷名\n正文二。\n\n第三部 部名\n正文三。\n\n第五回 回目\n正文四。",
+    ],
+    ["Markdown headings", "# 第一章 标题\n正文。\n\n## 小节\n更多。"],
+    [
+      "Chapter plus digits in any case, followed by anything",
+      `Chapter 12 the storm\nIt rained.\n\nchapter 13 calm\nIt stopped.\n\n${longChapterHeading}\nEnd.`,
+    ],
+  ])("matches main for %s", (_, text) => {
+    expect(splitManuscriptSections(text, "作品")).toEqual(
+      mainSplitIntoSections(text, "作品"),
+    );
+  });
+
+  it("keeps the line after a bare heading as content; main folded it into the title or lost it", () => {
+    const text = "第一章\n\n正文第一段。\n\n第二段。\n\nChapter 2\nNext.";
+    expect(mainSplitIntoSections(text, "作品")).toEqual([
+      { title: "第一章\n\n正文第一段。", content: "第二段。" },
+    ]);
+    expect(splitManuscriptSections(text, "作品")).toEqual([
+      { title: "第一章", content: "正文第一段。\n\n第二段。" },
+      { title: "Chapter 2", content: "Next." },
+    ]);
+  });
+
+  it("titles Chinese front matter 卷首 and keeps long and emphasized forms as before", () => {
+    expect(
+      splitManuscriptSections(
+        `楔子\n\n风从海上来。\n\n${longChineseHeading}\n正文。\n\n**第二章**\n仍在第一章里。`,
+        "退潮信",
+      ),
+    ).toEqual([
+      { title: "卷首", content: "楔子\n\n风从海上来。" },
+      {
+        title: longChineseHeading,
+        content: "正文。\n\n**第二章**\n仍在第一章里。",
+      },
+    ]);
+  });
+
+  it("splits on Chapter plus digits regardless of length or case", () => {
+    expect(manuscriptHeadingTitle("Chapter 12 the storm")).toBe(
+      "Chapter 12 the storm",
+    );
+    expect(manuscriptHeadingTitle("  chapter 3 was hard  ")).toBe(
+      "chapter 3 was hard",
+    );
+    expect(manuscriptHeadingTitle(longChapterHeading)).toBe(longChapterHeading);
+    expect([...longChapterHeading].length).toBeGreaterThan(
+      HEADING_MAX_CHARACTERS,
+    );
+  });
+
+  it("names non-CJK front matter after the work", () => {
+    expect(
+      splitManuscriptSections("Title page.\n\nChapter 1\nText.", "The Book"),
+    ).toEqual([
+      { title: "The Book", content: "Title page." },
+      { title: "Chapter 1", content: "Text." },
     ]);
   });
 });
@@ -196,6 +305,133 @@ describe("DOCX heading styles", () => {
       ),
     ).toEqual(["Capítulo Um", "Capítulo Dois"]);
   });
+
+  it("keeps scene-break paragraphs as text and never turns them into headings", () => {
+    const text = docxDocumentText(
+      document(
+        paragraph("Chapter 1", '<w:pStyle w:val="Heading1"/>'),
+        paragraph("First scene."),
+        paragraph("#"),
+        paragraph("Second scene."),
+        paragraph("***"),
+        paragraph("Third scene."),
+        paragraph("* * *"),
+        paragraph("Fourth scene."),
+        paragraph("⁂"),
+        paragraph("Fifth scene."),
+        paragraph("#", '<w:pStyle w:val="Heading2"/>'),
+        paragraph("Sixth scene."),
+        paragraph("* * *", '<w:pStyle w:val="Heading1"/>'),
+        paragraph("Seventh scene."),
+      ),
+      null,
+    );
+    expect(splitManuscriptSections(text.trim(), "Book")).toEqual([
+      {
+        title: "Chapter 1",
+        content: [
+          "First scene.",
+          "#",
+          "Second scene.",
+          "***",
+          "Third scene.",
+          "* * *",
+          "Fourth scene.",
+          "⁂",
+          "Fifth scene.",
+          "#",
+          "Sixth scene.",
+          "* * *",
+          "Seventh scene.",
+        ].join("\n\n"),
+      },
+    ]);
+  });
+});
+
+describe("malformed markup stays linear", () => {
+  // 约 500 KB 正文；main 上的线性管线处理这类输入约 1 ms，平方级扫描需要数秒。
+  const prose = "Texto do capítulo. ".repeat(26_000);
+  const BUDGET_MS = 500;
+  const timed = <T>(run: () => T): T => {
+    const started = performance.now();
+    const result = run();
+    expect(performance.now() - started).toBeLessThan(BUDGET_MS);
+    return result;
+  };
+
+  it.each([
+    ["unclosed <w:pPr>", "<w:pPr>".repeat(40_000)],
+    ["unclosed <w:pPrChange>", "<w:pPrChange>".repeat(40_000)],
+    [
+      "<w:pStyle> tags without > inside a paragraph",
+      `<w:p><w:pPr>${'<w:pStyle w:val="'.repeat(40_000)}</w:pPr>`,
+    ],
+    ["unclosed <w:tab", "<w:tab ".repeat(40_000)],
+    ["bare <", "<".repeat(40_000)],
+  ])("DOCX document with 40k %s", (_, markup) => {
+    const text = timed(() => docxDocumentText(markup + prose, null));
+    expect(text).toContain("Texto do capítulo. Texto do capítulo.");
+  });
+
+  it.each([
+    [
+      "unclosed <w:style>",
+      '<w:style w:type="paragraph" w:styleId="S">'.repeat(40_000),
+    ],
+    [
+      "<w:name> tags without > inside a style",
+      `<w:style w:styleId="S">${"<w:name ".repeat(40_000)}</w:style>`,
+    ],
+  ])("DOCX styles with 40k %s", (_, styles) => {
+    const text = timed(() =>
+      docxDocumentText(
+        `<w:p><w:pPr><w:pStyle w:val="S"/></w:pPr><w:r><w:t>${prose}</w:t></w:r></w:p>`,
+        styles + prose,
+      ),
+    );
+    expect(text).toContain("Texto do capítulo. Texto do capítulo.");
+  });
+
+  it.each([
+    ["unclosed <head>", "<head>".repeat(40_000)],
+    ["unclosed <script>", "<script>".repeat(40_000)],
+    ["unclosed <style>", "<style>".repeat(40_000)],
+    ["unclosed <h1>", "<h1>".repeat(40_000)],
+    ["unclosed <h2 class>", '<h2 class="c">'.repeat(40_000)],
+    ["bare <", "<".repeat(40_000)],
+    ["unclosed <br", "<br ".repeat(40_000)],
+  ])("HTML page with 40k %s", (_, markup) => {
+    const text = timed(() => htmlToText(markup + prose));
+    expect(text).toContain("Texto do capítulo. Texto do capítulo.");
+  });
+
+  it("HTML headings closed only after the markup bound", () => {
+    const text = timed(() =>
+      htmlToText(`${"<h1>".repeat(40_000)}${prose}</h1><p>Fim.</p>`),
+    );
+    expect(text).toContain("Texto do capítulo. Texto do capítulo.");
+    expect(text).toContain("Fim.");
+  });
+
+  it("long whitespace runs in headings and line ends", () => {
+    const spaces = " ".repeat(200_000);
+    const sections = timed(() =>
+      splitManuscriptSections(
+        `# Capítulo 1${spaces}x\n\nCapítulo 2${spaces}y\n\nTexto.`,
+        "Livro",
+      ),
+    );
+    expect(sections).toEqual([
+      {
+        title: `Capítulo 1${spaces}x`,
+        content: `Capítulo 2${spaces}y\n\nTexto.`,
+      },
+    ]);
+    expect(
+      timed(() => trimLineEnds(`a${spaces}b${" \t".repeat(100_000)}\nc `)),
+    ).toBe(`a${spaces}b\nc`);
+  });
 });
 
 describe("HTML and EPUB pages", () => {
@@ -214,6 +450,23 @@ describe("HTML and EPUB pages", () => {
         (section) => section.title,
       ),
     ).toEqual(["Capítulo 1", "Uma cena noturna"]);
+  });
+
+  it("keeps an unescaped < that does not start a tag", () => {
+    expect(htmlToText("<p>a < b &lt;3</p><p>c</p>")).toBe("a < b <3\n\nc\n\n");
+  });
+
+  it("keeps a scene break wrapped in heading markup as text", () => {
+    const sections = splitManuscriptSections(
+      htmlToText(
+        "<h1>Capítulo 1</h1><p>Um.</p><h2>* * *</h2><p>Dois.</p><h3>⁂</h3><p>Três.</p>",
+      ).trim(),
+      "Livro",
+    );
+    expect(sections.map((section) => section.title)).toEqual(["Capítulo 1"]);
+    expect(sections[0]!.content).toMatch(
+      /^Um\.\s+\* \* \*\s+Dois\.\s+⁂\s+Três\.$/u,
+    );
   });
 });
 
