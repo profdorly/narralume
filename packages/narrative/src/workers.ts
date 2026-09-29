@@ -11,6 +11,7 @@ import {
 } from "@narralume/context";
 import {
   createDocument,
+  type CanonEntity,
   type CanonFact,
   type Document,
   type DocumentVersion,
@@ -1336,6 +1337,10 @@ export class ChapterWorkerSuite {
     const referenceExistingStoryState =
       manual !== null &&
       snapshot.run.policy.referenceExistingStoryState === true;
+    // A Story Bible completion reading this chapter's text again.
+    const reread =
+      referenceExistingStoryState &&
+      snapshot.run.policy.bibleBackfillReread === true;
     const result = await this.model.structured(
       snapshot.run,
       step,
@@ -1352,7 +1357,16 @@ export class ChapterWorkerSuite {
               `<authoritative-context>${authoritative}</authoritative-context>`,
               ...(referenceExistingStoryState
                 ? [
-                    `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId)}</settlement-note>`,
+                    `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId, reread)}</settlement-note>`,
+                    ...(reread
+                      ? [
+                          `<chapter-records>${this.chapterRecordsBlock(
+                            snapshot.run.projectId,
+                            manual.outlineNode.id,
+                            entities,
+                          )}</chapter-records>`,
+                        ]
+                      : []),
                     `<unanchored-timeline>${unanchoredTimelineBlock(
                       this.anchorableTimeline(
                         snapshot.run.projectId,
@@ -1781,8 +1795,8 @@ export class ChapterWorkerSuite {
      （或无法定位章节）的时间线事件单独列在 <unanchored-timeline> 中，本章
      写到的事件按 ID 锚定到本章。锚定规则只出现在这里：普通结算的
      anchorEventId 一律为 null（校验同样拒绝）。 */
-  private existingStoryStateNote(projectId: string): string {
-    return instructionsFor(this.projectLanguage(projectId), {
+  private existingStoryStateNote(projectId: string, reread: boolean): string {
+    const note = instructionsFor(this.projectLanguage(projectId), {
       "zh-CN": [
         "这一章来自导入的已完成正文，正在按章节顺序补全故事圣经。",
         "导入时已经抽取了人物关系、时间线事件和伏笔，但它们还没有锚定到具体章节。关系与伏笔出现在权威上下文中；导入证据落在本章、或无法定位到章节的未锚定时间线事件列在 <unanchored-timeline> 中。",
@@ -1798,6 +1812,72 @@ export class ChapterWorkerSuite {
         "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the context.",
       ],
     });
+    if (!reread) return note;
+    return `${note}\n${instructionsFor(this.projectLanguage(projectId), {
+      "zh-CN": [
+        "重读：这一章的当前正文之前已经读过并结算过，那次读到的事实、关系、事件与伏笔已在故事圣经中——它们出现在权威上下文里，本章记录的条目列在 <chapter-records> 中。",
+        "这次只补上遗漏的，并纠正错误的：纠正时按稳定 ID 引用已有条目（事实用 supersede/withdraw，关系用 update/end，伏笔用 develop/resolve）。已经记录过的事实、关系、事件或伏笔不要再 assert/start/plant 一次，也不要为同一件事新建时间线事件；本章已有的内容都正确时，这些候选就留空。",
+      ],
+      en: [
+        "Re-read: this chapter's current text was already read and settled before, and the facts, relationships, events and foreshadows that reading recorded are in the Story Bible — they appear in the authoritative context, and the ones recorded for this chapter are listed in <chapter-records>.",
+        "This time only add what is missing and correct what is wrong: correct an existing record by its stable ID (supersede/withdraw a fact, update/end a relationship, develop/resolve a foreshadow). Never assert, start or plant again a fact, relationship, event or foreshadow that is already recorded, and never create a new timeline event for the same thing; when everything recorded for this chapter is right, leave those candidates empty.",
+      ],
+    })}`;
+  }
+
+  /**
+   * What the Story Bible records for this chapter, for a re-read: facts
+   * valid from it, the timeline events and current relationships anchored
+   * to it, and the foreshadows it plants, evidences or resolves (bounded).
+   */
+  private chapterRecordsBlock(
+    projectId: string,
+    outlineNodeId: string,
+    entities: readonly CanonEntity[],
+  ): string {
+    const name = (id: string | null) =>
+      id ? (entities.find((entity) => entity.id === id)?.name ?? id) : "";
+    const limit = 60;
+    const facts = this.canon
+      .listEffectiveFacts(projectId)
+      .filter((fact) => fact.validFromNodeId === outlineNodeId)
+      .slice(0, limit)
+      .map(
+        (fact) =>
+          `- [fact:${fact.id}] ${name(fact.subjectId)} · ${fact.predicate}: ${
+            fact.objectEntityId
+              ? name(fact.objectEntityId)
+              : typeof fact.value === "string"
+                ? fact.value
+                : JSON.stringify(fact.value)
+          }`,
+      );
+    const timeline = this.state
+      .listTimeline(projectId)
+      .filter((event) => event.outlineNodeId === outlineNodeId)
+      .slice(0, limit)
+      .map((event) => `- [timeline:${event.id}] #${event.sequence} ${event.title}`);
+    const relationships = this.state
+      .listCurrentRelationships(projectId)
+      .filter((event) => event.outlineNodeId === outlineNodeId)
+      .slice(0, limit)
+      .map(
+        (event) =>
+          `- [relationship:${event.id}] ${name(event.fromEntityId)} → ${name(event.toEntityId)}: ${event.relation}`,
+      );
+    const foreshadows = this.state
+      .listForeshadows(projectId)
+      .filter(
+        (item) =>
+          item.targetFromNodeId === outlineNodeId ||
+          item.resolutionNodeId === outlineNodeId ||
+          item.evidenceNodeIds.includes(outlineNodeId),
+      )
+      .slice(0, limit)
+      .map(
+        (item) => `- [foreshadow:${item.id}] ${item.title} (${item.status})`,
+      );
+    return [...facts, ...timeline, ...relationships, ...foreshadows].join("\n");
   }
 
   /**

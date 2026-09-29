@@ -10,6 +10,7 @@ export * from "./settlement-application-service.js";
 export * from "./outline-context.js";
 export * from "./outline-baseline.js";
 export { requirePlanningEntitiesReady } from "./planning-entities.js";
+export { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 export * from "./paragraph-locator.js";
 export * from "./import-evidence.js";
 export * from "./unanchored-timeline.js";

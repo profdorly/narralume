@@ -1242,6 +1242,8 @@ function toDetail(value: BibleBackfillCreatedDto): BibleBackfillDetailDto {
     job: value.job,
     items: value.items,
     counts: value.counts,
+    sections: value.sections,
+    sectionCounts: value.sectionCounts,
     usage: value.usage,
     availableActions: value.availableActions,
     unanchoredImportedEvents: value.unanchoredImportedEvents,

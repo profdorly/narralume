@@ -243,6 +243,7 @@ async function boot(): Promise<void> {
             projectId: job.projectId,
             jobId: job.id,
             status: job.status,
+            phase: job.phase,
             action,
           },
           "bible_backfill.status",

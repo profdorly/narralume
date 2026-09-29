@@ -1,5 +1,8 @@
+import type { BibleBackfillSectionPendingItemDto } from "@narralume/contracts";
 import type { NarrativeRun } from "@narralume/domain";
 import {
+  CanonCandidateError,
+  CanonCandidateService,
   SettlementApplicationError,
   SettlementApplicationService,
   SettlementConflictError,
@@ -14,19 +17,31 @@ import {
   SqliteRunRepository,
   type BibleBackfillItem,
   type BibleBackfillJob,
+  type BibleBackfillSection,
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
 import {
+  BibleBackfillSectionGate,
+  bibleBackfillSectionInstruction,
+  bibleBackfillSectionRequestId,
+  stagedCandidateSetId,
+} from "./bible-backfill-sections.js";
+import {
   BibleBackfillService,
   childFailureError,
   currentBackfillItem,
+  currentBackfillSection,
   finalizeBackfillCancellation,
   isOwnBackfillRun,
   isTerminalBackfillJob,
   settlementRunOutcome,
   type SettlementRunOutcome,
 } from "./bible-backfill-service.js";
+import {
+  CanonCandidateRouteError,
+  createCanonSpreadCandidateRun,
+} from "./canon-candidate-run.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
 import { isImportDerivedSource } from "./import-provenance.js";
 import type { RunCoordinator } from "./run-coordinator.js";
@@ -39,6 +54,12 @@ import {
 
 /** Run-policy flag read by the settlement worker (see settleChapter). */
 export const BIBLE_BACKFILL_POLICY_FLAG = "referenceExistingStoryState";
+
+/**
+ * Run-policy flag telling the settlement worker that this chapter's current
+ * text was settled before and is being read again (see settleChapter).
+ */
+export const BIBLE_BACKFILL_REREAD_POLICY_FLAG = "bibleBackfillReread";
 
 /**
  * Import candidate kind that creates each kind of changed record, for the
@@ -69,6 +90,9 @@ export function bibleBackfillRunId(
  * 循环。每次推进在一个事务里完成一个持久化状态转移；逐章严格串行——
  * 第 N 章的结算 Run 只在第 N-1 章的变更集被裁定（或确认为空）之后才创建，
  * 因为结算校验引用的是当前正典的稳定 ID，时间线序号也在应用时分配。
+ * 逐章结束后进入分部阶段：按计划逐个分部发起 Canon Spread 候选 Run，
+ * 自动模式只应用来源安全的条目，其余留给作者在故事圣经里审阅；
+ * 分部失败不阻塞任务，作者可以 retry_section 重跑。
  */
 export class BibleBackfillCoordinator {
   private readonly backfills: SqliteBibleBackfillRepository;
@@ -79,6 +103,7 @@ export class BibleBackfillCoordinator {
   private readonly deliveries: SqliteDeliveryRepository;
   private readonly service: BibleBackfillService;
   private readonly settlementApplication: SettlementApplicationService;
+  private readonly candidates: CanonCandidateService;
   readonly #controller = new AbortController();
   #draining: Promise<void> | null = null;
   #wakeAgain = false;
@@ -103,6 +128,9 @@ export class BibleBackfillCoordinator {
     this.deliveries = new SqliteDeliveryRepository(database);
     this.service = new BibleBackfillService(database, options.environment);
     this.settlementApplication = new SettlementApplicationService(database);
+    this.candidates = new CanonCandidateService(database, () =>
+      this.options.now ? this.options.now() : new Date(),
+    );
   }
 
   wake(): void {
@@ -187,10 +215,15 @@ export class BibleBackfillCoordinator {
       if (!job || isTerminalBackfillJob(job)) return false;
       const now = this.now();
       const item = currentBackfillItem(this.backfills.listItems(job.id));
+      const section =
+        job.phase === "sections"
+          ? currentBackfillSection(this.backfills.listSections(job.id))
+          : null;
       const record = {
         code: "bible_backfill.unexpected",
         message: unexpectedErrorMessage(error),
         ...(item ? { ordinal: item.ordinal } : {}),
+        ...(section ? { sectionOrdinal: section.ordinal } : {}),
       };
       if (job.cancelRequested) {
         this.finalizeCancellation(job.id, now, record);
@@ -208,10 +241,17 @@ export class BibleBackfillCoordinator {
     const now = this.now();
     const items = this.backfills.listItems(job.id);
     const item = currentBackfillItem(items);
-    const child =
+    const sections = this.backfills.listSections(job.id);
+    const generating = sections.find(
+      (section) => section.status === "generating" && section.runId,
+    );
+    // The job's one child run: the chapter being settled or the section
+    // being generated.
+    const childRunId =
       item?.status === "settling" && item.runId
-        ? this.runs.getRun(item.runId)
-        : null;
+        ? item.runId
+        : (generating?.runId ?? null);
+    const child = childRunId ? this.runs.getRun(childRunId) : null;
     const childActive =
       child !== null &&
       !["completed", "failed", "cancelled"].includes(child.status);
@@ -259,10 +299,7 @@ export class BibleBackfillCoordinator {
       return this.changed(job.id, "job.paused");
     }
 
-    if (!item) {
-      this.backfills.setJobStatus(job.id, "completed", now);
-      return this.changed(job.id, "job.completed");
-    }
+    if (!item) return this.advanceSections(job, sections, now);
 
     switch (item.status) {
       case "pending":
@@ -324,7 +361,8 @@ export class BibleBackfillCoordinator {
     }
     // A settlement of exactly this text that already exists — in flight,
     // still undecided, applied, or empty — is adopted instead of settling
-    // the same text twice.
+    // the same text twice. A re-read only adopts one still in flight or
+    // undecided: an applied or empty one is what it reads again.
     const adopted = this.existingSettlement(job, versionId);
     if (adopted) {
       const { run, adoption } = adopted;
@@ -352,9 +390,12 @@ export class BibleBackfillCoordinator {
       if (status === "settling") this.wakeRunWorker();
       return this.changed(job.id, `item.adopted.${adoption.outcome}`);
     }
-    if (
-      this.service.isVersionSettled(job.projectId, item.outlineNodeId, version)
-    ) {
+    const settled = this.service.isVersionSettled(
+      job.projectId,
+      item.outlineNodeId,
+      version,
+    );
+    if (settled && !job.rereadSettled) {
       this.backfills.updateItem(
         job.id,
         item.ordinal,
@@ -387,6 +428,7 @@ export class BibleBackfillCoordinator {
           bibleBackfillJobId: job.id,
           bibleBackfillOrdinal: item.ordinal,
           [BIBLE_BACKFILL_POLICY_FLAG]: true,
+          ...(settled ? { [BIBLE_BACKFILL_REREAD_POLICY_FLAG]: true } : {}),
         },
         now,
       });
@@ -428,7 +470,13 @@ export class BibleBackfillCoordinator {
         adoption: adoptionOf(
           settlementRunOutcome(this.database, job.projectId, run),
         ),
-      }));
+      }))
+      .filter(
+        ({ adoption }) =>
+          !job.rereadSettled ||
+          adoption?.outcome === "in_progress" ||
+          adoption?.outcome === "candidate",
+      );
     const found =
       candidates.find(({ adoption }) => adoption?.outcome === "applied") ??
       candidates.find(
@@ -595,9 +643,260 @@ export class BibleBackfillCoordinator {
   }
 
   /**
+   * The section phase, once every chapter is resolved: generate the plan's
+   * sections one at a time in order, then complete. A failed section does
+   * not stop the job.
+   */
+  private advanceSections(
+    job: BibleBackfillJob,
+    sections: readonly BibleBackfillSection[],
+    now: string,
+  ): boolean {
+    const section = currentBackfillSection(sections);
+    if (!section) {
+      this.backfills.setJobStatus(job.id, "completed", now);
+      return this.changed(job.id, "job.completed");
+    }
+    if (job.phase !== "sections") {
+      this.backfills.setJobPhase(job.id, "sections", now);
+      return this.changed(job.id, "job.sections");
+    }
+    return section.status === "generating"
+      ? this.reconcileSection(job, section, now)
+      : this.startSection(job, section, now);
+  }
+
+  private startSection(
+    job: BibleBackfillJob,
+    section: BibleBackfillSection,
+    now: string,
+  ): boolean {
+    const project = this.projects.get(job.projectId)!;
+    let runId: string;
+    try {
+      runId = createCanonSpreadCandidateRun(
+        this.database,
+        this.options.environment,
+        {
+          projectId: job.projectId,
+          spread: section.spread,
+          requestId: bibleBackfillSectionRequestId(
+            job.id,
+            section.spread,
+            section.attempt,
+          ),
+          instruction: bibleBackfillSectionInstruction(
+            section.spread,
+            project.language,
+          ),
+          origin: { surface: "bible-backfill", documentId: null },
+          policy: {
+            bibleBackfillJobId: job.id,
+            bibleBackfillSectionOrdinal: section.ordinal,
+          },
+          now,
+        },
+      ).runId;
+    } catch (error) {
+      if (error instanceof RunServiceError) {
+        // No writing model: stop for the author like a chapter would.
+        return this.park(job, now, {
+          code: error.code,
+          message: error.message,
+          sectionOrdinal: section.ordinal,
+        });
+      }
+      if (error instanceof CanonCandidateRouteError) {
+        // For example the author is generating the same section in the
+        // Bible right now: this section fails and can be retried.
+        return this.failSection(job, section, now, {
+          code: error.code,
+          message: error.message,
+        });
+      }
+      throw error;
+    }
+    this.backfills.updateSection(
+      job.id,
+      section.ordinal,
+      { status: "generating", runId, candidateSetId: null, error: null },
+      now,
+    );
+    this.wakeRunWorker();
+    return this.changed(job.id, "section.generating");
+  }
+
+  private reconcileSection(
+    job: BibleBackfillJob,
+    section: BibleBackfillSection,
+    now: string,
+  ): boolean {
+    const snapshot =
+      section.runId && this.runs.getRun(section.runId)
+        ? this.runs.getSnapshot(section.runId)
+        : null;
+    if (!snapshot) {
+      return this.failSection(job, section, now, {
+        code: "bible_backfill.run.missing",
+        message: "The section's candidate run no longer exists",
+      });
+    }
+    const child = snapshot.run;
+    if (["pending", "running", "failed_recoverable"].includes(child.status)) {
+      this.wakeRunWorker();
+      return false;
+    }
+    if (child.status === "paused") {
+      this.backfills.setJobStatus(job.id, "paused", now);
+      return this.changed(job.id, "child.paused");
+    }
+    if (child.status === "awaiting_user") {
+      return this.park(job, now, {
+        code: "child.awaiting_user",
+        runId: child.id,
+        sectionOrdinal: section.ordinal,
+      });
+    }
+    if (child.status === "cancelled") {
+      return this.failSection(job, section, now, {
+        code: "run.cancelled",
+        message: "The section's candidate run was cancelled",
+        runId: child.id,
+      });
+    }
+    if (child.status === "failed") {
+      return this.failSection(job, section, now, childFailureError(snapshot));
+    }
+    const candidateSetId = stagedCandidateSetId(snapshot);
+    const staged =
+      candidateSetId &&
+      this.reviews.getCanonChangeSet(job.projectId, candidateSetId)
+        ? this.candidateSetOf(job, candidateSetId)
+        : null;
+    if (!candidateSetId || !staged) {
+      return this.failSection(job, section, now, {
+        code: "bible_backfill.section.candidate_missing",
+        message:
+          "The section's candidate run finished without a readable candidate set",
+        runId: child.id,
+      });
+    }
+    const pendingItems =
+      job.mode === "review_each"
+        ? []
+        : this.applySafeSectionItems(job, section, candidateSetId);
+    const candidateSet = this.candidates.get(job.projectId, candidateSetId);
+    const appliedCount = candidateSet.items.filter(
+      (item) => item.decision?.action === "apply",
+    ).length;
+    const pendingCount = candidateSet.items.filter(
+      (item) => !item.decision,
+    ).length;
+    const status =
+      pendingCount === 0
+        ? "applied"
+        : appliedCount > 0
+          ? "partially_applied"
+          : "needs_review";
+    this.backfills.updateSection(
+      job.id,
+      section.ordinal,
+      {
+        status,
+        candidateSetId,
+        appliedCount,
+        pendingCount,
+        pendingItems: pendingItems.filter(
+          (entry) =>
+            !candidateSet.items.find((item) => item.id === entry.itemId)
+              ?.decision,
+        ),
+      },
+      now,
+    );
+    return this.changed(job.id, `section.${status}`);
+  }
+
+  /**
+   * Auto mode: applies, through the Bible's own item decision, every
+   * undecided item BibleBackfillSectionGate allows; returns the items left
+   * for the author and why. An item whose application fails stays pending
+   * with its error; it never stops the job.
+   */
+  private applySafeSectionItems(
+    job: BibleBackfillJob,
+    section: BibleBackfillSection,
+    candidateSetId: string,
+  ): BibleBackfillSectionPendingItemDto[] {
+    const gate = new BibleBackfillSectionGate(this.database, job.projectId);
+    const pending: BibleBackfillSectionPendingItemDto[] = [];
+    const candidateSet = this.candidates.get(job.projectId, candidateSetId);
+    for (const item of candidateSet.items) {
+      if (item.decision) continue;
+      const identity = {
+        itemId: item.id,
+        title: item.title,
+        operation: item.operation,
+        targetId: item.targetId,
+      };
+      const reason = gate.reviewReason(section.spread, item);
+      if (reason) {
+        pending.push({ ...identity, ...reason });
+        continue;
+      }
+      try {
+        this.candidates.decideItem({
+          projectId: job.projectId,
+          changeSetId: candidateSetId,
+          itemId: item.id,
+          action: "apply",
+          confirmLocked: false,
+        });
+      } catch (error) {
+        if (this.#controller.signal.aborted) throw error;
+        pending.push({
+          ...identity,
+          reason: "apply_failed",
+          code: errorCode(error),
+          message: unexpectedErrorMessage(error),
+        });
+      }
+    }
+    return pending;
+  }
+
+  /** The candidate set, or null when it is not a Canon Spread candidate set. */
+  private candidateSetOf(job: BibleBackfillJob, candidateSetId: string) {
+    try {
+      return this.candidates.get(job.projectId, candidateSetId);
+    } catch (error) {
+      if (error instanceof CanonCandidateError) return null;
+      throw error;
+    }
+  }
+
+  /** Records a section's failure and moves on; retry_section runs it again. */
+  private failSection(
+    job: BibleBackfillJob,
+    section: BibleBackfillSection,
+    now: string,
+    error: Record<string, unknown> & { code: string },
+  ): boolean {
+    this.backfills.updateSection(
+      job.id,
+      section.ordinal,
+      { status: "failed", error },
+      now,
+    );
+    return this.changed(job.id, "section.failed");
+  }
+
+  /**
    * Existing records the change set would withdraw, supersede, end, change,
-   * anchor, develop or resolve that were created neither by this job's
-   * earlier applied change sets nor by the manuscript import. Import
+   * anchor, develop or resolve that were created neither by change sets this
+   * project's Story Bible completions applied (this job's earlier chapters,
+   * or an earlier completion's, so a re-read may correct them) nor by the
+   * manuscript import. Import
    * provenance is the record's source id naming an applied import candidate
    * of the same kind in this project: relationships and timeline events
    * always keep it, foreshadows since migration 047 (older imported ones have
@@ -611,10 +910,7 @@ export class BibleBackfillCoordinator {
     changeSetId: string,
   ): SettlementChangedRecord[] {
     const jobChangeSets = new Set(
-      this.backfills
-        .listItems(job.id)
-        .filter((item) => item.status === "applied" && item.changeSetId)
-        .map((item) => item.changeSetId!),
+      this.backfills.listAppliedChapterChangeSetIds(job.projectId),
     );
     return this.settlementApplication
       .changedExistingRecords(job.projectId, changeSetId)
@@ -744,6 +1040,17 @@ function adoptionOf(outcome: SettlementRunOutcome): Adoption | null {
       // Rejected, failed, cancelled or missing: settle the text again.
       return null;
   }
+}
+
+/** The machine-readable code of an error, when it carries one. */
+function errorCode(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? (error as { code: unknown }).code
+      : null;
+  return typeof code === "string" && code
+    ? code
+    : "canon_candidate.item.apply_failed";
 }
 
 /** A bounded, author-facing description of an unexpected error. */

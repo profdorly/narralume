@@ -19,6 +19,24 @@ export type BibleBackfillItemStatus =
   | "failed"
   | "skipped";
 export type BibleBackfillSkipReason = "already_settled" | "author_skipped";
+export type BibleBackfillPhase = "chapters" | "sections" | "done";
+/** A Canon Spread a job can generate as a section (see CanonSpreadSchema). */
+export type BibleBackfillSpread =
+  | "intent"
+  | "outline"
+  | "entities"
+  | "facts"
+  | "relations"
+  | "timeline"
+  | "foreshadows";
+export type BibleBackfillSectionStatus =
+  | "pending"
+  | "generating"
+  | "applied"
+  | "partially_applied"
+  | "needs_review"
+  | "failed"
+  | "skipped";
 
 export const TERMINAL_BIBLE_BACKFILL_STATUSES: readonly BibleBackfillJobStatus[] =
   ["completed", "cancelled"];
@@ -28,6 +46,9 @@ export interface BibleBackfillJob {
   projectId: string;
   status: BibleBackfillJobStatus;
   mode: BibleBackfillMode;
+  phase: BibleBackfillPhase;
+  /** Chapters whose current text was already settled are settled again. */
+  rereadSettled: boolean;
   requestHash: string;
   error: Record<string, unknown> | null;
   pauseRequested: boolean;
@@ -57,6 +78,37 @@ export interface BibleBackfillItem {
   note: Record<string, unknown> | null;
   updatedAt: string;
 }
+
+/** One section of a job's plan, generated after the chapter pass. */
+export interface BibleBackfillSection {
+  jobId: string;
+  ordinal: number;
+  spread: BibleBackfillSpread;
+  status: BibleBackfillSectionStatus;
+  attempt: number;
+  runId: string | null;
+  candidateSetId: string | null;
+  appliedCount: number;
+  pendingCount: number;
+  /** Auto mode: the candidate items left for the author and why. */
+  pendingItems: Record<string, unknown>[];
+  error: Record<string, unknown> | null;
+  updatedAt: string;
+}
+
+export type BibleBackfillSectionPatch = Partial<
+  Pick<
+    BibleBackfillSection,
+    | "status"
+    | "attempt"
+    | "runId"
+    | "candidateSetId"
+    | "appliedCount"
+    | "pendingCount"
+    | "pendingItems"
+    | "error"
+  >
+>;
 
 export interface BibleBackfillItemSeed {
   outlineNodeId: string;
@@ -90,27 +142,36 @@ export type BibleBackfillItemPatch = Partial<
 export class SqliteBibleBackfillRepository {
   constructor(private readonly database: NarrativeDatabase) {}
 
-  /** Creates the job and its ordered chapter items in one transaction. */
+  /**
+   * Creates the job, its ordered chapter items and its ordered sections in
+   * one transaction. A job with nothing to settle and no section completes
+   * on creation.
+   */
   createJob(input: {
     id: string;
     projectId: string;
     mode: BibleBackfillMode;
     requestHash: string;
     items: readonly BibleBackfillItemSeed[];
+    /** Sections to generate after the chapter pass, in run order. */
+    sections?: readonly BibleBackfillSpread[];
+    rereadSettled?: boolean;
     now: string;
   }): BibleBackfillJob {
+    const sections = input.sections ?? [];
     return this.database.transaction(() => {
-      const status: BibleBackfillJobStatus = input.items.some(
-        (item) => item.skipReason === null,
-      )
-        ? "running"
-        : "completed";
+      const status: BibleBackfillJobStatus =
+        sections.length > 0 ||
+        input.items.some((item) => item.skipReason === null)
+          ? "running"
+          : "completed";
       this.database.raw
         .prepare(
           `INSERT INTO bible_backfill_jobs(
              id, project_id, status, mode, request_hash, error_json,
-             pause_requested, cancel_requested, created_at, updated_at, version
-           ) VALUES (?, ?, ?, ?, ?, NULL, 0, 0, ?, ?, 0)`,
+             pause_requested, cancel_requested, created_at, updated_at, version,
+             phase, reread_settled
+           ) VALUES (?, ?, ?, ?, ?, NULL, 0, 0, ?, ?, 0, ?, ?)`,
         )
         .run(
           input.id,
@@ -120,7 +181,18 @@ export class SqliteBibleBackfillRepository {
           input.requestHash,
           input.now,
           input.now,
+          status === "completed" ? "done" : "chapters",
+          input.rereadSettled ? 1 : 0,
         );
+      const insertSection = this.database.raw.prepare(
+        `INSERT INTO bible_backfill_sections(
+           job_id, ordinal, spread, status, attempt, run_id, candidate_set_id,
+           applied_count, pending_count, pending_items_json, error_json, updated_at
+         ) VALUES (?, ?, ?, 'pending', 0, NULL, NULL, 0, 0, '[]', NULL, ?)`,
+      );
+      sections.forEach((spread, ordinal) => {
+        insertSection.run(input.id, ordinal, spread, input.now);
+      });
       const insertItem = this.database.raw.prepare(
         `INSERT INTO bible_backfill_items(
            job_id, ordinal, outline_node_id, document_id, version_id, attempt,
@@ -232,9 +304,115 @@ export class SqliteBibleBackfillRepository {
     return row ? mapItem(row) : null;
   }
 
+  listSections(jobId: string): BibleBackfillSection[] {
+    const rows = this.database.raw
+      .prepare(
+        "SELECT * FROM bible_backfill_sections WHERE job_id = ? ORDER BY ordinal",
+      )
+      .all(jobId) as unknown as SectionRow[];
+    return rows.map(mapSection);
+  }
+
+  requireSection(jobId: string, ordinal: number): BibleBackfillSection {
+    const row = this.database.raw
+      .prepare(
+        "SELECT * FROM bible_backfill_sections WHERE job_id = ? AND ordinal = ?",
+      )
+      .get(jobId, ordinal) as SectionRow | undefined;
+    if (!row) {
+      throw new PersistenceNotFoundError(
+        "bible_backfill.section",
+        `${jobId}#${ordinal}`,
+      );
+    }
+    return mapSection(row);
+  }
+
+  updateSection(
+    jobId: string,
+    ordinal: number,
+    patch: BibleBackfillSectionPatch,
+    now: string,
+  ): BibleBackfillSection {
+    const current = this.requireSection(jobId, ordinal);
+    const next = { ...current, ...patch };
+    this.database.raw
+      .prepare(
+        `UPDATE bible_backfill_sections SET
+           status = ?, attempt = ?, run_id = ?, candidate_set_id = ?,
+           applied_count = ?, pending_count = ?, pending_items_json = ?,
+           error_json = ?, updated_at = ?
+         WHERE job_id = ? AND ordinal = ?`,
+      )
+      .run(
+        next.status,
+        next.attempt,
+        next.runId,
+        next.candidateSetId,
+        next.appliedCount,
+        next.pendingCount,
+        JSON.stringify(next.pendingItems),
+        next.error ? JSON.stringify(next.error) : null,
+        now,
+        jobId,
+        ordinal,
+      );
+    this.touchJob(jobId, now);
+    return this.requireSection(jobId, ordinal);
+  }
+
+  setJobPhase(
+    id: string,
+    phase: BibleBackfillPhase,
+    now: string,
+  ): BibleBackfillJob {
+    const result = this.database.raw
+      .prepare(
+        `UPDATE bible_backfill_jobs SET phase = ?, updated_at = ?,
+           version = version + 1
+         WHERE id = ?`,
+      )
+      .run(phase, now, id);
+    if (result.changes !== 1) {
+      throw new PersistenceNotFoundError("bible_backfill", id);
+    }
+    return this.requireJob(id);
+  }
+
   /**
-   * Summed recorded usage of the settlement runs this job created (every
-   * attempt carries `policy.bibleBackfillJobId`) plus runs its items adopted.
+   * Change sets the project's Story Bible completions applied from chapter
+   * settlements (their own or adopted ones), across every job.
+   */
+  listAppliedChapterChangeSetIds(projectId: string): string[] {
+    const rows = this.database.raw
+      .prepare(
+        `SELECT DISTINCT item.change_set_id AS id
+         FROM bible_backfill_items item
+         JOIN bible_backfill_jobs job ON job.id = item.job_id
+         WHERE job.project_id = ? AND item.status = 'applied'
+           AND item.change_set_id IS NOT NULL`,
+      )
+      .all(projectId) as unknown as Array<{ id: string }>;
+    return rows.map(({ id }) => id);
+  }
+
+  /** Candidate sets generated by the project's completions' sections. */
+  listSectionCandidateSetIds(projectId: string): string[] {
+    const rows = this.database.raw
+      .prepare(
+        `SELECT DISTINCT section.candidate_set_id AS id
+         FROM bible_backfill_sections section
+         JOIN bible_backfill_jobs job ON job.id = section.job_id
+         WHERE job.project_id = ? AND section.candidate_set_id IS NOT NULL`,
+      )
+      .all(projectId) as unknown as Array<{ id: string }>;
+    return rows.map(({ id }) => id);
+  }
+
+  /**
+   * Summed recorded usage of the settlement and section runs this job
+   * created (every attempt carries `policy.bibleBackfillJobId`) plus runs its
+   * items adopted.
    */
   usageForJob(projectId: string, jobId: string): BibleBackfillUsage {
     const row = this.database.raw
@@ -296,7 +474,8 @@ export class SqliteBibleBackfillRepository {
 
   /**
    * Sets the job status and its error record (null clears it). Parking in
-   * paused clears the pause request; terminal states clear both requests.
+   * paused clears the pause request; terminal states clear both requests
+   * and end the job's phase (done).
    */
   setJobStatus(
     id: string,
@@ -310,6 +489,7 @@ export class SqliteBibleBackfillRepository {
         `UPDATE bible_backfill_jobs SET status = ?, error_json = ?,
            pause_requested = CASE WHEN ? THEN 0 ELSE pause_requested END,
            cancel_requested = CASE WHEN ? THEN 0 ELSE cancel_requested END,
+           phase = CASE WHEN ? THEN 'done' ELSE phase END,
            updated_at = ?, version = version + 1
          WHERE id = ?`,
       )
@@ -317,6 +497,7 @@ export class SqliteBibleBackfillRepository {
         status,
         error ? JSON.stringify(error) : null,
         status === "paused" || status === "running" || terminal ? 1 : 0,
+        terminal ? 1 : 0,
         terminal ? 1 : 0,
         now,
         id,
@@ -351,7 +532,7 @@ export class SqliteBibleBackfillRepository {
     return Number(
       this.database.raw
         .prepare(
-          `UPDATE bible_backfill_jobs SET status = 'cancelled',
+          `UPDATE bible_backfill_jobs SET status = 'cancelled', phase = 'done',
              pause_requested = 0, cancel_requested = 0,
              updated_at = ?, version = version + 1
            WHERE project_id = ? AND status NOT IN ('completed','cancelled')`,
@@ -375,6 +556,8 @@ interface JobRow {
   project_id: string;
   status: BibleBackfillJobStatus;
   mode: BibleBackfillMode;
+  phase: BibleBackfillPhase;
+  reread_settled: number;
   request_hash: string;
   error_json: string | null;
   pause_requested: number;
@@ -389,6 +572,21 @@ interface UsageRow {
   input_tokens: number;
   output_tokens: number;
   cost_usd: number;
+}
+
+interface SectionRow {
+  job_id: string;
+  ordinal: number;
+  spread: BibleBackfillSpread;
+  status: BibleBackfillSectionStatus;
+  attempt: number;
+  run_id: string | null;
+  candidate_set_id: string | null;
+  applied_count: number;
+  pending_count: number;
+  pending_items_json: string;
+  error_json: string | null;
+  updated_at: string;
 }
 
 interface ItemRow {
@@ -413,6 +611,8 @@ function mapJob(row: JobRow): BibleBackfillJob {
     projectId: row.project_id,
     status: row.status,
     mode: row.mode,
+    phase: row.phase,
+    rereadSettled: row.reread_settled === 1,
     requestHash: row.request_hash,
     error: parseRecord(row.error_json),
     pauseRequested: row.pause_requested === 1,
@@ -437,6 +637,29 @@ function mapItem(row: ItemRow): BibleBackfillItem {
     skipReason: row.skip_reason,
     error: parseRecord(row.error_json),
     note: parseRecord(row.note_json),
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapSection(row: SectionRow): BibleBackfillSection {
+  const pendingItems = JSON.parse(row.pending_items_json) as unknown;
+  return {
+    jobId: row.job_id,
+    ordinal: row.ordinal,
+    spread: row.spread,
+    status: row.status,
+    attempt: row.attempt,
+    runId: row.run_id,
+    candidateSetId: row.candidate_set_id,
+    appliedCount: row.applied_count,
+    pendingCount: row.pending_count,
+    pendingItems: Array.isArray(pendingItems)
+      ? pendingItems.filter(
+          (entry): entry is Record<string, unknown> =>
+            Boolean(entry) && typeof entry === "object" && !Array.isArray(entry),
+        )
+      : [],
+    error: parseRecord(row.error_json),
     updatedAt: row.updated_at,
   };
 }

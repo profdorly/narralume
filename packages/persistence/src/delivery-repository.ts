@@ -470,6 +470,26 @@ export class SqliteDeliveryRepository {
     return mapCandidate(row);
   }
 
+  /**
+   * Candidates of `kind` applied from the imports whose batch was applied to
+   * (or targeted) this project, oldest batch first.
+   */
+  listAppliedImportCandidates(
+    projectId: string,
+    kind: ImportCandidate["kind"],
+  ): ImportCandidate[] {
+    const rows = this.database.raw
+      .prepare(
+        `SELECT candidate.* FROM import_candidates candidate
+         JOIN import_batches batch ON batch.id = candidate.batch_id
+         WHERE COALESCE(batch.applied_project_id, batch.target_project_id) = ?
+           AND candidate.kind = ? AND candidate.status = 'applied'
+         ORDER BY batch.created_at, candidate.ordinal`,
+      )
+      .all(projectId, kind) as unknown as ImportCandidateRow[];
+    return rows.map(mapCandidate);
+  }
+
   listImportCandidates(batchId: string): ImportCandidate[] {
     const rows = this.database.raw
       .prepare(

@@ -106,7 +106,14 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
     jobId: z.string(),
     /** Job status after the transition. */
     status: z.string(),
-    /** Coordinator transition, e.g. "item.settling" or "job.awaiting_decision". */
+    /** Job phase after the transition: chapters | sections | done. */
+    phase: z.string(),
+    /**
+     * Coordinator transition, e.g. "item.settling", "job.awaiting_decision",
+     * "job.sections" (the section phase started), "section.generating",
+     * "section.applied" / "section.partially_applied" /
+     * "section.needs_review" / "section.failed", or "job.completed".
+     */
     action: z.string(),
   }),
 ]);

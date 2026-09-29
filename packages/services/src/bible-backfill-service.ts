@@ -1,10 +1,15 @@
 import {
   BibleBackfillCreatedSchema,
   BibleBackfillDetailSchema,
+  BibleBackfillSectionPendingItemSchema,
+  DEFAULT_BIBLE_BACKFILL_SECTIONS,
+  orderBibleBackfillSections,
   type BibleBackfillAction,
   type BibleBackfillActionRequest,
   type BibleBackfillCreatedDto,
   type BibleBackfillDetailDto,
+  type BibleBackfillMode,
+  type BibleBackfillSectionDto,
   type BibleBackfillUsageDto,
   type CreateBibleBackfillRequest,
 } from "@narralume/contracts";
@@ -14,6 +19,7 @@ import type {
   RunSnapshot,
 } from "@narralume/domain";
 import { classifyStepError } from "@narralume/harness";
+import { CanonCandidateService } from "@narralume/narrative";
 import {
   SqliteBibleBackfillRepository,
   SqliteDeliveryRepository,
@@ -30,9 +36,12 @@ import {
   type BibleBackfillItemPatch,
   type BibleBackfillItemSeed,
   type BibleBackfillJob,
+  type BibleBackfillSection,
+  type BibleBackfillSectionPatch,
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
+import { stagedCandidateSetId } from "./bible-backfill-sections.js";
 import { isImportDerivedSource } from "./import-provenance.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
 import {
@@ -89,6 +98,27 @@ export function currentBackfillItem(
     items.find(
       (item) => !RESOLVED_BIBLE_BACKFILL_ITEM_STATUSES.has(item.status),
     ) ?? null
+  );
+}
+
+/** Sections the job has finished with (a failed one can still be retried). */
+export const FINISHED_BIBLE_BACKFILL_SECTION_STATUSES: ReadonlySet<string> =
+  new Set([
+    "applied",
+    "partially_applied",
+    "needs_review",
+    "failed",
+    "skipped",
+  ]);
+
+/** The section being generated, otherwise the next one to generate. */
+export function currentBackfillSection(
+  sections: readonly BibleBackfillSection[],
+): BibleBackfillSection | null {
+  return (
+    sections.find((section) => section.status === "generating") ??
+    sections.find((section) => section.status === "pending") ??
+    null
   );
 }
 
@@ -179,13 +209,28 @@ export class BibleBackfillService {
         );
       }
       requireWritingAssignment(this.database, this.environment);
-      const items = this.materializeItems(projectId, input.chapterIds);
+      const rereadSettled = input.rereadSettled === true;
+      const items = this.materializeItems(
+        projectId,
+        input.chapterIds,
+        rereadSettled,
+      );
+      // end_to_end: chapters auto-apply like auto_apply_stop_on_conflict and
+      // the default sections follow unless the request names its own.
+      const mode: BibleBackfillMode =
+        input.mode === "end_to_end" ? "auto_apply_stop_on_conflict" : input.mode;
+      const sections = orderBibleBackfillSections(
+        input.sections ??
+          (input.mode === "end_to_end" ? DEFAULT_BIBLE_BACKFILL_SECTIONS : []),
+      );
       const job = this.backfills.createJob({
         id: jobId,
         projectId,
-        mode: input.mode,
+        mode,
         requestHash,
         items,
+        sections,
+        rereadSettled,
         now,
       });
       return BibleBackfillCreatedSchema.parse({
@@ -234,7 +279,11 @@ export class BibleBackfillService {
           idempotentReplay: true,
         };
       }
-      if (isTerminalBackfillJob(job)) {
+      // A completed job can still retry a failed section, which reopens it.
+      if (
+        isTerminalBackfillJob(job) &&
+        !(input.action === "retry_section" && job.status === "completed")
+      ) {
         throw new BibleBackfillError(
           "bible_backfill.terminal",
           `The Story Bible completion has already ended (${job.status})`,
@@ -257,6 +306,9 @@ export class BibleBackfillService {
           break;
         case "retry_item":
           this.retryItem(job, input.ordinal!, now);
+          break;
+        case "retry_section":
+          this.retrySection(job, input.ordinal!, now);
           break;
       }
       this.requestReplays.insert({
@@ -311,9 +363,14 @@ export class BibleBackfillService {
 
   detailOf(job: BibleBackfillJob): BibleBackfillDetailDto {
     const items = this.backfills.listItems(job.id);
+    const sections = this.backfills.listSections(job.id);
     const current = isTerminalBackfillJob(job)
       ? null
       : currentBackfillItem(items);
+    const currentSection =
+      job.phase === "sections" && !isTerminalBackfillJob(job)
+        ? currentBackfillSection(sections)
+        : null;
     const counts = {
       total: items.length,
       pending: 0,
@@ -336,10 +393,14 @@ export class BibleBackfillService {
         projectId: job.projectId,
         status: job.status,
         mode: job.mode,
+        phase: job.phase,
+        rereadSettled: job.rereadSettled,
+        sections: sections.map((section) => section.spread),
         error: job.error,
         pauseRequested: job.pauseRequested,
         cancelRequested: job.cancelRequested,
         currentOrdinal: current?.ordinal ?? null,
+        currentSectionOrdinal: currentSection?.ordinal ?? null,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
         version: job.version,
@@ -362,10 +423,36 @@ export class BibleBackfillService {
         updatedAt: item.updatedAt,
       })),
       counts,
+      sections: sections.map((section) => this.sectionView(job, section)),
+      sectionCounts: sectionCounts(sections),
       usage: this.usageOf(job),
-      availableActions: availableActions(job, items),
+      availableActions: availableActions(job, items, sections),
       unanchoredImportedEvents: this.unanchoredImportedEvents(job.projectId),
     });
+  }
+
+  /** A section as the detail shows it (validated by BibleBackfillDetailSchema). */
+  private sectionView(job: BibleBackfillJob, section: BibleBackfillSection) {
+    const candidateSet = section.candidateSetId
+      ? this.reviews.getCanonChangeSet(job.projectId, section.candidateSetId)
+      : null;
+    return {
+      ordinal: section.ordinal,
+      spread: section.spread,
+      status: section.status,
+      attempt: section.attempt,
+      runId: section.runId,
+      candidateSetId: section.candidateSetId,
+      candidateSetStatus: candidateSetStatusOf(candidateSet?.status),
+      appliedCount: section.appliedCount,
+      pendingCount: section.pendingCount,
+      pendingItems: section.pendingItems.flatMap((entry) => {
+        const parsed = BibleBackfillSectionPendingItemSchema.safeParse(entry);
+        return parsed.success ? [parsed.data] : [];
+      }),
+      error: section.error,
+      updatedAt: section.updatedAt,
+    };
   }
 
   /**
@@ -398,9 +485,15 @@ export class BibleBackfillService {
     };
   }
 
+  /**
+   * The job's chapters in reading order. A chapter whose current text was
+   * already settled is queued as skipped (already_settled) unless the job
+   * re-reads settled chapters.
+   */
   private materializeItems(
     projectId: string,
     chapterIds: readonly string[] | undefined,
+    rereadSettled: boolean,
   ): BibleBackfillItemSeed[] {
     const chapters = this.story
       .listOutline(projectId)
@@ -444,14 +537,11 @@ export class BibleBackfillService {
         outlineNodeId: node.id,
         documentId: document.id,
         versionId: version.id,
-        skipReason: this.isVersionSettled(
-          projectId,
-          node.id,
-          version,
-          settlementIndex,
-        )
-          ? "already_settled"
-          : null,
+        skipReason:
+          !rereadSettled &&
+          this.isVersionSettled(projectId, node.id, version, settlementIndex)
+            ? "already_settled"
+            : null,
       });
     }
     if (requested && withoutManuscript.length > 0) {
@@ -630,11 +720,79 @@ export class BibleBackfillService {
     }
   }
 
+  /**
+   * Runs a failed section again with a new attempt. On a completed job this
+   * reopens it (running, phase sections), unless another completion of the
+   * project is active.
+   */
+  private retrySection(
+    job: BibleBackfillJob,
+    ordinal: number,
+    now: string,
+  ): void {
+    const section = this.backfills
+      .listSections(job.id)
+      .find((candidate) => candidate.ordinal === ordinal);
+    if (!section) {
+      throw new BibleBackfillError(
+        "bible_backfill.section.not_found",
+        "This section is not part of the Story Bible completion",
+        404,
+        { ordinal },
+      );
+    }
+    if (section.status !== "failed") {
+      throw new BibleBackfillError(
+        "bible_backfill.section.not_failed",
+        "Only a section whose generation failed can be retried",
+        409,
+        { ordinal },
+      );
+    }
+    if (job.status === "completed") {
+      const active = this.backfills.findActiveJob(job.projectId);
+      if (active) {
+        throw new BibleBackfillError(
+          "bible_backfill.active",
+          "This project is already completing its Story Bible from the manuscript",
+          409,
+          { jobId: active.id },
+        );
+      }
+    }
+    requireWritingAssignment(this.database, this.environment);
+    this.backfills.updateSection(
+      job.id,
+      ordinal,
+      {
+        status: "pending",
+        attempt: section.attempt + 1,
+        runId: null,
+        candidateSetId: null,
+        appliedCount: 0,
+        pendingCount: 0,
+        pendingItems: [],
+        error: null,
+      },
+      now,
+    );
+    if (job.status === "completed") {
+      this.backfills.setJobPhase(job.id, "sections", now);
+      this.backfills.setJobStatus(job.id, "running", now);
+    }
+  }
+
   private activeChild(job: BibleBackfillJob) {
-    const settling = this.backfills
-      .listItems(job.id)
-      .find((item) => item.status === "settling" && item.runId);
-    const child = settling?.runId ? this.runs.getRun(settling.runId) : null;
+    const runId =
+      this.backfills
+        .listItems(job.id)
+        .find((item) => item.status === "settling" && item.runId)?.runId ??
+      this.backfills
+        .listSections(job.id)
+        .find((section) => section.status === "generating" && section.runId)
+        ?.runId ??
+      null;
+    const child = runId ? this.runs.getRun(runId) : null;
     return child && !["completed", "failed", "cancelled"].includes(child.status)
       ? child
       : null;
@@ -740,6 +898,51 @@ const CANCELLED_ITEM_ERROR = {
 } as const;
 
 /**
+ * What a section not yet finished becomes when its job is cancelled: a
+ * candidate set its run already staged stays reviewable in the Bible
+ * (needs_review), a failed run keeps its failure, anything else did not run
+ * (skipped).
+ */
+function cancelledSectionOutcome(
+  database: NarrativeDatabase,
+  projectId: string,
+  section: BibleBackfillSection,
+): BibleBackfillSectionPatch {
+  const runs = new SqliteRunRepository(database);
+  const run = section.runId ? runs.getRun(section.runId) : null;
+  if (run?.status === "completed") {
+    const candidateSetId = stagedCandidateSetId(runs.getSnapshot(run.id));
+    const candidateSet =
+      candidateSetId &&
+      new SqliteReviewRepository(database).getCanonChangeSet(
+        projectId,
+        candidateSetId,
+      )
+        ? new CanonCandidateService(database).get(projectId, candidateSetId)
+        : null;
+    if (candidateSet) {
+      const applied = candidateSet.items.filter(
+        (item) => item.decision?.action === "apply",
+      ).length;
+      return {
+        status: "needs_review",
+        candidateSetId: candidateSet.id,
+        appliedCount: applied,
+        pendingCount: candidateSet.items.filter((item) => !item.decision)
+          .length,
+      };
+    }
+  }
+  if (run?.status === "failed") {
+    return {
+      status: "failed",
+      error: childFailureError(runs.getSnapshot(run.id)),
+    };
+  }
+  return { status: "skipped", error: { ...CANCELLED_ITEM_ERROR } };
+}
+
+/**
  * Ends the job as cancelled; `error` records why when that was not the
  * author's cancel alone. A chapter still settling keeps its real outcome:
  * a finished run's change set stays awaiting a decision (reviewable in
@@ -794,6 +997,17 @@ export function finalizeBackfillCancellation(
       jobId,
       item.ordinal,
       cancelledItemOutcome(database, outcome, run),
+      now,
+    );
+  }
+  for (const section of backfills.listSections(jobId)) {
+    if (section.status !== "pending" && section.status !== "generating") {
+      continue;
+    }
+    backfills.updateSection(
+      jobId,
+      section.ordinal,
+      cancelledSectionOutcome(database, job.projectId, section),
       now,
     );
   }
@@ -1051,7 +1265,10 @@ function withoutSupersededFields(
 function availableActions(
   job: BibleBackfillJob,
   items: readonly BibleBackfillItem[],
+  sections: readonly BibleBackfillSection[],
 ): BibleBackfillAction[] {
+  const retrySection = sections.some((section) => section.status === "failed");
+  if (job.status === "completed") return retrySection ? ["retry_section"] : [];
   if (isTerminalBackfillJob(job)) return [];
   const current = currentBackfillItem(items);
   const actions: BibleBackfillAction[] = [];
@@ -1075,7 +1292,42 @@ function availableActions(
   if (items.some((item) => item.status === "failed")) {
     actions.push("retry_item");
   }
+  if (retrySection) actions.push("retry_section");
   return actions;
+}
+
+function sectionCounts(sections: readonly BibleBackfillSection[]) {
+  const counts = {
+    total: sections.length,
+    pending: 0,
+    generating: 0,
+    applied: 0,
+    partiallyApplied: 0,
+    needsReview: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  for (const section of sections) {
+    const key =
+      section.status === "partially_applied"
+        ? "partiallyApplied"
+        : section.status === "needs_review"
+          ? "needsReview"
+          : section.status;
+    counts[key] += 1;
+  }
+  return counts;
+}
+
+function candidateSetStatusOf(
+  status: string | undefined,
+): BibleBackfillSectionDto["candidateSetStatus"] {
+  return status === "candidate" ||
+    status === "partially_applied" ||
+    status === "applied" ||
+    status === "rejected"
+    ? status
+    : null;
 }
 
 function notAvailable(action: string, job: BibleBackfillJob) {
@@ -1098,6 +1350,17 @@ function emptyDetail(unanchoredImportedEvents: number): BibleBackfillDetailDto {
       applied: 0,
       rejected: 0,
       empty: 0,
+      failed: 0,
+      skipped: 0,
+    },
+    sections: [],
+    sectionCounts: {
+      total: 0,
+      pending: 0,
+      generating: 0,
+      applied: 0,
+      partiallyApplied: 0,
+      needsReview: 0,
       failed: 0,
       skipped: 0,
     },
