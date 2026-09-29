@@ -15,6 +15,12 @@ Open Settings and expand "Provider and model management", then work in this orde
 
 The supported upstream protocols are OpenAI Chat Completions, OpenAI Responses, and Anthropic Messages. The Base URL, authentication headers, and request paths differ per protocol and are handled by the provider type; do not register an Anthropic-only endpoint as an OpenAI Chat channel.
 
+### Probe a model after adding it
+
+Use "Probe" on the model card after creating a model, and again after pointing it at a different upstream model. The probe checks text, streaming, tools, and structured output, and stores the results as the model's capability flags. It also detects request constraints: some models (for example OpenAI reasoning models) reject `temperature`/`top_p`, and on Chat Completions they also reject `max_tokens` in favor of `max_completion_tokens`. When the text stage only succeeds after adjusting the request, the probe reports the adjustment in the stage detail, probes the remaining stages with the adjusted request, and records `samplingParameters: false` or `maxCompletionTokens: true` (the latter only for Chat Completions providers). Runs started afterwards then omit sampling parameters or send `max_completion_tokens`.
+
+Until a model has been probed these flags are unknown and requests keep sending `temperature`, `top_p`, and `max_tokens`. If a task fails with an error saying the model rejects one of them, probe the model and start the task again. The public demo Relay only forwards `max_tokens`, so a Relay model that requires `max_completion_tokens` is not supported there.
+
 ## Difference between the browser kernel and the local Server
 
 | Caller               | Key storage location                                   | Upstream requirement                                        | Best for                                             |

@@ -18,6 +18,7 @@
 
 ### Fixed
 
+- 修复 OpenAI 推理模型拒绝 `temperature`/`top_p` 和 `max_tokens` 时连接探测全部失败、结构化功能和章节写作随之不可用的问题：探测识别这两类限制并记录 `samplingParameters` / `maxCompletionTokens` 能力标记，运行时据此省略采样参数或改发 `max_completion_tokens`。
 - 修复快速创作被阻断审稿决定后的接续，以及 SQLite 浏览器探针的迁移预期。
 - 修复写作技法检查的 TypeScript 边界错误和后台轮询中的 effect 状态更新问题。
 

@@ -96,7 +96,12 @@ export const ModelConfigSchema = z.object({
   maxOutputTokens: z.number().int().positive().nullable(),
   /** Default sampling parameters (temperature/top_p etc). */
   sampling: z.record(z.string(), z.unknown()),
-  /** Capability flags (streaming/structuredOutput/tools/reasoning). */
+  /**
+   * Capability flags (streaming/structuredOutput/tools/reasoning, plus the
+   * probed request-shape flags samplingParameters and maxCompletionTokens).
+   * An absent flag is unknown; only the connection probe records negative
+   * evidence.
+   */
   capabilities: z.record(z.string(), z.boolean()),
   /** Provenance of the physical limit declaration. */
   metadataSource: ModelMetadataSourceSchema,

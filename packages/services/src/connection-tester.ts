@@ -1,9 +1,13 @@
 import {
   ModelGateway,
   createModelAdapter,
+  isMaxTokensUnsupportedError,
+  isSamplingParameterUnsupportedError,
+  type AdapterConfig,
   type FetchLike,
   type ModelProtocol,
   type ModelRequest,
+  type ModelResponse,
 } from "@narralume/llm";
 
 export interface ConnectionTestOptions {
@@ -16,6 +20,18 @@ export interface ConnectionTestOptions {
 export type StructuredProbeCapability =
   "native" | "json-mode" | "prompt" | "none";
 
+/**
+ * Request shape the model accepted in the text stage, stored as the model
+ * capabilities of the same name.
+ * - samplingParameters: false when temperature/top_p had to be omitted.
+ * - maxCompletionTokens: true when the output limit had to be sent as
+ *   max_completion_tokens (openai-chat only; always false elsewhere).
+ */
+export interface ProbeRequestCapabilities {
+  samplingParameters: boolean;
+  maxCompletionTokens: boolean;
+}
+
 export interface ConnectionTestStage {
   stage: "text" | "stream" | "tool" | "structured-output";
   status: "passed" | "failed" | "unsupported" | "skipped";
@@ -23,6 +39,8 @@ export interface ConnectionTestStage {
   detail: string;
   /** Set only on the structured-output stage. */
   capability?: StructuredProbeCapability;
+  /** Set only on a passed text stage. */
+  requestCapabilities?: ProbeRequestCapabilities;
 }
 
 export interface ConnectionTestProfile {
@@ -57,27 +75,27 @@ export async function testModelConnection(
     ];
   }
 
-  const gateway = new ModelGateway(
-    createModelAdapter({
-      protocol: profile.protocol,
-      baseUrl: profile.baseUrl,
-      apiKey,
-      ...(profile.endpoint === null ? {} : { endpoint: profile.endpoint }),
-      ...(profile.anthropicVersion === null
-        ? {}
-        : { anthropicVersion: profile.anthropicVersion }),
-      headers: profile.extraHeaders,
-      ...(profile.queryParams === undefined
-        ? {}
-        : { queryParams: profile.queryParams }),
-      timeoutMs: 45_000,
-      maxRetries: 1,
-      ...(dependencies.fetch === undefined
-        ? {}
-        : { fetch: dependencies.fetch }),
-    }),
-  );
-  const base: ModelRequest = {
+  const adapterConfig = (maxCompletionTokens: boolean): AdapterConfig => ({
+    protocol: profile.protocol,
+    baseUrl: profile.baseUrl,
+    apiKey,
+    ...(profile.endpoint === null ? {} : { endpoint: profile.endpoint }),
+    ...(profile.anthropicVersion === null
+      ? {}
+      : { anthropicVersion: profile.anthropicVersion }),
+    ...(maxCompletionTokens
+      ? { chatOutputTokenParameter: "max_completion_tokens" as const }
+      : {}),
+    headers: profile.extraHeaders,
+    ...(profile.queryParams === undefined
+      ? {}
+      : { queryParams: profile.queryParams }),
+    timeoutMs: 45_000,
+    maxRetries: 1,
+    ...(dependencies.fetch === undefined ? {} : { fetch: dependencies.fetch }),
+  });
+  let gateway = new ModelGateway(createModelAdapter(adapterConfig(false)));
+  let base: ModelRequest = {
     model: profile.model,
     instructions:
       "This is a connection probe. Follow the requested output exactly.",
@@ -85,15 +103,58 @@ export async function testModelConnection(
     maxOutputTokens: 128,
     temperature: 0,
   };
+  // Request-shape evidence gathered by the text stage. Every later stage
+  // reuses the accepted shape so a model that rejects sampling parameters or
+  // max_tokens (e.g. OpenAI reasoning models) is probed on its capabilities.
+  const requestCapabilities: ProbeRequestCapabilities = {
+    samplingParameters: true,
+    maxCompletionTokens: false,
+  };
   const stages: ConnectionTestStage[] = [];
 
+  const textStage = await runStage("text", async () => {
+    const adjustments: string[] = [];
+    let response: ModelResponse | undefined;
+    // Bounded: each request constraint is adjusted at most once, so at most
+    // two extra requests follow the first one.
+    while (response === undefined) {
+      try {
+        response = await gateway.generate(base, { stream: false });
+      } catch (error) {
+        if (
+          requestCapabilities.samplingParameters &&
+          isSamplingParameterUnsupportedError(error)
+        ) {
+          requestCapabilities.samplingParameters = false;
+          base = withoutSamplingParameters(base);
+          adjustments.push(
+            "temperature/top_p omitted: model rejects sampling parameters",
+          );
+        } else if (
+          profile.protocol === "openai-chat" &&
+          !requestCapabilities.maxCompletionTokens &&
+          isMaxTokensUnsupportedError(error)
+        ) {
+          requestCapabilities.maxCompletionTokens = true;
+          gateway = new ModelGateway(createModelAdapter(adapterConfig(true)));
+          adjustments.push(
+            "max_completion_tokens sent: model rejects max_tokens",
+          );
+        } else {
+          throw error;
+        }
+      }
+    }
+    if (!response.text.trim()) throw new Error("The response contains no text");
+    const summary = `Received ${response.text.trim().length} characters; finish reason: ${response.finishReason}`;
+    return adjustments.length === 0
+      ? summary
+      : `${summary} (${adjustments.join("; ")})`;
+  });
   stages.push(
-    await runStage("text", async () => {
-      const response = await gateway.generate(base, { stream: false });
-      if (!response.text.trim())
-        throw new Error("The response contains no text");
-      return `Received ${response.text.trim().length} characters; finish reason: ${response.finishReason}`;
-    }),
+    textStage.status === "passed"
+      ? { ...textStage, requestCapabilities: { ...requestCapabilities } }
+      : textStage,
   );
 
   stages.push(
@@ -303,6 +364,13 @@ function isToolChoiceCompatibilityError(error: unknown): boolean {
       ? error.message.toLowerCase()
       : String(error).toLowerCase();
   return message.includes("tool_choice") || message.includes("tool choice");
+}
+
+function withoutSamplingParameters(request: ModelRequest): ModelRequest {
+  const adjusted = { ...request };
+  delete adjusted.temperature;
+  delete adjusted.topP;
+  return adjusted;
 }
 
 function validateProbe(value: unknown) {

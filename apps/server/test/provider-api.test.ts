@@ -519,7 +519,224 @@ describe("provider/model/assignment API", () => {
       structuredOutput: true,
       structuredOutputNative: true,
       structuredOutputJsonMode: false,
+      samplingParameters: true,
+      maxCompletionTokens: false,
     });
+  });
+
+  it("probe records the request shape a reasoning model accepts", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "gpt-reasoner" },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const modelId = (created.json() as { id: string }).id;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(
+          typeof init?.body === "string" ? init.body : "{}",
+        ) as Record<string, unknown>;
+        const rejected =
+          "temperature" in body
+            ? "Unsupported parameter: 'temperature' is not supported with this model."
+            : "max_tokens" in body
+              ? "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."
+              : null;
+        if (rejected !== null) {
+          return new Response(
+            JSON.stringify({
+              error: { message: rejected, type: "invalid_request_error" },
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          );
+        }
+        return probeChatResponse(probeText("OK"));
+      }),
+    );
+    try {
+      const probed = await app.inject({
+        method: "POST",
+        url: "/api/providers/test",
+        payload: {
+          providerId: provider.id,
+          modelId,
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+      });
+      expect(probed.statusCode, probed.body).toBe(200);
+      expect(probed.json()).toMatchObject({
+        stages: [
+          {
+            stage: "text",
+            status: "passed",
+            requestCapabilities: {
+              samplingParameters: false,
+              maxCompletionTokens: true,
+            },
+          },
+          { stage: "stream", status: "skipped" },
+          { stage: "tool", status: "skipped" },
+          { stage: "structured-output", status: "skipped" },
+        ],
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const models = await app.inject({ method: "GET", url: "/api/models" });
+    const storedModel = (models.json() as Array<Record<string, unknown>>).find(
+      (candidate) => candidate.id === modelId,
+    )!;
+    expect(storedModel.capabilities).toMatchObject({
+      samplingParameters: false,
+      maxCompletionTokens: true,
+    });
+  });
+
+  it("probe leaves request-shape flags unknown without text-stage evidence", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: {
+        providerId: provider.id,
+        modelId: "gpt-reasoner",
+        capabilities: { samplingParameters: false, maxCompletionTokens: true },
+      },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const modelId = (created.json() as { id: string }).id;
+    const unprobed = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "gpt-unprobed" },
+    });
+    expect(unprobed.statusCode, unprobed.body).toBe(201);
+    const unprobedId = (unprobed.json() as { id: string }).id;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ error: { message: "Incorrect API key" } }),
+            { status: 401, headers: { "content-type": "application/json" } },
+          ),
+      ),
+    );
+    try {
+      for (const id of [modelId, unprobedId]) {
+        const probed = await app.inject({
+          method: "POST",
+          url: "/api/providers/test",
+          payload: {
+            providerId: provider.id,
+            modelId: id,
+            includeStreaming: false,
+            includeTools: false,
+            includeStructuredOutput: false,
+          },
+        });
+        expect(probed.statusCode, probed.body).toBe(200);
+        expect(probed.json()).toMatchObject({
+          stages: [{ stage: "text", status: "failed" }, {}, {}, {}],
+        });
+        expect(
+          (probed.json() as { stages: Record<string, unknown>[] }).stages[0],
+        ).not.toHaveProperty("requestCapabilities");
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const models = (
+      await app.inject({ method: "GET", url: "/api/models" })
+    ).json() as Array<{ id: string; capabilities: Record<string, boolean> }>;
+    expect(
+      models.find((candidate) => candidate.id === modelId)?.capabilities,
+    ).toMatchObject({ samplingParameters: false, maxCompletionTokens: true });
+    const unprobedCapabilities = models.find(
+      (candidate) => candidate.id === unprobedId,
+    )?.capabilities;
+    expect(unprobedCapabilities).not.toHaveProperty("samplingParameters");
+    expect(unprobedCapabilities).not.toHaveProperty("maxCompletionTokens");
+  });
+
+  it("probe writes maxCompletionTokens only for Chat Completions providers", async () => {
+    const { app } = await setup();
+    const providerResponse = await app.inject({
+      method: "POST",
+      url: "/api/providers",
+      payload: {
+        name: "Responses Provider",
+        wireApi: "openai-responses",
+        baseUrl: "https://custom.example.com/v1",
+        credentialRef: "raw-secret-key-abcdef",
+      },
+    });
+    expect(providerResponse.statusCode, providerResponse.body).toBe(201);
+    const provider = providerResponse.json() as { id: string };
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "responses-writer" },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const modelId = (created.json() as { id: string }).id;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        probeChatResponse({
+          id: "resp-probe",
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "OK" }],
+            },
+          ],
+          usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+        }),
+      ),
+    );
+    try {
+      const probed = await app.inject({
+        method: "POST",
+        url: "/api/providers/test",
+        payload: {
+          providerId: provider.id,
+          modelId,
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+      });
+      expect(probed.statusCode, probed.body).toBe(200);
+      expect(probed.json()).toMatchObject({
+        stages: [{ stage: "text", status: "passed" }, {}, {}, {}],
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const models = (
+      await app.inject({ method: "GET", url: "/api/models" })
+    ).json() as Array<{ id: string; capabilities: Record<string, boolean> }>;
+    const capabilities = models.find(
+      (candidate) => candidate.id === modelId,
+    )?.capabilities;
+    expect(capabilities).toMatchObject({ samplingParameters: true });
+    expect(capabilities).not.toHaveProperty("maxCompletionTokens");
   });
 
   it("does not overwrite a model edited while its connection probe is running (CR-48)", async () => {

@@ -13,6 +13,12 @@
 
 支持的上游协议是 OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages。不同协议的 Base URL、鉴权头和请求路径由渠道类型处理；不要把一个只支持 Anthropic 的地址登记成 OpenAI Chat 渠道。
 
+### 添加模型后先探测
+
+新建模型后，以及把模型改指向另一个上游模型后，请在模型卡上点一次“探测”。探测会依次检查文本、流式、工具调用和结构化输出，并把结果保存为模型的能力标记。它同时会识别请求限制：有些模型（例如 OpenAI 的推理模型）不接受 `temperature`/`top_p`，在 Chat Completions 上还会拒绝 `max_tokens`、要求改用 `max_completion_tokens`。如果文本阶段要调整请求后才成功，探测会在该阶段的说明里写明做了哪些调整，用调整后的请求继续检查其余阶段，并记录 `samplingParameters: false` 或 `maxCompletionTokens: true`（后者只对 Chat Completions 渠道记录）。之后新发起的任务会据此省略采样参数，或改发 `max_completion_tokens`。
+
+模型探测之前，这些标记处于未知状态，请求仍会照常携带 `temperature`、`top_p` 和 `max_tokens`。如果任务报错说模型不接受其中某个参数，先探测该模型，再重新发起任务。公开体验用的 Relay 只转发 `max_tokens`，因此不支持需要 `max_completion_tokens` 的 Relay 模型。
+
 ## 浏览器内核与本地 Server 的区别
 
 | 调用方         | 密钥保存位置                                | 上游要求                                | 适用场景                     |

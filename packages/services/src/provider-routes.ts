@@ -178,10 +178,16 @@ export function registerProviderRoutes(
     // every other stored field stay as configured. The probed structured tier
     // (native | json-mode | prompt | none) is stored additively as flags:
     // native/json-mode map to their own key, "prompt" is structuredOutput
-    // without either flag, "none" is all three false.
+    // without either flag, "none" is all three false. Request-shape flags
+    // (samplingParameters, and maxCompletionTokens on openai-chat) are written
+    // only when the text stage passed and therefore produced evidence; a text
+    // failure for any other reason leaves them unknown.
     const structuredCapability = stages.find(
       (stage) => stage.stage === "structured-output",
     )?.capability;
+    const requestCapabilities = stages.find(
+      (stage) => stage.stage === "text",
+    )?.requestCapabilities;
     models.update(
       {
         ...model,
@@ -192,6 +198,17 @@ export function registerProviderRoutes(
           structuredOutput: passed(stages, "structured-output"),
           structuredOutputNative: structuredCapability === "native",
           structuredOutputJsonMode: structuredCapability === "json-mode",
+          ...(requestCapabilities === undefined
+            ? {}
+            : {
+                samplingParameters: requestCapabilities.samplingParameters,
+                ...(provider.wireApi === "openai-chat"
+                  ? {
+                      maxCompletionTokens:
+                        requestCapabilities.maxCompletionTokens,
+                    }
+                  : {}),
+              }),
         },
         updatedAt: nextUpdatedAt(model.updatedAt),
       },

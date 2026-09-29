@@ -51,6 +51,15 @@ export const ConnectionTestStageSchema = z.object({
   status: z.enum(["passed", "failed", "unsupported", "skipped"]),
   latencyMs: z.number().int().nonnegative(),
   detail: z.string(),
+  /** Set only on the structured-output stage. */
+  capability: z.enum(["native", "json-mode", "prompt", "none"]).optional(),
+  /** Set only on a passed text stage: the request shape the model accepted. */
+  requestCapabilities: z
+    .object({
+      samplingParameters: z.boolean(),
+      maxCompletionTokens: z.boolean(),
+    })
+    .optional(),
 });
 
 export const ApiErrorSchema = z.object({

@@ -221,6 +221,11 @@ export interface ProbeStage {
   detail: string;
   /** 仅 structured-output 阶段返回：native | json-mode | prompt | none */
   capability?: string;
+  /** Set only on a passed text stage: the request shape the model accepted. */
+  requestCapabilities?: {
+    samplingParameters: boolean;
+    maxCompletionTokens: boolean;
+  };
 }
 
 export interface ProviderProbeResult {
