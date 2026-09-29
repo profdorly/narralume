@@ -117,7 +117,45 @@ export function registerProviderRoutes(
     if (!next.enabled) {
       requireProviderDisablable(models, assignments, providerId);
     }
-    const provider = providers.update(next, expectedUpdatedAt);
+    // The base URL, endpoint and wire API decide which upstream serves the
+    // Provider's models, so changing them re-points every model under it,
+    // like a providerId/modelId edit on PUT /api/models. The same rules
+    // apply: a model with run history cannot be re-pointed, and the
+    // probe-written flags of the others return to unknown until they are
+    // probed again. Bumping each model's updatedAt also makes a probe that
+    // measured the previous upstream fail its write-back with a version
+    // conflict instead of recording that evidence.
+    const repointedModels =
+      next.baseUrl !== current.baseUrl ||
+      next.endpoint !== current.endpoint ||
+      next.wireApi !== current.wireApi
+        ? models.listByProvider(providerId)
+        : [];
+    if (
+      repointedModels.some((model) =>
+        modelHasRuntimeHistory(database, model.id),
+      )
+    ) {
+      throw new ProviderRouteError(
+        "provider.transport_in_use",
+        "A model of this Provider has run history, so its Base URL, endpoint, or wire API cannot be changed; create a new Provider instead",
+        409,
+      );
+    }
+    const provider = database.transaction(() => {
+      const updated = providers.update(next, expectedUpdatedAt);
+      for (const model of repointedModels) {
+        models.update(
+          {
+            ...model,
+            capabilities: withoutProbedCapabilities(model.capabilities),
+            updatedAt: nextUpdatedAt(model.updatedAt),
+          },
+          model.updatedAt,
+        );
+      }
+      return updated;
+    });
     return PublicProviderSchema.parse(publicProvider(provider));
   });
 
@@ -178,11 +216,14 @@ export function registerProviderRoutes(
     // every other stored field stay as configured. The probed structured tier
     // (native | json-mode | prompt | none) is stored additively as flags:
     // native/json-mode map to their own key, "prompt" is structuredOutput
-    // without either flag, "none" is all three false. Request-shape flags
-    // (samplingParameters, and maxCompletionTokens on openai-chat) are written
-    // only when the provider accepted a text-stage request, even if its
-    // response then failed the text check. Without an accepted request (bad
-    // credentials, network errors, unrecognized rejections) the stored
+    // without either flag, "none" is all three false. The stream, tool and
+    // structured-output stages are sent without a reasoning effort when the
+    // provider rejected it in the text stage, so a rejected effort never
+    // turns into negative streaming/tools/structured evidence. Request-shape
+    // flags (samplingParameters, and maxCompletionTokens on openai-chat) are
+    // written only when the provider accepted a text-stage request, even if
+    // its response then failed the text check. Without an accepted request
+    // (bad credentials, network errors, unrecognized rejections) the stored
     // request-shape flags are left unchanged: absent stays unknown, and a
     // value from an earlier probe of this model is kept.
     const structuredCapability = stages.find(

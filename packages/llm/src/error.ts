@@ -73,16 +73,37 @@ export class ModelError extends Error {
 
 /**
  * True when the provider rejected the request because the model does not
- * accept sampling parameters (temperature/top_p), e.g. OpenAI reasoning
- * models with a reasoning effort other than "none".
+ * accept the sampling parameters (temperature/top_p) it was sent, e.g.
+ * OpenAI reasoning models with a reasoning effort other than "none"
+ * ("Unsupported parameter: 'temperature' …"), or Anthropic extended
+ * thinking, which gateways enable for a reasoning effort ("`temperature` may
+ * only be set to 1 when thinking is enabled").
  */
 export function isSamplingParameterUnsupportedError(error: unknown): boolean {
   const message = invalidRequestMessage(error);
-  if (message === null) return false;
-  return (
-    rejectsParameter(message) &&
-    (message.includes("temperature") || message.includes("top_p"))
-  );
+  if (message === null || !mentionsSamplingParameter(message)) return false;
+  return rejectsParameter(message) || THINKING_CONSTRAINT.test(message);
+}
+
+/**
+ * True when the provider rejected the reasoning effort the request sent:
+ * the field itself (reasoning_effort, reasoning.effort, output_config.effort),
+ * e.g. OpenAI non-reasoning models ("Unsupported parameter:
+ * 'reasoning_effort' …"), or its value, e.g. a model that accepts only other
+ * efforts. A rejection that names a sampling parameter is attributed to that
+ * parameter instead (isSamplingParameterUnsupportedError), for example
+ * "temperature is not supported with reasoning effort".
+ */
+export function isReasoningEffortUnsupportedError(error: unknown): boolean {
+  const message = invalidRequestMessage(error);
+  if (
+    message === null ||
+    !message.includes("effort") ||
+    mentionsSamplingParameter(message)
+  ) {
+    return false;
+  }
+  return rejectsParameter(message) || REJECTED_FIELD.test(message);
 }
 
 /**
@@ -106,6 +127,27 @@ function rejectsParameter(lowerMessage: string): boolean {
     lowerMessage.includes("unsupported") || lowerMessage.includes("not support")
   );
 }
+
+function mentionsSamplingParameter(lowerMessage: string): boolean {
+  return lowerMessage.includes("temperature") || lowerMessage.includes("top_p");
+}
+
+/**
+ * Anthropic extended-thinking constraints on sampling parameters, e.g.
+ * "`temperature` may only be set to 1 when thinking is enabled" and
+ * "`top_p` must be greater than or equal to 0.95 or unset when thinking is
+ * enabled". Only counted together with a sampling parameter name.
+ */
+const THINKING_CONSTRAINT =
+  /\b(?:when|while|with) (?:extended )?thinking (?:is )?enabled\b/;
+
+/**
+ * Wording of request-field rejections besides "unsupported": Azure-style
+ * "Unrecognized request argument supplied", schema-validating gateways'
+ * "Extra inputs are not permitted", and value rejections.
+ */
+const REJECTED_FIELD =
+  /\bunrecognized\b|\bunknown (?:parameter|field|argument)\b|\bnot permitted\b|\bnot allowed\b|\binvalid value\b/;
 
 export function scrubSecrets(input: string): string {
   let result = input;

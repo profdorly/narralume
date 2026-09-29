@@ -255,7 +255,7 @@ describe("model connection capability fallback", () => {
         stage: "text",
         status: "passed",
         detail: expect.stringContaining(
-          "temperature/top_p omitted: model rejects sampling parameters",
+          "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
         ),
         requestCapabilities: {
           samplingParameters: false,
@@ -367,7 +367,7 @@ describe("model connection capability fallback", () => {
     ]);
     expect(stages[0]).toMatchObject({
       detail: expect.stringMatching(
-        /max_completion_tokens sent: model rejects max_tokens; temperature\/top_p omitted/,
+        /max_completion_tokens sent: model rejects max_tokens; temperature omitted: the model rejects sampling parameters/,
       ),
       requestCapabilities: {
         samplingParameters: false,
@@ -497,20 +497,26 @@ describe("model connection capability fallback", () => {
     expect(bodies[1]).not.toHaveProperty("temperature");
   });
 
-  it("explains that a model rejecting reasoning effort fails chapter tasks too", async () => {
-    const fetch = vi.fn<FetchLike>(async () =>
-      json(
-        {
-          error: {
-            message:
-              "Unsupported parameter: 'reasoning_effort' is not supported with this model.",
-            type: "invalid_request_error",
-            param: "reasoning_effort",
+  it("detects extended-thinking temperature constraints passed on by gateways", async () => {
+    // A gateway that maps the reasoning effort to Anthropic extended thinking.
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      if ("reasoning_effort" in body && "temperature" in body) {
+        return json(
+          {
+            error: {
+              message:
+                "`temperature` may only be set to 1 when thinking is enabled.",
+              type: "invalid_request_error",
+            },
           },
-        },
-        400,
-      ),
-    );
+          400,
+        );
+      }
+      return reasoningModelReply(body);
+    });
 
     const stages = await testModelConnection(
       reasoningProfile("openai-chat"),
@@ -525,14 +531,234 @@ describe("model connection capability fallback", () => {
 
     expect(stages[0]).toMatchObject({
       stage: "text",
-      status: "failed",
-      detail: expect.stringContaining(
-        `the probe sends reasoning effort "${PROBE_REASONING_EFFORT}" like chapter tasks do, so tasks on this model are rejected the same way`,
-      ),
+      status: "passed",
+      requestCapabilities: {
+        samplingParameters: false,
+        maxCompletionTokens: false,
+      },
     });
-    expect(stages[0]).not.toHaveProperty("requestCapabilities");
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]).toMatchObject({ reasoning_effort: "low" });
+    expect(bodies[1]).not.toHaveProperty("temperature");
   });
+
+  it("fails the text stage on a reasoning effort rejection and probes the other stages without it", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      if ("reasoning_effort" in body) return effortRejected();
+      return reasoningModelReply(body);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: true,
+        includeTools: true,
+        includeStructuredOutput: true,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    // Chapter tasks send the effort and fail the same way, so the text stage
+    // fails; the request without it measured the request shape.
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "failed",
+      requestCapabilities: {
+        samplingParameters: true,
+        maxCompletionTokens: false,
+      },
+    });
+    expect(stages[0]?.detail).toContain(EFFORT_REJECTED);
+    expect(stages[0]?.detail).toContain(
+      `reasoning effort "${PROBE_REASONING_EFFORT}" rejected: chapter, import and other narrative tasks send a reasoning effort, so they are rejected the same way`,
+    );
+    expect(stages[0]?.detail).toContain(
+      "without it the provider accepted the request and returned 2 characters",
+    );
+    // Streaming, tools and structured output are measured, not inferred from
+    // the effort rejection.
+    expect(stages.slice(1)).toEqual([
+      expect.objectContaining({ stage: "stream", status: "passed" }),
+      expect.objectContaining({ stage: "tool", status: "passed" }),
+      expect.objectContaining({
+        stage: "structured-output",
+        status: "passed",
+        capability: "native",
+      }),
+    ]);
+    for (const stage of stages.slice(1)) {
+      expect(stage.detail).toContain(
+        "sent without reasoning effort, which the provider rejects",
+      );
+    }
+    // Rejected text request, retried text request, then one per stage.
+    expect(bodies).toHaveLength(5);
+    expect(bodies[0]).toMatchObject({
+      reasoning_effort: PROBE_REASONING_EFFORT,
+      temperature: 0,
+    });
+    for (const body of bodies.slice(1)) {
+      expect(body).not.toHaveProperty("reasoning_effort");
+      expect(body).toHaveProperty("temperature", 0);
+    }
+  });
+
+  it("keeps adjusting the request shape after dropping a rejected reasoning effort", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      if ("reasoning_effort" in body) return effortRejected();
+      if ("temperature" in body) return samplingRejected();
+      return reasoningModelReply(body);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: true,
+        includeTools: false,
+        includeStructuredOutput: false,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "failed",
+      requestCapabilities: {
+        samplingParameters: false,
+        maxCompletionTokens: false,
+      },
+    });
+    expect(stages[0]?.detail).toContain(
+      `reasoning effort "${PROBE_REASONING_EFFORT}" rejected`,
+    );
+    expect(stages[0]?.detail).toContain(
+      "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
+    );
+    expect(stages.map((stage) => stage.status)).toEqual([
+      "failed",
+      "passed",
+      "skipped",
+      "skipped",
+    ]);
+    // Skipped stages keep their plain detail.
+    expect(stages[2]?.detail).toBe("Probe not requested");
+    expect(bodies).toHaveLength(4);
+    expect(bodies[3]).not.toHaveProperty("reasoning_effort");
+    expect(bodies[3]).not.toHaveProperty("temperature");
+  });
+
+  it("records no request shape when the request without reasoning effort is not accepted either", async () => {
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      if ("reasoning_effort" in body) return effortRejected();
+      return json({ error: { message: "The model does not exist" } }, 404);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: false,
+        includeTools: false,
+        includeStructuredOutput: false,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({ stage: "text", status: "failed" });
+    expect(stages[0]?.detail).toContain("The model does not exist");
+    expect(stages[0]?.detail).toContain(
+      `reasoning effort "${PROBE_REASONING_EFFORT}" rejected`,
+    );
+    expect(stages[0]).not.toHaveProperty("requestCapabilities");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    [
+      "openai-responses",
+      "Unsupported parameter: 'reasoning.effort' is not supported with this model.",
+      (body: Record<string, unknown>) => "reasoning" in body,
+      () =>
+        json({
+          id: "resp-probe",
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "OK" }],
+            },
+          ],
+          usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+        }),
+    ],
+    [
+      "anthropic-messages",
+      "output_config.effort: Extra inputs are not permitted",
+      (body: Record<string, unknown>) => "output_config" in body,
+      () =>
+        json({
+          id: "msg-probe",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 2, output_tokens: 1 },
+        }),
+    ],
+  ] as const)(
+    "drops a rejected reasoning effort field on %s",
+    async (protocol, message, sendsEffort, reply) => {
+      const bodies: Record<string, unknown>[] = [];
+      const fetch = vi.fn<FetchLike>(async (_input, init) => {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        bodies.push(body);
+        if (sendsEffort(body)) {
+          return json(
+            { error: { message, type: "invalid_request_error" } },
+            400,
+          );
+        }
+        return reply();
+      });
+
+      const stages = await testModelConnection(
+        reasoningProfile(protocol),
+        {
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+        { TEST_KEY: "secret" },
+        { fetch },
+      );
+
+      expect(stages[0]).toMatchObject({
+        stage: "text",
+        status: "failed",
+        detail: expect.stringContaining(
+          `reasoning effort "${PROBE_REASONING_EFFORT}" rejected`,
+        ),
+        requestCapabilities: {
+          samplingParameters: true,
+          maxCompletionTokens: false,
+        },
+      });
+      expect(bodies).toHaveLength(2);
+      expect(sendsEffort(bodies[0]!)).toBe(true);
+      expect(sendsEffort(bodies[1]!)).toBe(false);
+      expect(bodies[1]).toHaveProperty("temperature", 0);
+    },
+  );
 
   it("keeps request-shape evidence when an accepted adjusted request returns no text", async () => {
     const bodies: Record<string, unknown>[] = [];
@@ -574,7 +800,7 @@ describe("model connection capability fallback", () => {
       "The response contains no text; finish reason: length",
     );
     expect(stages[0]?.detail).toContain(
-      "temperature/top_p omitted: model rejects sampling parameters",
+      "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
     );
     expect(stages.slice(1).map((stage) => stage.status)).toEqual([
       "passed",
@@ -614,7 +840,7 @@ describe("model connection capability fallback", () => {
       stage: "text",
       status: "failed",
       detail: expect.stringContaining(
-        "temperature/top_p omitted: model rejects sampling parameters",
+        "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
       ),
     });
     expect(stages[0]?.detail).toContain("Rate limit reached");
@@ -697,7 +923,7 @@ describe("model connection capability fallback", () => {
         stage: "text",
         status: "passed",
         detail: expect.stringContaining(
-          "temperature/top_p omitted: model rejects sampling parameters",
+          "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
         ),
         requestCapabilities: {
           samplingParameters: false,
@@ -722,6 +948,24 @@ function samplingRejected(): Response {
           "Unsupported parameter: 'temperature' is not supported with this model.",
         type: "invalid_request_error",
         param: "temperature",
+        code: "unsupported_parameter",
+      },
+    },
+    400,
+  );
+}
+
+/** OpenAI's rejection of reasoning_effort by a non-reasoning model. */
+const EFFORT_REJECTED =
+  "Unsupported parameter: 'reasoning_effort' is not supported with this model.";
+
+function effortRejected(): Response {
+  return json(
+    {
+      error: {
+        message: EFFORT_REJECTED,
+        type: "invalid_request_error",
+        param: "reasoning_effort",
         code: "unsupported_parameter",
       },
     },

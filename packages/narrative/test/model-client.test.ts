@@ -37,6 +37,7 @@ function seedAssignment(
     providerEnabled?: boolean;
     modelEnabled?: boolean;
     capabilities?: Record<string, boolean>;
+    sampling?: Record<string, unknown>;
     wireApi?: "openai-chat" | "openai-responses" | "anthropic-messages";
   } = {},
 ): void {
@@ -68,7 +69,7 @@ function seedAssignment(
       input.contextWindow === undefined ? 128_000 : input.contextWindow,
     maxOutputTokens:
       input.maxOutputTokens === undefined ? 32_000 : input.maxOutputTokens,
-    sampling: { temperature: 0.4 },
+    sampling: input.sampling ?? { temperature: 0.4 },
     capabilities: input.capabilities ?? {},
     enabled: input.modelEnabled ?? true,
     createdAt: NOW,
@@ -609,20 +610,38 @@ describe("GatewayNarrativeModelClient B1 assignment runtime", () => {
       "sampling_parameters_outside_probe_evidence",
       { samplingParameters: true },
       "Unsupported parameter: 'temperature' is not supported with this model.",
-      'rejected temperature/top_p at reasoning effort "medium" although its connection probe accepted them',
+      'rejected temperature/top_p at reasoning effort "medium" although its connection probe accepted temperature; the probe evidence does not cover this request',
+      undefined,
+    ],
+    [
+      "sampling_parameters_outside_probe_evidence",
+      { samplingParameters: true },
+      "Unsupported parameter: 'top_p' is not supported with this model.",
+      'rejected temperature/top_p at reasoning effort "medium" although its connection probe accepted temperature (the probe does not send top_p); the probe evidence does not cover this request',
+      { temperature: 0.4, topP: 0.9 },
     ],
     [
       "max_tokens_outside_probe_evidence",
       { samplingParameters: true, maxCompletionTokens: false },
       "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
       'rejected max_tokens at reasoning effort "medium" although its connection probe accepted it',
+      undefined,
     ],
   ])(
     "does not send the author back to the probe when it already recorded acceptance (%s)",
-    async (requestConstraint, capabilities, providerMessage, hint) => {
+    async (
+      requestConstraint,
+      capabilities,
+      providerMessage,
+      hint,
+      sampling,
+    ) => {
       const database = new NodeNarrativeDatabase();
       database.migrate();
-      seedAssignment(database, { capabilities });
+      seedAssignment(database, {
+        capabilities,
+        ...(sampling === undefined ? {} : { sampling }),
+      });
       const { runs, step } = createRun(database, `run-${requestConstraint}`);
       const fetchMock = vi.fn(
         async () =>

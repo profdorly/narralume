@@ -524,6 +524,97 @@ describe("provider/model/assignment API", () => {
     });
   });
 
+  it("probe measures streaming, tools and structured output without a rejected reasoning effort", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "gpt-general" },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const modelId = (created.json() as { id: string }).id;
+
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(
+          typeof init?.body === "string" ? init.body : "{}",
+        ) as Record<string, unknown>;
+        bodies.push(body);
+        if ("reasoning_effort" in body) {
+          // OpenAI non-reasoning chat models.
+          return new Response(
+            JSON.stringify({
+              error: {
+                message:
+                  "Unsupported parameter: 'reasoning_effort' is not supported with this model.",
+                type: "invalid_request_error",
+                param: "reasoning_effort",
+              },
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          );
+        }
+        return probeAllStagesResponse(body);
+      }),
+    );
+    try {
+      const probed = await app.inject({
+        method: "POST",
+        url: "/api/providers/test",
+        payload: { providerId: provider.id, modelId },
+      });
+      expect(probed.statusCode, probed.body).toBe(200);
+      const stages = (
+        probed.json() as { stages: { stage: string; status: string }[] }
+      ).stages;
+      // Chapter tasks send the effort, so the text stage fails and says so.
+      expect(stages).toEqual([
+        expect.objectContaining({
+          stage: "text",
+          status: "failed",
+          detail: expect.stringContaining(
+            'reasoning effort "low" rejected: chapter, import and other narrative tasks send a reasoning effort',
+          ),
+        }),
+        expect.objectContaining({ stage: "stream", status: "passed" }),
+        expect.objectContaining({ stage: "tool", status: "passed" }),
+        expect.objectContaining({
+          stage: "structured-output",
+          status: "passed",
+        }),
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    for (const body of bodies.slice(1)) {
+      expect(body).not.toHaveProperty("reasoning_effort");
+    }
+
+    // The effort rejection is no evidence against streaming, tools or
+    // structured output, which runs without an effort (the assistant with
+    // reasoning off) rely on.
+    const models = await app.inject({ method: "GET", url: "/api/models" });
+    expect(
+      (
+        models.json() as Array<{
+          id: string;
+          capabilities: Record<string, boolean>;
+        }>
+      ).find((candidate) => candidate.id === modelId)?.capabilities,
+    ).toEqual({
+      streaming: true,
+      tools: true,
+      structuredOutput: true,
+      structuredOutputNative: true,
+      structuredOutputJsonMode: false,
+      samplingParameters: true,
+      maxCompletionTokens: false,
+    });
+  });
+
   it("probe records the request shape a reasoning model accepts", async () => {
     const { app } = await setup();
     const provider = await createProvider(app);
@@ -795,7 +886,7 @@ describe("provider/model/assignment API", () => {
             stage: "text",
             status: "failed",
             detail: expect.stringContaining(
-              "temperature/top_p omitted: model rejects sampling parameters",
+              "temperature omitted: the model rejects sampling parameters, so runs omit temperature and top_p",
             ),
             requestCapabilities: {
               samplingParameters: false,
@@ -901,6 +992,263 @@ describe("provider/model/assignment API", () => {
     ).toEqual({ reasoning: true });
   });
 
+  it("clears probe-written flags of a Provider's models when its base URL, endpoint or wire API changes", async () => {
+    const { app } = await setup();
+    let provider = await createProvider(app);
+    const otherProvider = await app.inject({
+      method: "POST",
+      url: "/api/providers",
+      payload: {
+        name: "Gateway Provider",
+        wireApi: "openai-chat",
+        baseUrl: "https://gateway.example.com/v1",
+        credentialRef: "raw-secret-key-ghijkl",
+      },
+    });
+    expect(otherProvider.statusCode, otherProvider.body).toBe(201);
+    const otherProviderId = (otherProvider.json() as { id: string }).id;
+    const probed = {
+      streaming: true,
+      tools: false,
+      structuredOutput: true,
+      structuredOutputNative: false,
+      structuredOutputJsonMode: true,
+      samplingParameters: false,
+      maxCompletionTokens: true,
+    };
+    const createModel = async (providerId: string, modelId: string) => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/models",
+        payload: {
+          providerId,
+          modelId,
+          capabilities: { ...probed, reasoning: true },
+        },
+      });
+      expect(response.statusCode, response.body).toBe(201);
+      return (response.json() as { id: string }).id;
+    };
+    const writer = await createModel(provider.id, "gpt-writer");
+    const planner = await createModel(provider.id, "gpt-planner");
+    const elsewhere = await createModel(otherProviderId, "gpt-writer");
+    const stored = async () =>
+      new Map(
+        (
+          (await app.inject({ method: "GET", url: "/api/models" })).json() as {
+            id: string;
+            updatedAt: string;
+            capabilities: Record<string, boolean>;
+          }[]
+        ).map((model) => [model.id, model]),
+      );
+    const reprobe = async (id: string) => {
+      const model = (await stored()).get(id)!;
+      const response = await app.inject({
+        method: "PUT",
+        url: `/api/models/${id}`,
+        payload: {
+          providerId: provider.id,
+          modelId: id === writer ? "gpt-writer" : "gpt-planner",
+          taskType: "writing",
+          capabilities: { ...probed, reasoning: true },
+          enabled: true,
+          expectedUpdatedAt: model.updatedAt,
+        },
+      });
+      expect(response.statusCode, response.body).toBe(200);
+    };
+    const editProvider = async (change: {
+      name?: string;
+      wireApi?: string;
+      baseUrl?: string;
+      endpoint?: string | null;
+    }) => {
+      const response = await app.inject({
+        method: "PUT",
+        url: `/api/providers/${provider.id}`,
+        payload: {
+          name: change.name ?? "自建 Provider",
+          wireApi: change.wireApi ?? "openai-chat",
+          baseUrl: change.baseUrl ?? "https://custom.example.com/v1",
+          endpoint: change.endpoint ?? null,
+          expectedUpdatedAt: provider.updatedAt,
+        },
+      });
+      expect(response.statusCode, response.body).toBe(200);
+      provider = response.json() as typeof provider;
+    };
+
+    // Same transport: flags and model versions are kept.
+    const before = await stored();
+    await editProvider({ name: "改名 Provider" });
+    let after = await stored();
+    for (const id of [writer, planner, elsewhere]) {
+      expect(after.get(id)).toEqual(before.get(id));
+    }
+
+    // New base URL: every model under the Provider returns to unknown for the
+    // probe-written flags and gets a new version; other Providers' models
+    // keep theirs.
+    await editProvider({ baseUrl: "https://proxy.example.com/v1" });
+    after = await stored();
+    expect(after.get(writer)?.capabilities).toEqual({ reasoning: true });
+    expect(after.get(planner)?.capabilities).toEqual({ reasoning: true });
+    expect(after.get(writer)?.updatedAt).not.toBe(
+      before.get(writer)?.updatedAt,
+    );
+    expect(after.get(elsewhere)).toEqual(before.get(elsewhere));
+
+    // New endpoint and new wire API clear them as well.
+    await reprobe(writer);
+    await editProvider({
+      baseUrl: "https://proxy.example.com/v1",
+      endpoint: "/chat/completions",
+    });
+    expect((await stored()).get(writer)?.capabilities).toEqual({
+      reasoning: true,
+    });
+    await reprobe(writer);
+    await editProvider({
+      baseUrl: "https://proxy.example.com/v1",
+      endpoint: "/chat/completions",
+      wireApi: "openai-responses",
+    });
+    expect((await stored()).get(writer)?.capabilities).toEqual({
+      reasoning: true,
+    });
+  });
+
+  it("refuses to change a Provider's base URL, endpoint or wire API once one of its models has run history", async () => {
+    const { app, database } = await setup();
+    const provider = await createProvider(app);
+    const probed = { streaming: true, samplingParameters: false };
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: {
+        providerId: provider.id,
+        modelId: "gpt-writer",
+        capabilities: probed,
+      },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const model = created.json() as { id: string; updatedAt: string };
+    database.raw
+      .prepare(
+        `INSERT INTO llm_calls(
+           id, model_id, protocol, model, purpose, request_hash, status,
+           started_at
+         ) VALUES (?, ?, 'openai-chat', 'gpt-writer', 'chapter-draft', 'h',
+           'completed', ?)`,
+      )
+      .run("call-history", model.id, new Date().toISOString());
+
+    const edit = (change: { name?: string; baseUrl?: string }) =>
+      app.inject({
+        method: "PUT",
+        url: `/api/providers/${provider.id}`,
+        payload: {
+          name: change.name ?? "自建 Provider",
+          wireApi: "openai-chat",
+          baseUrl: change.baseUrl ?? "https://custom.example.com/v1",
+          expectedUpdatedAt: provider.updatedAt,
+        },
+      });
+
+    const refused = await edit({ baseUrl: "https://proxy.example.com/v1" });
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json()).toMatchObject({
+      error: { code: "provider.transport_in_use" },
+    });
+    const models = (
+      await app.inject({ method: "GET", url: "/api/models" })
+    ).json() as { id: string; updatedAt: string; capabilities: object }[];
+    expect(models.find((candidate) => candidate.id === model.id)).toMatchObject(
+      { updatedAt: model.updatedAt, capabilities: probed },
+    );
+    const providers = (
+      await app.inject({ method: "GET", url: "/api/providers" })
+    ).json() as { id: string; baseUrl: string }[];
+    expect(
+      providers.find((candidate) => candidate.id === provider.id)?.baseUrl,
+    ).toBe("https://custom.example.com/v1");
+
+    // Edits that keep the transport are still allowed.
+    const renamed = await edit({ name: "改名 Provider" });
+    expect(renamed.statusCode, renamed.body).toBe(200);
+  });
+
+  it("refuses the write-back of a probe that measured a Provider's previous base URL", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "writer-v1" },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const model = created.json() as { id: string };
+
+    let markStarted!: () => void;
+    let releaseProbe!: () => void;
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      releaseProbe = resolve;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        markStarted();
+        await gate;
+        return probeChatResponse(probeText("OK"));
+      }),
+    );
+    try {
+      const probing = app.inject({
+        method: "POST",
+        url: "/api/providers/test",
+        payload: {
+          providerId: provider.id,
+          modelId: model.id,
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+      });
+      await started;
+      const edited = await app.inject({
+        method: "PUT",
+        url: `/api/providers/${provider.id}`,
+        payload: {
+          name: "自建 Provider",
+          wireApi: "openai-chat",
+          baseUrl: "https://proxy.example.com/v1",
+          expectedUpdatedAt: provider.updatedAt,
+        },
+      });
+      expect(edited.statusCode, edited.body).toBe(200);
+      releaseProbe();
+
+      const result = await probing;
+      expect(result.statusCode, result.body).toBe(409);
+      expect(result.json()).toMatchObject({
+        error: { code: "model.version.conflict" },
+      });
+      const listed = await app.inject({ method: "GET", url: "/api/models" });
+      expect(
+        listed
+          .json()
+          .find((candidate: { id: string }) => candidate.id === model.id),
+      ).toMatchObject({ capabilities: {} });
+    } finally {
+      releaseProbe();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("does not overwrite a model edited while its connection probe is running (CR-48)", async () => {
     const { app } = await setup();
     const provider = await createProvider(app);
@@ -992,6 +1340,38 @@ function probeChatResponse(payload: unknown): Response {
     status: 200,
     headers: { "content-type": "application/json" },
   });
+}
+
+/** Chat Completions replies for every probe stage of an accepted request. */
+function probeAllStagesResponse(body: Record<string, unknown>): Response {
+  if (body.stream === true) return probeStreamResponse();
+  if (Array.isArray(body.tools)) {
+    return probeChatResponse({
+      id: "chatcmpl-tool",
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              {
+                id: "call-1",
+                type: "function",
+                function: {
+                  name: "echo_probe",
+                  arguments: '{"value":"lantern"}',
+                },
+              },
+            ],
+          },
+          finish_reason: "tool_calls",
+        },
+      ],
+      usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+    });
+  }
+  return probeChatResponse(
+    probeText(body.response_format ? '{"ok":true}' : "OK"),
+  );
 }
 
 function probeStreamResponse(): Response {

@@ -1267,9 +1267,11 @@ function applyRuntimeRequest(
     ...sampling,
   };
   if (runtime.capabilities.samplingParameters === false) {
-    // The connection probe recorded that this model rejects temperature/top_p
-    // (e.g. OpenAI reasoning models), so neither the model defaults nor the
-    // worker request may send them. Unknown keeps the requested values.
+    // The connection probe recorded that this model rejects temperature
+    // (e.g. OpenAI reasoning models). The probe never sends top_p, but a model
+    // that rejects temperature is not trusted with top_p either, so neither
+    // the model defaults nor the worker request may send them. Unknown keeps
+    // the requested values.
     delete applied.temperature;
     delete applied.topP;
   }
@@ -1759,7 +1761,7 @@ function modelStepError(
  * probe. When the probe already recorded that the model accepts the
  * parameter, re-probing would record the same value, so the hint says the
  * request falls outside the probe evidence instead (for example a reasoning
- * effort other than the probe's).
+ * effort other than the probe's, or top_p, which the probe never sends).
  */
 function requestConstraintHint(
   error: ModelError,
@@ -1778,9 +1780,13 @@ function requestConstraintHint(
       };
     }
     if (capabilities.samplingParameters === true) {
+      const topP =
+        attempt.request.topP === undefined
+          ? ""
+          : " (the probe does not send top_p)";
       return {
         reason: "sampling_parameters_outside_probe_evidence",
-        hint: `this model rejected temperature/top_p${effort} although its connection probe accepted them; the probe evidence does not cover this request`,
+        hint: `this model rejected temperature/top_p${effort} although its connection probe accepted temperature${topP}; the probe evidence does not cover this request`,
       };
     }
   }

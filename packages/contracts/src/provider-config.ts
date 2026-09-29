@@ -100,7 +100,10 @@ export const ModelConfigSchema = z.object({
    * Capability flags (streaming/structuredOutput/tools/reasoning, plus the
    * probed request-shape flags samplingParameters and maxCompletionTokens).
    * An absent flag is unknown; only the connection probe records negative
-   * evidence. Changing providerId or modelId clears the probe-written flags.
+   * evidence. samplingParameters is measured with temperature only (the
+   * probe never sends top_p); false makes runs omit temperature and top_p.
+   * Changing providerId or modelId, or the Provider's baseUrl, endpoint or
+   * wireApi, clears the probe-written flags.
    */
   capabilities: z.record(z.string(), z.boolean()),
   /** Provenance of the physical limit declaration. */

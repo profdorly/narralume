@@ -5,6 +5,7 @@ import {
   ModelGateway,
   OpenAIChatAdapter,
   isMaxTokensUnsupportedError,
+  isReasoningEffortUnsupportedError,
   isSamplingParameterUnsupportedError,
 } from "../src/index.js";
 import { jsonResponse } from "./helpers.js";
@@ -54,6 +55,84 @@ describe("request constraint detectors", () => {
     ).toBe(false);
     expect(
       isSamplingParameterUnsupportedError(new Error(TEMPERATURE_REJECTED)),
+    ).toBe(false);
+  });
+
+  it("detects extended-thinking constraints on sampling parameters", () => {
+    // Gateways that map a reasoning effort to Anthropic extended thinking
+    // pass these rejections on.
+    for (const message of [
+      "`temperature` may only be set to 1 when thinking is enabled. Please consult our documentation at https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking",
+      "`top_p` must be greater than or equal to 0.95 or unset when thinking is enabled.",
+      "temperature must be 1 with thinking enabled",
+    ]) {
+      expect(isSamplingParameterUnsupportedError(invalidRequest(message))).toBe(
+        true,
+      );
+    }
+
+    // Thinking constraints on other fields and unrelated sampling errors are
+    // not sampling rejections.
+    for (const message of [
+      "`max_tokens` must be greater than `thinking.budget_tokens`",
+      "`top_k` may only be set when thinking is disabled",
+      "thinking.budget_tokens: Input should be greater than or equal to 1024",
+      "temperature: Input should be less than or equal to 1",
+      "`temperature` and `top_p` cannot both be specified for this model.",
+    ]) {
+      expect(isSamplingParameterUnsupportedError(invalidRequest(message))).toBe(
+        false,
+      );
+    }
+    expect(
+      isSamplingParameterUnsupportedError(
+        new ModelError(
+          "`temperature` may only be set to 1 when thinking is enabled.",
+          { category: "server" },
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("detects rejections of the reasoning effort field or value", () => {
+    for (const message of [
+      "Unsupported parameter: 'reasoning_effort' is not supported with this model.",
+      "Unsupported parameter: 'reasoning.effort' is not supported with this model.",
+      "Unsupported value: 'reasoning_effort' does not support 'low' with this model. Supported values are: 'high'.",
+      "Unrecognized request argument supplied: reasoning_effort",
+      "output_config.effort: Extra inputs are not permitted",
+      "Invalid value for reasoning effort: 'low'",
+    ]) {
+      expect(isReasoningEffortUnsupportedError(invalidRequest(message))).toBe(
+        true,
+      );
+    }
+
+    for (const message of [
+      // Attributed to the sampling parameter it names.
+      "Unsupported parameter: 'temperature' is not supported with reasoning effort 'low'.",
+      TEMPERATURE_REJECTED,
+      MAX_TOKENS_REJECTED,
+      // Names the effort without rejecting it.
+      "reasoning_effort must be one of 'low', 'medium', 'high'",
+      "Your request was rejected; the effort to process it failed",
+    ]) {
+      expect(isReasoningEffortUnsupportedError(invalidRequest(message))).toBe(
+        false,
+      );
+    }
+    const fieldRejected =
+      "Unsupported parameter: 'reasoning_effort' is not supported with this model.";
+    expect(
+      isReasoningEffortUnsupportedError(
+        new ModelError(fieldRejected, { category: "server" }),
+      ),
+    ).toBe(false);
+    expect(isReasoningEffortUnsupportedError(new Error(fieldRejected))).toBe(
+      false,
+    );
+    expect(
+      isSamplingParameterUnsupportedError(invalidRequest(fieldRejected)),
     ).toBe(false);
   });
 

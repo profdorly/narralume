@@ -16,6 +16,8 @@ export const errors = {
     providerAssignmentInUse: "Provider 下仍有已分配模型，请先调整模型分配。",
     providerModelsInUse: "Provider 下仍有模型，请先删除或移动这些模型。",
     providerEnvironmentManaged: "环境托管的 Provider 不能删除，可以将其停用。",
+    providerTransportInUse:
+      "Provider 下的模型已有运行历史，Base URL、端点与 Wire API 不可修改；请新建 Provider。",
     providerCredentialRequired:
       "创建 Provider 需要提供 credentialRef（原始密钥或 env:NAME 引用）。",
     modelEnvironmentManaged: "环境托管的模型不能删除，可以将其停用。",
@@ -428,6 +430,7 @@ export const errors = {
     providerEnvironmentManaged: "环境 Provider 不能删除，可以将其停用",
     providerModelsInUse: "Provider 下仍有模型，请先删除或移动这些模型",
     providerNotFound: "Provider 不存在",
+    providerTransportInUse: "Provider 下的模型已有运行历史，不能修改 Base URL、端点或 Wire API；请新建 Provider",
     providerVersionConflict: "provider {id} 已在其他页面更新，请刷新后重试",
     quotaUnavailable: "体验额度服务暂时不可用。",
     rateLimited: "请求过于频繁，请稍后再试。",
