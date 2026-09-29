@@ -1,6 +1,8 @@
 import { CanonSpreadSchema, type CanonSpread } from "@narralume/contracts";
 import type {
   NarrativeRunStep,
+  NarrativeSummary,
+  OutlineNode,
   RunBudgetUsage,
   RunSnapshot,
 } from "@narralume/domain";
@@ -12,6 +14,7 @@ import type {
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
+  SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteReviewRepository,
   SqliteStoryRepository,
@@ -48,6 +51,7 @@ export class CanonCandidateWorkerSuite {
   private readonly projects: SqliteProjectRepository;
   private readonly reviews: SqliteReviewRepository;
   private readonly story: SqliteStoryRepository;
+  private readonly state: SqliteNarrativeStateRepository;
 
   constructor(
     private readonly database: NarrativeDatabase,
@@ -59,6 +63,11 @@ export class CanonCandidateWorkerSuite {
     this.projects = new SqliteProjectRepository(database);
     this.reviews = new SqliteReviewRepository(database);
     this.story = new SqliteStoryRepository(database);
+    this.state = new SqliteNarrativeStateRepository(
+      database,
+      this.canon,
+      this.story,
+    );
   }
 
   registry(): WorkerRegistry {
@@ -147,6 +156,10 @@ export class CanonCandidateWorkerSuite {
           aliases: entity.aliases,
           description: entity.description,
         })),
+        chapterSummaries: boundedChapterSummaries(
+          this.state.listLatestSummaries(project.id, "chapter"),
+          outline,
+        ),
       },
       recentManuscript: documents,
     };
@@ -333,6 +346,53 @@ function stringField(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+const CHAPTER_SUMMARY_BUDGET = 60_000;
+const CHAPTER_SUMMARY_MAX = 800;
+const CHAPTER_SUMMARY_MIN = 120;
+
+/**
+ * Whole-book chapter summaries in reading order, so a spread revision sees
+ * more than the last few manuscripts. Each summary shares a fixed character
+ * budget; beyond what the budget can hold at the minimum length only the most
+ * recent chapters are kept and the omission is stated.
+ */
+function boundedChapterSummaries(
+  summaries: readonly NarrativeSummary[],
+  outline: readonly OutlineNode[],
+): {
+  omittedEarlierChapters: number;
+  chapters: { outlineNodeId: string; title: string; summary: string }[];
+} {
+  const chapters = new Map(
+    outline
+      .filter((node) => node.kind === "chapter")
+      .map((node, index) => [node.id, { node, index }]),
+  );
+  const ordered = summaries
+    .filter((summary) => chapters.has(summary.scopeId) && summary.summary)
+    .toSorted(
+      (left, right) =>
+        chapters.get(left.scopeId)!.index - chapters.get(right.scopeId)!.index,
+    );
+  const capacity = Math.floor(CHAPTER_SUMMARY_BUDGET / CHAPTER_SUMMARY_MIN);
+  const kept = ordered.slice(-capacity);
+  const perSummary = Math.max(
+    CHAPTER_SUMMARY_MIN,
+    Math.min(
+      CHAPTER_SUMMARY_MAX,
+      Math.floor(CHAPTER_SUMMARY_BUDGET / Math.max(1, kept.length)),
+    ),
+  );
+  return {
+    omittedEarlierChapters: ordered.length - kept.length,
+    chapters: kept.map((summary) => ({
+      outlineNodeId: summary.scopeId,
+      title: chapters.get(summary.scopeId)!.node.title,
+      summary: clipText(summary.summary, perSummary),
+    })),
+  };
 }
 
 function clipText(value: string, limit: number): string {

@@ -1,5 +1,10 @@
 import type { NarrativeModelClient } from "@narralume/narrative";
-import { SqliteRunRepository } from "@narralume/persistence";
+import {
+  SqliteCanonRepository,
+  SqliteNarrativeStateRepository,
+  SqliteRunRepository,
+  SqliteStoryRepository,
+} from "@narralume/persistence";
 import { NodeNarrativeDatabase } from "@narralume/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -580,6 +585,83 @@ describe("Canon Spread candidate API", () => {
       })
     ).json();
     expect(bible.intent.currentFocus).toBeNull();
+  });
+
+  it("gives spread revisions the whole book's chapter summaries in reading order", async () => {
+    const { app, database } = await setup({ summary: "候选", items: [] });
+    const projectId = await createProject(app, "全书摘要");
+    const bible = (
+      await app.inject({
+        method: "GET",
+        url: `/api/projects/${projectId}/story-bible`,
+      })
+    ).json() as { outline: { id: string; kind: string }[] };
+    const rootId = bible.outline.find((node) => node.kind === "book")!.id;
+    const chapterIds: string[] = [];
+    for (const [ordinal, title] of ["雾港", "旧邮局", "灯塔"].entries()) {
+      const chapter = await app.inject({
+        method: "POST",
+        url: `/api/projects/${projectId}/outline`,
+        payload: { parentId: rootId, kind: "chapter", ordinal, title },
+      });
+      expect(chapter.statusCode, chapter.body).toBe(201);
+      chapterIds.push(chapter.json().id as string);
+    }
+    const story = new SqliteStoryRepository(database);
+    const state = new SqliteNarrativeStateRepository(
+      database,
+      new SqliteCanonRepository(database),
+      story,
+    );
+    // Written out of order and one far longer than the per-chapter share.
+    for (const [index, chapterId] of [2, 0, 1].map(
+      (position) => [position, chapterIds[position]!] as const,
+    )) {
+      state.upsertSummary({
+        id: `summary-${index}`,
+        projectId,
+        scopeType: "chapter",
+        scopeId: chapterId,
+        summary: index === 1 ? "长".repeat(5_000) : `第${index + 1}章摘要`,
+        stateDelta: { changes: [] },
+        sourceHash: `hash-${index}`,
+        createdAt: `2026-09-01T00:00:0${index}.000Z`,
+      });
+    }
+
+    const started = await startCandidate(app, projectId, "facts", "补全事实");
+    const runs = new SqliteRunRepository(database);
+    const compiled = () =>
+      runs
+        .getSnapshot(started.runId)
+        .steps.find(
+          (step) =>
+            step.kind === "canon.context" && step.status === "succeeded",
+        )?.outputArtifact;
+    for (let index = 0; index < 8 && !compiled(); index += 1) {
+      const advanced = await app.inject({
+        method: "POST",
+        url: `/api/runs/${started.runId}/advance`,
+        payload: { projectId },
+      });
+      expect(advanced.statusCode, advanced.body).toBe(200);
+    }
+    const context = compiled()!;
+    const packet = JSON.parse(context.prompt as string) as {
+      supportingIndex: {
+        chapterSummaries: {
+          omittedEarlierChapters: number;
+          chapters: { outlineNodeId: string; summary: string }[];
+        };
+      };
+    };
+    const summaries = packet.supportingIndex.chapterSummaries;
+    expect(summaries.omittedEarlierChapters).toBe(0);
+    expect(summaries.chapters.map((chapter) => chapter.outlineNodeId)).toEqual(
+      chapterIds,
+    );
+    expect(summaries.chapters[0]!.summary).toBe("第1章摘要");
+    expect(summaries.chapters[1]!.summary.length).toBeLessThanOrEqual(800 + 20);
   });
 });
 
