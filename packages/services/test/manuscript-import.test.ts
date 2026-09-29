@@ -89,6 +89,29 @@ describe("manuscript chapter headings", () => {
     expect(manuscriptHeadingTitle("#### Nota")).toBeNull();
   });
 
+  it("drops Markdown emphasis and repeated heading markers from heading titles", () => {
+    expect(manuscriptHeadingTitle("# **Chapter 4**")).toBe("Chapter 4");
+    expect(manuscriptHeadingTitle("# # **Chapter 4**")).toBe("Chapter 4");
+    expect(manuscriptHeadingTitle("## __Capítulo 2 — A Queda__")).toBe(
+      "Capítulo 2 — A Queda",
+    );
+    expect(manuscriptHeadingTitle("### *Epílogo*")).toBe("Epílogo");
+    // Emphasis inside the title is part of the name and stays.
+    expect(manuscriptHeadingTitle("# O **último** farol")).toBe(
+      "O **último** farol",
+    );
+    // Only the title is cleaned; the chapter content keeps its markup.
+    expect(
+      splitManuscriptSections(
+        "# **Chapter 4**\n\n**Rachel** walked in.\n\n# **Chapter 5**\n\nAdam left.",
+        "AI Nanny",
+      ),
+    ).toEqual([
+      { title: "Chapter 4", content: "**Rachel** walked in." },
+      { title: "Chapter 5", content: "Adam left." },
+    ]);
+  });
+
   it.each([
     "Capítulo após capítulo, ela lia sem parar.",
     "Parte de mim queria ficar.",

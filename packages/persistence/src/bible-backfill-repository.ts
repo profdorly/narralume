@@ -63,6 +63,8 @@ export interface BibleBackfillItemSeed {
   documentId: string;
   versionId: string;
   skipReason: BibleBackfillSkipReason | null;
+  /** Initial item note, e.g. a requested re-read of an already settled chapter. */
+  note?: Record<string, unknown> | null;
 }
 
 /** Summed recorded model usage of a job's settlement runs. */
@@ -124,8 +126,9 @@ export class SqliteBibleBackfillRepository {
       const insertItem = this.database.raw.prepare(
         `INSERT INTO bible_backfill_items(
            job_id, ordinal, outline_node_id, document_id, version_id, attempt,
-           run_id, change_set_id, status, skip_reason, error_json, updated_at
-         ) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, NULL, ?)`,
+           run_id, change_set_id, status, skip_reason, error_json, note_json,
+           updated_at
+         ) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, NULL, ?, ?)`,
       );
       input.items.forEach((item, ordinal) => {
         insertItem.run(
@@ -136,6 +139,7 @@ export class SqliteBibleBackfillRepository {
           item.versionId,
           item.skipReason ? "skipped" : "pending",
           item.skipReason,
+          item.note ? JSON.stringify(item.note) : null,
           input.now,
         );
       });

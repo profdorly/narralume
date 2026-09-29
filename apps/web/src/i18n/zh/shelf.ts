@@ -148,7 +148,7 @@ export const shelf = {
     appliedTitle: "《{name}》已入藏",
     appliedBody:
       "章节已作为保存好的正文导入，但故事圣经还没有逐章补全。可以让 AI 按顺序读取各章，把章节摘要、事实、人物认知等补进故事圣经。",
-    completeBible: "用 AI 补全故事圣经",
+    completeBible: "用 AI 生成故事圣经",
     openProject: "进入项目概览",
   },
 };

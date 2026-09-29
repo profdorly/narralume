@@ -726,6 +726,93 @@ describe("Story Bible backfill API", () => {
     });
   });
 
+  it("re-reads an already settled chapter on request instead of skipping or adopting it", async () => {
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) =>
+        settlement([
+          fact(
+            heroId,
+            `第${Number(call.policy.bibleBackfillOrdinal) + 1}章状态`,
+            "清醒",
+          ),
+        ]),
+    };
+    let heroId = "";
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    heroId = book.heroId;
+
+    // Settle the whole book automatically first.
+    const first = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(first.statusCode, first.body).toBe(202);
+    const firstJobId = (first.json() as BackfillDetail).job!.id;
+    for (let ordinal = 0; ordinal < 3; ordinal += 1) {
+      const detail = await settle(app, book.projectId, firstJobId);
+      expect(
+        await driveRun(app, book.projectId, detail.items[ordinal]!.runId!),
+      ).toBe("completed");
+    }
+    expect(await settle(app, book.projectId, firstJobId)).toMatchObject({
+      job: { status: "completed" },
+      counts: { applied: 3 },
+    });
+
+    // A plain run of chapter 2 skips it: its current text is already settled.
+    const plain = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      chapterIds: [book.chapters[1]!.outlineNodeId],
+    });
+    expect(plain.statusCode, plain.body).toBe(202);
+    expect(plain.json()).toMatchObject({
+      job: { status: "completed" },
+      items: [{ status: "skipped", skipReason: "already_settled" }],
+    });
+
+    // Re-reading it settles the same text again, marked as a re-read.
+    const reread = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "review_each",
+      chapterIds: [book.chapters[1]!.outlineNodeId],
+      rereadSettled: true,
+    });
+    expect(reread.statusCode, reread.body).toBe(202);
+    const rereadJob = reread.json() as BackfillDetail;
+    expect(rereadJob.items).toEqual([
+      expect.objectContaining({
+        status: "pending",
+        skipReason: null,
+        note: { code: "bible_backfill.item.reread", reread: true },
+      }),
+    ]);
+    let detail = await settle(app, book.projectId, rereadJob.job!.id);
+    // Not adopted from the earlier applied settlement: a new run of its own.
+    expect(detail.items[0]).toMatchObject({ status: "settling" });
+    expect(detail.items[0]!.note).toMatchObject({ reread: true });
+    const callsBefore = script.calls.length;
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    const rereadCall = script.calls[callsBefore]!;
+    expect(rereadCall.policy).toMatchObject({
+      referenceExistingStoryState: true,
+      bibleBackfillReread: true,
+    });
+    expect(rereadCall.content).toContain("<reread-note>");
+    expect(rereadCall.content).toContain("重新阅读这一章");
+    detail = await settle(app, book.projectId, rereadJob.job!.id);
+    expect(detail.items[0]!.status).toBe("awaiting_decision");
+    // The first pass's settlements never carried the re-read note.
+    expect(
+      script.calls
+        .slice(0, 3)
+        .every((call) => !call.content.includes("<reread-note>")),
+    ).toBe(true);
+  });
+
   it("pauses, resumes, skips, retries and cancels without losing its place", async () => {
     let heroId = "";
     let failNext = true;

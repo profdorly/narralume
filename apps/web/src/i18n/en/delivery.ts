@@ -182,7 +182,7 @@ export const delivery: typeof deliveryZh = {
       viewRun: "View analysis run",
       applied: "Import applied.",
       openTarget: "Open the target project",
-      completeBible: "Complete Story Bible with AI",
+      completeBible: "Generate Story Bible with AI",
       empty: "No import batches yet.",
     },
     agentSkills: {

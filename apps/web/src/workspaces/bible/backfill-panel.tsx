@@ -36,6 +36,7 @@ import {
   getCurrentBibleBackfill,
   knownApiErrorMessage,
   startBibleBackfill,
+  startCanonCandidate,
   type BibleBackfillAction,
   type BibleBackfillCreatedDto,
   type BibleBackfillDetailDto,
@@ -69,6 +70,38 @@ const SKIPPABLE_ITEM_STATUSES = new Set([
 const POLL_INTERVAL_MS = 2_500;
 /** 完成后引导去各板块 AI 候选面板补齐的宏观部分。 */
 const NEXT_SECTIONS: BibleEditorSection[] = ["intent", "outline", "entities"];
+/** 读完全部章节后由 AI 生成建议的宏观板块，按此顺序依次发起。 */
+const GENERATED_SECTIONS = ["intent", "entities", "outline"] as const;
+type GeneratedSection = (typeof GENERATED_SECTIONS)[number];
+/** 可以“重新阅读”的章节状态：已读过（或读失败、被拒绝）的章节。 */
+const REREADABLE_ITEM_STATUSES = new Set([
+  "applied",
+  "empty",
+  "rejected",
+  "skipped",
+  "failed",
+]);
+
+/* 开始时勾选了“随后生成宏观板块”的任务，记在本机；任务完成后面板据此自动发起一次，
+   发起前先取走标记，避免重复发起。 */
+const SECTIONS_MARKER_PREFIX = "narralume:bible-backfill:sections:";
+function rememberSectionsAfter(jobId: string) {
+  try {
+    window.localStorage.setItem(SECTIONS_MARKER_PREFIX + jobId, "1");
+  } catch {
+    /* 存储不可用时退回手动按钮。 */
+  }
+}
+function takeSectionsMarker(jobId: string): boolean {
+  try {
+    const key = SECTIONS_MARKER_PREFIX + jobId;
+    const had = window.localStorage.getItem(key) !== null;
+    window.localStorage.removeItem(key);
+    return had;
+  } catch {
+    return false;
+  }
+}
 
 export function bibleBackfillQueryKey(projectId: string) {
   return ["project", projectId, "bible-backfill", "current"] as const;
@@ -181,7 +214,10 @@ export function BibleBackfillPanel({
   }, [contentSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [mode, setMode] = useState<BibleBackfillMode>("review_each");
+  const [mode, setMode] = useState<BibleBackfillMode>(
+    "auto_apply_stop_on_conflict",
+  );
+  const [withSections, setWithSections] = useState(true);
   const startRequestRef = useRef<{
     mode: BibleBackfillMode;
     requestId: string;
@@ -203,11 +239,75 @@ export function BibleBackfillPanel({
       startRequestRef.current = null;
       setConfirmOpen(false);
       setExpanded(true);
+      if (withSections && !created.idempotentReplay)
+        rememberSectionsAfter(created.job.id);
       queryClient.setQueryData(queryKey, toDetail(created));
       refresh();
     },
     onError: (error) => {
       setConfirmOpen(false);
+      if (error instanceof ApiError && error.code === "bible_backfill.active")
+        refresh();
+    },
+  });
+
+  /* 宏观板块（作者意图、实体、大纲）：逐个发起现有的 AI 候选生成，结果作为候选留在各板块审阅。
+     已有同板块生成在进行时视为已发起。 */
+  const sectionsMutation = useMutation({
+    mutationFn: async (): Promise<GeneratedSection[]> => {
+      const failed: GeneratedSection[] = [];
+      for (const section of GENERATED_SECTIONS) {
+        try {
+          await startCanonCandidate(projectId, section, {
+            requestId: crypto.randomUUID(),
+            instruction: t(`bible.backfill.next.instruction.${section}`),
+          });
+        } catch (error) {
+          if (
+            !(
+              error instanceof ApiError &&
+              error.code === "canon_candidate.active_run_exists"
+            )
+          )
+            failed.push(section);
+        }
+      }
+      return failed;
+    },
+  });
+  const jobId = job?.id ?? null;
+  const jobStatus = job?.status ?? null;
+  useEffect(() => {
+    if (!jobId) return;
+    if (jobStatus === "completed") {
+      if (takeSectionsMarker(jobId)) sectionsMutation.mutate();
+    } else if (jobStatus === "cancelled") {
+      takeSectionsMarker(jobId);
+    }
+  }, [jobId, jobStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* 重新阅读单章：以该章为唯一条目新建一次补全，已结算过也照读，补缺漏、纠正错误。 */
+  const [rereadTarget, setRereadTarget] = useState<{
+    item: BibleBackfillItemDto;
+    title: string;
+  } | null>(null);
+  const [rereadReview, setRereadReview] = useState(true);
+  const rereadMutation = useMutation({
+    mutationFn: (item: BibleBackfillItemDto) =>
+      startBibleBackfill(projectId, {
+        requestId: crypto.randomUUID(),
+        mode: rereadReview ? "review_each" : "auto_apply_stop_on_conflict",
+        chapterIds: [item.outlineNodeId],
+        rereadSettled: true,
+      }),
+    onSuccess: (created) => {
+      setRereadTarget(null);
+      setExpanded(true);
+      queryClient.setQueryData(queryKey, toDetail(created));
+      refresh();
+    },
+    onError: (error) => {
+      setRereadTarget(null);
       if (error instanceof ApiError && error.code === "bible_backfill.active")
         refresh();
     },
@@ -276,6 +376,8 @@ export function BibleBackfillPanel({
 
   const showStartError =
     startMutation.isError && !(job && ACTIVE_STATUSES.has(job.status));
+  const showRereadError =
+    rereadMutation.isError && !(job && ACTIVE_STATUSES.has(job.status));
 
   return (
     <section
@@ -355,13 +457,28 @@ export function BibleBackfillPanel({
               detail={detail!}
               job={job}
               items={items}
-              pending={startMutation.isPending}
+              pending={startMutation.isPending || rereadMutation.isPending}
+              sections={{
+                pending: sectionsMutation.isPending,
+                started: sectionsMutation.isSuccess,
+                failed:
+                  sectionsMutation.isError ||
+                  (sectionsMutation.data?.length ?? 0) > 0,
+              }}
+              onGenerateSections={() => sectionsMutation.mutate()}
               onStartAgain={() => setConfirmOpen(true)}
               onOpenCandidateDesk={onOpenCandidateDesk}
+              onReread={(item, title) => {
+                setRereadReview(true);
+                setRereadTarget({ item, title });
+              }}
             />
           )}
           {showStartError ? (
             <StartError error={startMutation.error} />
+          ) : null}
+          {showRereadError ? (
+            <StartError error={rereadMutation.error} />
           ) : null}
           </>
         ) : null}
@@ -381,19 +498,6 @@ export function BibleBackfillPanel({
               <input
                 type="radio"
                 name="bible-backfill-mode"
-                value="review_each"
-                checked={mode === "review_each"}
-                onChange={() => setMode("review_each")}
-              />
-              <span>
-                <strong>{t("bible.backfill.confirm.reviewEach")}</strong>
-                <small>{t("bible.backfill.confirm.reviewEachHint")}</small>
-              </span>
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="bible-backfill-mode"
                 value="auto_apply_stop_on_conflict"
                 checked={mode === "auto_apply_stop_on_conflict"}
                 onChange={() => setMode("auto_apply_stop_on_conflict")}
@@ -403,7 +507,28 @@ export function BibleBackfillPanel({
                 <small>{t("bible.backfill.confirm.autoApplyHint")}</small>
               </span>
             </label>
+            <label>
+              <input
+                type="radio"
+                name="bible-backfill-mode"
+                value="review_each"
+                checked={mode === "review_each"}
+                onChange={() => setMode("review_each")}
+              />
+              <span>
+                <strong>{t("bible.backfill.confirm.reviewEach")}</strong>
+                <small>{t("bible.backfill.confirm.reviewEachHint")}</small>
+              </span>
+            </label>
           </fieldset>
+          <label className="bible-backfill__sections-option">
+            <input
+              type="checkbox"
+              checked={withSections}
+              onChange={(event) => setWithSections(event.target.checked)}
+            />
+            <span>{t("bible.backfill.confirm.withSections")}</span>
+          </label>
           <p>
             {chapterManuscripts > 0
               ? t("bible.backfill.confirm.scopeCount", {
@@ -426,6 +551,25 @@ export function BibleBackfillPanel({
           onConfirm={() => act("cancel")}
         >
           <p>{t("bible.backfill.cancelDialog.body")}</p>
+        </ConfirmDialog>
+      ) : null}
+      {rereadTarget ? (
+        <ConfirmDialog
+          title={t("bible.backfill.reread.title", { title: rereadTarget.title })}
+          confirmLabel={t("bible.backfill.reread.submit")}
+          pending={rereadMutation.isPending}
+          onCancel={() => setRereadTarget(null)}
+          onConfirm={() => rereadMutation.mutate(rereadTarget.item)}
+        >
+          <p>{t("bible.backfill.reread.body")}</p>
+          <label className="bible-backfill__sections-option">
+            <input
+              type="checkbox"
+              checked={rereadReview}
+              onChange={(event) => setRereadReview(event.target.checked)}
+            />
+            <span>{t("bible.backfill.reread.review")}</span>
+          </label>
         </ConfirmDialog>
       ) : null}
     </section>
@@ -962,16 +1106,22 @@ function FinishedState({
   job,
   items: jobItems,
   pending,
+  sections,
+  onGenerateSections,
   onStartAgain,
   onOpenCandidateDesk,
+  onReread,
 }: {
   projectId: string;
   detail: BibleBackfillDetailDto;
   job: BibleBackfillJobDto;
   items: BibleBackfillItemDto[];
   pending: boolean;
+  sections: { pending: boolean; started: boolean; failed: boolean };
+  onGenerateSections: () => void;
   onStartAgain: () => void;
   onOpenCandidateDesk: (section: BibleEditorSection) => void;
+  onReread: (item: BibleBackfillItemDto, title: string) => void;
 }) {
   const { t } = useI18n();
   /* 留给写作台审阅的章节，作者之后可能已在写作台裁定：变更集列表已在缓存中时按其当前状态显示，
@@ -1042,7 +1192,32 @@ function FinishedState({
       {job.status === "completed" ? (
         <div className="bible-backfill__next">
           <h4>{t("bible.backfill.next.title")}</h4>
-          <p>{t("bible.backfill.next.body")}</p>
+          <p role="status">
+            {sections.started
+              ? t("bible.backfill.next.started")
+              : t("bible.backfill.next.body")}
+          </p>
+          {sections.failed ? (
+            <p className="bible-backfill__note">
+              <CircleAlert size={13} aria-hidden="true" />
+              {t("bible.backfill.next.failed")}
+            </p>
+          ) : null}
+          {!sections.started || sections.failed ? (
+            <div className="bible-backfill__actions">
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={sections.pending}
+                onClick={onGenerateSections}
+              >
+                <Sparkles size={12} aria-hidden="true" />
+                {sections.pending
+                  ? t("bible.backfill.next.generating")
+                  : t("bible.backfill.next.generate")}
+              </button>
+            </div>
+          ) : null}
           <div className="bible-backfill__actions">
             {NEXT_SECTIONS.map((section) => (
               <button
@@ -1071,7 +1246,9 @@ function FinishedState({
           {pending ? t("bible.backfill.starting") : t("bible.backfill.startAgain")}
         </button>
       </div>
-      {items.length > 0 ? <ItemList items={items} current={null} collapsed /> : null}
+      {items.length > 0 ? (
+        <ItemList items={items} current={null} collapsed onReread={onReread} />
+      ) : null}
     </div>
   );
 }
@@ -1082,10 +1259,12 @@ function ItemList({
   items,
   current,
   collapsed = false,
+  onReread,
 }: {
   items: BibleBackfillItemDto[];
   current: BibleBackfillItemDto | null;
   collapsed?: boolean;
+  onReread?: (item: BibleBackfillItemDto, title: string) => void;
 }) {
   const { t } = useI18n();
   const list = (
@@ -1103,6 +1282,17 @@ function ItemList({
             <ItemStatusIcon status={item.status} />
             <span className="bible-backfill__item-title">{title}</span>
             <span className="bible-backfill__item-status">{status}</span>
+            {onReread && REREADABLE_ITEM_STATUSES.has(item.status) ? (
+              <button
+                type="button"
+                className="btn bible-backfill__item-action"
+                aria-label={t("bible.backfill.reread.actionLabel", { title })}
+                onClick={() => onReread(item, title)}
+              >
+                <RotateCcw size={11} aria-hidden="true" />
+                {t("bible.backfill.reread.action")}
+              </button>
+            ) : null}
             <ItemNote item={item} />
           </li>
         );
@@ -1132,6 +1322,7 @@ function itemNoteKeys(item: BibleBackfillItemDto): MessageKey[] {
   const note = item.note;
   if (!note) return [];
   const keys: MessageKey[] = [];
+  if (note.reread === true) keys.push("bible.backfill.itemNote.reread");
   if (
     typeof note.retargetedFromVersionId === "string" &&
     (note.code === "bible_backfill.item.retargeted" ||

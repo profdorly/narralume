@@ -255,6 +255,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   EventSourceStub.current = null;
+  window.localStorage.clear();
 });
 
 describe("Complete Story Bible from manuscript", () => {
@@ -276,10 +277,13 @@ describe("Complete Story Bible from manuscript", () => {
     expect(await screen.findByText(/Found 3 chapters with manuscript text/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Complete Story Bible from manuscript" })).toBeInTheDocument();
     expect(screen.getByText(/proposes those story changes/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate full Story Bible" }));
 
-    const dialog = screen.getByRole("alertdialog", { name: "Complete Story Bible from manuscript" });
-    expect(within(dialog).getByRole("radio", { name: /Review each chapter \(recommended\)/ })).toBeChecked();
+    const dialog = screen.getByRole("alertdialog", { name: "Generate the full Story Bible" });
+    expect(
+      within(dialog).getByRole("radio", { name: /Generate everything automatically \(recommended\)/ }),
+    ).toBeChecked();
+    expect(within(dialog).getByRole("checkbox", { name: /Then generate Intent, Entities and Outline/ })).toBeChecked();
     expect(within(dialog).getByText(/It will process 3 chapters with manuscript text/)).toBeInTheDocument();
     const cost = within(dialog).getByText(/Uses the writing model configured in Settings/);
     expect(cost).toHaveTextContent(/at least one model call/);
@@ -288,8 +292,7 @@ describe("Complete Story Bible from manuscript", () => {
     expect(cost).toHaveTextContent(/no spending cap/);
     expect(cost).toHaveTextContent(/pause or cancel at any time/);
     expect(cost).not.toHaveTextContent(/one model call and/);
-    fireEvent.click(within(dialog).getByRole("radio", { name: /Apply automatically, stop on conflicts/ }));
-    fireEvent.click(within(dialog).getByRole("button", { name: "Start completion" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Generate" }));
 
     await screen.findByText("Reading chapter 1 of 3: Chapter One");
     const start = calls.find((call) => call.method === "POST" && call.url.endsWith("/bible-backfills"));
@@ -297,6 +300,7 @@ describe("Complete Story Bible from manuscript", () => {
       requestId: expect.any(String),
       mode: "auto_apply_stop_on_conflict",
     });
+    expect(window.localStorage.getItem("narralume:bible-backfill:sections:job-1")).toBe("1");
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -317,8 +321,8 @@ describe("Complete Story Bible from manuscript", () => {
     });
     renderPanel();
 
-    fireEvent.click(await screen.findByRole("button", { name: "Start" }));
-    fireEvent.click(screen.getByRole("button", { name: "Start completion" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Generate full Story Bible" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
 
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText("No separate chapters to read")).toBeInTheDocument();
@@ -653,6 +657,119 @@ describe("Complete Story Bible from manuscript", () => {
     expect(screen.queryByText(/still not anchored/)).not.toBeInTheDocument();
   });
 
+  it("generates Intent, Entities and Outline on its own once a job started with them completes", async () => {
+    window.localStorage.setItem("narralume:bible-backfill:sections:job-1", "1");
+    const { calls } = stubApi({
+      current: () =>
+        detail(job({ status: "completed", currentOrdinal: null, mode: "auto_apply_stop_on_conflict" }), [
+          item(0, "applied"),
+          item(1, "applied"),
+          item(2, "empty"),
+        ]),
+      extra: (url) =>
+        /\/canon-spreads\/[a-z]+\/candidates$/.test(url)
+          ? json({ runId: "run-spread", idempotentReplay: false }, 202)
+          : null,
+    });
+    renderPanel();
+
+    expect(
+      await screen.findByText(/Intent, Entities and Outline suggestions are being generated/),
+    ).toBeInTheDocument();
+    const spreads = calls.filter((call) => call.method === "POST" && call.url.includes("/canon-spreads/"));
+    expect(spreads.map((call) => call.url)).toEqual([
+      "/api/projects/p-1/canon-spreads/intent/candidates",
+      "/api/projects/p-1/canon-spreads/entities/candidates",
+      "/api/projects/p-1/canon-spreads/outline/candidates",
+    ]);
+    for (const call of spreads) {
+      expect(call.body).toEqual({
+        requestId: expect.any(String),
+        instruction: expect.stringContaining("whole finished manuscript"),
+      });
+    }
+    expect(window.localStorage.getItem("narralume:bible-backfill:sections:job-1")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Generate Intent, Entities & Outline with AI" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suggest Outline with AI" })).toBeInTheDocument();
+  });
+
+  it("starts the section suggestions from the button and treats one already running as started", async () => {
+    const { calls } = stubApi({
+      current: () =>
+        detail(job({ status: "completed", currentOrdinal: null }), [item(0, "applied")]),
+      extra: (url) =>
+        url.endsWith("/canon-spreads/entities/candidates")
+          ? json(
+              {
+                error: {
+                  code: "canon_candidate.active_run_exists",
+                  message: "Already running",
+                  requestId: "req-1",
+                },
+              },
+              409,
+            )
+          : /\/canon-spreads\/[a-z]+\/candidates$/.test(url)
+            ? json({ runId: "run-spread", idempotentReplay: false }, 202)
+            : null,
+    });
+    renderPanel();
+
+    // No stored intention: nothing starts until the author asks.
+    const generate = await screen.findByRole("button", {
+      name: "Generate Intent, Entities & Outline with AI",
+    });
+    expect(calls.some((call) => call.url.includes("/canon-spreads/"))).toBe(false);
+    fireEvent.click(generate);
+
+    expect(
+      await screen.findByText(/Intent, Entities and Outline suggestions are being generated/),
+    ).toBeInTheDocument();
+    expect(calls.filter((call) => call.url.includes("/canon-spreads/"))).toHaveLength(3);
+    expect(screen.queryByText(/could not be started/)).not.toBeInTheDocument();
+  });
+
+  it("re-reads a settled chapter through a single-chapter job", async () => {
+    let current = detail(job({ status: "completed", currentOrdinal: null }), [
+      item(0, "applied"),
+      item(1, "empty"),
+      item(2, "awaiting_decision"),
+    ]);
+    const { calls } = stubApi({
+      current: () => current,
+      onStart: () => {
+        current = detail(
+          job({ id: "job-2", status: "running", currentOrdinal: 0 }),
+          [item(0, "settling", { note: { code: "bible_backfill.item.reread", reread: true } })],
+          ["pause", "cancel"],
+        );
+        return json({ ...current, idempotentReplay: false }, 202);
+      },
+    });
+    renderPanel();
+
+    fireEvent.click(await screen.findByText("Chapter progress · 3"));
+    // A chapter still awaiting a decision is not offered for a re-read.
+    expect(screen.queryByRole("button", { name: "Re-read Chapter Three" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Re-read Chapter One" }));
+
+    const dialog = screen.getByRole("alertdialog", { name: "Re-read “Chapter One”?" });
+    expect(within(dialog).getByText(/adds what is missing and corrects what is wrong/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("checkbox", { name: "Review the changes before applying them" })).toBeChecked();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Re-read chapter" }));
+
+    expect(await screen.findByText(/Read again at your request/)).toBeInTheDocument();
+    const start = calls.find((call) => call.method === "POST" && call.url.endsWith("/bible-backfills"));
+    expect(start?.body).toEqual({
+      requestId: expect.any(String),
+      mode: "review_each",
+      chapterIds: ["node-1"],
+      rereadSettled: true,
+    });
+  });
+
   it.each([
     {
       locale: "en" as const,
@@ -722,7 +839,7 @@ describe("Complete Story Bible from manuscript", () => {
     expect(await screen.findByText("Not started")).toBeInTheDocument();
     const toggle = screen.getByRole("button", { name: /Show/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("button", { name: "Start" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate full Story Bible" })).not.toBeInTheDocument();
     fireEvent.click(toggle);
     expect(screen.getByText("It will process every imported chapter that has manuscript text.")).toBeInTheDocument();
   });

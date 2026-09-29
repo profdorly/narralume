@@ -131,7 +131,7 @@ async function uploadAndApply(view: ReturnType<typeof render>, count: number) {
   fireEvent.click(await screen.findByRole("button", { name: `Shelve ${count} items` }));
 }
 
-describe("Import follow-up: Complete Story Bible with AI", () => {
+describe("Import follow-up: Generate Story Bible with AI", () => {
   it("shelf import with manuscript offers the Story Bible completion", async () => {
     stubShelfImport(
       importDetail([
@@ -145,7 +145,7 @@ describe("Import follow-up: Complete Story Bible with AI", () => {
     const dialog = await screen.findByRole("dialog", { name: "“draft.md” is on the shelf" });
     expect(dialog).toHaveTextContent(/hasn't been filled in chapter by chapter yet/);
     expect(screen.getByRole("button", { name: "Open project overview" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Complete Story Bible with AI" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate Story Bible with AI" }));
 
     expect(await screen.findByText("bible: /projects/p-new/bible?backfill=open")).toBeInTheDocument();
   });
@@ -156,7 +156,7 @@ describe("Import follow-up: Complete Story Bible with AI", () => {
     await uploadAndApply(view, 1);
 
     expect(await screen.findByText("overview: /projects/p-new/overview")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Complete Story Bible with AI" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate Story Bible with AI" })).not.toBeInTheDocument();
   });
 
   it("delivery import manager links to the Story Bible completion after apply", async () => {
@@ -199,7 +199,7 @@ describe("Import follow-up: Complete Story Bible with AI", () => {
 
     const status = await screen.findByRole("status");
     expect(status).toHaveTextContent("Import applied.");
-    expect(screen.getByRole("link", { name: "Complete Story Bible with AI" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Generate Story Bible with AI" })).toHaveAttribute(
       "href",
       "/projects/p-1/bible?backfill=open",
     );
