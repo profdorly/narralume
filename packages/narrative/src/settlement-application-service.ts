@@ -2,6 +2,7 @@ import { createCanonFact, type CanonFact } from "@narralume/domain";
 import {
   CanonChangeSetDecisionConflictError,
   SqliteCanonRepository,
+  SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteReviewRepository,
   SqliteRunRepository,
@@ -55,10 +56,12 @@ export class SettlementApplicationService {
   private readonly state: SqliteNarrativeStateRepository;
   private readonly reviews: SqliteReviewRepository;
   private readonly runs: SqliteRunRepository;
+  private readonly documents: SqliteDocumentRepository;
 
   constructor(private readonly database: NarrativeDatabase) {
     this.canon = new SqliteCanonRepository(database);
     this.story = new SqliteStoryRepository(database);
+    this.documents = new SqliteDocumentRepository(database);
     this.state = new SqliteNarrativeStateRepository(
       database,
       this.canon,
@@ -153,8 +156,7 @@ export class SettlementApplicationService {
     now: string,
     result: MutableApplicationResult,
   ): void {
-    const run = this.runs.getRun(changeSet.runId);
-    const outlineNodeId = run?.targetOutlineNodeId ?? null;
+    const outlineNodeId = this.settlementAnchor(changeSet);
     settlement.factCandidates.forEach((candidate, index) => {
       const path = `factCandidates.${index}`;
       const current = candidate.factId
@@ -414,6 +416,37 @@ export class SettlementApplicationService {
       });
       result.applied.foreshadowIds.push(id);
     });
+  }
+
+  /**
+   * The chapter a settlement's facts, knowledge, timeline, relationship and
+   * foreshadow rows are anchored to. Chapter-production runs carry it as
+   * targetOutlineNodeId. Manual settlements deliberately keep that null (they
+   * must not take the writing-chain mutex), so their anchor is the outline
+   * node of the settled document. A manual settlement whose chapter can no
+   * longer be resolved is refused instead of being applied unanchored.
+   */
+  private settlementAnchor(changeSet: CanonChangeSetView): string | null {
+    const run = this.runs.getRun(changeSet.runId);
+    if (!run) return null;
+    if (run.targetOutlineNodeId) return run.targetOutlineNodeId;
+    if (run.recipe !== "manual-settlement") return null;
+    const documentId =
+      typeof run.policy.documentId === "string" ? run.policy.documentId : null;
+    const document = documentId
+      ? this.documents.get(changeSet.projectId, documentId)
+      : null;
+    const outlineNodeId = document?.outlineNodeId ?? null;
+    if (
+      !outlineNodeId ||
+      !this.story.getOutlineNode(changeSet.projectId, outlineNodeId)
+    ) {
+      throw new SettlementApplicationError(
+        "settlement.anchor.missing",
+        "The settled chapter no longer exists, so these story changes cannot be anchored to it",
+      );
+    }
+    return outlineNodeId;
   }
 
   private applyCoCreateSettlement(

@@ -1,12 +1,17 @@
 import {
   createCanonEntity,
   createCanonFact,
+  createDocument,
   createOutlineNode,
   createProject,
 } from "@narralume/domain";
-import { buildChapterRecipe } from "@narralume/harness";
+import {
+  buildChapterRecipe,
+  buildManualSettlementRecipe,
+} from "@narralume/harness";
 import {
   SqliteCanonRepository,
+  SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteReviewRepository,
@@ -400,6 +405,89 @@ describe("SettlementApplicationService", () => {
     expect(state.listTimeline("p1")).toHaveLength(1);
   });
 
+  it("anchors a manual settlement to the settled document's chapter", () => {
+    const documents = new SqliteDocumentRepository(database);
+    documents.insert(
+      createDocument({
+        id: "doc-2",
+        projectId: "p1",
+        kind: "chapter",
+        title: "Chapter 2",
+        outlineNodeId: "chapter-2",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "doc-2");
+    seedChangeSet("manual-change", settlementPayload("awake"), "manual-run");
+
+    new SettlementApplicationService(database).apply({
+      projectId: "p1",
+      changeSetId: "manual-change",
+      now,
+    });
+
+    expect(
+      new SqliteRunRepository(database).getRun("manual-run")
+        ?.targetOutlineNodeId,
+    ).toBeNull();
+    expect(canon.listEffectiveFacts("p1")).toEqual([
+      expect.objectContaining({
+        id: "manual-change:fact:0",
+        validFromNodeId: "chapter-2",
+      }),
+    ]);
+    expect(state.listKnowledge("p1")).toEqual([
+      expect.objectContaining({
+        factId: "manual-change:fact:0",
+        learnedAtNodeId: "chapter-2",
+      }),
+      expect.objectContaining({
+        timelineEventId: "manual-change:timeline:0",
+        learnedAtNodeId: "chapter-2",
+      }),
+    ]);
+    expect(state.listTimeline("p1")).toEqual([
+      expect.objectContaining({ outlineNodeId: "chapter-2" }),
+    ]);
+    expect(state.listCurrentRelationships("p1")).toEqual([
+      expect.objectContaining({ outlineNodeId: "chapter-2" }),
+    ]);
+    expect(state.listForeshadows("p1")).toEqual([
+      expect.objectContaining({ evidenceNodeIds: ["chapter-2"] }),
+    ]);
+  });
+
+  it("refuses to apply a manual settlement whose chapter cannot be resolved", () => {
+    new SqliteDocumentRepository(database).insert(
+      createDocument({
+        id: "loose-note",
+        projectId: "p1",
+        kind: "note",
+        title: "Loose note",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "loose-note");
+    seedChangeSet("manual-change", settlementPayload("awake"), "manual-run");
+
+    expect(() =>
+      new SettlementApplicationService(database).apply({
+        projectId: "p1",
+        changeSetId: "manual-change",
+        now,
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        name: "SettlementApplicationError",
+        code: "settlement.anchor.missing",
+      }),
+    );
+    expect(reviews.requireCanonChangeSet("p1", "manual-change").status).toBe(
+      "candidate",
+    );
+    expect(canon.listEffectiveFacts("p1")).toHaveLength(0);
+  });
+
   it("reuses an identical proposition while recording new knowledge", () => {
     seedChangeSet("change-1", settlementPayload("awake"));
     const service = new SettlementApplicationService(database);
@@ -433,6 +521,21 @@ describe("SettlementApplicationService", () => {
     );
   });
 });
+
+function createManualSettlementRun(id: string, documentId: string): void {
+  const recipe = buildManualSettlementRecipe(id);
+  new SqliteRunRepository(database).create({
+    id,
+    projectId: "p1",
+    recipe: recipe.name,
+    recipeVersion: recipe.version,
+    mode: "manual",
+    targetOutlineNodeId: null,
+    policy: { documentId, documentVersionId: `${documentId}:v1` },
+    steps: recipe.steps,
+    now,
+  });
+}
 
 function seedChangeSet(
   id: string,
