@@ -3253,7 +3253,8 @@ function entityByImportedName(
   );
 }
 
-/** 导入落库时生成的说明文字跟随作品创作语言；与 promptLanguageOf 一致，非 en 一律按中文。 */
+/** 导入落库时生成的说明文字跟随作品创作语言；与 promptLanguageOf 一致，非 en 一律按中文。
+ *  统计风格候选的规则措辞则跟随原稿书写系统，见 manuscript-import 的 inferStylePayload。 */
 function importNoteLabels(language: string) {
   return language === "en"
     ? {

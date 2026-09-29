@@ -5,7 +5,7 @@ import { createDocument } from "@narralume/domain";
 import { SqliteDocumentRepository } from "@narralume/persistence";
 import { NodeNarrativeDatabase } from "@narralume/persistence/node";
 import JSZip from "jszip";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
@@ -820,6 +820,109 @@ describe("delivery API", () => {
     ]);
   });
 
+  it("imports an HTML manuscript end to end, splitting headings and applying chapters", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "O Farol",
+        language: "en",
+      },
+    );
+    const html = [
+      "<!doctype html><html><head><title>Capítulo 1</title><style>h1{}</style></head><body>",
+      "<p>Para Ana.</p>",
+      '<h1 class="chapter"><span>Capítulo 1</span></h1>',
+      "<p>Era uma vez &amp; outra vez.</p><p>Capítulo 3. Era a última página.</p>",
+      '<h1><img src="c2.png" alt="Capítulo 2 — O Rio"/></h1>',
+      "<p>A água subia.<br/>Devagar.</p><script>alert(1)</script>",
+      "</body></html>",
+    ].join("\n");
+    const preview = await previewImport(
+      app,
+      "o-farol.html",
+      "html",
+      html,
+      project.id,
+    );
+    expect(preview.batch).toMatchObject({ status: expect.any(String) });
+    expect(documentCandidates(preview)).toEqual([
+      { title: "o-farol", kind: "chapter" },
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "Capítulo 2 — O Rio", kind: "chapter" },
+    ]);
+    const contents = preview.candidates
+      .filter((item) => item.kind === "document")
+      .map((item) => item.payload?.content);
+    expect(contents).toEqual([
+      "Para Ana.",
+      "Era uma vez & outra vez.\n\nCapítulo 3. Era a última página.",
+      "A água subia.\nDevagar.",
+    ]);
+    expect(JSON.stringify(contents)).not.toMatch(/alert|h1\{\}|<|#/u);
+
+    await request(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    const documents = await request<{ title: string; kind: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents`,
+    );
+    expect(
+      documents
+        .filter((document) => document.kind === "chapter")
+        .map((document) => document.title)
+        .sort(),
+    ).toEqual(["Capítulo 1", "Capítulo 2 — O Rio", "o-farol"].sort());
+  });
+
+  it("rejects a DOCX whose document.xml and styles.xml together exceed the expansion limit", async () => {
+    const { app } = await setup();
+    const limit = 100 * 1024 * 1024;
+    // 真实 ZIP 的声明大小与解压校验会先拦下超限条目；这里替换读取结果，
+    // 只让两个 XML 的合计长度越过上限，单个 document.xml 仍在限内。
+    const documentXml = `<w:document/>${" ".repeat(limit - 1024)}`;
+    const stylesXml = `<w:styles/>${" ".repeat(2048)}`;
+    const entry = (name: string, text: string) => ({
+      name,
+      dir: false,
+      _data: { uncompressedSize: 1 },
+      async: async () => text,
+    });
+    const files = {
+      "word/document.xml": entry("word/document.xml", documentXml),
+      "word/styles.xml": entry("word/styles.xml", stylesXml),
+    };
+    vi.spyOn(JSZip, "loadAsync").mockResolvedValue({
+      files,
+      file: (name: string) => files[name as keyof typeof files] ?? null,
+    } as unknown as JSZip);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/imports/preview",
+      payload: {
+        targetProjectId: null,
+        filename: "oversized.docx",
+        format: "docx",
+        contentBase64: Buffer.from("stub").toString("base64"),
+      },
+    });
+    expect(response.statusCode).toBe(422);
+    expect(response.json()).toMatchObject({
+      error: { code: "import.docx.document_too_large" },
+    });
+    expect(documentXml.length).toBeLessThanOrEqual(limit);
+    expect(documentXml.length + stylesXml.length).toBeGreaterThan(limit);
+  });
+
   it("round-trips exported DOCX and EPUB chapters through import", async () => {
     const { app } = await setup();
     const project = await request<{ id: string }>(
@@ -1378,7 +1481,7 @@ async function request<T = unknown>(
 async function previewImport(
   app: Awaited<ReturnType<typeof buildApp>>,
   filename: string,
-  format: "markdown" | "text" | "docx" | "epub",
+  format: "markdown" | "text" | "docx" | "epub" | "html",
   content: string | Buffer,
   targetProjectId: string | null = null,
 ) {

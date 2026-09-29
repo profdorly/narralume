@@ -185,14 +185,33 @@ function alternation(words: readonly string[]): string {
 
 const NUMBER_WORD = `(?:${alternation(NUMBER_WORDS)})(?:(?:\\s*-\\s*|\\s+(?:e|y|and)\\s+|\\s+)(?:${alternation(NUMBER_WORDS)}))?`;
 
-/** 关键词 + 可选序号 + 可选标题。标题可用分隔符（: . - – —）接在序号后，
- *  也可只用空白（Chapter 12 The Storm），但空白后以小写字母开头的行视为折行正文。 */
+/** 序号必须在词边界结束；连字符连着字母或数字仍属同一个词，
+ *  因此 “segunda-feira” 不会被读成序号 segunda 加分隔符 “-feira”，“2-3” 也不是序号 2。 */
+const NUMBER_END = "(?![\\p{L}\\p{N}]|-[\\p{L}\\p{N}])";
+
+/** 关键词 + 可选序号 + 可选标题。标题可用分隔符（: . – — 或两侧带空白的 -）接在序号后，
+ *  也可只用空白（Chapter 12 The Storm）。 */
 const KEYWORD_HEADING = new RegExp(
   `^(?:(?<numbered>${alternation(NUMBERED_KEYWORDS)})|(?<standalone>${alternation(STANDALONE_KEYWORDS)}))` +
-    `(?:\\s+(?<number>\\d{1,4}|${ROMAN_NUMERAL}|${NUMBER_WORD}))?` +
-    `(?:(?<separated>\\s*[:.\\-–—]\\s*.*)|(?<loose>\\s+.+))?$`,
+    `(?:\\s+(?<number>\\d{1,4}|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
+    `(?:(?:\\s*[:.–—]|\\s+-(?=\\s|$))(?<separated>.*)|(?<loose>\\s+.+))?$`,
   "iu",
 );
+
+/** 标题部分至少这么多个词、又以句末标点结尾时，按正文句子处理。 */
+const SENTENCE_MIN_WORDS = 3;
+
+/** 序号后的标题部分读起来像句子：首个字母小写（“leia antes de dormir.”），
+ *  或以 . ! ? … 结尾（可带收尾引号、括号）且有多个词（“Era a última página.”）。 */
+function looksLikeSentence(remainder: string): boolean {
+  const text = remainder.trim();
+  if (!text) return false;
+  if (/^[^\p{L}\p{N}]*\p{Ll}/u.test(text)) return true;
+  return (
+    /[.!?…]["'”’»)\]]*$/u.test(text) &&
+    text.split(/\s+/u).length >= SENTENCE_MIN_WORDS
+  );
+}
 
 function withoutDiacritics(value: string): string {
   return value.normalize("NFD").replace(/\p{M}/gu, "");
@@ -211,13 +230,11 @@ function isKeywordHeading(line: string): boolean {
     number !== number.toUpperCase()
   )
     return false;
-  // 空白后直接接小写词多半是句子或折行正文：“Capítulo 3 do livro anterior…”
-  if (
-    groups.loose !== undefined &&
-    (!number || /^\s*\p{Ll}/u.test(groups.loose))
-  )
-    return false;
-  return true;
+  // 只用空白接标题时必须先有序号（“Prólogo de uma vida” 是句子）。
+  if (groups.loose !== undefined && !number) return false;
+  // 标题部分像句子时，这一行是正文：“Capítulo 3 do livro anterior…”、
+  // “Capítulo 3. Era a última página.”、“Livro 1: leia antes de dormir.”
+  return !looksLikeSentence(groups.separated ?? groups.loose ?? "");
 }
 
 function exceedsCodePoints(value: string, limit: number): boolean {
@@ -226,34 +243,62 @@ function exceedsCodePoints(value: string, limit: number): boolean {
   return [...value].length > limit;
 }
 
-/** 判断一行是否为章节标题，返回标题文本；否则返回 null。
+/** 判断一行是否为章节标题。keyword 为 true 表示由新增的 pt / es / en 关键词语法识别。
  *  既有形式（Markdown、第 N 章、Chapter + 数字）先于长度上限判断，保持原有切分；
- *  长度上限、强调包裹与关键词语法只作用于新增的 pt / es / en 标题形式。 */
-export function manuscriptHeadingTitle(line: string): string | null {
+ *  长度上限、强调包裹与关键词语法只作用于新增的标题形式。 */
+function classifyHeading(
+  line: string,
+): { title: string; keyword: boolean } | null {
   const markdown = MARKDOWN_HEADING.exec(line);
-  if (markdown) return markdown[1]!.trimEnd();
+  if (markdown) return { title: markdown[1]!.trimEnd(), keyword: false };
   const trimmed = line.trim();
   if (!trimmed) return null;
-  if (LEGACY_HEADING.test(trimmed)) return trimmed;
+  if (LEGACY_HEADING.test(trimmed)) return { title: trimmed, keyword: false };
   if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
   const candidate = EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
-  return isKeywordHeading(candidate) ? candidate : null;
+  return isKeywordHeading(candidate)
+    ? { title: candidate, keyword: true }
+    : null;
+}
+
+/** 判断一行是否为章节标题，返回标题文本；否则返回 null。 */
+export function manuscriptHeadingTitle(line: string): string | null {
+  return classifyHeading(line)?.title ?? null;
+}
+
+const PAGE_NUMBER = new RegExp(`^(?:\\d{1,5}|${ROMAN_NUMERAL})$`, "iu");
+
+/** 内容只有页码（阿拉伯数字或罗马数字，可含空白）：目录条目，而不是章节正文。 */
+function isPageNumberOnly(content: string): boolean {
+  return (
+    content.length <= 64 &&
+    content
+      .split(/\s+/u)
+      .every((token) => token === "" || PAGE_NUMBER.test(token))
+  );
 }
 
 /** 按章节标题切分正文。首个标题前的文字（扉页、题记等）在以 CJK 为主的原稿中
- *  沿用“卷首”，其他文字的原稿以作品标题命名；没有标题时整部正文作为一个分段。 */
+ *  沿用“卷首”，其他文字的原稿以作品标题命名；没有标题时整部正文作为一个分段。
+ *  关键词标题下只有页码的分段是正文前的目录（常见于 PDF 转出的纯文本），直接丢弃；
+ *  既有标题形式保持原有行为，不做此过滤。 */
 export function splitManuscriptSections(
   text: string,
   fallbackTitle: string,
 ): ManuscriptSection[] {
-  const headings: { start: number; end: number; title: string }[] = [];
+  const headings: {
+    start: number;
+    end: number;
+    title: string;
+    keyword: boolean;
+  }[] = [];
   for (const line of text.matchAll(/^.*$/gmu)) {
-    const title = manuscriptHeadingTitle(line[0]);
-    if (title !== null)
+    const heading = classifyHeading(line[0]);
+    if (heading)
       headings.push({
         start: line.index,
         end: line.index + line[0].length,
-        title,
+        ...heading,
       });
   }
   if (!headings.length) return [{ title: fallbackTitle, content: text.trim() }];
@@ -267,7 +312,8 @@ export function splitManuscriptSections(
   headings.forEach((heading, index) => {
     const end = headings[index + 1]?.start ?? text.length;
     const content = text.slice(heading.end, end).trim();
-    if (content) sections.push({ title: heading.title, content });
+    if (!content || (heading.keyword && isPageNumberOnly(content))) return;
+    sections.push({ title: heading.title, content });
   });
   return sections.length
     ? sections
@@ -652,13 +698,18 @@ const HTML_HEADING_CLOSE = [
   /<\/h2\s*>/giu,
   /<\/h3\s*>/giu,
 ] as const;
-/** 标题标记内容上限；超长或未闭合的标题退回只加前缀。 */
+/** 标题标记内容上限。超长或未闭合的标题不作标题处理：开始标签只断段，
+ *  其中文字作为普通段落保留（独占一行的关键词标题仍会被逐行识别）。 */
 const HTML_HEADING: ElementPattern = {
   open: /<h([1-3])\b/giu,
   close: (open) => HTML_HEADING_CLOSE[Number(open[1]) - 1]!,
   skipSelfClosing: false,
   maxBody: 2000,
 };
+/** 只有图片、图片又没有 alt 文字的标题（常见于 EPUB 的图片章首）使用的中性标题，
+ *  以保留章节边界；它不属于任何语言，作者可在预览后改名。 */
+export const UNTITLED_HTML_HEADING = "§";
+const HTML_IMAGE_TAG = /^<(?:img|image|svg)\b/iu;
 
 function htmlTagText(tag: string): string {
   // 先按首字符分流，多数标签不必逐个正则比较。
@@ -666,10 +717,31 @@ function htmlTagText(tag: string): string {
   if (first === "/") {
     if (/^<\/(?:h[1-6]|p|div|li|blockquote)>$/iu.test(tag)) return "\n\n";
   } else if (first === "h" || first === "H") {
-    if (/^<h[1-3]\b[^>]*>$/iu.test(tag)) return "\n# ";
+    if (/^<h[1-3]\b[^>]*>$/iu.test(tag)) return "\n\n";
   } else if ((first === "b" || first === "B") && /^<br\s*\/?>$/iu.test(tag))
     return "\n";
   return "";
+}
+
+/** 标题元素的标题文字：可见文字优先；没有文字时用其中图片的 alt；
+ *  只有无 alt 的图片时用中性标题；什么都没有时返回空串。 */
+function htmlHeadingTitle(body: string): string {
+  const alts: string[] = [];
+  let hasImage = false;
+  const text = mapTags(body, (tag) => {
+    if (HTML_IMAGE_TAG.test(tag)) {
+      hasImage = true;
+      const alt = attributeValue(tag, "alt");
+      if (alt) alts.push(alt);
+    }
+    return " ";
+  });
+  const title = (value: string) => value.replace(/\s+/gu, " ").trim();
+  return (
+    title(text) ||
+    title(alts.join(" ")) ||
+    (hasImage ? UNTITLED_HTML_HEADING : "")
+  );
 }
 
 export function htmlToText(html: string): string {
@@ -677,9 +749,7 @@ export function htmlToText(html: string): string {
   for (const pattern of HTML_REMOVED_ELEMENTS)
     text = replaceElements(text, pattern, () => "");
   text = replaceElements(text, HTML_HEADING, ({ open, body }) => {
-    const title = mapTags(body, () => " ")
-      .replace(/\s+/gu, " ")
-      .trim();
+    const title = htmlHeadingTitle(body);
     if (!title) return "";
     // 套了标题标记的场景分隔符（* * *、⁂）按正文段落保留。
     if (SCENE_BREAK.test(decodeXml(title))) return `\n\n${title}\n\n`;
@@ -740,7 +810,13 @@ export type StatisticalStylePayload = {
 };
 
 /** 由导入文本的可复验统计生成风格候选。CJK 正文按字计量并使用中文措辞；
- *  其他文字按词计量、句末同时识别 . 与 …，措辞使用英文。 */
+ *  其他文字按词计量、句末同时识别 . 与 …，措辞使用英文。
+ *
+ *  语言策略（有意与标签不同）：暂存候选标题、默认关系与导入说明等界面标签跟随作品语言
+ *  （见 delivery-service 的 importNoteLabels 与 narrative 的 IMPORT_STAGE_LABELS）；
+ *  这里的统计规则则跟随原稿的书写系统，因为句长、段长的计量单位（字或词）本身取决于
+ *  原稿，措辞只能二选一：CJK 原稿用中文，其他原稿（葡语、西语、英语等）一律用英文。
+ *  AI 风格候选由模型按原稿语言书写，不受此限。 */
 export function inferStylePayload(text: string): StatisticalStylePayload {
   const paragraphs = text.split(/\n\s*\n/u).filter((item) => item.trim());
   const examples = paragraphs

@@ -105,6 +105,9 @@ export class DeliveryWorkerSuite {
     );
     const locator = new ParagraphLocator(documents);
     const chunks = splitImportParagraphs(locator, chunkCharacters);
+    // 缓存的分段与合并结果只在同一版提示词、同一提示语言下复用：重试前升级了
+    // 提示词或改了作品语言时，旧产物必须重新生成。
+    const promptKey = `${IMPORT_ANALYSIS_PROMPT_VERSION}\0${promptLanguageOf(project.language)}`;
     const chunkResults = await concurrentMap(
       chunks,
       Math.max(
@@ -117,7 +120,7 @@ export class DeliveryWorkerSuite {
       signal,
       async (chunk, index, chunkSignal): Promise<ImportChunkResult> => {
         const inputDigest = sha256(
-          `${batch.sourceHash}\0chunk\0${index}\0${chunk.text}`,
+          `${batch.sourceHash}\0chunk\0${index}\0${promptKey}\0${chunk.text}`,
         );
         const cached = this.delivery.getImportAnalysisArtifact(
           batchId,
@@ -200,7 +203,7 @@ export class DeliveryWorkerSuite {
     let aggregateDigest = digests[0]!;
     for (let index = 1; index < analyses.length; index += 1) {
       const inputDigest = sha256(
-        `${aggregateDigest}\0${digests[index]}\0synthesis\0${index}`,
+        `${aggregateDigest}\0${digests[index]}\0synthesis\0${index}\0${promptKey}`,
       );
       const cached = this.delivery.getImportAnalysisArtifact(
         batchId,
@@ -492,6 +495,10 @@ export class DeliveryWorkerSuite {
   }
 }
 
+/** 拆书提示词（分段分析与合并）的版本，参与缓存产物的输入摘要。
+ *  修改这两类提示词的指令或消息格式时递增，使旧提示词产出的缓存分析不再被复用。 */
+const IMPORT_ANALYSIS_PROMPT_VERSION = "import-analysis-prompt-2";
+
 /** 拆书候选的产出语言跟随原文，而非指令语言：作品语言只有 zh-CN / en，
  *  其他语言（如葡语）的原稿也必须得到同语言的候选。 */
 const IMPORT_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
@@ -500,10 +507,17 @@ const IMPORT_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
   en: "Language invariant: write every natural-language field (title, synopsis, themes, audience, tone, boundaries, entity descriptions, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and Skill texts) in the same language as the source manuscript text, even when it differs from the language of these instructions; keep character, place, and other proper names exactly as written in the source, never translated. Field names and enum values stay as defined by the schema.",
 };
 
+/** 合并步骤看不到原稿，只能沿用输入分析的语言；指令与用户消息都明确要求这一点。 */
 const IMPORT_SYNTHESIS_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
   "zh-CN":
-    "语言不变量：合并结果的所有自然语言字段保持与输入分析相同的原文语言，不得翻译成本指令的语言；专有名词保留原文写法。字段名与枚举值保持结构定义不变。",
-  en: "Language invariant: keep every natural-language field of the merged result in the same source-manuscript language as the input analyses; never translate it into the language of these instructions, and keep proper names exactly as written. Field names and enum values stay as defined by the schema.",
+    "语言不变量：保持输入分析的语言。合并结果的所有自然语言字段保持与输入分析相同的原文语言，不得翻译成本指令的语言；专有名词保留原文写法。字段名与枚举值保持结构定义不变。",
+  en: "Language invariant: Keep the language of the input analyses. Keep every natural-language field of the merged result in the same source-manuscript language as the input analyses; never translate it into the language of these instructions, and keep proper names exactly as written. Field names and enum values stay as defined by the schema.",
+};
+
+const IMPORT_SYNTHESIS_MESSAGE_LEAD: Record<ProjectLanguage, string> = {
+  "zh-CN":
+    "保持输入分析的语言：合并结果沿用 <accumulated> 与 <next> 中自然语言字段已经使用的语言，不要翻译。",
+  en: "Keep the language of the input analyses: write the merged result in the language already used by the natural-language fields of <accumulated> and <next>; do not translate.",
 };
 
 const IMPORT_STAGE_LABELS: Record<
@@ -610,7 +624,7 @@ function importSynthesisRequest(
     messages: [
       {
         role: "user" as const,
-        content: `<accumulated>${JSON.stringify(accumulated)}</accumulated>\n<next>${JSON.stringify(next)}</next>`,
+        content: `${IMPORT_SYNTHESIS_MESSAGE_LEAD[promptLanguageOf(language)]}\n\n<accumulated>${JSON.stringify(accumulated)}</accumulated>\n<next>${JSON.stringify(next)}</next>`,
       },
     ],
     reasoningEffort: "medium" as const,
