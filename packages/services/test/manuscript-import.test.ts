@@ -52,6 +52,26 @@ describe("manuscript chapter headings", () => {
     "Capítulo 6 – Onde?",
     "Parte Segunda - O Inverno",
     "Capítulo 1: 1985",
+    // 问号、感叹号结尾的章名，以及 : – — - 之后以句号结尾的章名
+    "Capítulo 5: Quem Matou Laura?",
+    "Capítulo 12 — Onde Está o Corpo?",
+    "Capítulo 3: E Agora, José?",
+    "Capítulo 8 — Nunca Mais Volte!",
+    "Capítulo 2 — O Fim do Mundo.",
+    "Capítulo 1: ¿Quién mató a Laura?",
+    "Capítulo 4 ¿Quién mató a Laura?",
+    "Chapter Five: Who Killed Laura?",
+    "Capítulo 3. Quem Matou Laura?",
+    "Capítulo 4 Onde Está Laura?",
+    "Capítulo 9. E Depois...",
+    "Parte 3 - Tudo Acabou.",
+    // 序数标记与紧贴序号的 -
+    "Capítulo 1º",
+    "Capítulo 1ª",
+    "Capítulo 1°",
+    "CAPÍTULO 2º: O Rio",
+    "Parte 2ª — O Inverno",
+    "Capítulo 1- A Chegada",
   ])("recognizes %j", (line) => {
     expect(manuscriptHeadingTitle(line)).toBe(
       line.replace(/^\*\*(.*)\*\*$/u, "$1"),
@@ -81,6 +101,10 @@ describe("manuscript chapter headings", () => {
     "***",
     "* * *",
     "⁂",
+    "# # #",
+    "## #",
+    "# ***",
+    "## ⁂",
     // 分隔符后的标题部分像句子
     "Capítulo 3. Era a última página.",
     "Livro 1: leia antes de dormir.",
@@ -89,12 +113,15 @@ describe("manuscript chapter headings", () => {
     "Capítulo 2 — e então ela partiu",
     "Parte 4: “a casa caiu”",
     "**Capítulo 3. Era a última página.**",
-    // 序号在词边界结束；连字符分隔符两侧须有空白
+    "Capítulo 4: e depois?",
+    "Capítulo 6. Ela disse “adeus.”",
+    // 序号在词边界结束；连字符分隔符后须有空白
     "Parte segunda-feira para Lisboa.",
     "Parte quinta-feira",
     "Parte sexta-feira, bem cedo",
     "Parte 2-3 vezes por semana.",
     "Capítulo 12-A Fuga",
+    "Capítulo 1ºA",
     "Livro-caixa 3",
   ])("rejects %j", (line) => {
     expect(manuscriptHeadingTitle(line)).toBeNull();
@@ -163,6 +190,76 @@ describe("manuscript chapter headings", () => {
     ]);
   });
 
+  it("splits at question, exclamation and period-ended titles after a separator", () => {
+    const text = [
+      "Capítulo 1: Quem Matou Laura?",
+      "Ninguém sabia.",
+      "Capítulo 2 — Nunca Mais Volte!",
+      "Ela partiu.",
+      "Capítulo 3 — O Fim do Mundo.",
+      "Capítulo 3. Era a última página.",
+      "Chapter Four: Who Killed Laura?",
+      "Nobody knew.",
+      "Capítulo 5: ¿Quién mató a Laura?",
+      "Nadie lo sabía.",
+    ].join("\n\n");
+    expect(splitManuscriptSections(text, "Livro")).toEqual([
+      { title: "Capítulo 1: Quem Matou Laura?", content: "Ninguém sabia." },
+      { title: "Capítulo 2 — Nunca Mais Volte!", content: "Ela partiu." },
+      {
+        title: "Capítulo 3 — O Fim do Mundo.",
+        content: "Capítulo 3. Era a última página.",
+      },
+      { title: "Chapter Four: Who Killed Laura?", content: "Nobody knew." },
+      { title: "Capítulo 5: ¿Quién mató a Laura?", content: "Nadie lo sabía." },
+    ]);
+  });
+
+  it("keeps plain-text scene breaks, including # # #, inside the chapter", () => {
+    const text = [
+      "Capítulo 1",
+      "Um.",
+      "# # #",
+      "Dois.",
+      "#",
+      "Três.",
+      "***",
+      "Quatro.",
+      "* * *",
+      "Cinco.",
+      "⁂",
+      "Seis.",
+      "# ***",
+      "Sete.",
+    ].join("\n\n");
+    expect(splitManuscriptSections(text, "Livro")).toEqual([
+      { title: "Capítulo 1", content: text.replace(/^Capítulo 1\n\n/u, "") },
+    ]);
+  });
+
+  it("merges a bare number heading with the Markdown title heading right after it", () => {
+    const text = [
+      "# Capítulo 1º",
+      "## A Chegada",
+      "Texto um.",
+      "Capítulo 2",
+      "## O Rio",
+      "Texto dois.",
+      "# Capítulo 3: O Mar",
+      "## Uma cena",
+      "Texto três.",
+      "# Parte II",
+      "## Capítulo 4",
+      "Texto quatro.",
+    ].join("\n\n");
+    expect(splitManuscriptSections(text, "Livro")).toEqual([
+      { title: "Capítulo 1º — A Chegada", content: "Texto um." },
+      { title: "Capítulo 2 — O Rio", content: "Texto dois." },
+      { title: "Uma cena", content: "Texto três." },
+      { title: "Capítulo 4", content: "Texto quatro." },
+    ]);
+  });
+
   it("drops a table of contents whose entries hold only page numbers", () => {
     const text = [
       "O Farol",
@@ -193,6 +290,25 @@ describe("manuscript chapter headings", () => {
         title: "Capítulo 3 — O fim",
         content: "Texto do capítulo três.\n\n42",
       },
+    ]);
+  });
+
+  it("drops an English table of contents under spelled-out chapter numbers", () => {
+    const text = [
+      "Contents",
+      "Chapter One — Arrival",
+      "7",
+      "Chapter Two — The Storm",
+      "15",
+      "Chapter One — Arrival",
+      "They landed at dawn.",
+      "Chapter Two — The Storm",
+      "It rained.",
+    ].join("\n\n");
+    expect(splitManuscriptSections(text, "The Book")).toEqual([
+      { title: "The Book", content: "Contents" },
+      { title: "Chapter One — Arrival", content: "They landed at dawn." },
+      { title: "Chapter Two — The Storm", content: "It rained." },
     ]);
   });
 
@@ -273,6 +389,14 @@ describe("legacy heading forms keep their previous behavior", () => {
     [
       "Chapter plus digits in any case, followed by anything",
       `Chapter 12 the storm\nIt rained.\n\nchapter 13 calm\nIt stopped.\n\n${longChapterHeading}\nEnd.`,
+    ],
+    [
+      "an English Chapter-plus-digits table of contents with page numbers",
+      "Chapter 1 — Arrival\n\n7\n\nChapter 2 — The Storm\n\n15\n\nChapter 1 — Arrival\nThey landed.\n\nChapter 2 — The Storm\nIt rained.",
+    ],
+    [
+      "a Chinese number heading followed by a title heading",
+      "# 第一章\n\n## 退潮信\n沈砚发现空白信。\n\n# 第二章\n## 无名地址\n她把信举到灯前。",
     ],
   ])("matches main for %s", (_, text) => {
     expect(splitManuscriptSections(text, "作品")).toEqual(
@@ -420,9 +544,17 @@ describe("DOCX heading styles", () => {
         paragraph("Sixth scene."),
         paragraph("* * *", '<w:pStyle w:val="Heading1"/>'),
         paragraph("Seventh scene."),
+        paragraph("# # #"),
+        paragraph("Eighth scene."),
+        paragraph("# # #", '<w:pStyle w:val="Heading2"/>'),
+        paragraph("Ninth scene."),
+        paragraph("***", '<w:outlineLvl w:val="0"/>'),
+        paragraph("Tenth scene."),
       ),
       null,
     );
+    // 套了标题样式的分隔符不加 # 前缀。
+    expect(text).not.toMatch(/^#{1,3} (?:# # #|\*\*\*)$/mu);
     expect(splitManuscriptSections(text.trim(), "Book")).toEqual([
       {
         title: "Chapter 1",
@@ -440,8 +572,32 @@ describe("DOCX heading styles", () => {
           "Sixth scene.",
           "* * *",
           "Seventh scene.",
+          "# # #",
+          "Eighth scene.",
+          "# # #",
+          "Ninth scene.",
+          "***",
+          "Tenth scene.",
         ].join("\n\n"),
       },
+    ]);
+  });
+
+  it("merges a number heading with the title heading that follows it", () => {
+    const text = docxDocumentText(
+      document(
+        paragraph("Capítulo 1", '<w:pStyle w:val="Heading1"/>'),
+        paragraph("A Chegada", '<w:pStyle w:val="Heading2"/>'),
+        paragraph("Primeiro texto."),
+        paragraph("Capítulo 2", '<w:pStyle w:val="Heading1"/>'),
+        paragraph("O Rio", '<w:pStyle w:val="Heading2"/>'),
+        paragraph("Segundo texto."),
+      ),
+      null,
+    );
+    expect(splitManuscriptSections(text.trim(), "Livro")).toEqual([
+      { title: "Capítulo 1 — A Chegada", content: "Primeiro texto." },
+      { title: "Capítulo 2 — O Rio", content: "Segundo texto." },
     ]);
   });
 });
@@ -556,14 +712,49 @@ describe("HTML and EPUB pages", () => {
   it("keeps a scene break wrapped in heading markup as text", () => {
     const sections = splitManuscriptSections(
       htmlToText(
-        "<h1>Capítulo 1</h1><p>Um.</p><h2>* * *</h2><p>Dois.</p><h3>⁂</h3><p>Três.</p>",
+        "<h1>Capítulo 1</h1><p>Um.</p><h2>* * *</h2><p>Dois.</p><h3>⁂</h3><p>Três.</p><h2># # #</h2><p>Quatro.</p><p># # #</p><p>Cinco.</p><h1>***</h1><p>Seis.</p>",
       ).trim(),
       "Livro",
     );
     expect(sections.map((section) => section.title)).toEqual(["Capítulo 1"]);
     expect(sections[0]!.content).toMatch(
-      /^Um\.\s+\* \* \*\s+Dois\.\s+⁂\s+Três\.$/u,
+      /^Um\.\s+\* \* \*\s+Dois\.\s+⁂\s+Três\.\s+# # #\s+Quatro\.\s+# # #\s+Cinco\.\s+\*\*\*\s+Seis\.$/u,
     );
+  });
+
+  it("keeps apostrophes and the other quote inside image alt titles", () => {
+    const text = htmlToText(
+      [
+        `<h1><img src="c1.png" alt="Sant'Ana"/></h1><p>Um.</p>`,
+        `<h1><img src='c2.png' alt='O "Farol" d&apos;Ávila'/></h1><p>Dois.</p>`,
+        `<h1><img src="c3.png" alt="Don't Look Back"/></h1><p>Três.</p>`,
+      ].join(""),
+    );
+    expect(
+      splitManuscriptSections(text.trim(), "Livro").map(
+        (section) => section.title,
+      ),
+    ).toEqual(["Sant'Ana", `O "Farol" d'Ávila`, "Don't Look Back"]);
+  });
+
+  it("merges a number heading with the title heading that follows it", () => {
+    const text = htmlToText(
+      [
+        "<h1>Capítulo 1</h1><h2>A Chegada</h2><p>Um.</p>",
+        '<h1>Capítulo 2</h1><h2><img src="o.png"/></h2><p>Dois.</p>',
+        "<h1>Parte II</h1><h1>Capítulo 3</h1><h2>O Fim</h2><p>Três.</p>",
+        "<h1>Chapter 4</h1><h2>The Storm</h2><p>Four.</p>",
+        "<h1>Capítulo 5</h1><p>Cinco.</p><h2>Uma cena</h2><p>Mais.</p>",
+      ].join(""),
+    );
+    expect(splitManuscriptSections(text.trim(), "Livro")).toEqual([
+      { title: "Capítulo 1 — A Chegada", content: "Um." },
+      { title: "Capítulo 2", content: "Dois." },
+      { title: "Capítulo 3 — O Fim", content: "Três." },
+      { title: "Chapter 4 — The Storm", content: "Four." },
+      { title: "Capítulo 5", content: "Cinco." },
+      { title: "Uma cena", content: "Mais." },
+    ]);
   });
 
   it("titles image-only headings with the alt text, or a neutral title without one", () => {

@@ -296,6 +296,48 @@ describe("DeliveryWorkerSuite", () => {
         .listImportCandidates("batch-1")
         .map((candidate) => candidate.title);
       expect(titles).toEqual(expect.arrayContaining([intentTitle, arcTitle]));
+      // 占位正文（AAAA…）检测不出语言，不加检测行。
+      expect(chunk.content).not.toMatch(/detected|自动检测/u);
+    },
+  );
+
+  it.each([
+    {
+      language: "en",
+      line: "Manuscript language (detected): Portuguese. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.",
+      invariant: "in the same language as the source manuscript text",
+    },
+    {
+      language: "zh-CN",
+      line: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+      invariant: "必须使用与原文正文相同的语言书写",
+    },
+  ])(
+    "adds the detected manuscript language to $language chunk messages and keeps the invariant",
+    async ({ language, line, invariant }) => {
+      database.raw
+        .prepare("UPDATE projects SET language = ? WHERE id = ?")
+        .run(language, "p1");
+      delivery.upsertImportCandidate({
+        id: "batch-1:document:0",
+        batchId: "batch-1",
+        kind: "document",
+        ordinal: 0,
+        title: "Capítulo 1",
+        payload: {
+          content:
+            "Ela abriu a porta e não viu ninguém.\n\nO farol ainda girava quando o barco chegou à baía.",
+        },
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      });
+      const recorder = recordingModel();
+      await runImportUntilDone(recorder.model);
+
+      const [chunk] = recorder.calls("import-analysis-chunk-1");
+      expect(chunk!.content).toContain(line);
+      expect(chunk!.instructions).toContain(invariant);
     },
   );
 

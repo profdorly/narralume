@@ -18,7 +18,7 @@ const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*)$/u;
 const LEGACY_HEADING =
   /^\s*(?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|chapter\s+\d)/iu;
 const EMPHASIS_WRAPPED = /^(\*{1,2}|_{1,2})(\S(?:.*\S)?)\1$/u;
-/** 独占一段的场景分隔符（#、###、***、* * *、⁂）。它们是正文，不是标题。 */
+/** 独占一段的场景分隔符（#、###、# # #、***、* * *、⁂）。它们是正文，不是标题。 */
 const SCENE_BREAK = /^(?:(?:#[ \t]*)+|(?:\*[ \t]*){3,}|⁂)$/u;
 
 /** 首个标题之前文字的固定称谓；仅用于以 CJK 为主的原稿，与既有行为一致。 */
@@ -189,27 +189,36 @@ const NUMBER_WORD = `(?:${alternation(NUMBER_WORDS)})(?:(?:\\s*-\\s*|\\s+(?:e|y|
  *  因此 “segunda-feira” 不会被读成序号 segunda 加分隔符 “-feira”，“2-3” 也不是序号 2。 */
 const NUMBER_END = "(?![\\p{L}\\p{N}]|-[\\p{L}\\p{N}])";
 
-/** 关键词 + 可选序号 + 可选标题。标题可用分隔符（: . – — 或两侧带空白的 -）接在序号后，
- *  也可只用空白（Chapter 12 The Storm）。 */
+/** 关键词 + 可选序号 + 可选标题。阿拉伯数字后可带序数标记（1º、1ª、1°）。
+ *  标题可用分隔符（: . – — 或后面带空白的 -）接在序号后，也可只用空白（Chapter 12 The Storm）；
+ *  分隔符记在 separator 组，供句子判断区分。 */
 const KEYWORD_HEADING = new RegExp(
   `^(?:(?<numbered>${alternation(NUMBERED_KEYWORDS)})|(?<standalone>${alternation(STANDALONE_KEYWORDS)}))` +
-    `(?:\\s+(?<number>\\d{1,4}|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
-    `(?:(?:\\s*[:.–—]|\\s+-(?=\\s|$))(?<separated>.*)|(?<loose>\\s+.+))?$`,
+    `(?:\\s+(?<number>\\d{1,4}[ºª°]?|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
+    `(?:(?<separator>\\s*[:.–—]|\\s*-(?=\\s|$))(?<separated>.*)|(?<loose>\\s+.+))?$`,
   "iu",
 );
 
-/** 标题部分至少这么多个词、又以句末标点结尾时，按正文句子处理。 */
+/** 标题部分至少这么多个词、又以句号结尾时，按正文句子处理。 */
 const SENTENCE_MIN_WORDS = 3;
 
-/** 序号后的标题部分读起来像句子：首个字母小写（“leia antes de dormir.”），
- *  或以 . ! ? … 结尾（可带收尾引号、括号）且有多个词（“Era a última página.”）。 */
-function looksLikeSentence(remainder: string): boolean {
+/** 以单个句号结尾（可带收尾引号、括号）；? ! … 与 ... 是常见的标题结尾，不算。 */
+const FINAL_PERIOD = /(?<!\.)\.["'”’»)\]]*$/u;
+
+/** 序号后的标题部分读起来像句子。任何分隔符后，首个字母小写都是正文
+ *  （“leia antes de dormir.”、“e então ela partiu”）。只有 . 或空白分隔时，
+ *  多个词并以单个句号结尾才是正文（“Era a última página.”）；: – — - 之后是标题
+ *  （“Quem Matou Laura?”、“O Fim do Mundo.”）。 */
+function looksLikeSentence(
+  remainder: string,
+  separator: string | undefined,
+): boolean {
   const text = remainder.trim();
   if (!text) return false;
   if (/^[^\p{L}\p{N}]*\p{Ll}/u.test(text)) return true;
+  if (separator !== undefined && separator.trim() !== ".") return false;
   return (
-    /[.!?…]["'”’»)\]]*$/u.test(text) &&
-    text.split(/\s+/u).length >= SENTENCE_MIN_WORDS
+    FINAL_PERIOD.test(text) && text.split(/\s+/u).length >= SENTENCE_MIN_WORDS
   );
 }
 
@@ -217,24 +226,30 @@ function withoutDiacritics(value: string): string {
   return value.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-function isKeywordHeading(line: string): boolean {
+/** 按关键词语法解析一行；不是关键词标题时返回 null。
+ *  number 为序号（可能为空），title 为序号后的标题部分（可能为空）。 */
+function parseKeywordHeading(
+  line: string,
+): { number: string | undefined; title: string } | null {
   const match = KEYWORD_HEADING.exec(withoutDiacritics(line));
   const groups = match?.groups;
-  if (!groups) return false;
+  if (!groups) return null;
   const number = groups.number;
-  if (groups.numbered && !number) return false;
+  if (groups.numbered && !number) return null;
   // 罗马数字只接受大写，避免 "Book I read" 之类的英文句子。
   if (
     number &&
     /^[mdclxvi]+$/iu.test(number) &&
     number !== number.toUpperCase()
   )
-    return false;
+    return null;
   // 只用空白接标题时必须先有序号（“Prólogo de uma vida” 是句子）。
-  if (groups.loose !== undefined && !number) return false;
+  if (groups.loose !== undefined && !number) return null;
+  const title = groups.separated ?? groups.loose ?? "";
   // 标题部分像句子时，这一行是正文：“Capítulo 3 do livro anterior…”、
   // “Capítulo 3. Era a última página.”、“Livro 1: leia antes de dormir.”
-  return !looksLikeSentence(groups.separated ?? groups.loose ?? "");
+  if (looksLikeSentence(title, groups.separator)) return null;
+  return { number, title: title.trim() };
 }
 
 function exceedsCodePoints(value: string, limit: number): boolean {
@@ -243,22 +258,47 @@ function exceedsCodePoints(value: string, limit: number): boolean {
   return [...value].length > limit;
 }
 
+/** 关键词标题的候选文本：超过长度上限时为 null，否则去掉 ** / _ 强调包裹。 */
+function keywordCandidate(trimmed: string): string | null {
+  if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
+  return EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
+}
+
 /** 判断一行是否为章节标题。keyword 为 true 表示由新增的 pt / es / en 关键词语法识别。
+ *  场景分隔符（#、# # #、***、* * *、⁂）在任何格式下都不是标题，最先排除；
  *  既有形式（Markdown、第 N 章、Chapter + 数字）先于长度上限判断，保持原有切分；
  *  长度上限、强调包裹与关键词语法只作用于新增的标题形式。 */
 function classifyHeading(
   line: string,
 ): { title: string; keyword: boolean } | null {
-  const markdown = MARKDOWN_HEADING.exec(line);
-  if (markdown) return { title: markdown[1]!.trimEnd(), keyword: false };
   const trimmed = line.trim();
-  if (!trimmed) return null;
+  if (!trimmed || SCENE_BREAK.test(trimmed)) return null;
+  const markdown = MARKDOWN_HEADING.exec(line);
+  if (markdown) {
+    const title = markdown[1]!.trimEnd();
+    // “# ***”“## ⁂” 是套了标题标记的场景分隔符，同样按正文保留。
+    return SCENE_BREAK.test(title) ? null : { title, keyword: false };
+  }
   if (LEGACY_HEADING.test(trimmed)) return { title: trimmed, keyword: false };
-  if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
-  const candidate = EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
-  return isKeywordHeading(candidate)
+  const candidate = keywordCandidate(trimmed);
+  return candidate !== null && parseKeywordHeading(candidate)
     ? { title: candidate, keyword: true }
     : null;
+}
+
+/** 标题文本本身是章节标题（第 N 章、Chapter + 数字或关键词语法），而不是章名。 */
+function isChapterTitle(title: string): boolean {
+  if (LEGACY_HEADING.test(title)) return true;
+  const candidate = keywordCandidate(title.trim());
+  return candidate !== null && parseKeywordHeading(candidate) !== null;
+}
+
+/** 只有关键词与序号、没有章名的标题，如 “Capítulo 1”“Chapter 1”“Parte II”。
+ *  中文“第 N 章”不在此列，保持既有行为。 */
+function isBareNumberedTitle(title: string): boolean {
+  const candidate = keywordCandidate(title.trim());
+  const parsed = candidate === null ? null : parseKeywordHeading(candidate);
+  return Boolean(parsed?.number) && !parsed!.title;
 }
 
 /** 判断一行是否为章节标题，返回标题文本；否则返回 null。 */
@@ -281,7 +321,9 @@ function isPageNumberOnly(content: string): boolean {
 /** 按章节标题切分正文。首个标题前的文字（扉页、题记等）在以 CJK 为主的原稿中
  *  沿用“卷首”，其他文字的原稿以作品标题命名；没有标题时整部正文作为一个分段。
  *  关键词标题下只有页码的分段是正文前的目录（常见于 PDF 转出的纯文本），直接丢弃；
- *  既有标题形式保持原有行为，不做此过滤。 */
+ *  既有标题形式保持原有行为，不做此过滤。
+ *  只有关键词与序号的标题（Capítulo 1）后面紧接一个章名标题（A Chegada）、中间没有正文时，
+ *  两者合为一章，标题为 “Capítulo 1 — A Chegada”；EPUB 与 Word 常把序号与章名分成 H1 + H2。 */
 export function splitManuscriptSections(
   text: string,
   fallbackTitle: string,
@@ -309,12 +351,31 @@ export function splitManuscriptSections(
       title: isCjkManuscript(text) ? CJK_FRONT_MATTER_TITLE : fallbackTitle,
       content: prefix,
     });
-  headings.forEach((heading, index) => {
-    const end = headings[index + 1]?.start ?? text.length;
+  for (let index = 0; index < headings.length; index += 1) {
+    const heading = headings[index]!;
+    const next = headings[index + 1];
+    const end = next?.start ?? text.length;
     const content = text.slice(heading.end, end).trim();
-    if (!content || (heading.keyword && isPageNumberOnly(content))) return;
+    if (
+      !content &&
+      next &&
+      isBareNumberedTitle(heading.title) &&
+      !isChapterTitle(next.title)
+    ) {
+      // 章名标题继承序号标题的识别方式，目录过滤因此与单独一行的序号标题一致。
+      headings[index + 1] = {
+        ...next,
+        title:
+          next.title === UNTITLED_HTML_HEADING
+            ? heading.title
+            : `${heading.title} — ${next.title}`,
+        keyword: heading.keyword,
+      };
+      continue;
+    }
+    if (!content || (heading.keyword && isPageNumberOnly(content))) continue;
     sections.push({ title: heading.title, content });
-  });
+  }
   return sections.length
     ? sections
     : [{ title: fallbackTitle, content: text.trim() }];
@@ -486,7 +547,8 @@ function isWordCharacter(char: string | undefined): boolean {
   return char !== undefined && /[A-Za-z0-9_]/u.test(char);
 }
 
-/** 读取 name="value" 或 name='value'，语义同 /\bname=["']([^"']*)["']/。 */
+/** 读取 name="value" 或 name='value'。值在与开引号相同的引号处结束，
+ *  因此 alt="Sant'Ana" 与 alt='O "Farol"' 保留完整文字。 */
 function attributeValue(source: string, name: string): string | null {
   const needle = `${name}=`;
   for (
@@ -498,17 +560,14 @@ function attributeValue(source: string, name: string): string | null {
     const quote = source[at + needle.length];
     if (quote !== '"' && quote !== "'") continue;
     const valueStart = at + needle.length + 1;
-    for (let index = valueStart; index < source.length; index += 1) {
-      const char = source[index];
-      if (char === '"' || char === "'") return source.slice(valueStart, index);
-    }
-    // 其后再没有引号，后面的同名属性也不可能闭合。
-    return null;
+    const valueEnd = source.indexOf(quote, valueStart);
+    // 其后再没有同样的引号时，值一直未闭合，后面的同名属性都在值里面。
+    return valueEnd < 0 ? null : source.slice(valueStart, valueEnd);
   }
   return null;
 }
 
-/** 第一个带 w:val 的 <tag …> 的值，语义同 /<tag\b[^>]*?\bw:val=["']([^"']*)["']/。 */
+/** 第一个带 w:val 的 <tag …> 的值，语义同 /<tag\b[^>]*?\bw:val=(["'])(.*?)\1/。 */
 function xmlValue(xml: string, tag: string): string | null {
   const needle = `<${tag}`;
   let at = xml.indexOf(needle);
