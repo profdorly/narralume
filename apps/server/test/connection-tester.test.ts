@@ -2,6 +2,8 @@ import type { FetchLike } from "@narralume/llm";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  PROBE_MAX_OUTPUT_TOKENS,
+  PROBE_REASONING_EFFORT,
   testModelConnection,
   type ConnectionTestProfile,
 } from "@narralume/services";
@@ -318,7 +320,7 @@ describe("model connection capability fallback", () => {
       },
     });
     expect(fetch).toHaveBeenCalledTimes(5);
-    expect(bodies[0]).toHaveProperty("max_tokens", 128);
+    expect(bodies[0]).toHaveProperty("max_tokens", PROBE_MAX_OUTPUT_TOKENS);
     for (const body of bodies.slice(1)) {
       expect(body).not.toHaveProperty("max_tokens");
       expect(body.max_completion_tokens).toEqual(expect.any(Number));
@@ -409,7 +411,323 @@ describe("model connection capability fallback", () => {
     expect(stages[0]).not.toHaveProperty("requestCapabilities");
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it("probes every stage with the chapter-worker request shape", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      return reasoningModelReply(body);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: true,
+        includeTools: true,
+        includeStructuredOutput: true,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages.map((stage) => stage.status)).toEqual([
+      "passed",
+      "passed",
+      "passed",
+      "passed",
+    ]);
+    expect(stages[0]).toMatchObject({
+      requestCapabilities: {
+        samplingParameters: true,
+        maxCompletionTokens: false,
+      },
+    });
+    expect(bodies).toHaveLength(4);
+    for (const body of bodies) {
+      expect(body).toMatchObject({
+        reasoning_effort: PROBE_REASONING_EFFORT,
+        temperature: 0,
+        max_tokens: PROBE_MAX_OUTPUT_TOKENS,
+      });
+    }
+  });
+
+  it("detects sampling rejections that depend on the reasoning effort", async () => {
+    // GPT-5.1-style: temperature is accepted only at reasoning effort "none",
+    // so a bare probe request would pass while every chapter call fails.
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      if (
+        "temperature" in body &&
+        body.reasoning_effort !== undefined &&
+        body.reasoning_effort !== "none"
+      ) {
+        return samplingRejected();
+      }
+      return reasoningModelReply(body);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: false,
+        includeTools: false,
+        includeStructuredOutput: false,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "passed",
+      requestCapabilities: {
+        samplingParameters: false,
+        maxCompletionTokens: false,
+      },
+    });
+    expect(bodies[0]).toMatchObject({
+      reasoning_effort: "low",
+      temperature: 0,
+    });
+    expect(bodies[1]).toMatchObject({ reasoning_effort: "low" });
+    expect(bodies[1]).not.toHaveProperty("temperature");
+  });
+
+  it("explains that a model rejecting reasoning effort fails chapter tasks too", async () => {
+    const fetch = vi.fn<FetchLike>(async () =>
+      json(
+        {
+          error: {
+            message:
+              "Unsupported parameter: 'reasoning_effort' is not supported with this model.",
+            type: "invalid_request_error",
+            param: "reasoning_effort",
+          },
+        },
+        400,
+      ),
+    );
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: false,
+        includeTools: false,
+        includeStructuredOutput: false,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "failed",
+      detail: expect.stringContaining(
+        `the probe sends reasoning effort "${PROBE_REASONING_EFFORT}" like chapter tasks do, so tasks on this model are rejected the same way`,
+      ),
+    });
+    expect(stages[0]).not.toHaveProperty("requestCapabilities");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps request-shape evidence when an accepted adjusted request returns no text", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
+      if ("temperature" in body) return samplingRejected();
+      if (body.stream !== true && !body.tools && !body.response_format) {
+        // A reasoning model that spent the whole budget on reasoning.
+        return json({
+          id: "chat-empty",
+          choices: [{ message: { content: "" }, finish_reason: "length" }],
+          usage: { prompt_tokens: 2, completion_tokens: 1_024 },
+        });
+      }
+      return reasoningModelReply(body);
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: true,
+        includeTools: true,
+        includeStructuredOutput: true,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "failed",
+      requestCapabilities: {
+        samplingParameters: false,
+        maxCompletionTokens: false,
+      },
+    });
+    expect(stages[0]?.detail).toContain(
+      "The response contains no text; finish reason: length",
+    );
+    expect(stages[0]?.detail).toContain(
+      "temperature/top_p omitted: model rejects sampling parameters",
+    );
+    expect(stages.slice(1).map((stage) => stage.status)).toEqual([
+      "passed",
+      "passed",
+      "passed",
+    ]);
+    for (const body of bodies.slice(1)) {
+      expect(body).not.toHaveProperty("temperature");
+    }
+  });
+
+  it("reports the adjustment but records no request shape when the adjusted request is not accepted", async () => {
+    const fetch = vi.fn<FetchLike>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      if ("temperature" in body) return samplingRejected();
+      return new Response(
+        JSON.stringify({ error: { message: "Rate limit reached" } }),
+        {
+          status: 429,
+          headers: { "content-type": "application/json", "retry-after": "0" },
+        },
+      );
+    });
+
+    const stages = await testModelConnection(
+      reasoningProfile("openai-chat"),
+      {
+        includeStreaming: false,
+        includeTools: false,
+        includeStructuredOutput: false,
+      },
+      { TEST_KEY: "secret" },
+      { fetch },
+    );
+
+    expect(stages[0]).toMatchObject({
+      stage: "text",
+      status: "failed",
+      detail: expect.stringContaining(
+        "temperature/top_p omitted: model rejects sampling parameters",
+      ),
+    });
+    expect(stages[0]?.detail).toContain("Rate limit reached");
+    expect(stages[0]).not.toHaveProperty("requestCapabilities");
+  });
+
+  it.each([
+    [
+      "openai-responses",
+      (body: Record<string, unknown>) => {
+        expect(body).toMatchObject({
+          reasoning: { effort: PROBE_REASONING_EFFORT },
+          max_output_tokens: PROBE_MAX_OUTPUT_TOKENS,
+        });
+      },
+      () =>
+        json({
+          id: "resp-probe",
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "OK" }],
+            },
+          ],
+          usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+        }),
+    ],
+    [
+      "anthropic-messages",
+      (body: Record<string, unknown>) => {
+        expect(body).toMatchObject({
+          output_config: { effort: PROBE_REASONING_EFFORT },
+          max_tokens: PROBE_MAX_OUTPUT_TOKENS,
+        });
+      },
+      () =>
+        json({
+          id: "msg-probe",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 2, output_tokens: 1 },
+        }),
+    ],
+  ] as const)(
+    "omits sampling parameters for %s models that reject them",
+    async (protocol, expectShape, reply) => {
+      const bodies: Record<string, unknown>[] = [];
+      const fetch = vi.fn<FetchLike>(async (_input, init) => {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        bodies.push(body);
+        if ("temperature" in body) {
+          return json(
+            {
+              error: {
+                message: "temperature: this parameter is not supported",
+              },
+            },
+            400,
+          );
+        }
+        return reply();
+      });
+
+      const stages = await testModelConnection(
+        reasoningProfile(protocol),
+        {
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+        { TEST_KEY: "secret" },
+        { fetch },
+      );
+
+      expect(stages[0]).toMatchObject({
+        stage: "text",
+        status: "passed",
+        detail: expect.stringContaining(
+          "temperature/top_p omitted: model rejects sampling parameters",
+        ),
+        requestCapabilities: {
+          samplingParameters: false,
+          maxCompletionTokens: false,
+        },
+      });
+      expect(bodies).toHaveLength(2);
+      expect(bodies[0]).toHaveProperty("temperature", 0);
+      expect(bodies[1]).not.toHaveProperty("temperature");
+      expect(bodies[1]).not.toHaveProperty("top_p");
+      expect(bodies[1]).not.toHaveProperty("max_completion_tokens");
+      for (const body of bodies) expectShape(body);
+    },
+  );
 });
+
+function samplingRejected(): Response {
+  return json(
+    {
+      error: {
+        message:
+          "Unsupported parameter: 'temperature' is not supported with this model.",
+        type: "invalid_request_error",
+        param: "temperature",
+        code: "unsupported_parameter",
+      },
+    },
+    400,
+  );
+}
 
 function reasoningProfile(
   protocol: ConnectionTestProfile["protocol"],

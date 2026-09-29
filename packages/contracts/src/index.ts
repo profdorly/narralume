@@ -53,7 +53,10 @@ export const ConnectionTestStageSchema = z.object({
   detail: z.string(),
   /** Set only on the structured-output stage. */
   capability: z.enum(["native", "json-mode", "prompt", "none"]).optional(),
-  /** Set only on a passed text stage: the request shape the model accepted. */
+  /**
+   * Set only on the text stage once the provider accepted a request, even
+   * when the response then failed the text check: the accepted request shape.
+   */
   requestCapabilities: z
     .object({
       samplingParameters: z.boolean(),

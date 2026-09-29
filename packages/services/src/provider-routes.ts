@@ -180,8 +180,11 @@ export function registerProviderRoutes(
     // native/json-mode map to their own key, "prompt" is structuredOutput
     // without either flag, "none" is all three false. Request-shape flags
     // (samplingParameters, and maxCompletionTokens on openai-chat) are written
-    // only when the text stage passed and therefore produced evidence; a text
-    // failure for any other reason leaves them unknown.
+    // only when the provider accepted a text-stage request, even if its
+    // response then failed the text check. Without an accepted request (bad
+    // credentials, network errors, unrecognized rejections) the stored
+    // request-shape flags are left unchanged: absent stays unknown, and a
+    // value from an earlier probe of this model is kept.
     const structuredCapability = stages.find(
       (stage) => stage.stage === "structured-output",
     )?.capability;
@@ -279,6 +282,18 @@ export function registerProviderRoutes(
     const next = {
       ...current,
       ...input,
+      // Probe-written flags are evidence about the (provider, upstream model)
+      // pair they were measured on. Re-pointing the row makes them describe a
+      // different model: stale request-shape flags would silently change the
+      // request body, and stale negative flags would be negative evidence the
+      // probe never produced for this model. They return to unknown until the
+      // model is probed again. The settings form round-trips capabilities, so
+      // the submitted values are no evidence about the new target either.
+      capabilities:
+        input.providerId !== current.providerId ||
+        input.modelId !== current.modelId
+          ? withoutProbedCapabilities(input.capabilities)
+          : input.capabilities,
       metadataSource: "manual" as const,
       metadataVerifiedAt: updatedAt,
       id: current.id,
@@ -446,6 +461,25 @@ export class ProviderRouteError extends Error {
 
 /** Synthetic env var used to hand a resolved raw key to the probe. */
 const PROBE_KEY_ENV = "NARRATIVE_CONNECTION_PROBE_API_KEY";
+
+/** Capability flags the connection probe writes (see POST /api/providers/test). */
+const PROBED_CAPABILITY_KEYS = [
+  "streaming",
+  "tools",
+  "structuredOutput",
+  "structuredOutputNative",
+  "structuredOutputJsonMode",
+  "samplingParameters",
+  "maxCompletionTokens",
+] as const;
+
+function withoutProbedCapabilities(
+  capabilities: Readonly<Record<string, boolean>>,
+): Record<string, boolean> {
+  const remaining = { ...capabilities };
+  for (const key of PROBED_CAPABILITY_KEYS) delete remaining[key];
+  return remaining;
+}
 
 /**
  * Adapts a provider/model pair to the transport-neutral probe shape. The

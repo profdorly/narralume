@@ -15,10 +15,11 @@
 - AI 写作、改写和风格提示统一跟随作品创作语言，而不再跟随界面语言。
 - 公开 Relay 改为重建 Chat Completions 白名单请求，限制 512 KiB 请求体、128 条消息、16 个工具和 32k 输出；会话额度绑定同一风险主体的 UTC 日窗口，并增加全站日额度与紧急熔断。
 - Bridge 在真实上游密钥前再次执行顶层字段白名单、请求体和输出上限校验。
+- 修改模型的 Provider 或上游模型名时，清除连接探测写入的能力标记（流式、工具、结构化输出和请求形状），需重新探测。
 
 ### Fixed
 
-- 修复 OpenAI 推理模型拒绝 `temperature`/`top_p` 和 `max_tokens` 时连接探测全部失败、结构化功能和章节写作随之不可用的问题：探测识别这两类限制并记录 `samplingParameters` / `maxCompletionTokens` 能力标记，运行时据此省略采样参数或改发 `max_completion_tokens`。
+- 修复拒绝 `temperature`/`top_p`、或在 Chat Completions 上拒绝 `max_tokens` 的模型（例如 OpenAI 推理模型）连接探测失败、结构化功能和章节写作随之不可用的问题。探测按章节任务的请求形状发送（推理强度 `low` 加 `temperature`，输出上限 1024 token）；上游错误信息指明拒绝这些参数时调整请求，上游接受调整后的请求即记录 `samplingParameters` / `maxCompletionTokens`，之后新发起的任务据此省略采样参数或改发 `max_completion_tokens`。只在 `low` 以外的推理强度下拒绝采样参数的模型、拒绝推理强度参数的模型，以及经公开 Relay 或 Bridge 调用且要求 `max_completion_tokens` 的模型不在此修复范围内。
 - 修复快速创作被阻断审稿决定后的接续，以及 SQLite 浏览器探针的迁移预期。
 - 修复写作技法检查的 TypeScript 边界错误和后台轮询中的 effect 状态更新问题。
 

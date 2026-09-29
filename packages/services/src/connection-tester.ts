@@ -1,4 +1,5 @@
 import {
+  ModelError,
   ModelGateway,
   createModelAdapter,
   isMaxTokensUnsupportedError,
@@ -9,6 +10,25 @@ import {
   type ModelRequest,
   type ModelResponse,
 } from "@narralume/llm";
+
+/**
+ * Reasoning effort of every probe request. Narrative task workers send a
+ * reasoning effort ("low" or "medium"; the assistant omits it only when the
+ * author turns reasoning off), and chapter workers send "low" together with
+ * a temperature. Some models accept temperature/top_p only at particular
+ * efforts, so the probe measures that chapter request shape; a model that
+ * rejects reasoning effort altogether fails the probe as it fails chapter
+ * tasks.
+ */
+export const PROBE_REASONING_EFFORT = "low" as const;
+
+/**
+ * Output budget of every probe request. It is the whole completion budget,
+ * reasoning tokens included (max_completion_tokens, Responses
+ * max_output_tokens), so a reasoning model needs room to finish reasoning
+ * before it emits the short probe answer.
+ */
+export const PROBE_MAX_OUTPUT_TOKENS = 1_024;
 
 export interface ConnectionTestOptions {
   includeStreaming: boolean;
@@ -21,8 +41,8 @@ export type StructuredProbeCapability =
   "native" | "json-mode" | "prompt" | "none";
 
 /**
- * Request shape the model accepted in the text stage, stored as the model
- * capabilities of the same name.
+ * Request shape the provider accepted in the text stage (sent with
+ * PROBE_REASONING_EFFORT), stored as the model capabilities of the same name.
  * - samplingParameters: false when temperature/top_p had to be omitted.
  * - maxCompletionTokens: true when the output limit had to be sent as
  *   max_completion_tokens (openai-chat only; always false elsewhere).
@@ -39,7 +59,10 @@ export interface ConnectionTestStage {
   detail: string;
   /** Set only on the structured-output stage. */
   capability?: StructuredProbeCapability;
-  /** Set only on a passed text stage. */
+  /**
+   * Set only on the text stage, once the provider accepted a text request
+   * (HTTP success), even when the response then fails the text check.
+   */
   requestCapabilities?: ProbeRequestCapabilities;
 }
 
@@ -100,20 +123,28 @@ export async function testModelConnection(
     instructions:
       "This is a connection probe. Follow the requested output exactly.",
     messages: [{ role: "user", content: "Reply with exactly OK." }],
-    maxOutputTokens: 128,
+    maxOutputTokens: PROBE_MAX_OUTPUT_TOKENS,
+    // The chapter-worker request shape: a reasoning effort together with a
+    // temperature, so samplingParameters describes what runs actually send.
+    reasoningEffort: PROBE_REASONING_EFFORT,
     temperature: 0,
   };
-  // Request-shape evidence gathered by the text stage. Every later stage
-  // reuses the accepted shape so a model that rejects sampling parameters or
-  // max_tokens (e.g. OpenAI reasoning models) is probed on its capabilities.
+  // Request-shape evidence gathered by the text stage. It counts as evidence
+  // once the provider accepts a request, whether or not the response then
+  // passes the text check. Every later stage reuses the accepted shape so a
+  // model that rejects sampling parameters or max_tokens (e.g. OpenAI
+  // reasoning models) is probed on its capabilities.
   const requestCapabilities: ProbeRequestCapabilities = {
     samplingParameters: true,
     maxCompletionTokens: false,
   };
+  let requestAccepted = false;
+  // Adjustments and explanations, reported in the text stage detail whether
+  // the stage passes or fails.
+  const notes: string[] = [];
   const stages: ConnectionTestStage[] = [];
 
   const textStage = await runStage("text", async () => {
-    const adjustments: string[] = [];
     let response: ModelResponse | undefined;
     // Bounded: each request constraint is adjusted at most once, so at most
     // two extra requests follow the first one.
@@ -127,7 +158,7 @@ export async function testModelConnection(
         ) {
           requestCapabilities.samplingParameters = false;
           base = withoutSamplingParameters(base);
-          adjustments.push(
+          notes.push(
             "temperature/top_p omitted: model rejects sampling parameters",
           );
         } else if (
@@ -137,25 +168,34 @@ export async function testModelConnection(
         ) {
           requestCapabilities.maxCompletionTokens = true;
           gateway = new ModelGateway(createModelAdapter(adapterConfig(true)));
-          adjustments.push(
-            "max_completion_tokens sent: model rejects max_tokens",
-          );
+          notes.push("max_completion_tokens sent: model rejects max_tokens");
         } else {
+          if (isReasoningEffortRejection(error)) {
+            notes.push(
+              `the probe sends reasoning effort "${PROBE_REASONING_EFFORT}" like chapter tasks do, so tasks on this model are rejected the same way`,
+            );
+          }
           throw error;
         }
       }
     }
-    if (!response.text.trim()) throw new Error("The response contains no text");
-    const summary = `Received ${response.text.trim().length} characters; finish reason: ${response.finishReason}`;
-    return adjustments.length === 0
-      ? summary
-      : `${summary} (${adjustments.join("; ")})`;
+    requestAccepted = true;
+    if (!response.text.trim()) {
+      throw new Error(
+        `The response contains no text; finish reason: ${response.finishReason}`,
+      );
+    }
+    return `Received ${response.text.trim().length} characters; finish reason: ${response.finishReason}`;
   });
-  stages.push(
-    textStage.status === "passed"
-      ? { ...textStage, requestCapabilities: { ...requestCapabilities } }
-      : textStage,
-  );
+  stages.push({
+    ...textStage,
+    ...(notes.length === 0
+      ? {}
+      : { detail: `${textStage.detail} (${notes.join("; ")})` }),
+    ...(requestAccepted
+      ? { requestCapabilities: { ...requestCapabilities } }
+      : {}),
+  });
 
   stages.push(
     options.includeStreaming
@@ -180,7 +220,7 @@ export async function testModelConnection(
       ? await runStage("tool", async () => {
           const toolRequest: ModelRequest = {
             ...base,
-            maxOutputTokens: 512,
+            maxOutputTokens: PROBE_MAX_OUTPUT_TOKENS,
             messages: [
               {
                 role: "user",
@@ -254,7 +294,7 @@ async function runStructuredOutputStage(
   });
   const schemaRequest: ModelRequest = {
     ...base,
-    maxOutputTokens: 512,
+    maxOutputTokens: PROBE_MAX_OUTPUT_TOKENS,
     messages: [
       {
         role: "user",
@@ -371,6 +411,19 @@ function withoutSamplingParameters(request: ModelRequest): ModelRequest {
   delete adjusted.temperature;
   delete adjusted.topP;
   return adjusted;
+}
+
+/**
+ * True when the provider rejected the request and names the reasoning effort
+ * (reasoning_effort, reasoning.effort, output_config.effort). Used only to
+ * explain a failed text stage; chapter tasks send an effort on every call.
+ */
+function isReasoningEffortRejection(error: unknown): boolean {
+  return (
+    error instanceof ModelError &&
+    error.category === "invalid_request" &&
+    error.message.toLowerCase().includes("effort")
+  );
 }
 
 function validateProbe(value: unknown) {

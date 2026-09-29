@@ -600,7 +600,7 @@ describe("provider/model/assignment API", () => {
     });
   });
 
-  it("probe leaves request-shape flags unknown without text-stage evidence", async () => {
+  it("probe leaves request-shape flags unchanged without an accepted text request", async () => {
     const { app } = await setup();
     const provider = await createProvider(app);
     const created = await app.inject({
@@ -737,6 +737,168 @@ describe("provider/model/assignment API", () => {
     )?.capabilities;
     expect(capabilities).toMatchObject({ samplingParameters: true });
     expect(capabilities).not.toHaveProperty("maxCompletionTokens");
+  });
+
+  it("probe records the accepted request shape even when the text stage then fails", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: { providerId: provider.id, modelId: "gpt-reasoner" },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const modelId = (created.json() as { id: string }).id;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(
+          typeof init?.body === "string" ? init.body : "{}",
+        ) as Record<string, unknown>;
+        if ("temperature" in body) {
+          return new Response(
+            JSON.stringify({
+              error: {
+                message:
+                  "Unsupported parameter: 'temperature' is not supported with this model.",
+                type: "invalid_request_error",
+              },
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          );
+        }
+        // Accepted, but the whole budget went to reasoning.
+        return probeChatResponse({
+          id: "chatcmpl-empty",
+          choices: [{ message: { content: "" }, finish_reason: "length" }],
+          usage: { prompt_tokens: 2, completion_tokens: 1024 },
+        });
+      }),
+    );
+    try {
+      const probed = await app.inject({
+        method: "POST",
+        url: "/api/providers/test",
+        payload: {
+          providerId: provider.id,
+          modelId,
+          includeStreaming: false,
+          includeTools: false,
+          includeStructuredOutput: false,
+        },
+      });
+      expect(probed.statusCode, probed.body).toBe(200);
+      expect(probed.json()).toMatchObject({
+        stages: [
+          {
+            stage: "text",
+            status: "failed",
+            detail: expect.stringContaining(
+              "temperature/top_p omitted: model rejects sampling parameters",
+            ),
+            requestCapabilities: {
+              samplingParameters: false,
+              maxCompletionTokens: false,
+            },
+          },
+          {},
+          {},
+          {},
+        ],
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const models = (
+      await app.inject({ method: "GET", url: "/api/models" })
+    ).json() as Array<{ id: string; capabilities: Record<string, boolean> }>;
+    expect(
+      models.find((candidate) => candidate.id === modelId)?.capabilities,
+    ).toMatchObject({ samplingParameters: false, maxCompletionTokens: false });
+  });
+
+  it("clears probe-written capability flags when a model is re-pointed", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const otherProvider = await app.inject({
+      method: "POST",
+      url: "/api/providers",
+      payload: {
+        name: "Gateway Provider",
+        wireApi: "openai-chat",
+        baseUrl: "https://gateway.example.com/v1",
+        credentialRef: "raw-secret-key-ghijkl",
+      },
+    });
+    expect(otherProvider.statusCode, otherProvider.body).toBe(201);
+    const otherProviderId = (otherProvider.json() as { id: string }).id;
+    const probed = {
+      streaming: true,
+      tools: false,
+      structuredOutput: true,
+      structuredOutputNative: false,
+      structuredOutputJsonMode: true,
+      samplingParameters: false,
+      maxCompletionTokens: true,
+    };
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: {
+        providerId: provider.id,
+        modelId: "gpt-reasoner",
+        capabilities: { ...probed, reasoning: true },
+      },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    let model = created.json() as {
+      id: string;
+      updatedAt: string;
+      capabilities: Record<string, boolean>;
+    };
+    const edit = async (change: {
+      providerId?: string;
+      modelId?: string;
+      capabilities?: Record<string, boolean>;
+    }) => {
+      const response = await app.inject({
+        method: "PUT",
+        url: `/api/models/${model.id}`,
+        payload: {
+          providerId: change.providerId ?? provider.id,
+          modelId: change.modelId ?? "gpt-reasoner",
+          taskType: "writing",
+          contextWindow: 64_000,
+          maxOutputTokens: 8_000,
+          // The settings form round-trips the stored capabilities.
+          capabilities: change.capabilities ?? model.capabilities,
+          enabled: true,
+          expectedUpdatedAt: model.updatedAt,
+        },
+      });
+      expect(response.statusCode, response.body).toBe(200);
+      model = response.json() as typeof model;
+      return model.capabilities;
+    };
+
+    // Same identity: the round-tripped flags are kept.
+    expect(await edit({})).toEqual({ ...probed, reasoning: true });
+    // New upstream model: every probe-written flag returns to unknown, flags
+    // the probe never writes stay.
+    expect(await edit({ modelId: "gpt-general" })).toEqual({ reasoning: true });
+    // Same identity again: explicitly submitted flags are stored as given.
+    expect(
+      await edit({
+        modelId: "gpt-general",
+        capabilities: { ...probed, reasoning: true },
+      }),
+    ).toEqual({ ...probed, reasoning: true });
+    // New provider for the same upstream model name: cleared as well.
+    expect(
+      await edit({ providerId: otherProviderId, modelId: "gpt-general" }),
+    ).toEqual({ reasoning: true });
   });
 
   it("does not overwrite a model edited while its connection probe is running (CR-48)", async () => {

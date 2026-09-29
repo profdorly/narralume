@@ -232,11 +232,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
           signal.aborted,
           candidate.physicalAttempts(),
         );
-        const normalized = modelStepError(
-          scopedError,
-          signal.aborted,
-          candidate.runtime,
-        );
+        const normalized = modelStepError(scopedError, signal.aborted, {
+          runtime: candidate.runtime,
+          request: fullRequest,
+        });
         failedUsage = addBudgetUsage(
           failedUsage,
           pricedFailureUsage(
@@ -580,11 +579,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
           candidate.physicalAttempts(),
           repairAttempts,
         );
-        const normalized = modelStepError(
-          scopedError,
-          signal.aborted,
-          candidate.runtime,
-        );
+        const normalized = modelStepError(scopedError, signal.aborted, {
+          runtime: candidate.runtime,
+          request: fullRequest,
+        });
         failedUsage = addBudgetUsage(
           failedUsage,
           pricedFailureUsage(
@@ -1668,7 +1666,7 @@ function addBudgetUsage(
 function modelStepError(
   error: unknown,
   cancelled: boolean,
-  runtime?: CandidateRuntime,
+  attempt?: { runtime: CandidateRuntime; request: ModelRequest },
 ): RunStepError {
   if (cancelled) {
     // Preserve the partial output accumulated before the abort so recovery
@@ -1733,7 +1731,7 @@ function modelStepError(
   }
   if (error instanceof ModelError) {
     const constraint =
-      runtime === undefined ? null : unprobedRequestConstraint(error, runtime);
+      attempt === undefined ? null : requestConstraintHint(error, attempt);
     return {
       code: `model.${error.category}`,
       message:
@@ -1757,31 +1755,48 @@ function modelStepError(
  * Explains a provider rejection of a request constraint that only the
  * connection probe records (sampling parameters, the Chat Completions
  * max_tokens field). The call is deliberately not retried with an adjusted
- * request: without probe evidence the capability stays unknown, so the
- * surfaced error tells the author how to record it instead.
+ * request. While the capability is unknown the hint points the author at the
+ * probe. When the probe already recorded that the model accepts the
+ * parameter, re-probing would record the same value, so the hint says the
+ * request falls outside the probe evidence instead (for example a reasoning
+ * effort other than the probe's).
  */
-function unprobedRequestConstraint(
+function requestConstraintHint(
   error: ModelError,
-  runtime: CandidateRuntime,
+  attempt: { runtime: CandidateRuntime; request: ModelRequest },
 ): { reason: string; hint: string } | null {
-  if (
-    runtime.capabilities.samplingParameters !== false &&
-    isSamplingParameterUnsupportedError(error)
-  ) {
-    return {
-      reason: "sampling_parameters_unsupported",
-      hint: "this model rejects temperature/top_p; run Probe on it in Settings so runs started afterwards omit them",
-    };
+  const { capabilities, protocol } = attempt.runtime;
+  const effort =
+    attempt.request.reasoningEffort === undefined
+      ? ""
+      : ` at reasoning effort "${attempt.request.reasoningEffort}"`;
+  if (isSamplingParameterUnsupportedError(error)) {
+    if (capabilities.samplingParameters === undefined) {
+      return {
+        reason: "sampling_parameters_unsupported",
+        hint: "this model rejects temperature/top_p; run Probe on it in Settings so runs started afterwards omit them",
+      };
+    }
+    if (capabilities.samplingParameters === true) {
+      return {
+        reason: "sampling_parameters_outside_probe_evidence",
+        hint: `this model rejected temperature/top_p${effort} although its connection probe accepted them; the probe evidence does not cover this request`,
+      };
+    }
   }
-  if (
-    runtime.protocol === "openai-chat" &&
-    runtime.capabilities.maxCompletionTokens !== true &&
-    isMaxTokensUnsupportedError(error)
-  ) {
-    return {
-      reason: "max_tokens_unsupported",
-      hint: "this model requires max_completion_tokens; run Probe on it in Settings so runs started afterwards send it",
-    };
+  if (protocol === "openai-chat" && isMaxTokensUnsupportedError(error)) {
+    if (capabilities.maxCompletionTokens === undefined) {
+      return {
+        reason: "max_tokens_unsupported",
+        hint: "this model requires max_completion_tokens; run Probe on it in Settings so runs started afterwards send it",
+      };
+    }
+    if (capabilities.maxCompletionTokens === false) {
+      return {
+        reason: "max_tokens_outside_probe_evidence",
+        hint: `this model rejected max_tokens${effort} although its connection probe accepted it; the probe evidence does not cover this request`,
+      };
+    }
   }
   return null;
 }

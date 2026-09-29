@@ -100,7 +100,7 @@ export const ModelConfigSchema = z.object({
    * Capability flags (streaming/structuredOutput/tools/reasoning, plus the
    * probed request-shape flags samplingParameters and maxCompletionTokens).
    * An absent flag is unknown; only the connection probe records negative
-   * evidence.
+   * evidence. Changing providerId or modelId clears the probe-written flags.
    */
   capabilities: z.record(z.string(), z.boolean()),
   /** Provenance of the physical limit declaration. */
