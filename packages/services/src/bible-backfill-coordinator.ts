@@ -48,6 +48,7 @@ const IMPORT_CANDIDATE_KINDS: Partial<
   Record<SettlementChangedRecord["kind"], string>
 > = {
   relationship: "relationship",
+  timeline: "timeline",
   foreshadow: "foreshadow",
 };
 
@@ -537,9 +538,9 @@ export class BibleBackfillCoordinator {
       return this.changed(job.id, "job.awaiting_decision");
     }
     // Auto mode only adds to what this job and the import produced: a change
-    // that would withdraw, supersede, end, change, develop or resolve
-    // anything else (for example a fact the author entered), or reopen a
-    // finished foreshadow, waits for the author.
+    // that would withdraw, supersede, end, change, anchor, develop or resolve
+    // anything else (for example a fact or an event the author entered), or
+    // reopen a finished foreshadow, waits for the author.
     const reviewTargets = this.recordsNeedingReview(job, changeSet.id);
     if (reviewTargets.length > 0) {
       return this.park(job, now, {
@@ -594,11 +595,12 @@ export class BibleBackfillCoordinator {
 
   /**
    * Existing records the change set would withdraw, supersede, end, change,
-   * develop or resolve that were created neither by this job's earlier
-   * applied change sets nor by the manuscript import. Import provenance is
-   * the record's source id naming an applied import candidate of the same
-   * kind in this project: relationships always keep it, foreshadows since
-   * migration 047 (older imported ones have none and count as the author's).
+   * anchor, develop or resolve that were created neither by this job's
+   * earlier applied change sets nor by the manuscript import. Import
+   * provenance is the record's source id naming an applied import candidate
+   * of the same kind in this project: relationships and timeline events
+   * always keep it, foreshadows since migration 047 (older imported ones have
+   * none and count as the author's).
    * Imports create no facts. Reopening a resolved or abandoned foreshadow
    * always needs review, even one the import or this job created: its status
    * there is the author's call.

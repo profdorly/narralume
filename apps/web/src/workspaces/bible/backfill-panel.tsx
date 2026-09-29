@@ -1286,7 +1286,7 @@ const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
 /** review_required 停机列出的、本章要改动的现有记录。 */
 interface ReviewTarget {
   path: string;
-  action: "withdraw" | "supersede" | "update" | "end" | "develop" | "resolve";
+  action: "withdraw" | "supersede" | "update" | "end" | "anchor" | "develop" | "resolve";
   label: string | null;
   /** 伏笔已回收或已放弃，本章要把它重新打开。 */
   reopens: boolean;
@@ -1297,6 +1297,7 @@ const REVIEW_ACTIONS: Record<ReviewTarget["action"], MessageKey> = {
   supersede: "bible.backfill.attention.reviewAction.supersede",
   update: "bible.backfill.attention.reviewAction.update",
   end: "bible.backfill.attention.reviewAction.end",
+  anchor: "bible.backfill.attention.reviewAction.anchor",
   develop: "bible.backfill.attention.reviewAction.develop",
   resolve: "bible.backfill.attention.reviewAction.resolve",
 };

@@ -263,6 +263,9 @@ function settlementConflictLabel(reason: string): string {
     target_slot_mismatch: "studio.canon.reason.targetSlotMismatch",
     target_not_found: "studio.canon.reason.targetNotFound",
     target_pair_mismatch: "studio.canon.reason.targetPairMismatch",
+    target_voided: "studio.canon.reason.targetVoided",
+    target_already_anchored: "studio.canon.reason.targetAlreadyAnchored",
+    settlement_unanchored: "studio.canon.reason.settlementUnanchored",
   };
   const messageKey = keys[reason];
   return messageKey ? translate(getLocale(), messageKey) : reason;
@@ -318,6 +321,28 @@ export function canonChangeItems(
     });
   }
   for (const item of records("timelineCandidates")) {
+    const anchorEventId = text(item, "anchorEventId");
+    if (anchorEventId) {
+      // Anchoring adopts an existing event: its own title, description and
+      // participants stay; the chapter (and story time, when given) is set.
+      const storyTime = text(item, "storyTime");
+      rows.push({
+        label: translate(locale, "studio.canon.itemLabel.timelineAnchor"),
+        text: [
+          translate(locale, "studio.canon.timelineAnchorText", {
+            title: text(item, "title"),
+          }),
+          storyTime
+            ? translate(locale, "studio.canon.timelineAnchorStoryTime", {
+                storyTime,
+              })
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      });
+      continue;
+    }
     rows.push({
       label: translate(locale, "studio.canon.itemLabel.timeline"),
       text: [

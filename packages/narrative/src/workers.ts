@@ -1,3 +1,4 @@
+import type { ProjectLanguage } from "@narralume/contracts";
 import { sha256Hex } from "@narralume/domain";
 import {
   outlineStructureFingerprint,
@@ -11,6 +12,7 @@ import {
 } from "@narralume/context";
 import {
   createDocument,
+  type CanonEntity,
   type CanonFact,
   type Document,
   type DocumentVersion,
@@ -21,6 +23,7 @@ import {
   type RunBudgetUsage,
   type RunStepError,
   type RunSnapshot,
+  type TimelineEvent,
 } from "@narralume/domain";
 import type {
   StepExecutionResult,
@@ -1302,10 +1305,10 @@ export class ChapterWorkerSuite {
           .listCurrentRelationships(snapshot.run.projectId)
           .map((relationship) => [relationship.id, relationship]),
       ),
-      timelineEventIds: new Set(
+      timelineEvents: new Map(
         this.state
           .listTimeline(snapshot.run.projectId)
-          .map((event) => event.id),
+          .map((event) => [event.id, event]),
       ),
       foreshadows: new Map(
         this.state
@@ -1321,6 +1324,9 @@ export class ChapterWorkerSuite {
       promptLanguageOf(this.projectLanguage(snapshot.run.projectId)),
       detectManuscriptLanguage(content),
     );
+    const referenceExistingStoryState =
+      manual !== null &&
+      snapshot.run.policy.referenceExistingStoryState === true;
     const result = await this.model.structured(
       snapshot.run,
       step,
@@ -1335,10 +1341,16 @@ export class ChapterWorkerSuite {
             role: "user",
             content: [
               `<authoritative-context>${authoritative}</authoritative-context>`,
-              ...(manual &&
-              snapshot.run.policy.referenceExistingStoryState === true
+              ...(referenceExistingStoryState
                 ? [
                     `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId)}</settlement-note>`,
+                    `<unanchored-timeline>${unanchoredTimelineBlock(
+                      [...settlementState.timelineEvents.values()],
+                      entities,
+                      promptLanguageOf(
+                        this.projectLanguage(snapshot.run.projectId),
+                      ),
+                    )}</unanchored-timeline>`,
                   ]
                 : []),
               `<entities>${JSON.stringify(entities.map(({ id, name, type }) => ({ id, name, type })))}</entities>`,
@@ -1751,20 +1763,21 @@ export class ChapterWorkerSuite {
   }
 
   /* 「从正文补全故事圣经」逐章结算时的提示：导入时已抽取的关系、时间线、
-     伏笔（尚未锚定章节）已在权威上下文里，应按稳定 ID 引用而不是重复创建。 */
+     伏笔应按稳定 ID 引用而不是重复创建；尚未锚定章节的时间线事件单独列在
+     <unanchored-timeline> 中，本章写到的事件按 ID 锚定到本章。 */
   private existingStoryStateNote(projectId: string): string {
     return instructionsFor(this.projectLanguage(projectId), {
       "zh-CN": [
         "这一章来自导入的已完成正文，正在按章节顺序补全故事圣经。",
-        "导入时已经抽取了人物关系、时间线事件和伏笔，它们出现在权威上下文中，但还没有锚定到具体章节。",
-        "本章正文涉及这些已有条目时，请按它们的稳定 ID 引用：关系用 update/end，时间线事件作为 causeEventIds 引用，伏笔用 develop/resolve；不要为同一件事再 start/plant 一条新的。",
-        "只有本章引入了权威上下文中确实不存在的关系、事件或伏笔时才新建。",
+        "导入时已经抽取了人物关系、时间线事件和伏笔，但它们还没有锚定到具体章节。关系与伏笔出现在权威上下文中；尚未锚定的时间线事件列在 <unanchored-timeline> 中。",
+        "本章正文涉及这些已有条目时，请按它们的稳定 ID 引用：关系用 update/end，伏笔用 develop/resolve；本章写到的正是 <unanchored-timeline> 中某个事件时，在 timelineCandidates 中用 anchorEventId 填该事件 ID，把它锚定到本章，不要为同一件事再新建一条事件。已有事件也可以作为 causeEventIds 引用。不要为同一件事再 start/plant 一条新的。",
+        "只有本章引入了上下文中确实不存在的关系、事件或伏笔时才新建。",
       ],
       en: [
         "This chapter comes from an imported, finished manuscript; the Story Bible is being completed chapter by chapter in reading order.",
-        "Relationships, timeline events and foreshadows were already extracted during import. They appear in the authoritative context but are not anchored to a chapter yet.",
-        "When this chapter touches one of them, reference it by its stable ID: update/end relationships, cite existing timeline events in causeEventIds, develop/resolve foreshadows. Do not start/plant a duplicate for the same thing.",
-        "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the authoritative context.",
+        "Relationships, timeline events and foreshadows were already extracted during import, but they are not anchored to a chapter yet. Relationships and foreshadows appear in the authoritative context; timeline events not anchored yet are listed in <unanchored-timeline>.",
+        "When this chapter touches one of them, reference it by its stable ID: update/end relationships and develop/resolve foreshadows. When this chapter shows one of the events in <unanchored-timeline> happening, anchor it to this chapter by putting its ID in a timelineCandidates item's anchorEventId instead of creating a new event for the same thing. Existing events can also be cited in causeEventIds. Do not start/plant a duplicate for the same thing.",
+        "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the context.",
       ],
     });
   }
@@ -2018,6 +2031,7 @@ function stripContextTagPrefixes(settlement: Settlement): Settlement {
     })),
     timelineCandidates: settlement.timelineCandidates.map((event) => ({
       ...event,
+      anchorEventId: nullableId(event.anchorEventId),
       participantIds: event.participantIds.map(id),
       causeEventIds: event.causeEventIds.map(id),
       knownBy: event.knownBy.map((knowledge) => ({
@@ -2048,7 +2062,8 @@ function settlementSemanticIssues(
   current: {
     facts: ReadonlyMap<string, CanonFact>;
     relationships: ReadonlyMap<string, RelationshipEvent>;
-    timelineEventIds: ReadonlySet<string>;
+    /** Current (not voided) timeline events. */
+    timelineEvents: ReadonlyMap<string, TimelineEvent>;
     foreshadows: ReadonlyMap<string, Foreshadow>;
     outlineNodeIds: ReadonlySet<string>;
   },
@@ -2106,7 +2121,9 @@ function settlementSemanticIssues(
       ),
     );
   });
+  const anchoredEventIds = new Set<string>();
   settlement.timelineCandidates.forEach((event, index) => {
+    const path = `timelineCandidates.${index}`;
     event.participantIds.forEach((id) =>
       requireEntity(id, `timelineCandidates.${index}.participantIds`),
     );
@@ -2117,12 +2134,44 @@ function settlementSemanticIssues(
       ),
     );
     event.causeEventIds.forEach((id) => {
-      if (!current.timelineEventIds.has(id)) {
+      if (!current.timelineEvents.has(id)) {
         issues.push(
           `timelineCandidates.${index}.causeEventIds: 未知时间线事件 ID ${id}（只能引用上下文中 [timeline:…] 标注的事件 ID）`,
         );
       }
     });
+    if (event.anchorEventId !== null) {
+      const target = current.timelineEvents.get(event.anchorEventId);
+      if (!target) {
+        issues.push(
+          `${path}.anchorEventId: 未知时间线事件 ID ${event.anchorEventId}（只能锚定上下文中列出的、尚未锚定到章节的已有事件；新建事件填 null）`,
+        );
+      } else if (target.outlineNodeId !== null) {
+        issues.push(
+          `${path}.anchorEventId: 事件 ${target.id} 已锚定到章节，不能再锚定（本章若只是提到它，可作为 causeEventIds 引用；新建事件填 null）`,
+        );
+      } else if (normalizeTitle(target.title) !== normalizeTitle(event.title)) {
+        issues.push(
+          `${path}.title: 锚定已有事件时 title 必须原样照抄该事件的标题「${target.title}」`,
+        );
+      }
+      if (anchoredEventIds.has(event.anchorEventId)) {
+        issues.push(
+          `${path}.anchorEventId: 同一个事件 ${event.anchorEventId} 只能锚定一次`,
+        );
+      }
+      anchoredEventIds.add(event.anchorEventId);
+      if (event.description !== null) {
+        issues.push(
+          `${path}.description: 锚定已有事件时 description 必须为 null（已有事件保留自己的描述）`,
+        );
+      }
+      if (event.participantIds.length > 0 || event.causeEventIds.length > 0) {
+        issues.push(
+          `${path}.participantIds: 锚定已有事件时 participantIds 与 causeEventIds 必须为空数组（已有事件保留自己的参与者与因果）`,
+        );
+      }
+    }
     issues.push(
       ...locator.validate(
         event.evidenceParagraphs,
@@ -2288,6 +2337,64 @@ function bindSettlementEvidence(
     relationshipCandidates: settlement.relationshipCandidates.map(bind),
     foreshadowCandidates: settlement.foreshadowCandidates.map(bind),
   };
+}
+
+/** Most unanchored events a backfill settlement lists for anchoring. */
+const UNANCHORED_TIMELINE_LIMIT = 80;
+/** Longest event description, in characters, in that list. */
+const UNANCHORED_DESCRIPTION_LIMIT = 200;
+
+/* 「从正文补全故事圣经」逐章结算可锚定的事件：尚未锚定到章节的当前事件
+   （多为导入时抽取的），按全书顺序列出最靠前的一批。补全按阅读顺序推进，
+   前面的事件被锚定后，后面的事件会依次进入列表。 */
+function unanchoredTimelineBlock(
+  events: readonly TimelineEvent[],
+  entities: readonly CanonEntity[],
+  language: ProjectLanguage,
+): string {
+  const unanchored = events
+    .filter((event) => event.outlineNodeId === null)
+    .sort(
+      (left, right) =>
+        left.sequence - right.sequence || left.id.localeCompare(right.id),
+    );
+  if (unanchored.length === 0) return language === "en" ? "(none)" : "（无）";
+  const names = new Map(entities.map((entity) => [entity.id, entity.name]));
+  const listed = unanchored.slice(0, UNANCHORED_TIMELINE_LIMIT);
+  const lines = listed.map((event) => {
+    const participants = event.participants
+      .map((id) => names.get(id))
+      .filter((name): name is string => Boolean(name))
+      .join(", ");
+    const description = event.description
+      ? event.description.length > UNANCHORED_DESCRIPTION_LIMIT
+        ? `${event.description.slice(0, UNANCHORED_DESCRIPTION_LIMIT)}…`
+        : event.description
+      : "";
+    return [
+      `- [timeline:${event.id}] #${event.sequence} ${event.title}`,
+      participants
+        ? language === "en"
+          ? `participants: ${participants}`
+          : `参与者：${participants}`
+        : "",
+      description,
+    ]
+      .filter(Boolean)
+      .join("｜");
+  });
+  const omitted = unanchored.length - listed.length;
+  if (omitted > 0)
+    lines.push(
+      language === "en"
+        ? `(${omitted} later unanchored events are not listed.)`
+        : `（另有 ${omitted} 个更靠后的未锚定事件未列出。）`,
+    );
+  return lines.join("\n");
+}
+
+function normalizeTitle(value: string): string {
+  return value.trim().replace(/\s+/gu, " ");
 }
 
 function settlementEntityIds(settlement: Record<string, unknown>): string[] {

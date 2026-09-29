@@ -2099,6 +2099,155 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
     ).toEqual([]);
   });
 
+  it("anchors an imported timeline event instead of duplicating it, and stops before anchoring the author's", async () => {
+    const now = new Date().toISOString();
+    const anchor = (eventId: string, title: string) => ({
+      anchorEventId: eventId,
+      title,
+      description: null,
+      storyTime: null,
+      participantIds: [],
+      causeEventIds: [],
+      visibility: "reader",
+      knownBy: [],
+      evidenceParagraphs: [1],
+    });
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) => {
+        const ordinal = call.policy.bibleBackfillOrdinal;
+        if (ordinal === 0) {
+          return {
+            ...settlement(),
+            timelineCandidates: [anchor("imported-bell", "灯塔敲响第三下钟")],
+          };
+        }
+        if (ordinal === 1) {
+          return {
+            ...settlement(),
+            timelineCandidates: [anchor("author-letter", "找到空白信")],
+          };
+        }
+        return settlement();
+      },
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    const state = new SqliteNarrativeStateRepository(
+      database,
+      new SqliteCanonRepository(database),
+      new SqliteStoryRepository(database),
+    );
+    // A timeline event the manuscript import created (sourced from its
+    // candidate), and one the author entered; neither is anchored yet.
+    const batch = database.raw
+      .prepare("SELECT id FROM import_batches WHERE target_project_id = ?")
+      .get(book.projectId) as { id: string };
+    database.raw
+      .prepare(
+        `INSERT INTO import_candidates(
+           id, batch_id, kind, ordinal, title, payload_json, status, created_at, updated_at
+         ) VALUES (?, ?, 'timeline', 902, ?, '{}', 'applied', ?, ?)`,
+      )
+      .run("imported-bell-candidate", batch.id, "灯塔敲响第三下钟", now, now);
+    for (const [id, title, sequence, sourceId] of [
+      ["imported-bell", "灯塔敲响第三下钟", 1, "imported-bell-candidate"],
+      ["author-letter", "找到空白信", 2, null],
+    ] as const) {
+      state.insertTimelineEvent({
+        id,
+        projectId: book.projectId,
+        title,
+        description: null,
+        outlineNodeId: null,
+        storyTimeStart: null,
+        storyTimeEnd: null,
+        sequence,
+        participants: [],
+        causes: [],
+        visibility: "reader",
+        sourceId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    const event = (id: string) =>
+      state.listTimeline(book.projectId).find((item) => item.id === id)!;
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(created.statusCode, created.body).toBe(202);
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    expect(await driveRun(app, book.projectId, detail.items[0]!.runId!)).toBe(
+      "completed",
+    );
+    // The settlement saw both unanchored events with their ids.
+    expect(script.calls[0]!.content).toContain(
+      "[timeline:imported-bell] #1 灯塔敲响第三下钟",
+    );
+    expect(script.calls[0]!.content).toContain(
+      "[timeline:author-letter] #2 找到空白信",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    // Anchoring the imported event applies without stopping, and creates
+    // no second event for the same thing.
+    expect(detail.items[0]!.status).toBe("applied");
+    expect(state.listTimeline(book.projectId)).toHaveLength(2);
+    expect(event("imported-bell")).toMatchObject({
+      title: "灯塔敲响第三下钟",
+      outlineNodeId: book.chapters[0]!.outlineNodeId,
+      sourceId: "imported-bell-candidate",
+    });
+
+    // Anchoring the author's event waits for review and changes nothing.
+    expect(await driveRun(app, book.projectId, detail.items[1]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    const changeSetId = detail.items[1]!.changeSetId!;
+    expect(detail.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "bible_backfill.review_required",
+        ordinal: 1,
+        changeSetId,
+        targets: [
+          {
+            path: "timelineCandidates.0",
+            kind: "timeline",
+            action: "anchor",
+            id: "author-letter",
+            label: "找到空白信",
+          },
+        ],
+      },
+    });
+    expect(event("author-letter").outlineNodeId).toBeNull();
+
+    // The author applies the chapter; the completion then finishes.
+    expect(
+      (await decide(app, book.projectId, changeSetId, "apply")).statusCode,
+    ).toBe(200);
+    expect(
+      (await act(app, book.projectId, jobId, { action: "resume" })).statusCode,
+    ).toBe(200);
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[1]!.status).toBe("applied");
+    expect(detail.items[2]!.status).toBe("settling");
+    expect(await driveRun(app, book.projectId, detail.items[2]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job).toMatchObject({ status: "completed" });
+    expect(event("author-letter").outlineNodeId).toBe(
+      book.chapters[1]!.outlineNodeId,
+    );
+    expect(state.listTimeline(book.projectId)).toHaveLength(2);
+  });
+
   it("develops and resolves an imported foreshadow without stopping, but not reopens it", async () => {
     const now = new Date().toISOString();
     const imported = (action: string, expectedStatus: string) => ({

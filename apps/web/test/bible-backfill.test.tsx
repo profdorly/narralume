@@ -816,6 +816,88 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     expect(calls.indexOf(decision!)).toBeLessThan(calls.indexOf(resume!));
   });
 
+  it.each([
+    {
+      locale: "en" as const,
+      action: "Anchor timeline event to this chapter",
+      anchorLabel: "Timeline · anchor",
+      anchorText: "Anchor the existing event “Helena chega a Vila do Sal” to this chapter; no new event is created · story time: Outono",
+      newLabel: "Timeline",
+    },
+    {
+      locale: "zh-CN" as const,
+      action: "把时间线事件锚定到本章",
+      anchorLabel: "时间线 · 锚定",
+      anchorText: "把已有事件「Helena chega a Vila do Sal」锚定到本章，不新建事件 · 故事时间：Outono",
+      newLabel: "时间线",
+    },
+  ])(
+    "shows an anchored timeline event as adopting the existing event ($locale)",
+    async ({ locale, action, anchorLabel, anchorText, newLabel }) => {
+      setLocale(locale);
+      stubApi({
+        current: () =>
+          detail(
+            job({
+              status: "awaiting_user",
+              mode: "auto_apply_stop_on_conflict",
+              currentOrdinal: 1,
+              error: {
+                code: "bible_backfill.review_required",
+                ordinal: 1,
+                changeSetId: "ccs-2",
+                targets: [
+                  {
+                    path: "timelineCandidates.0",
+                    kind: "timeline",
+                    action: "anchor",
+                    id: "event-1",
+                    label: "Helena chega a Vila do Sal",
+                  },
+                ],
+              },
+            }),
+            [
+              item(0, "applied"),
+              item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+              item(2, "pending"),
+            ],
+            ["cancel", "skip_item"],
+          ),
+        changeSets: () => [
+          {
+            ...CHANGE_SET,
+            changes: {
+              summary: "Helena chega a Vila do Sal",
+              timelineCandidates: [
+                {
+                  anchorEventId: "event-1",
+                  title: "Helena chega a Vila do Sal",
+                  description: null,
+                  storyTime: "Outono",
+                },
+                {
+                  anchorEventId: null,
+                  title: "O farol é vendido",
+                  description: "A dona da pensão conta.",
+                  storyTime: null,
+                },
+              ],
+            },
+          },
+        ],
+      });
+      renderPanel();
+
+      expect(await screen.findByText(action)).toBeInTheDocument();
+      expect(screen.getByText(action).parentElement).toHaveTextContent("Helena chega a Vila do Sal");
+      const anchored = await screen.findByText(anchorText);
+      expect(anchored.parentElement).toHaveTextContent(anchorLabel);
+      const created = screen.getByText("O farol é vendido · A dona da pensão conta.");
+      expect(created.previousElementSibling).toHaveTextContent(new RegExp(`^${newLabel}$`, "u"));
+    },
+  );
+
   it("offers Resume on a review stop once the change set was decided elsewhere", async () => {
     stubApi({
       current: () =>

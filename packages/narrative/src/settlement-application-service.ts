@@ -29,14 +29,22 @@ export type SettlementConflictPolicy = "reject" | "force";
 export const SETTLED_OUTLINE_NODE_KEY = "settledOutlineNodeId";
 
 /**
- * An existing record a change set would withdraw, supersede, update, end or
- * resolve when applied, with the provenance the store keeps for it.
+ * An existing record a change set would withdraw, supersede, update, end,
+ * develop, resolve or anchor when applied, with the provenance the store keeps
+ * for it.
  */
 export interface SettlementChangedRecord {
   /** Candidate path inside the change set, e.g. `factCandidates.0`. */
   path: string;
-  kind: "fact" | "relationship" | "foreshadow";
-  action: "withdraw" | "supersede" | "update" | "end" | "develop" | "resolve";
+  kind: "fact" | "relationship" | "timeline" | "foreshadow";
+  action:
+    | "withdraw"
+    | "supersede"
+    | "update"
+    | "end"
+    | "anchor"
+    | "develop"
+    | "resolve";
   id: string;
   /** Short author-facing description of the record. */
   label: string;
@@ -48,8 +56,9 @@ export interface SettlementChangedRecord {
    */
   createdByChangeSetId: string | null;
   /**
-   * The record's own source reference (for relationships and foreshadows the
-   * import candidate or change set that created it); null when none is stored.
+   * The record's own source reference (for relationships, timeline events and
+   * foreshadows the import candidate or change set that created it); null
+   * when none is stored.
    */
   sourceType: string | null;
   sourceId: string | null;
@@ -192,10 +201,11 @@ export class SettlementApplicationService {
 
   /**
    * Existing records applying a candidate change set now would withdraw,
-   * supersede, update, end, develop or resolve. Only targets apply() would
-   * change are listed: a missing, stale, locked, mismatched or
-   * status-changed target is reported by apply() as a conflict instead. A
-   * payload apply() cannot read lists nothing (apply() refuses it).
+   * supersede, update, end, anchor, develop or resolve. Only targets apply()
+   * would change are listed: a missing, stale, locked, mismatched,
+   * status-changed, voided or already anchored target is reported by apply()
+   * as a conflict instead. A payload apply() cannot read lists nothing
+   * (apply() refuses it).
    */
   changedExistingRecords(
     projectId: string,
@@ -249,6 +259,31 @@ export class SettlementApplicationService {
             : null,
         sourceType: current.sourceType,
         sourceId: current.sourceId,
+      });
+    });
+
+    const timeline = this.state.listTimeline(projectId);
+    settlement.timelineCandidates.forEach((candidate, index) => {
+      if (candidate.anchorEventId === null) return;
+      const existing = timeline.find(
+        (event) => event.id === candidate.anchorEventId,
+      );
+      if (!existing || existing.outlineNodeId !== null) return;
+      records.push({
+        path: `timelineCandidates.${index}`,
+        kind: "timeline",
+        action: "anchor",
+        id: existing.id,
+        label: existing.title,
+        // Settlement-created events are `${changeSetId}:timeline:${index}`.
+        createdByChangeSetId: this.creatingChangeSet(
+          projectId,
+          existing.id,
+          existing.sourceId,
+          "timeline",
+        ),
+        sourceType: null,
+        sourceId: existing.sourceId,
       });
     });
 
@@ -322,7 +357,7 @@ export class SettlementApplicationService {
     projectId: string,
     rowId: string,
     changeSetId: string | null,
-    kind: "fact" | "relationship" | "foreshadow",
+    kind: "fact" | "relationship" | "timeline" | "foreshadow",
   ): string | null {
     if (!changeSetId || !rowId.startsWith(`${changeSetId}:${kind}:`)) {
       return null;
@@ -420,7 +455,35 @@ export class SettlementApplicationService {
       this.state
         .listTimeline(changeSet.projectId)
         .reduce((maximum, event) => Math.max(maximum, event.sequence), 0) + 1;
+    const voidedEventIds = new Set(
+      this.state
+        .listVoidedTimeline(changeSet.projectId)
+        .map((event) => event.eventId),
+    );
     settlement.timelineCandidates.forEach((candidate, index) => {
+      if (candidate.anchorEventId !== null) {
+        const eventId = this.anchorTimelineEvent(
+          changeSet.projectId,
+          candidate.anchorEventId,
+          candidate.storyTime,
+          outlineNodeId,
+          voidedEventIds,
+          `timelineCandidates.${index}`,
+          now,
+          result,
+        );
+        if (eventId && outlineNodeId) {
+          this.insertTimelineKnowledge(
+            changeSet,
+            index,
+            eventId,
+            candidate.knownBy,
+            outlineNodeId,
+            now,
+          );
+        }
+        return;
+      }
       const id = `${changeSet.id}:timeline:${index}`;
       if (
         this.state
@@ -448,20 +511,14 @@ export class SettlementApplicationService {
       nextSequence += 1;
       result.applied.timelineEventIds.push(id);
       if (outlineNodeId) {
-        candidate.knownBy.forEach((knowledge, knowledgeIndex) => {
-          this.state.insertKnowledge({
-            id: `${changeSet.id}:knowledge:timeline:${index}:${knowledgeIndex}`,
-            projectId: changeSet.projectId,
-            knowerType: "character",
-            knowerEntityId: knowledge.entityId,
-            factId: null,
-            timelineEventId: id,
-            learnedAtNodeId: outlineNodeId,
-            belief: knowledge.belief,
-            sourceId: changeSet.id,
-            createdAt: now,
-          });
-        });
+        this.insertTimelineKnowledge(
+          changeSet,
+          index,
+          id,
+          candidate.knownBy,
+          outlineNodeId,
+          now,
+        );
       }
     });
 
@@ -599,6 +656,78 @@ export class SettlementApplicationService {
         updatedAt: now,
       });
       result.applied.foreshadowIds.push(id);
+    });
+  }
+
+  /**
+   * Anchors an existing, not yet anchored timeline event to the settled
+   * chapter instead of creating a new one: its chapter (and the candidate's
+   * story time, when given) is set, while its title, description,
+   * participants, causes, visibility and source stay as they are. A missing,
+   * voided or already anchored event, or a settlement without a chapter, is a
+   * conflict that force cannot override. Returns the anchored event's id.
+   */
+  private anchorTimelineEvent(
+    projectId: string,
+    eventId: string,
+    storyTime: string | null,
+    outlineNodeId: string | null,
+    voidedEventIds: ReadonlySet<string>,
+    path: string,
+    now: string,
+    result: MutableApplicationResult,
+  ): string | null {
+    if (voidedEventIds.has(eventId)) {
+      this.addConflict(result, path, eventId, "target_voided");
+      return null;
+    }
+    const existing = this.state
+      .listTimeline(projectId)
+      .find((event) => event.id === eventId);
+    if (!existing) {
+      this.addConflict(result, path, eventId, "target_not_found");
+      return null;
+    }
+    if (existing.outlineNodeId !== null) {
+      this.addConflict(result, path, existing.id, "target_already_anchored");
+      return null;
+    }
+    if (!outlineNodeId) {
+      this.addConflict(result, path, existing.id, "settlement_unanchored");
+      return null;
+    }
+    this.state.updateTimelineEvent({
+      ...existing,
+      outlineNodeId,
+      storyTimeStart: storyTime ?? existing.storyTimeStart,
+      storyTimeEnd: storyTime ?? existing.storyTimeEnd,
+      updatedAt: now,
+    });
+    result.applied.timelineEventIds.push(existing.id);
+    return existing.id;
+  }
+
+  private insertTimelineKnowledge(
+    changeSet: CanonChangeSetView,
+    index: number,
+    timelineEventId: string,
+    knownBy: GroundedSettlement["timelineCandidates"][number]["knownBy"],
+    outlineNodeId: string,
+    now: string,
+  ): void {
+    knownBy.forEach((knowledge, knowledgeIndex) => {
+      this.state.insertKnowledge({
+        id: `${changeSet.id}:knowledge:timeline:${index}:${knowledgeIndex}`,
+        projectId: changeSet.projectId,
+        knowerType: "character",
+        knowerEntityId: knowledge.entityId,
+        factId: null,
+        timelineEventId,
+        learnedAtNodeId: outlineNodeId,
+        belief: knowledge.belief,
+        sourceId: changeSet.id,
+        createdAt: now,
+      });
     });
   }
 
