@@ -260,6 +260,21 @@ function exceedsCodePoints(value: string, limit: number): boolean {
   return [...value].length > limit;
 }
 
+/** Markdown 标题的章名只保留文字：去掉整体包裹的 ** / __ / * / _ 强调，以及
+ *  导出工具重复写入的标题标记（“# **Chapter 4**” → “Chapter 4”）。
+ *  只清理标题文字，不影响正文；清理后为空时保留原文。 */
+function cleanMarkdownHeadingTitle(title: string): string {
+  let current = title;
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = (EMPHASIS_WRAPPED.exec(current)?.[2] ?? current)
+      .replace(/^#{1,6}[ \t]+/u, "")
+      .trim();
+    if (next === current) break;
+    current = next;
+  }
+  return current || title;
+}
+
 /** 关键词标题的候选文本：超过长度上限时为 null，否则去掉 ** / _ 强调包裹。 */
 function keywordCandidate(trimmed: string): string | null {
   if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
@@ -277,9 +292,11 @@ function classifyHeading(
   if (!trimmed || SCENE_BREAK.test(trimmed)) return null;
   const markdown = MARKDOWN_HEADING.exec(line);
   if (markdown) {
-    const title = markdown[1]!.trimEnd();
+    const raw = markdown[1]!.trimEnd();
     // “# ***”“## ⁂” 是套了标题标记的场景分隔符，同样按正文保留。
-    return SCENE_BREAK.test(title) ? null : { title, keyword: false };
+    return SCENE_BREAK.test(raw)
+      ? null
+      : { title: cleanMarkdownHeadingTitle(raw), keyword: false };
   }
   if (LEGACY_HEADING.test(trimmed)) return { title: trimmed, keyword: false };
   const candidate = keywordCandidate(trimmed);
