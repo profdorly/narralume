@@ -1517,6 +1517,67 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
     expect(await driveRun(app, book.projectId, studioRun.id)).toBe("completed");
   });
 
+  it("pauses without pausing an adopted Studio settlement, which is detached still running", async () => {
+    const script: ModelScript = { calls: [], respond: () => settlement() };
+    const { app } = await setup(script);
+    const book = await importBook(app);
+    await commitChapter(
+      app,
+      book.projectId,
+      book.chapters[0]!.documentId,
+      "雾从海面推上石阶。\n\n林昼听见第三下钟声。",
+      book.chapters[0]!.versionId,
+    );
+    const studioRun = (await settlementRuns(app, book.projectId))[0]!;
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+    });
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    expect(detail.items[0]).toMatchObject({
+      status: "settling",
+      runId: studioRun.id,
+    });
+
+    // Pausing the completion leaves the author's Studio run alone.
+    const paused = await act(app, book.projectId, jobId, { action: "pause" });
+    expect(paused.statusCode, paused.body).toBe(200);
+    expect(paused.json()).toMatchObject({ job: { status: "paused" } });
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job!.status).toBe("paused");
+    const studioRunNow = async () =>
+      (await settlementRuns(app, book.projectId)).find(
+        (run) => run.id === studioRun.id,
+      );
+    expect(await studioRunNow()).toMatchObject({
+      status: "pending",
+      pauseRequested: false,
+    });
+
+    const cancelled = await act(app, book.projectId, jobId, {
+      action: "cancel",
+    });
+    expect(cancelled.json()).toMatchObject({
+      job: { status: "cancelled" },
+      items: [
+        {
+          status: "pending",
+          note: {
+            code: "bible_backfill.item.detached",
+            detachedRunId: studioRun.id,
+          },
+        },
+        { status: "pending" },
+        { status: "pending" },
+      ],
+    });
+    expect(await studioRunNow()).toMatchObject({
+      status: "pending",
+      pauseRequested: false,
+    });
+    expect(await driveRun(app, book.projectId, studioRun.id)).toBe("completed");
+  });
+
   it("hands an edited chapter it never read back to the writing path on cancel", async () => {
     const script: ModelScript = { calls: [], respond: () => settlement() };
     const { app } = await setup(script);
@@ -1889,6 +1950,150 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
         .listEffectiveFacts(book.projectId)
         .find((candidate) => candidate.predicate === "身份"),
     ).toMatchObject({ value: "守灯人", supersedesFactId: "author-identity" });
+  });
+
+  it("stops auto-apply before it develops an author's foreshadow or reopens a finished one", async () => {
+    let projectId = "";
+    let readState: () => SqliteNarrativeStateRepository = () => {
+      throw new Error("not ready");
+    };
+    const now = new Date().toISOString();
+    const planted = () =>
+      readState()
+        .listForeshadows(projectId)
+        .find((item) => item.title === "灯塔钥匙")!;
+    const foreshadow = (overrides: Record<string, unknown>) => ({
+      foreshadowId: null,
+      title: "灯塔钥匙",
+      action: "plant",
+      expectedStatus: null,
+      importance: 3,
+      targetFromNodeId: null,
+      targetToNodeId: null,
+      evidenceParagraphs: [1],
+      ...overrides,
+    });
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) => {
+        const ordinal = call.policy.bibleBackfillOrdinal;
+        if (ordinal === 0) {
+          return { ...settlement(), foreshadowCandidates: [foreshadow({})] };
+        }
+        if (ordinal === 1) {
+          return {
+            ...settlement(),
+            foreshadowCandidates: [
+              foreshadow({
+                foreshadowId: planted().id,
+                action: "develop",
+                expectedStatus: "planted",
+              }),
+            ],
+          };
+        }
+        return {
+          ...settlement(),
+          foreshadowCandidates: [
+            foreshadow({
+              foreshadowId: planted().id,
+              action: "develop",
+              expectedStatus: "resolved",
+            }),
+            foreshadow({
+              foreshadowId: "author-foreshadow",
+              title: "空白信",
+              action: "develop",
+              expectedStatus: "developing",
+            }),
+          ],
+        };
+      },
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    projectId = book.projectId;
+    const state = new SqliteNarrativeStateRepository(
+      database,
+      new SqliteCanonRepository(database),
+      new SqliteStoryRepository(database),
+    );
+    readState = () => state;
+    state.insertForeshadow({
+      id: "author-foreshadow",
+      projectId: book.projectId,
+      title: "空白信",
+      description: "无人认领的空白信。",
+      status: "developing",
+      importance: 3,
+      targetFromNodeId: null,
+      targetToNodeId: null,
+      dependencies: [],
+      evidenceNodeIds: [],
+      resolutionNodeId: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(created.statusCode, created.body).toBe(202);
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    for (const ordinal of [0, 1]) {
+      expect(
+        await driveRun(app, book.projectId, detail.items[ordinal]!.runId!),
+      ).toBe("completed");
+      detail = await settle(app, book.projectId, jobId);
+      expect(detail.items[ordinal]!.status).toBe("applied");
+    }
+    // Developing the foreshadow this job planted applies without stopping.
+    expect(planted().status).toBe("developing");
+    // The author then resolves it.
+    state.updateForeshadow({
+      ...planted(),
+      status: "resolved",
+      updatedAt: now,
+    });
+
+    // Chapter 3 would reopen it and develop the author's own foreshadow.
+    expect(await driveRun(app, book.projectId, detail.items[2]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "bible_backfill.review_required",
+        ordinal: 2,
+        targets: [
+          {
+            path: "foreshadowCandidates.0",
+            kind: "foreshadow",
+            action: "develop",
+            id: planted().id,
+            reopens: true,
+          },
+          {
+            path: "foreshadowCandidates.1",
+            kind: "foreshadow",
+            action: "develop",
+            id: "author-foreshadow",
+          },
+        ],
+      },
+    });
+    expect(
+      (detail.job!.error!.targets as Record<string, unknown>[])[1],
+    ).not.toHaveProperty("reopens");
+    expect(planted().status).toBe("resolved");
+    expect(
+      state
+        .listForeshadows(book.projectId)
+        .find((item) => item.id === "author-foreshadow")?.evidenceNodeIds,
+    ).toEqual([]);
   });
 
   it("stops auto-apply on a non-conflict settlement error and continues past a skipped chapter", async () => {

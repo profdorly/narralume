@@ -489,12 +489,16 @@ export class BibleBackfillService {
     const child = this.activeChild(job);
     if (
       child &&
+      isOwnBackfillRun(child, job.id) &&
       ["pending", "running", "failed_recoverable"].includes(child.status)
     ) {
       // The coordinator parks the job once the child run has paused.
       if (!child.pauseRequested) this.runs.requestPause(child.id, now);
       return;
     }
+    // A Studio settlement the job adopted is the author's run: pausing the
+    // completion leaves it running, so a later cancel or re-target detaches
+    // it still running. The job picks up its outcome on resume.
     this.backfills.setJobStatus(job.id, "paused", now);
   }
 

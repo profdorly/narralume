@@ -351,6 +351,7 @@ export function BibleBackfillPanel({
             />
           ) : (
             <FinishedState
+              projectId={projectId}
               detail={detail!}
               job={job}
               items={items}
@@ -554,6 +555,20 @@ function ActiveState({
     job.status === "awaiting_decision"
       ? (current?.changeSetId ?? null)
       : conflictChangeSetId;
+  /* 冲突或待审停机要先裁定本章变更集（裁定后会自动继续），此时“继续”只会再次停下，
+     故隐藏；变更集已在别处裁定、已不存在或读取失败时才显示“继续”。 */
+  const stopChangeSets = useQuery({
+    queryKey: ["project", projectId, "canon-change-sets"],
+    queryFn: ({ signal }) => getCanonChangeSets(projectId, signal),
+    enabled: Boolean(conflictChangeSetId),
+  });
+  const decisionPending = Boolean(
+    conflictChangeSetId &&
+      (stopChangeSets.isPending ||
+        stopChangeSets.data?.find((set) => set.id === conflictChangeSetId)
+          ?.status === "candidate"),
+  );
+  const canResume = can("resume") && !decisionPending;
 
   return (
     <div className="bible-backfill__active">
@@ -679,7 +694,7 @@ function ActiveState({
             {t("bible.backfill.actions.pause")}
           </button>
         ) : null}
-        {can("resume") ? (
+        {canResume ? (
           <button
             type="button"
             className="btn btn--primary"
@@ -701,6 +716,11 @@ function ActiveState({
           </button>
         ) : null}
       </div>
+      {can("resume") && decisionPending ? (
+        <p className="bible-backfill__detail">
+          {t("bible.backfill.attention.decideToContinue")}
+        </p>
+      ) : null}
       {actionError ? (
         <ErrorNote error={actionError} title={t("bible.backfill.errors.action")} />
       ) : null}
@@ -858,7 +878,7 @@ function AttentionState({
             >
               {review.map((target) => (
                 <li key={target.path}>
-                  <strong>{t(REVIEW_ACTIONS[target.action])}</strong>
+                  <strong>{t(reviewActionKey(target))}</strong>
                   {target.label ? ` · ${target.label}` : null}
                 </li>
               ))}
@@ -937,13 +957,15 @@ function SkipHint({ item }: { item: BibleBackfillItemDto }) {
 /* ---- 已结束 ------------------------------------------------------------- */
 
 function FinishedState({
+  projectId,
   detail,
   job,
-  items,
+  items: jobItems,
   pending,
   onStartAgain,
   onOpenCandidateDesk,
 }: {
+  projectId: string;
   detail: BibleBackfillDetailDto;
   job: BibleBackfillJobDto;
   items: BibleBackfillItemDto[];
@@ -952,22 +974,33 @@ function FinishedState({
   onOpenCandidateDesk: (section: BibleEditorSection) => void;
 }) {
   const { t } = useI18n();
+  /* 留给写作台审阅的章节，作者之后可能已在写作台裁定：变更集列表已在缓存中时按其当前状态显示，
+     不为此另发请求。 */
+  const cachedChangeSets = useQuery({
+    queryKey: ["project", projectId, "canon-change-sets"],
+    queryFn: ({ signal }) => getCanonChangeSets(projectId, signal),
+    enabled: false,
+  }).data;
+  const { items, counts: jobCounts } = useMemo(
+    () => withStudioDecisions(jobItems, detail.counts, cachedChangeSets),
+    [jobItems, detail.counts, cachedChangeSets],
+  );
   const title =
     job.status === "completed"
       ? t("bible.backfill.finished.completedTitle")
       : t("bible.backfill.finished.cancelledTitle");
   const counts: Array<{ key: MessageKey; value: number }> = [
-    { key: "bible.backfill.finished.counts.total", value: detail.counts.total },
-    { key: "bible.backfill.finished.counts.applied", value: detail.counts.applied },
-    { key: "bible.backfill.finished.counts.rejected", value: detail.counts.rejected },
-    { key: "bible.backfill.finished.counts.empty", value: detail.counts.empty },
-    { key: "bible.backfill.finished.counts.skipped", value: detail.counts.skipped },
-    { key: "bible.backfill.finished.counts.failed", value: detail.counts.failed },
-    ...(detail.counts.awaitingDecision > 0
+    { key: "bible.backfill.finished.counts.total", value: jobCounts.total },
+    { key: "bible.backfill.finished.counts.applied", value: jobCounts.applied },
+    { key: "bible.backfill.finished.counts.rejected", value: jobCounts.rejected },
+    { key: "bible.backfill.finished.counts.empty", value: jobCounts.empty },
+    { key: "bible.backfill.finished.counts.skipped", value: jobCounts.skipped },
+    { key: "bible.backfill.finished.counts.failed", value: jobCounts.failed },
+    ...(jobCounts.awaitingDecision > 0
       ? [
           {
             key: "bible.backfill.finished.counts.awaitingDecision" as const,
-            value: detail.counts.awaitingDecision,
+            value: jobCounts.awaitingDecision,
           },
         ]
       : []),
@@ -1160,6 +1193,41 @@ function itemStatusLabel(
 
 /* ---- 工具 --------------------------------------------------------------- */
 
+/** 已结束任务里仍待裁定的章节，按变更集的当前状态改记为已采纳或已拒绝。 */
+function withStudioDecisions(
+  items: BibleBackfillItemDto[],
+  counts: BibleBackfillDetailDto["counts"],
+  changeSets: ReadonlyArray<{ id: string; status: string }> | undefined,
+): { items: BibleBackfillItemDto[]; counts: BibleBackfillDetailDto["counts"] } {
+  if (!changeSets) return { items, counts };
+  const statusById = new Map(changeSets.map((set) => [set.id, set.status]));
+  let applied = 0;
+  let rejected = 0;
+  const decided = items.map((item): BibleBackfillItemDto => {
+    if (item.status !== "awaiting_decision" || !item.changeSetId) return item;
+    const status = statusById.get(item.changeSetId);
+    if (status === "applied" || status === "partially_applied") {
+      applied += 1;
+      return { ...item, status: "applied" };
+    }
+    if (status === "rejected") {
+      rejected += 1;
+      return { ...item, status: "rejected" };
+    }
+    return item;
+  });
+  if (applied + rejected === 0) return { items, counts };
+  return {
+    items: decided,
+    counts: {
+      ...counts,
+      applied: counts.applied + applied,
+      rejected: counts.rejected + rejected,
+      awaitingDecision: counts.awaitingDecision - applied - rejected,
+    },
+  };
+}
+
 function toDetail(value: BibleBackfillCreatedDto): BibleBackfillDetailDto {
   return {
     job: value.job,
@@ -1218,8 +1286,10 @@ const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
 /** review_required 停机列出的、本章要改动的现有记录。 */
 interface ReviewTarget {
   path: string;
-  action: "withdraw" | "supersede" | "update" | "end" | "resolve";
+  action: "withdraw" | "supersede" | "update" | "end" | "develop" | "resolve";
   label: string | null;
+  /** 伏笔已回收或已放弃，本章要把它重新打开。 */
+  reopens: boolean;
 }
 
 const REVIEW_ACTIONS: Record<ReviewTarget["action"], MessageKey> = {
@@ -1227,8 +1297,15 @@ const REVIEW_ACTIONS: Record<ReviewTarget["action"], MessageKey> = {
   supersede: "bible.backfill.attention.reviewAction.supersede",
   update: "bible.backfill.attention.reviewAction.update",
   end: "bible.backfill.attention.reviewAction.end",
+  develop: "bible.backfill.attention.reviewAction.develop",
   resolve: "bible.backfill.attention.reviewAction.resolve",
 };
+
+function reviewActionKey(target: ReviewTarget): MessageKey {
+  return target.action === "develop" && target.reopens
+    ? "bible.backfill.attention.reviewAction.reopen"
+    : REVIEW_ACTIONS[target.action];
+}
 
 function reviewTargets(error: BackfillError): ReviewTarget[] {
   const targets = errorPayload(error).targets;
@@ -1243,6 +1320,7 @@ function reviewTargets(error: BackfillError): ReviewTarget[] {
         path: typeof record.path === "string" ? record.path : String(index),
         action: action as ReviewTarget["action"],
         label: typeof record.label === "string" && record.label ? record.label : null,
+        reopens: record.reopens === true,
       },
     ];
   });

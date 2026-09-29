@@ -714,6 +714,7 @@ describe("SettlementApplicationService", () => {
         createdByChangeSetId: "change-1",
         sourceType: null,
         sourceId: null,
+        reopens: false,
       },
     ]);
   });

@@ -36,7 +36,7 @@ export interface SettlementChangedRecord {
   /** Candidate path inside the change set, e.g. `factCandidates.0`. */
   path: string;
   kind: "fact" | "relationship" | "foreshadow";
-  action: "withdraw" | "supersede" | "update" | "end" | "resolve";
+  action: "withdraw" | "supersede" | "update" | "end" | "develop" | "resolve";
   id: string;
   /** Short author-facing description of the record. */
   label: string;
@@ -49,6 +49,12 @@ export interface SettlementChangedRecord {
   /** The record's own source reference; null when none is stored. */
   sourceType: string | null;
   sourceId: string | null;
+  /**
+   * Foreshadows only: applying would move a resolved or abandoned foreshadow
+   * out of that status (a develop reopens it, a resolve revives an abandoned
+   * one).
+   */
+  reopens?: boolean;
 }
 
 export interface SettlementApplicationResult {
@@ -182,7 +188,7 @@ export class SettlementApplicationService {
 
   /**
    * Existing records applying a candidate change set now would withdraw,
-   * supersede, update, end or resolve. Only targets apply() would actually
+   * supersede, update, end, develop or resolve. Only targets apply() would
    * change are listed: a missing, stale, locked, mismatched or
    * status-changed target is reported by apply() as a conflict instead. A
    * payload apply() cannot read lists nothing (apply() refuses it).
@@ -275,11 +281,12 @@ export class SettlementApplicationService {
 
     const foreshadows = this.state.listForeshadows(projectId);
     settlement.foreshadowCandidates.forEach((candidate, index) => {
-      if (candidate.action !== "resolve" || !candidate.foreshadowId) return;
+      if (candidate.action === "plant" || !candidate.foreshadowId) return;
       const existing = foreshadows.find(
         (item) => item.id === candidate.foreshadowId,
       );
       if (!existing || candidate.expectedStatus !== existing.status) return;
+      const next = candidate.action === "resolve" ? "resolved" : "developing";
       // Foreshadows keep no source column; only the id of a
       // settlement-created one (`${changeSetId}:foreshadow:${index}`) says
       // where it came from.
@@ -287,7 +294,7 @@ export class SettlementApplicationService {
       records.push({
         path: `foreshadowCandidates.${index}`,
         kind: "foreshadow",
-        action: "resolve",
+        action: candidate.action,
         id: existing.id,
         label: existing.title,
         createdByChangeSetId: this.creatingChangeSet(
@@ -298,6 +305,9 @@ export class SettlementApplicationService {
         ),
         sourceType: null,
         sourceId: null,
+        reopens:
+          ["resolved", "abandoned"].includes(existing.status) &&
+          existing.status !== next,
       });
     });
     return records;

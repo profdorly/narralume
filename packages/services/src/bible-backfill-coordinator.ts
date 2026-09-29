@@ -229,8 +229,11 @@ export class BibleBackfillCoordinator {
     if (["paused", "awaiting_user"].includes(job.status)) return false;
 
     if (job.pauseRequested) {
+      // Only a run this job created is paused; an adopted Studio settlement
+      // keeps running (see BibleBackfillService.pause).
       if (
         childActive &&
+        isOwnBackfillRun(child, job.id) &&
         ["pending", "running", "failed_recoverable"].includes(child.status)
       ) {
         if (child.pauseRequested) return false;
@@ -522,14 +525,15 @@ export class BibleBackfillCoordinator {
       return this.changed(job.id, "job.awaiting_decision");
     }
     // Auto mode only adds to what this job and the import produced: a change
-    // that would withdraw, supersede, end, change or resolve anything else
-    // (for example a fact the author entered) waits for the author.
+    // that would withdraw, supersede, end, change, develop or resolve
+    // anything else (for example a fact the author entered), or reopen a
+    // finished foreshadow, waits for the author.
     const reviewTargets = this.recordsNeedingReview(job, changeSet.id);
     if (reviewTargets.length > 0) {
       return this.park(job, now, {
         code: "bible_backfill.review_required",
         message:
-          "This chapter would change existing Story Bible records that this completion did not create; review it before continuing",
+          "This chapter would change existing Story Bible records that this completion did not create, or reopen a finished foreshadow; review it before continuing",
         ordinal: item.ordinal,
         changeSetId: changeSet.id,
         targets: reviewTargets.map((target) => ({
@@ -538,6 +542,7 @@ export class BibleBackfillCoordinator {
           action: target.action,
           id: target.id,
           label: target.label,
+          ...(target.reopens ? { reopens: true } : {}),
         })),
       });
     }
@@ -576,12 +581,14 @@ export class BibleBackfillCoordinator {
   }
 
   /**
-   * Existing records the change set would withdraw, supersede, end, change
-   * or resolve that were created neither by this job's earlier applied
-   * change sets nor by the manuscript import. Import provenance is known only
-   * for relationships (their source is the import candidate); imports create
-   * no facts, and foreshadows keep no source at all, so an imported or
-   * author-entered foreshadow always counts as needing review.
+   * Existing records the change set would withdraw, supersede, end, change,
+   * develop or resolve that were created neither by this job's earlier
+   * applied change sets nor by the manuscript import. Import provenance is
+   * known only for relationships (their source is the import candidate);
+   * imports create no facts, and foreshadows keep no source at all, so an
+   * imported or author-entered foreshadow always counts as needing review.
+   * Reopening a resolved or abandoned foreshadow always needs review, even
+   * one this job planted: its status there is the author's call.
    */
   private recordsNeedingReview(
     job: BibleBackfillJob,
@@ -597,10 +604,12 @@ export class BibleBackfillCoordinator {
       .changedExistingRecords(job.projectId, changeSetId)
       .filter(
         (target) =>
-          !(
+          target.reopens === true ||
+          (!(
             target.createdByChangeSetId &&
             jobChangeSets.has(target.createdByChangeSetId)
-          ) && !this.isImportedRelationship(job.projectId, target),
+          ) &&
+            !this.isImportedRelationship(job.projectId, target)),
       );
   }
 

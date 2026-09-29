@@ -198,10 +198,19 @@ function stubApi(routes: {
   return { calls, fetchMock };
 }
 
-function renderPanel(options: { focus?: boolean; onOpen?: (section: string) => void } = {}) {
+function renderPanel(
+  options: {
+    focus?: boolean;
+    onOpen?: (section: string) => void;
+    /** 预先放入缓存的变更集列表（模拟写作台已读取过）。 */
+    cachedChangeSets?: unknown[];
+  } = {},
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  if (options.cachedChangeSets)
+    client.setQueryData(["project", "p-1", "canon-change-sets"], options.cachedChangeSets);
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -755,6 +764,8 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
           targets: [
             { path: "factCandidates.0", kind: "fact", action: "supersede", id: "f-1", label: "Shen Yan · role: postman" },
             { path: "foreshadowCandidates.0", kind: "foreshadow", action: "resolve", id: "fs-1", label: "Blank letter" },
+            { path: "foreshadowCandidates.1", kind: "foreshadow", action: "develop", id: "fs-2", label: "Lamp key", reopens: true },
+            { path: "foreshadowCandidates.2", kind: "foreshadow", action: "develop", id: "fs-3", label: "Tide bell" },
           ],
         },
       }),
@@ -787,9 +798,15 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     expect(within(targets).getByText("Replace fact")).toBeInTheDocument();
     expect(within(targets).getByText(/Shen Yan · role: postman/)).toBeInTheDocument();
     expect(within(targets).getByText("Resolve foreshadow")).toBeInTheDocument();
+    expect(within(targets).getByText("Reopen foreshadow").parentElement).toHaveTextContent("Lamp key");
+    expect(within(targets).getByText("Develop foreshadow").parentElement).toHaveTextContent("Tide bell");
     expect(screen.queryByRole("button", { name: "Force apply & continue" })).not.toBeInTheDocument();
     expect(screen.getByText(/this chapter's change set stays undecided in Studio/)).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: "Apply & continue" }));
+    const apply = await screen.findByRole("button", { name: "Apply & continue" });
+    // Resuming before the decision would only stop again: the panel asks for the decision instead.
+    expect(screen.queryByRole("button", { name: "Resume" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Resume isn't needed here: apply or reject this chapter's changes/)).toBeInTheDocument();
+    fireEvent.click(apply);
 
     expect(await screen.findByText("Reading chapter 3 of 3: Chapter Three")).toBeInTheDocument();
     const decision = calls.find((call) => call.url.endsWith("/decisions"));
@@ -797,6 +814,27 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     const resume = calls.find((call) => call.url.endsWith("/job-1/actions"));
     expect(resume?.body).toEqual({ requestId: expect.any(String), action: "resume" });
     expect(calls.indexOf(decision!)).toBeLessThan(calls.indexOf(resume!));
+  });
+
+  it("offers Resume on a review stop once the change set was decided elsewhere", async () => {
+    stubApi({
+      current: () =>
+        detail(
+          job({
+            status: "awaiting_user",
+            mode: "auto_apply_stop_on_conflict",
+            currentOrdinal: 1,
+            error: { code: "bible_backfill.review_required", ordinal: 1, changeSetId: "ccs-2", targets: [] },
+          }),
+          [item(0, "applied"), item(1, "awaiting_decision", { changeSetId: "ccs-2" }), item(2, "pending")],
+          ["resume", "cancel", "skip_item"],
+        ),
+      changeSets: () => [{ ...CHANGE_SET, status: "rejected", decidedAt: NOW }],
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("button", { name: "Resume" })).toBeInTheDocument();
+    expect(screen.queryByText(/Resume isn't needed here/)).not.toBeInTheDocument();
   });
 
   it("explains review stops, re-targeted chapters and the Studio change sets they leave in Chinese", async () => {
@@ -894,10 +932,31 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     fireEvent.click(screen.getByText("Chapter progress · 3"));
     expect(screen.getByText("Uses the change set Studio already produced for this text.")).toBeInTheDocument();
     expect(
-      screen.getByText("Its Studio settlement keeps running; the result appears in Studio's “Story changes” panel."),
+      screen.getByText(
+        "Its Studio settlement continues on its own (follow it in the Run Center); the result appears in Studio's “Story changes” panel.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/its latest text is settled in Studio instead/)).toBeInTheDocument();
     expect(screen.queryByText(/the latest text is read/)).not.toBeInTheDocument();
+  });
+
+  it("shows a cancelled job's chapter as decided once Studio decided its change set", async () => {
+    stubApi({
+      current: () =>
+        detail(job({ status: "cancelled", currentOrdinal: null }), [
+          item(0, "applied"),
+          item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
+          item(2, "pending"),
+        ]),
+    });
+    renderPanel({ cachedChangeSets: [{ ...CHANGE_SET, status: "applied", decidedAt: NOW }] });
+
+    expect(await screen.findByRole("heading", { name: "Story Bible completion was cancelled" })).toBeInTheDocument();
+    const results = screen.getByLabelText("Results");
+    expect(within(results).queryByText("Left for review in Studio")).not.toBeInTheDocument();
+    expect(within(results).getByText("Applied").nextSibling).toHaveTextContent("2");
+    fireEvent.click(screen.getByText("Chapter progress · 3"));
+    expect(screen.queryByText("Needs review")).not.toBeInTheDocument();
   });
 });
 
