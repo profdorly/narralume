@@ -405,8 +405,8 @@ export class SqliteNarrativeStateRepository {
           `
           INSERT INTO foreshadows(
             id, project_id, title, description, status, importance, target_from_node_id,
-            target_to_node_id, resolution_node_id, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            target_to_node_id, resolution_node_id, source_id, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -419,6 +419,7 @@ export class SqliteNarrativeStateRepository {
           foreshadow.targetFromNodeId,
           foreshadow.targetToNodeId,
           foreshadow.resolutionNodeId,
+          foreshadow.sourceId,
           foreshadow.createdAt,
           foreshadow.updatedAt,
         );
@@ -483,29 +484,33 @@ export class SqliteNarrativeStateRepository {
         evidence.all(row.id) as unknown as { outline_node_id: string }[]
       ).map((entry) => entry.outline_node_id),
       resolutionNodeId: row.resolution_node_id,
+      sourceId: row.source_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
   }
 
-  updateForeshadow(foreshadow: Foreshadow): Foreshadow {
+  /** Updates a foreshadow's story fields. Its source is provenance: it stays
+   *  as recorded when the foreshadow was created, whatever the input says. */
+  updateForeshadow(input: Foreshadow): Foreshadow {
     for (const nodeId of [
-      foreshadow.targetFromNodeId,
-      foreshadow.targetToNodeId,
-      foreshadow.resolutionNodeId,
-      ...foreshadow.evidenceNodeIds,
+      input.targetFromNodeId,
+      input.targetToNodeId,
+      input.resolutionNodeId,
+      ...input.evidenceNodeIds,
     ]) {
-      if (nodeId) this.story.requireOutlineNode(foreshadow.projectId, nodeId);
+      if (nodeId) this.story.requireOutlineNode(input.projectId, nodeId);
     }
     return this.database.transaction(() => {
-      const before = this.listForeshadows(foreshadow.projectId).find(
-        (candidate) => candidate.id === foreshadow.id,
+      const before = this.listForeshadows(input.projectId).find(
+        (candidate) => candidate.id === input.id,
       );
       if (!before)
         throw new NarrativeStateError(
           "foreshadow.not_found",
-          `Foreshadow ${foreshadow.id} does not exist`,
+          `Foreshadow ${input.id} does not exist`,
         );
+      const foreshadow: Foreshadow = { ...input, sourceId: before.sourceId };
       for (const dependencyId of new Set(foreshadow.dependencies)) {
         if (
           dependencyId === foreshadow.id ||
@@ -1018,6 +1023,7 @@ interface ForeshadowRow {
   target_from_node_id: string | null;
   target_to_node_id: string | null;
   resolution_node_id: string | null;
+  source_id: string | null;
   created_at: string;
   updated_at: string;
 }

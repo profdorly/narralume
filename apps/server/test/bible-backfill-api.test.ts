@@ -1760,7 +1760,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
           ]),
           foreshadowCandidates: [
             {
-              foreshadowId: "imported-foreshadow",
+              foreshadowId: "unsourced-foreshadow",
               title: "空白信",
               action: "resolve",
               expectedStatus: "planted",
@@ -1831,9 +1831,10 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
       supersedesEventId: null,
       createdAt: now,
     });
-    // Foreshadows keep no provenance, so an imported one counts as foreign.
+    // A foreshadow with no recorded source (entered by the author, or
+    // imported before sources were recorded) counts as the author's.
     state.insertForeshadow({
-      id: "imported-foreshadow",
+      id: "unsourced-foreshadow",
       projectId: book.projectId,
       title: "空白信",
       description: "无人认领的空白信。",
@@ -1844,6 +1845,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
       dependencies: [],
       evidenceNodeIds: [],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -1905,7 +1907,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
             path: "foreshadowCandidates.0",
             kind: "foreshadow",
             action: "resolve",
-            id: "imported-foreshadow",
+            id: "unsourced-foreshadow",
             label: "空白信",
           },
         ],
@@ -1921,7 +1923,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
     expect(
       state
         .listForeshadows(book.projectId)
-        .find((item) => item.id === "imported-foreshadow")?.status,
+        .find((item) => item.id === "unsourced-foreshadow")?.status,
     ).toBe("planted");
 
     // Resuming without a review stops again, explicitly.
@@ -2031,6 +2033,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
       dependencies: [],
       evidenceNodeIds: [],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -2094,6 +2097,120 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
         .listForeshadows(book.projectId)
         .find((item) => item.id === "author-foreshadow")?.evidenceNodeIds,
     ).toEqual([]);
+  });
+
+  it("develops and resolves an imported foreshadow without stopping, but not reopens it", async () => {
+    const now = new Date().toISOString();
+    const imported = (action: string, expectedStatus: string) => ({
+      foreshadowId: "imported-letter",
+      title: "空白信",
+      action,
+      expectedStatus,
+      importance: 3,
+      targetFromNodeId: null,
+      targetToNodeId: null,
+      evidenceParagraphs: [1],
+    });
+    const script: ModelScript = {
+      calls: [],
+      respond: (call) => {
+        const ordinal = call.policy.bibleBackfillOrdinal;
+        return {
+          ...settlement(),
+          foreshadowCandidates: [
+            ordinal === 0
+              ? imported("develop", "planted")
+              : ordinal === 1
+                ? imported("resolve", "developing")
+                : imported("develop", "resolved"),
+          ],
+        };
+      },
+    };
+    const { app, database } = await setup(script);
+    const book = await importBook(app);
+    const state = new SqliteNarrativeStateRepository(
+      database,
+      new SqliteCanonRepository(database),
+      new SqliteStoryRepository(database),
+    );
+    // A foreshadow the manuscript import created (sourced from its candidate).
+    const batch = database.raw
+      .prepare("SELECT id FROM import_batches WHERE target_project_id = ?")
+      .get(book.projectId) as { id: string };
+    database.raw
+      .prepare(
+        `INSERT INTO import_candidates(
+           id, batch_id, kind, ordinal, title, payload_json, status, created_at, updated_at
+         ) VALUES (?, ?, 'foreshadow', 901, ?, '{}', 'applied', ?, ?)`,
+      )
+      .run("imported-letter-candidate", batch.id, "空白信", now, now);
+    state.insertForeshadow({
+      id: "imported-letter",
+      projectId: book.projectId,
+      title: "空白信",
+      description: "无人认领的空白信。",
+      status: "planted",
+      importance: 3,
+      targetFromNodeId: null,
+      targetToNodeId: null,
+      dependencies: [],
+      evidenceNodeIds: [],
+      resolutionNodeId: null,
+      sourceId: "imported-letter-candidate",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const letter = () =>
+      state
+        .listForeshadows(book.projectId)
+        .find((item) => item.id === "imported-letter")!;
+
+    const created = await startBackfill(app, book.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(created.statusCode, created.body).toBe(202);
+    const jobId = (created.json() as BackfillDetail).job!.id;
+    let detail = await settle(app, book.projectId, jobId);
+    for (const ordinal of [0, 1]) {
+      expect(
+        await driveRun(app, book.projectId, detail.items[ordinal]!.runId!),
+      ).toBe("completed");
+      detail = await settle(app, book.projectId, jobId);
+      expect(detail.items[ordinal]!.status).toBe("applied");
+    }
+    expect(letter()).toMatchObject({
+      status: "resolved",
+      resolutionNodeId: book.chapters[1]!.outlineNodeId,
+      sourceId: "imported-letter-candidate",
+    });
+    expect([...letter().evidenceNodeIds].sort()).toEqual(
+      [book.chapters[0]!.outlineNodeId, book.chapters[1]!.outlineNodeId].sort(),
+    );
+
+    // Reopening the resolved foreshadow is the author's call.
+    expect(await driveRun(app, book.projectId, detail.items[2]!.runId!)).toBe(
+      "completed",
+    );
+    detail = await settle(app, book.projectId, jobId);
+    expect(detail.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "bible_backfill.review_required",
+        ordinal: 2,
+        targets: [
+          {
+            path: "foreshadowCandidates.0",
+            kind: "foreshadow",
+            action: "develop",
+            id: "imported-letter",
+            reopens: true,
+          },
+        ],
+      },
+    });
+    expect(letter().status).toBe("resolved");
   });
 
   it("stops auto-apply on a non-conflict settlement error and continues past a skipped chapter", async () => {

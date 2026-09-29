@@ -713,7 +713,8 @@ describe("SettlementApplicationService", () => {
         label: "Broken key",
         createdByChangeSetId: "change-1",
         sourceType: null,
-        sourceId: null,
+        // A settlement-planted foreshadow records its change set as source.
+        sourceId: "change-1",
         reopens: false,
       },
     ]);

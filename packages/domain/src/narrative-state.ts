@@ -47,6 +47,13 @@ export interface Foreshadow {
   dependencies: readonly string[];
   evidenceNodeIds: readonly string[];
   resolutionNodeId: string | null;
+  /**
+   * Where the foreshadow came from: the import candidate a manuscript import
+   * created it from, or the change set of the settlement that planted it;
+   * null when an author entered it, or for foreshadows created before the
+   * source was recorded (migration 047).
+   */
+  sourceId: string | null;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }

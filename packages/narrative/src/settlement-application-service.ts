@@ -42,11 +42,15 @@ export interface SettlementChangedRecord {
   label: string;
   /**
    * Change set that created the record, when its provenance says so (a fact's
-   * source, a relationship's source id, a settlement-created foreshadow's id);
-   * null when it came from elsewhere or the store keeps no provenance.
+   * source, a relationship's or foreshadow's source id, or a
+   * settlement-created foreshadow's id); null when it came from elsewhere or
+   * the store keeps no provenance.
    */
   createdByChangeSetId: string | null;
-  /** The record's own source reference; null when none is stored. */
+  /**
+   * The record's own source reference (for relationships and foreshadows the
+   * import candidate or change set that created it); null when none is stored.
+   */
   sourceType: string | null;
   sourceId: string | null;
   /**
@@ -287,9 +291,9 @@ export class SettlementApplicationService {
       );
       if (!existing || candidate.expectedStatus !== existing.status) return;
       const next = candidate.action === "resolve" ? "resolved" : "developing";
-      // Foreshadows keep no source column; only the id of a
-      // settlement-created one (`${changeSetId}:foreshadow:${index}`) says
-      // where it came from.
+      // Settlement-created foreshadows record their change set as source;
+      // before migration 047 only their id (`${changeSetId}:foreshadow:${index}`)
+      // said where they came from.
       const prefix = /^(.+):foreshadow:\d+$/.exec(existing.id)?.[1] ?? null;
       records.push({
         path: `foreshadowCandidates.${index}`,
@@ -300,11 +304,11 @@ export class SettlementApplicationService {
         createdByChangeSetId: this.creatingChangeSet(
           projectId,
           existing.id,
-          prefix,
+          existing.sourceId ?? prefix,
           "foreshadow",
         ),
         sourceType: null,
-        sourceId: null,
+        sourceId: existing.sourceId,
         reopens:
           ["resolved", "abandoned"].includes(existing.status) &&
           existing.status !== next,
@@ -590,6 +594,7 @@ export class SettlementApplicationService {
         dependencies: [],
         evidenceNodeIds: outlineNodeId ? [outlineNodeId] : [],
         resolutionNodeId: null,
+        sourceId: changeSet.id,
         createdAt: now,
         updatedAt: now,
       });

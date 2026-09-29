@@ -507,12 +507,16 @@ export const ForeshadowSchema = z.object({
   dependencies: z.array(IdSchema),
   evidenceNodeIds: z.array(IdSchema),
   resolutionNodeId: IdSchema.nullable(),
+  /** Import candidate or change set that created the foreshadow; null when
+   *  the author entered it. Read-only provenance, never set by requests. */
+  sourceId: IdSchema.nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
 export const CreateForeshadowRequestSchema = ForeshadowSchema.omit({
   id: true,
   projectId: true,
+  sourceId: true,
   createdAt: true,
   updatedAt: true,
 });

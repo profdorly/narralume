@@ -102,6 +102,7 @@ async function setup() {
     targetFromNodeId: a.id,
     targetToNodeId: b.id,
     resolutionNodeId: null,
+    sourceId: null,
     dependencies: [],
     evidenceNodeIds: [scene.id],
     createdAt: now,

@@ -1627,6 +1627,8 @@ export class DeliveryService {
           dependencies: [],
           evidenceNodeIds: [],
           resolutionNodeId: null,
+          // Import provenance, as for relationships and timeline events.
+          sourceId: candidate.id,
           createdAt: now,
           updatedAt: now,
         });

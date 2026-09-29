@@ -976,6 +976,8 @@ export function registerStoryRoutes(
       createdAt: now,
       updatedAt: now,
       ...input,
+      // Entered by the author: no import or settlement provenance.
+      sourceId: null,
     };
     return {
       status: 201,

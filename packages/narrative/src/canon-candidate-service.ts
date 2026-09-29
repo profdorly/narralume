@@ -714,6 +714,9 @@ export class CanonCandidateService {
       dependencies: stringArray(desired.dependencies),
       evidenceNodeIds: stringArray(desired.evidenceNodeIds),
       resolutionNodeId: nullableString(desired.resolutionNodeId),
+      // Provenance of an existing foreshadow is kept (the store ignores it on
+      // update); a created one records the candidate set that created it.
+      sourceId: current ? current.sourceId : changeSetId,
       createdAt: current?.createdAt ?? now,
       updatedAt: now,
     };

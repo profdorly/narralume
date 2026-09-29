@@ -39,6 +39,18 @@ import {
 /** Run-policy flag read by the settlement worker (see settleChapter). */
 export const BIBLE_BACKFILL_POLICY_FLAG = "referenceExistingStoryState";
 
+/**
+ * Import candidate kind that creates each kind of changed record, for the
+ * kinds whose rows keep the creating import candidate as their source id.
+ * Imports create no facts.
+ */
+const IMPORT_CANDIDATE_KINDS: Partial<
+  Record<SettlementChangedRecord["kind"], string>
+> = {
+  relationship: "relationship",
+  foreshadow: "foreshadow",
+};
+
 /** Deterministic child-run id: one settlement run per (job, version, attempt). */
 export function bibleBackfillRunId(
   jobId: string,
@@ -584,11 +596,12 @@ export class BibleBackfillCoordinator {
    * Existing records the change set would withdraw, supersede, end, change,
    * develop or resolve that were created neither by this job's earlier
    * applied change sets nor by the manuscript import. Import provenance is
-   * known only for relationships (their source is the import candidate);
-   * imports create no facts, and foreshadows keep no source at all, so an
-   * imported or author-entered foreshadow always counts as needing review.
-   * Reopening a resolved or abandoned foreshadow always needs review, even
-   * one this job planted: its status there is the author's call.
+   * the record's source id naming an applied import candidate of the same
+   * kind in this project: relationships always keep it, foreshadows since
+   * migration 047 (older imported ones have none and count as the author's).
+   * Imports create no facts. Reopening a resolved or abandoned foreshadow
+   * always needs review, even one the import or this job created: its status
+   * there is the author's call.
    */
   private recordsNeedingReview(
     job: BibleBackfillJob,
@@ -609,17 +622,19 @@ export class BibleBackfillCoordinator {
             target.createdByChangeSetId &&
             jobChangeSets.has(target.createdByChangeSetId)
           ) &&
-            !this.isImportedRelationship(job.projectId, target)),
+            !this.isImportDerived(job.projectId, target)),
       );
   }
 
-  private isImportedRelationship(
+  /** Whether the record was created by applying this project's manuscript import. */
+  private isImportDerived(
     projectId: string,
     target: SettlementChangedRecord,
   ): boolean {
-    if (target.kind !== "relationship" || !target.sourceId) return false;
+    const candidateKind = IMPORT_CANDIDATE_KINDS[target.kind];
+    if (!candidateKind || !target.sourceId) return false;
     const candidate = this.deliveries.getImportCandidate(target.sourceId);
-    if (candidate?.kind !== "relationship" || candidate.status !== "applied") {
+    if (candidate?.kind !== candidateKind || candidate.status !== "applied") {
       return false;
     }
     const batch = this.deliveries.getImportBatch(candidate.batchId);
