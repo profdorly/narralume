@@ -189,12 +189,14 @@ const NUMBER_WORD = `(?:${alternation(NUMBER_WORDS)})(?:(?:\\s*-\\s*|\\s+(?:e|y|
  *  因此 “segunda-feira” 不会被读成序号 segunda 加分隔符 “-feira”，“2-3” 也不是序号 2。 */
 const NUMBER_END = "(?![\\p{L}\\p{N}]|-[\\p{L}\\p{N}])";
 
-/** 关键词 + 可选序号 + 可选标题。阿拉伯数字后可带序数标记（1º、1ª、1°）。
+/** 关键词 + 可选序号 + 可选标题。阿拉伯数字后可带序数标记（1º、1ª、1°），
+ *  也可带欧洲葡语写法的句点（1.º、2.ª）；有序数标记时不回退成“序号 1 + 分隔符 .”，
+ *  因此 “Capítulo 1.º” 不会被读成标题为 “º” 的章节。
  *  标题可用分隔符（: . – — 或后面带空白的 -）接在序号后，也可只用空白（Chapter 12 The Storm）；
  *  分隔符记在 separator 组，供句子判断区分。 */
 const KEYWORD_HEADING = new RegExp(
   `^(?:(?<numbered>${alternation(NUMBERED_KEYWORDS)})|(?<standalone>${alternation(STANDALONE_KEYWORDS)}))` +
-    `(?:\\s+(?<number>\\d{1,4}[ºª°]?|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
+    `(?:\\s+(?<number>\\d{1,4}(?:\\.?[ºª°]|(?!\\.?[ºª°]))|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
     `(?:(?<separator>\\s*[:.–—]|\\s*-(?=\\s|$))(?<separated>.*)|(?<loose>\\s+.+))?$`,
   "iu",
 );

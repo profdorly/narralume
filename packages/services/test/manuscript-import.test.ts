@@ -72,6 +72,11 @@ describe("manuscript chapter headings", () => {
     "CAPÍTULO 2º: O Rio",
     "Parte 2ª — O Inverno",
     "Capítulo 1- A Chegada",
+    // 欧洲葡语的序数写法：序号与序数标记之间有句点
+    "Capítulo 1.º",
+    "Capítulo 2.ª Parte",
+    "Capítulo 3.º: O Rio",
+    "Parte 2.ª — O Inverno",
   ])("recognizes %j", (line) => {
     expect(manuscriptHeadingTitle(line)).toBe(
       line.replace(/^\*\*(.*)\*\*$/u, "$1"),
@@ -122,6 +127,8 @@ describe("manuscript chapter headings", () => {
     "Parte 2-3 vezes por semana.",
     "Capítulo 12-A Fuga",
     "Capítulo 1ºA",
+    "Capítulo 1.ºA",
+    "Capítulo 2.ª parte do plano",
     "Livro-caixa 3",
   ])("rejects %j", (line) => {
     expect(manuscriptHeadingTitle(line)).toBeNull();
@@ -257,6 +264,21 @@ describe("manuscript chapter headings", () => {
       { title: "Capítulo 2 — O Rio", content: "Texto dois." },
       { title: "Uma cena", content: "Texto três." },
       { title: "Capítulo 4", content: "Texto quatro." },
+    ]);
+  });
+
+  it("keeps the number of a European Portuguese ordinal heading when merging", () => {
+    expect(manuscriptHeadingTitle("# Capítulo 1.º")).toBe("Capítulo 1.º");
+    const text = [
+      "# Capítulo 1.º",
+      "## A Chegada",
+      "Texto um.",
+      "# Capítulo 2.ª Parte",
+      "Texto dois.",
+    ].join("\n\n");
+    expect(splitManuscriptSections(text, "Livro")).toEqual([
+      { title: "Capítulo 1.º — A Chegada", content: "Texto um." },
+      { title: "Capítulo 2.ª Parte", content: "Texto dois." },
     ]);
   });
 
