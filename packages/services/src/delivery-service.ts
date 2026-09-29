@@ -12,6 +12,12 @@ import {
 import { decodeBase64 as decodeBase64Bytes } from "./internal/bytes.js";
 import { declaredUncompressedSize } from "./internal/zip.js";
 import {
+  docxDocumentText,
+  htmlToText,
+  inferStylePayload,
+  splitManuscriptSections,
+} from "./manuscript-import.js";
+import {
   bytesToText,
   concatBytes,
   encodeBase64,
@@ -2822,7 +2828,7 @@ function candidatesFromText(
   sourceText: string,
   now: string,
 ): ImportCandidate[] {
-  const sections = splitIntoSections(sourceText, title);
+  const sections = splitManuscriptSections(sourceText, title);
   const candidates: ImportCandidate[] = [
     candidate(batchId, "project", 0, title, { title, premise: null }, now),
     ...sections.map((section, index) =>
@@ -2842,15 +2848,9 @@ function candidatesFromText(
     ),
   ];
   if (sourceText.trim()) {
+    const style = inferStylePayload(sourceText);
     candidates.push(
-      candidate(
-        batchId,
-        "style",
-        0,
-        "原文统计风格",
-        inferStylePayload(sourceText),
-        now,
-      ),
+      candidate(batchId, "style", 0, style.name, { ...style }, now),
     );
   }
   return candidates;
@@ -2904,58 +2904,6 @@ function candidate(
     status: "pending",
     createdAt: now,
     updatedAt: now,
-  };
-}
-
-function splitIntoSections(text: string, fallbackTitle: string) {
-  const heading =
-    /^(?:#{1,3}\s+(.+)|\s*((?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|Chapter\s+\d+)\s*[^\n]*))\s*$/gimu;
-  const matches = [...text.matchAll(heading)];
-  if (!matches.length) return [{ title: fallbackTitle, content: text.trim() }];
-  const sections: { title: string; content: string }[] = [];
-  const prefix = text.slice(0, matches[0]!.index).trim();
-  if (prefix) sections.push({ title: "卷首", content: prefix });
-  for (let index = 0; index < matches.length; index += 1) {
-    const match = matches[index]!;
-    const next = matches[index + 1];
-    const start = (match.index ?? 0) + match[0].length;
-    const end = next?.index ?? text.length;
-    const title = (match[1] ?? match[2] ?? `章节 ${index + 1}`).trim();
-    const content = text.slice(start, end).trim();
-    if (content) sections.push({ title, content });
-  }
-  return sections.length
-    ? sections
-    : [{ title: fallbackTitle, content: text.trim() }];
-}
-
-function inferStylePayload(text: string): Record<string, unknown> {
-  const sentences = text.split(/[。！？!?]+/u).filter((item) => item.trim());
-  const paragraphs = text.split(/\n\s*\n/u).filter((item) => item.trim());
-  const dialogueCharacters = [...text].filter((char) =>
-    "“”「」『』".includes(char),
-  ).length;
-  const averageSentence = Math.round(
-    sentences.reduce((sum, item) => sum + [...item.trim()].length, 0) /
-      Math.max(1, sentences.length),
-  );
-  const averageParagraph = Math.round(
-    paragraphs.reduce((sum, item) => sum + [...item.trim()].length, 0) /
-      Math.max(1, paragraphs.length),
-  );
-  return {
-    name: "原文统计风格",
-    description: "由导入文本的可复验统计生成，采用前应由作者审阅。",
-    rules: [
-      `句长中位倾向约 ${averageSentence} 字，避免无意中大幅漂移`,
-      `段落平均约 ${averageParagraph} 字，按场面节奏调整而非机械复制`,
-      dialogueCharacters > text.length / 20
-        ? "对话占比较高，保留人物声音与潜台词"
-        : "叙述占比较高，对话只承担必要动作",
-    ],
-    negativeRules: ["不复制原文句子", "不把统计特征当成不可变文学规则"],
-    examples: paragraphs.slice(0, 3).map((item) => item.trim().slice(0, 500)),
-    active: false,
   };
 }
 
@@ -3118,17 +3066,15 @@ async function extractDocx(bytes: Uint8Array) {
       "import.docx.document_too_large",
       "The expanded DOCX content exceeds the safety limit",
     );
-  return normalizeImportedText(
-    decodeXml(
-      documentXml
-        .replace(/<w:tab\b[^>]*\/>/giu, "\t")
-        .replace(/<w:br\b[^>]*\/>/giu, "\n")
-        .replace(/<\/w:p>/giu, "\n\n")
-        .replace(/<\/w:tr>/giu, "\n")
-        .replace(/<\/w:tc>/giu, "\t")
-        .replace(/<[^>]+>/gu, ""),
-    ),
-  );
+  // 样式表可选；用于识别本地化 Word 的标题样式（如葡语 Ttulo1 → heading 1）。
+  const stylesXml =
+    (await zip.file("word/styles.xml")?.async("string")) ?? null;
+  if (documentXml.length + (stylesXml?.length ?? 0) > 100 * 1024 * 1024)
+    throw new DeliveryServiceError(
+      "import.docx.document_too_large",
+      "The expanded DOCX content exceeds the safety limit",
+    );
+  return normalizeImportedText(docxDocumentText(documentXml, stylesXml));
 }
 
 async function renderEpub(
@@ -3189,13 +3135,13 @@ async function renderDocx(
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`,
   );
   const paragraphs = [
-    docxParagraph(project.title, true),
+    docxParagraph(project.title, 0),
     ...sections.flatMap((section) => [
-      docxParagraph(section.title, true),
+      docxParagraph(section.title, 1),
       ...section.content
         .split(/\n\s*\n/u)
         .filter(Boolean)
-        .map((paragraph) => docxParagraph(paragraph, false)),
+        .map((paragraph) => docxParagraph(paragraph, null)),
     ]),
   ].join("");
   zip.file(
@@ -3210,7 +3156,9 @@ async function renderDocx(
   return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }
 
-function docxParagraph(value: string, heading: boolean) {
+/** outlineLevel 写入段落大纲级别，Word 导航窗格与再次导入都据此识别标题。 */
+function docxParagraph(value: string, outlineLevel: 0 | 1 | null) {
+  const heading = outlineLevel !== null;
   const lines = value.split("\n");
   const runs = lines
     .map(
@@ -3218,7 +3166,7 @@ function docxParagraph(value: string, heading: boolean) {
         `${index ? "<w:br/>" : ""}<w:t xml:space="preserve">${escapeXml(line)}</w:t>`,
     )
     .join("");
-  return `<w:p>${heading ? '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="160"/></w:pPr>' : '<w:pPr><w:ind w:firstLineChars="200"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'}<w:r>${heading ? '<w:rPr><w:b/><w:sz w:val="32"/></w:rPr>' : ""}${runs}</w:r></w:p>`;
+  return `<w:p>${heading ? `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="160"/><w:outlineLvl w:val="${outlineLevel}"/></w:pPr>` : '<w:pPr><w:ind w:firstLineChars="200"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'}<w:r>${heading ? '<w:rPr><w:b/><w:sz w:val="32"/></w:rPr>' : ""}${runs}</w:r></w:p>`;
 }
 
 function renderMarkdown(
@@ -3259,34 +3207,6 @@ function normalizeImportedText(value: string) {
     .replace(/[ \t]+$/gmu, "")
     .replace(/\n{4,}/gu, "\n\n\n")
     .trim();
-}
-
-function htmlToText(html: string) {
-  return decodeXml(
-    html
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/giu, "")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/giu, "")
-      .replace(/<h[1-3]\b[^>]*>/giu, "\n# ")
-      .replace(/<\/(?:h[1-6]|p|div|li|blockquote)>/giu, "\n\n")
-      .replace(/<br\s*\/?>/giu, "\n")
-      .replace(/<[^>]+>/gu, ""),
-  );
-}
-
-function decodeXml(value: string) {
-  return value
-    .replace(/&nbsp;/giu, " ")
-    .replace(/&lt;/giu, "<")
-    .replace(/&gt;/giu, ">")
-    .replace(/&quot;/giu, '"')
-    .replace(/&apos;/giu, "'")
-    .replace(/&amp;/giu, "&")
-    .replace(/&#(\d+);/gu, (_, code: string) =>
-      String.fromCodePoint(Number(code)),
-    )
-    .replace(/&#x([0-9a-f]+);/giu, (_, code: string) =>
-      String.fromCodePoint(Number.parseInt(code, 16)),
-    );
 }
 
 function markdownishToXhtml(content: string) {
@@ -3399,7 +3319,7 @@ function titleFromFilename(filename: string) {
   return (
     filename
       .replace(/\.narrative\.json$/iu, "")
-      .replace(/\.(?:md|markdown|txt|epub|json)$/iu, "")
+      .replace(/\.(?:md|markdown|txt|epub|docx|html?|xhtml|json)$/iu, "")
       .trim() || "导入作品"
   );
 }

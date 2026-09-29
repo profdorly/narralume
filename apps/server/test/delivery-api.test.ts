@@ -737,6 +737,134 @@ describe("delivery API", () => {
     });
   });
 
+  it("splits Portuguese text, DOCX heading styles, and EPUB headings into chapters", async () => {
+    const { app } = await setup();
+    const text = [
+      "O Farol",
+      "Para Ana.",
+      "Prólogo",
+      "A noite caiu sobre a baía.",
+      "Capítulo 1",
+      "Era uma vez uma cidade à beira-mar.",
+      `Capítulo 2 — ${"a maré subia devagar e ninguém reparou, ".repeat(3)}`,
+      "CAPÍTULO II — O Retorno",
+      "— Voltei — disse ele.",
+      "Epílogo",
+      "Anos depois, a luz ainda girava.",
+    ].join("\n\n");
+    const textPreview = await previewImport(app, "O Farol.txt", "text", text);
+    expect(documentCandidates(textPreview)).toEqual([
+      { title: "O Farol", kind: "chapter" },
+      { title: "Prólogo", kind: "chapter" },
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "CAPÍTULO II — O Retorno", kind: "chapter" },
+      { title: "Epílogo", kind: "chapter" },
+    ]);
+    expect(
+      textPreview.candidates.find((item) => item.kind === "style")?.title,
+    ).toBe("Source text statistics style");
+
+    const docx = new JSZip();
+    docx.file(
+      "word/styles.xml",
+      '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Ttulo1"><w:name w:val="heading 1"/></w:style><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>',
+    );
+    const paragraph = (value: string, style: string) =>
+      `<w:p><w:pPr><w:pStyle w:val="${style}"/></w:pPr><w:r><w:t>${value}</w:t></w:r></w:p>`;
+    docx.file(
+      "word/document.xml",
+      `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${[
+        paragraph("Um Começo", "Ttulo1"),
+        paragraph("A primeira página.", "Normal"),
+        paragraph("Outro Rumo", "Heading1"),
+        paragraph("A segunda página.", "Normal"),
+      ].join("")}</w:body></w:document>`,
+    );
+    const docxPreview = await previewImport(
+      app,
+      "livro.docx",
+      "docx",
+      await docx.generateAsync({ type: "nodebuffer" }),
+    );
+    expect(documentCandidates(docxPreview)).toEqual([
+      { title: "Um Começo", kind: "chapter" },
+      { title: "Outro Rumo", kind: "chapter" },
+    ]);
+
+    const epub = new JSZip();
+    epub.file(
+      "META-INF/container.xml",
+      '<container><rootfiles><rootfile full-path="OEBPS/content.opf" /></rootfiles></container>',
+    );
+    epub.file(
+      "OEBPS/content.opf",
+      '<package><manifest><item id="c1" href="c1.xhtml" media-type="application/xhtml+xml" /><item id="c2" href="c2.xhtml" media-type="application/xhtml+xml" /></manifest><spine><itemref idref="c1" /><itemref idref="c2" /></spine></package>',
+    );
+    epub.file(
+      "OEBPS/c1.xhtml",
+      "<html><head><title>Capítulo 1</title></head><body><h1>\n  <span>Capítulo 1</span>\n</h1><p>Primeiro.</p></body></html>",
+    );
+    epub.file(
+      "OEBPS/c2.xhtml",
+      "<html><head><title>Capítulo 2</title></head><body><h2>A Fuga</h2><p>Segundo.</p></body></html>",
+    );
+    const epubPreview = await previewImport(
+      app,
+      "livro.epub",
+      "epub",
+      await epub.generateAsync({ type: "nodebuffer" }),
+    );
+    expect(documentCandidates(epubPreview)).toEqual([
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "A Fuga", kind: "chapter" },
+    ]);
+  });
+
+  it("round-trips exported DOCX and EPUB chapters through import", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "O Farol",
+        language: "en",
+      },
+    );
+    const source = await previewImport(
+      app,
+      "o-farol.md",
+      "markdown",
+      "# Um Começo\n\nA primeira página.\n\n# Outro Rumo\n\nA segunda página.",
+      project.id,
+    );
+    await request(
+      app,
+      "POST",
+      `/api/imports/${source.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    for (const format of ["docx", "epub"] as const) {
+      const exported = await app.inject({
+        method: "GET",
+        url: `/api/projects/${project.id}/exports/${format}`,
+      });
+      expect(exported.statusCode).toBe(200);
+      const reimported = await previewImport(
+        app,
+        `o-farol.${format}`,
+        format,
+        exported.rawPayload,
+      );
+      expect(documentCandidates(reimported)).toEqual([
+        { title: "Um Começo", kind: "chapter" },
+        { title: "Outro Rumo", kind: "chapter" },
+      ]);
+    }
+  });
+
   it("reports quality and exports a 200-document manuscript within the delivery budget", async () => {
     const { app, database } = await setup();
     const project = await request<{ id: string }>(
@@ -1174,6 +1302,27 @@ async function request<T = unknown>(
       : await app.inject({ method, url, payload });
   expect(response.statusCode, response.body).toBe(expected);
   return response.json() as T;
+}
+
+async function previewImport(
+  app: Awaited<ReturnType<typeof buildApp>>,
+  filename: string,
+  format: "markdown" | "text" | "docx" | "epub",
+  content: string | Buffer,
+  targetProjectId: string | null = null,
+) {
+  return request<ImportDetail>(app, "POST", "/api/imports/preview", {
+    targetProjectId,
+    filename,
+    format,
+    contentBase64: Buffer.from(content).toString("base64"),
+  });
+}
+
+function documentCandidates(detail: ImportDetail) {
+  return detail.candidates
+    .filter((item) => item.kind === "document")
+    .map((item) => ({ title: item.title, kind: item.payload?.kind }));
 }
 
 function deliveryModel(
