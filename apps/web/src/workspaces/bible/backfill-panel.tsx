@@ -1029,6 +1029,15 @@ function FinishedState({
         ))}
       </dl>
       <UsageLine usage={detail.usage} final />
+      {/* 导入时抽取、补全过程中没有哪一章锚定的时间线事件：明确告诉作者还剩多少。 */}
+      {detail.unanchoredImportedEvents > 0 ? (
+        <p className="bible-backfill__note">
+          <CircleAlert size={13} aria-hidden="true" />
+          {t("bible.backfill.finished.unanchoredEvents", {
+            count: detail.unanchoredImportedEvents,
+          })}
+        </p>
+      ) : null}
       {reason ? <StopReasonText reason={reason} /> : null}
       {job.status === "completed" ? (
         <div className="bible-backfill__next">
@@ -1235,6 +1244,7 @@ function toDetail(value: BibleBackfillCreatedDto): BibleBackfillDetailDto {
     counts: value.counts,
     usage: value.usage,
     availableActions: value.availableActions,
+    unanchoredImportedEvents: value.unanchoredImportedEvents,
   };
 }
 

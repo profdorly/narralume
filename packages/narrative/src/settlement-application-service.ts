@@ -663,7 +663,10 @@ export class SettlementApplicationService {
    * Anchors an existing, not yet anchored timeline event to the settled
    * chapter instead of creating a new one: its chapter (and the candidate's
    * story time, when given) is set, while its title, description,
-   * participants, causes, visibility and source stay as they are. A missing,
+   * participants, causes, visibility and source stay as they are. The
+   * candidate's visibility is required by the output contract but not
+   * applied: an anchor only places an event that already exists, and the
+   * review row tells the author the event keeps its own visibility. A missing,
    * voided or already anchored event, or a settlement without a chapter, is a
    * conflict that force cannot override. Returns the anchored event's id.
    */

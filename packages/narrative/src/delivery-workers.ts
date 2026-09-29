@@ -21,6 +21,7 @@ import {
   type DetectedManuscriptLanguage,
 } from "./manuscript-language.js";
 import type { NarrativeModelClient } from "./model-client.js";
+import { documentCandidateAt, importSourceText } from "./import-evidence.js";
 import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 import { ParagraphLocator } from "./paragraph-locator.js";
 import {
@@ -295,15 +296,23 @@ export class DeliveryWorkerSuite {
       requiredArtifact(snapshot, "import.analyze"),
     );
     const now = this.now().toISOString();
-    const sourceText = this.importedText(batchId);
-    const locator = new ParagraphLocator(sourceText);
+    const source = this.importedSource(batchId);
+    const locator = new ParagraphLocator(source.text);
     const labels =
       IMPORT_STAGE_LABELS[
         promptLanguageOf(this.projects.get(snapshot.run.projectId)?.language)
       ];
+    // Each located paragraph also records the document candidate (chapter)
+    // it comes from, so later work can tell which chapter an item cites.
     const withEvidence = <T extends { evidenceParagraphs: number[] }>(
       item: T,
-    ) => ({ ...item, evidence: locator.locate(item.evidenceParagraphs) });
+    ) => ({
+      ...item,
+      evidence: locator.locate(item.evidenceParagraphs).map((evidence) => ({
+        ...evidence,
+        documentCandidateId: documentCandidateAt(source.spans, evidence.start),
+      })),
+    });
     const candidates = [
       {
         id: `${batchId}:intent:0`,
@@ -413,14 +422,15 @@ export class DeliveryWorkerSuite {
   }
 
   private importedText(batchId: string): string {
-    return this.delivery
-      .listImportCandidates(batchId)
-      .filter((candidate) => candidate.kind === "document")
-      .map((candidate) => {
-        const content = candidate.payload.content;
-        return `# ${candidate.title}\n${typeof content === "string" ? content : ""}`;
-      })
-      .join("\n\n");
+    return this.importedSource(batchId).text;
+  }
+
+  private importedSource(batchId: string) {
+    return importSourceText(
+      this.delivery
+        .listImportCandidates(batchId)
+        .filter((candidate) => candidate.kind === "document"),
+    );
   }
 
   /** 贴样文提炼风格档案：产物是一条未启用的 style profile 草稿，作者审核后启用。

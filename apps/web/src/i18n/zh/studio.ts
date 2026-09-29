@@ -282,6 +282,7 @@ export const studio = {
     foreshadowText: "{action}「{title}」",
     timelineAnchorText: "把已有事件「{title}」锚定到本章，不新建事件",
     timelineAnchorStoryTime: "故事时间：{storyTime}",
+    timelineAnchorKeeps: "事件保留自己的描述、参与者、因果与可见性",
     itemLabel: {
       stateDelta: "状态变化",
       fact: "故事事实",

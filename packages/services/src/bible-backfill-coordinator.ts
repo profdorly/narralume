@@ -28,6 +28,7 @@ import {
   type SettlementRunOutcome,
 } from "./bible-backfill-service.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
+import { isImportDerivedSource } from "./import-provenance.js";
 import type { RunCoordinator } from "./run-coordinator.js";
 import { deterministicUuid } from "./request-idempotency.js";
 import {
@@ -634,13 +635,15 @@ export class BibleBackfillCoordinator {
     target: SettlementChangedRecord,
   ): boolean {
     const candidateKind = IMPORT_CANDIDATE_KINDS[target.kind];
-    if (!candidateKind || !target.sourceId) return false;
-    const candidate = this.deliveries.getImportCandidate(target.sourceId);
-    if (candidate?.kind !== candidateKind || candidate.status !== "applied") {
-      return false;
-    }
-    const batch = this.deliveries.getImportBatch(candidate.batchId);
-    return (batch?.appliedProjectId ?? batch?.targetProjectId) === projectId;
+    return (
+      candidateKind !== undefined &&
+      isImportDerivedSource(
+        this.deliveries,
+        projectId,
+        candidateKind,
+        target.sourceId,
+      )
+    );
   }
 
   private failItem(

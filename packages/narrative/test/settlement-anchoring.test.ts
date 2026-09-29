@@ -176,6 +176,7 @@ function settlementWith(timelineCandidates: unknown[]) {
 
 interface Captured {
   content: string;
+  instructions: string;
   issues: string[];
 }
 
@@ -192,6 +193,7 @@ function scriptedModel(
       if (purpose !== "chapter-settlement")
         throw new Error(`unexpected purpose ${purpose}`);
       captured.content = String(request.messages[0]?.content);
+      captured.instructions = String(request.instructions);
       const rejected = validate(invalid);
       captured.issues = rejected.success ? [] : [...rejected.issues];
       const checked = validate(valid);
@@ -218,7 +220,7 @@ async function settle(
   valid: unknown,
 ) {
   const fixture = setup(referenceExistingStoryState);
-  const captured: Captured = { content: "", issues: [] };
+  const captured: Captured = { content: "", instructions: "", issues: [] };
   const supervisor = new HarnessSupervisor(
     fixture.runs,
     new ChapterWorkerSuite(
@@ -271,8 +273,11 @@ describe("settlement timeline anchoring", () => {
       /\n<unanchored-timeline>([\s\S]*?)<\/unanchored-timeline>\n/u.exec(
         captured.content,
       )?.[1];
+    // The events' sources are not import candidates, so no chapter places
+    // them.
     expect(block).toBe(
       [
+        "Events not placed in a chapter:",
         "- [timeline:imported-arrival] #1 Helena chega a Vila do Sal｜participants: Helena｜Helena chega a Vila do Sal.",
         "- [timeline:imported-lighthouse] #2 O farol é vendido｜participants: Helena｜O farol é vendido.",
       ].join("\n"),
@@ -337,10 +342,53 @@ describe("settlement timeline anchoring", () => {
     ]);
   });
 
-  it("does not list unanchored events for an ordinary manual settlement", async () => {
+  it("gives only a Story Bible completion the anchoring rule", async () => {
     const valid = settlementWith([]);
-    const { captured } = await settle(false, valid, valid);
+    const backfill = await settle(true, valid, valid);
+    const note = /<settlement-note>([\s\S]*?)<\/settlement-note>/u.exec(
+      backfill.captured.content,
+    )?.[1];
+    expect(note).toContain("Anchoring rules:");
+    expect(note).toContain(
+      "keeps its own description, participants, causes and visibility",
+    );
+    // The code-owned invariants every settlement gets only say to fill null.
+    expect(backfill.captured.instructions).not.toContain("Anchoring rules");
+    expect(backfill.captured.instructions).toContain(
+      "Timeline anchorEventId is null, which creates a new event",
+    );
+  });
+
+  it("does not list unanchored events for an ordinary manual settlement and rejects anchors there", async () => {
+    const { captured, state } = await settle(
+      false,
+      settlementWith([timelineItem({ anchorEventId: "imported-arrival" })]),
+      settlementWith([timelineItem({ title: "Helena chega" })]),
+    );
     expect(captured.content).not.toContain("<unanchored-timeline>");
     expect(captured.content).not.toContain("<settlement-note>");
+    expect(captured.instructions).not.toContain("Anchoring rules");
+    expect(captured.issues).toEqual([
+      "timelineCandidates.0.anchorEventId: 只有「从正文补全故事圣经」的逐章结算可以锚定已有事件；本次结算的 anchorEventId 必须为 null（新建事件）",
+    ]);
+    expect(
+      state.listTimeline("p1").find((event) => event.id === "imported-arrival")
+        ?.outlineNodeId,
+    ).toBeNull();
+  });
+
+  it("rejects model output that leaves anchorEventId out instead of creating an event", async () => {
+    const withoutAnchor: Record<string, unknown> = timelineItem({
+      title: "Helena chega",
+    });
+    delete withoutAnchor.anchorEventId;
+    const { captured } = await settle(
+      true,
+      settlementWith([withoutAnchor]),
+      settlementWith([]),
+    );
+    expect(captured.issues.join("\n")).toContain(
+      "timelineCandidates.0.anchorEventId",
+    );
   });
 });

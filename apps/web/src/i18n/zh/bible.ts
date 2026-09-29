@@ -414,6 +414,8 @@ export const bible = {
         failed: "失败",
         awaitingDecision: "留待写作台审阅",
       },
+      unanchoredEvents:
+        "仍有 {count} 个导入的时间线事件没有锚定到章节：补全过程中没有哪一章写到它们发生（例如正文只是提到的前史）。它们保留在时间线板块中，可在那里安排章节或删除。",
     },
     next: {
       title: "继续完善故事圣经",

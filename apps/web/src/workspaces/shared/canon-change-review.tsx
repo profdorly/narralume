@@ -323,8 +323,11 @@ export function canonChangeItems(
   for (const item of records("timelineCandidates")) {
     const anchorEventId = text(item, "anchorEventId");
     if (anchorEventId) {
-      // Anchoring adopts an existing event: its own title, description and
-      // participants stay; the chapter (and story time, when given) is set.
+      // Anchoring adopts an existing event: its own title, description,
+      // participants, causes and visibility stay (the candidate's required
+      // visibility is not applied); the chapter (and story time, when given)
+      // is set. The row says so, so the author does not expect the
+      // candidate's visibility to take effect.
       const storyTime = text(item, "storyTime");
       rows.push({
         label: translate(locale, "studio.canon.itemLabel.timelineAnchor"),
@@ -337,6 +340,7 @@ export function canonChangeItems(
                 storyTime,
               })
             : "",
+          translate(locale, "studio.canon.timelineAnchorKeeps"),
         ]
           .filter(Boolean)
           .join(" · "),

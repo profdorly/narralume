@@ -177,10 +177,12 @@ export const SettlementSchema = z.object({
          * An existing event that is not anchored to a chapter yet (for
          * example one the manuscript import extracted) which this chapter
          * shows happening: applying anchors that event to the chapter instead
-         * of creating a new one. null creates a new event. Change sets stored
-         * before the field existed read as null.
+         * of creating a new one. null creates a new event. Model output must
+         * state it (a provider that drops the field gets a validation issue
+         * rather than a silent new event); only stored change sets written
+         * before the field existed read as null (GroundedSettlementSchema).
          */
-        anchorEventId: z.string().min(1).nullable().default(null),
+        anchorEventId: z.string().min(1).nullable(),
         title: z.string().min(1),
         description: z.string().nullable(),
         storyTime: z.string().nullable(),
@@ -257,6 +259,8 @@ export const GroundedSettlementSchema = SettlementSchema.extend({
   ),
   timelineCandidates: z.array(
     SettlementSchema.shape.timelineCandidates.element.extend({
+      // Change sets stored before anchoring existed carry no anchorEventId.
+      anchorEventId: z.string().min(1).nullable().default(null),
       evidence: z.array(GroundedParagraphEvidenceSchema).min(1).max(5),
     }),
   ),
@@ -450,7 +454,7 @@ export const SETTLEMENT_CONTRACT: JsonSchemaContract = {
             anchorEventId: {
               type: ["string", "null"],
               description:
-                "锚定已有事件：填上下文中尚未锚定到章节的已有事件 ID，把它锚定到本章而不新建；新建事件填 null。",
+                "新建事件填 null。只有上下文附有 <unanchored-timeline> 列表（从正文补全故事圣经的逐章结算）时，才可填其中某个事件的 ID，把它锚定到本章而不新建。",
             },
             title: { type: "string" },
             description: { type: ["string", "null"] },

@@ -341,6 +341,83 @@ describe("DeliveryWorkerSuite", () => {
     },
   );
 
+  it("records which imported chapter each staged evidence paragraph comes from", async () => {
+    delivery.upsertImportCandidate({
+      id: "batch-1:document:0",
+      batchId: "batch-1",
+      kind: "document",
+      ordinal: 0,
+      title: "Capítulo 1",
+      payload: { content: "Rita espera no cais.\n\nO barco não chega." },
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+    delivery.upsertImportCandidate({
+      id: "batch-1:document:1",
+      batchId: "batch-1",
+      kind: "document",
+      ordinal: 1,
+      title: "Capítulo 2",
+      payload: { content: "O farol volta a girar." },
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const model: NarrativeModelClient = {
+      async text() {
+        throw new Error("unused");
+      },
+      structured: vi.fn(
+        async (_run, _step, _purpose, _request, _contract, validate) => {
+          const checked = validate({
+            ...minimalAnalysis(),
+            timeline: [
+              {
+                title: "O farol volta a girar",
+                description: "O farol volta a girar depois da espera.",
+                sequence: 1,
+                participantNames: [],
+                // P1 opens chapter 1 ("# Capítulo 1\nRita…"), P3 chapter 2.
+                evidenceParagraphs: [1, 3],
+              },
+            ],
+          });
+          if (!checked.success) throw new Error(checked.issues.join("; "));
+          return {
+            value: checked.data,
+            usage: {
+              inputTokens: 10,
+              outputTokens: 10,
+              calls: 1,
+              costUsd: 0,
+              wallTimeMs: 5,
+            },
+            mode: "native" as const,
+            attempts: 1,
+          };
+        },
+      ),
+    };
+    await runImportUntilDone(model);
+
+    const timeline = delivery
+      .listImportCandidates("batch-1")
+      .find((candidate) => candidate.kind === "timeline")!;
+    expect(timeline.payload.evidence).toEqual([
+      expect.objectContaining({
+        paragraphOrdinal: 1,
+        quote: "# Capítulo 1\nRita espera no cais.",
+        documentCandidateId: "batch-1:document:0",
+      }),
+      expect.objectContaining({
+        paragraphOrdinal: 3,
+        quote: "# Capítulo 2\nO farol volta a girar.",
+        documentCandidateId: "batch-1:document:1",
+      }),
+    ]);
+  });
+
   it("does not reuse a chunk analysis cached under the previous prompts", async () => {
     // 旧版本的输入摘要只含来源哈希、分段序号与正文，不含提示词版本与语言。
     // 分段正文由 importedText 拼成：“# 标题\n正文”。

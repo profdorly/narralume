@@ -176,6 +176,24 @@ describe("chapter settlement timeline anchoring", () => {
     expect(stored.timelineCandidates[0]!.anchorEventId).toBeNull();
   });
 
+  it("requires model output to state anchorEventId instead of defaulting to a new event", () => {
+    const result = zodValidator(SettlementSchema)({
+      ...settlement([]),
+      timelineCandidates: [timelineEvent],
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.issues.join("\n")).toContain(
+      "timelineCandidates.0.anchorEventId",
+    );
+    expect(
+      SettlementSchema.safeParse({
+        ...settlement([]),
+        timelineCandidates: [{ ...timelineEvent, anchorEventId: null }],
+      }).success,
+    ).toBe(true);
+  });
+
   it("carries an anchor to an existing event through the grounded payload", () => {
     const anchored = GroundedSettlementSchema.parse({
       ...settlement([]),

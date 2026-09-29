@@ -311,6 +311,8 @@ export const studio: typeof studioZh = {
     foreshadowText: "{action} “{title}”",
     timelineAnchorText: "Anchor the existing event “{title}” to this chapter; no new event is created",
     timelineAnchorStoryTime: "story time: {storyTime}",
+    timelineAnchorKeeps:
+      "the event keeps its own description, participants, causes and visibility",
     itemLabel: {
       stateDelta: "State change",
       fact: "Story fact",

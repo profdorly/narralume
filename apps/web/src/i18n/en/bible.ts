@@ -418,6 +418,8 @@ export const bible: typeof bibleZh = {
         failed: "Failed",
         awaitingDecision: "Left for review in Studio",
       },
+      unanchoredEvents:
+        "Imported timeline events still not anchored to a chapter: {count}. No settled chapter showed them happening (for example, backstory the prose only mentions). They stay in the Timeline section, where you can place or remove them.",
     },
     next: {
       title: "Fill in the rest of the Story Bible",
