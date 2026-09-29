@@ -211,6 +211,7 @@ const CHAPTER_SETTLEMENT: PromptTemplateDefinition = {
       "factCandidates 必须描述故事世界里的实际命题，不要使用‘得知’‘看见’‘意识到’等元谓词来重复表达知情关系。例如角色得知‘钥匙能开侧门’，predicate/value 应记录‘钥匙能开侧门’这个命题，谁知道它只由 knowledgeScope、knowledgeSubjectId 和 belief 表达。",
       "人物知识必须填写真正的知情角色；knowledgeSubjectId 仅在 knowledgeScope 为 character 时填写该角色 ID，其余 scope（omniscient/reader/author_secret）必须填 null。",
       "不要把修辞、推测或人物谎言当作全知事实。",
+      "语言不变量：所有自然语言字段（summary、stateDelta 的 key/before/after、事实的 predicate 与文本 value、时间线事件的 title/description、关系的 relation/change、伏笔的 title）必须使用与 <manuscript> 正文相同的语言书写，即使它不同于本指令的语言；人物、地点等专有名词保留原文写法，不得翻译。predicate 是给作者看的简短属性名：同一主体已有事实用过的 predicate 原样复用，不要换一种语言重写。字段名、枚举值与 ID 保持结构定义不变。",
     ].join("\n"),
     en: [
       "Cite one or more [P#]-tagged paragraphs through evidenceParagraphs for every item.",
@@ -223,6 +224,7 @@ const CHAPTER_SETTLEMENT: PromptTemplateDefinition = {
       "factCandidates must describe real propositions in the story world; never restate knowledge through meta-predicates such as learns, sees, or realizes. If a character learns that the key opens the side door, predicate/value should record the proposition that the key opens the side door; who knows it is expressed only by knowledgeScope, knowledgeSubjectId, and belief.",
       "Character knowledge names the character who actually knows; fill knowledgeSubjectId only when knowledgeScope is character, and leave it null for the other scopes (omniscient/reader/author_secret).",
       "Never treat rhetoric, speculation, or in-character lies as omniscient facts.",
+      "Language invariant: write every natural-language field (summary, stateDelta key/before/after, fact predicate and text value, timeline event title/description, relationship relation/change, and foreshadow title) in the same language as the <manuscript> text, even when it differs from the language of these instructions; keep character, place, and other proper names exactly as written in the source, never translated. A predicate is a short author-facing attribute label: reuse the exact predicate an existing fact of the same subject already uses instead of rewriting it in another language. Field names, enum values, and IDs stay as defined by the schema.",
     ].join("\n"),
   },
   instructions: {

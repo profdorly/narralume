@@ -45,6 +45,10 @@ import {
 
 import type { NarrativeModelClient } from "./model-client.js";
 import {
+  detectManuscriptLanguage,
+  manuscriptLanguageHint,
+} from "./manuscript-language.js";
+import {
   optionalEmbeddings,
   recordEmbeddingDegradation,
 } from "./embedding-support.js";
@@ -1312,6 +1316,11 @@ export class ChapterWorkerSuite {
         this.story.listOutline(snapshot.run.projectId).map((node) => node.id),
       ),
     };
+    // 结算产出跟随章节正文的语言（指令里的语言不变量）；检测出语言时再加一行参考。
+    const languageHint = manuscriptLanguageHint(
+      promptLanguageOf(this.projectLanguage(snapshot.run.projectId)),
+      detectManuscriptLanguage(content),
+    );
     const result = await this.model.structured(
       snapshot.run,
       step,
@@ -1333,6 +1342,7 @@ export class ChapterWorkerSuite {
                   ]
                 : []),
               `<entities>${JSON.stringify(entities.map(({ id, name, type }) => ({ id, name, type })))}</entities>`,
+              ...(languageHint ? [languageHint] : []),
               "<manuscript>",
               locator.render(),
               "</manuscript>",

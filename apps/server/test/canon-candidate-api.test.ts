@@ -1,7 +1,9 @@
 import { estimateTokens } from "@narralume/context";
+import { createDocument } from "@narralume/domain";
 import type { NarrativeModelClient } from "@narralume/narrative";
 import {
   SqliteCanonRepository,
+  SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
@@ -754,6 +756,111 @@ describe("Canon Spread candidate API", () => {
     // The whole packet leaves room for the output reserve in the window.
     expect(estimateTokens(prompt)).toBeLessThan(contextWindow * 0.6);
   });
+
+  it.each([
+    {
+      language: "en",
+      invariant:
+        "Language invariant: write summary, every item's title, rationale, and impact, and every text field inside afterJson",
+      hint: "Manuscript language (detected): Portuguese. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.",
+    },
+    {
+      language: "zh-CN",
+      invariant:
+        "语言不变量：summary、每项的 title、rationale、impact，以及 afterJson 中的所有文字字段",
+      hint: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+    },
+  ])(
+    "asks a $language spread revision to keep the language of a Portuguese manuscript",
+    async ({ language, invariant, hint }) => {
+      const { app, database } = await setup({
+        summary: "Aproximar a promessa do livro da viagem de Helena.",
+        items: [
+          {
+            operation: "update",
+            targetId: "intent",
+            title: "Focar a chegada de Helena",
+            rationale:
+              "O primeiro capítulo gira em torno do pedido de Joaquim.",
+            impact: ["Os próximos capítulos seguem a promessa"],
+            afterJson: JSON.stringify({
+              currentFocus: "Helena cumpre o pedido de Joaquim",
+            }),
+          },
+        ],
+      });
+      const created = await app.inject({
+        method: "POST",
+        url: "/api/projects",
+        payload: {
+          requestId: globalThis.crypto.randomUUID(),
+          title: "Vila do Sal",
+          language,
+        },
+      });
+      expect(created.statusCode, created.body).toBe(201);
+      const projectId = created.json().id as string;
+      const documents = new SqliteDocumentRepository(database);
+      documents.insert(
+        createDocument({
+          id: "doc-1",
+          projectId,
+          kind: "chapter",
+          title: "Capítulo 1",
+          now: "2026-09-01T00:00:00.000Z",
+        }),
+      );
+      documents.appendVersion(projectId, "doc-1", {
+        id: "version-1",
+        content:
+          "Helena chega a Vila do Sal com o pedido de Joaquim guardado no bolso do casaco.\n\nEla não sabe ainda que o farol já foi vendido, mas a dona da pensão olha para ela com pena.",
+        source: "import",
+        now: "2026-09-01T00:00:00.000Z",
+      });
+
+      const started = await startCandidate(
+        app,
+        projectId,
+        "intent",
+        "Completar a intenção",
+      );
+      await finishRun(app, projectId, started.runId);
+
+      expect(capturedRequests).toHaveLength(1);
+      const [request] = capturedRequests;
+      expect(request!.instructions).toContain(invariant);
+      expect(request!.content.startsWith(`${hint}\n\n{`)).toBe(true);
+      // The context artifact keeps the packet itself as plain JSON.
+      const context = new SqliteRunRepository(database)
+        .getSnapshot(started.runId)
+        .steps.find((step) => step.kind === "canon.context")!.outputArtifact!;
+      expect(context.manuscriptLanguage).toBe("Portuguese");
+      expect(() => JSON.parse(context.prompt as string)).not.toThrow();
+    },
+  );
+
+  it("keeps the language invariant without a hint when there is no prose to detect", async () => {
+    const { app } = await setup({
+      summary: "收紧当下焦点。",
+      items: [
+        {
+          operation: "update",
+          targetId: "intent",
+          title: "收紧当下焦点",
+          rationale: "让下一章目标更集中。",
+          impact: ["下一章围绕寄信代价"],
+          afterJson: JSON.stringify({ currentFocus: "寄信的代价" }),
+        },
+      ],
+    });
+    const projectId = await createProject(app, "回声邮局");
+    const started = await startCandidate(app, projectId, "intent", "收紧焦点");
+    await finishRun(app, projectId, started.runId);
+    const [request] = capturedRequests;
+    expect(request!.instructions).toContain("语言不变量");
+    expect(request!.content).not.toMatch(/detected|自动检测/u);
+    expect(() => JSON.parse(request!.content)).not.toThrow();
+  });
 });
 
 async function createSpreadFixture(
@@ -919,11 +1026,15 @@ let modelValue: { summary: string; items: unknown[] } = {
   items: [],
 };
 
+/** Requests the scripted candidate model received, oldest first. */
+const capturedRequests: { instructions: string; content: string }[] = [];
+
 async function setup(
   initialValue: typeof modelValue,
   options: { contextWindow?: number } = {},
 ) {
   modelValue = initialValue;
+  capturedRequests.length = 0;
   const database = new NodeNarrativeDatabase();
   const environment = {
     NARRATIVE_LLM_API_KEY: "server-only-test-key",
@@ -948,9 +1059,13 @@ function candidateModel(contextWindow?: number): NarrativeModelClient {
     async text() {
       throw new Error("Canon candidate must use structured output");
     },
-    async structured(_run, _step, purpose, _request, _contract, validate) {
+    async structured(_run, _step, purpose, request, _contract, validate) {
       if (purpose !== "canon-revision")
         throw new Error(`unexpected purpose ${purpose}`);
+      capturedRequests.push({
+        instructions: String(request.instructions),
+        content: String(request.messages[0]?.content),
+      });
       const checked = validate(modelValue);
       if (!checked.success) throw new Error(checked.issues.join("; "));
       return {
