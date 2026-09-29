@@ -118,30 +118,20 @@ export function registerProviderRoutes(
       requireProviderDisablable(models, assignments, providerId);
     }
     // The base URL, endpoint and wire API decide which upstream serves the
-    // Provider's models, so changing them re-points every model under it,
-    // like a providerId/modelId edit on PUT /api/models. The same rules
-    // apply: a model with run history cannot be re-pointed, and the
-    // probe-written flags of the others return to unknown until they are
-    // probed again. Bumping each model's updatedAt also makes a probe that
-    // measured the previous upstream fail its write-back with a version
-    // conflict instead of recording that evidence.
+    // Provider's models, so changing them re-points every model under it:
+    // the probe-written flags of those models return to unknown until they
+    // are probed again. The edit stays allowed even when a model has run
+    // history (a mistyped base URL must be fixable); runs already in
+    // progress keep using their frozen snapshots. Bumping each model's
+    // updatedAt also makes a probe that measured the previous upstream fail
+    // its write-back with a version conflict instead of recording that
+    // evidence.
     const repointedModels =
       next.baseUrl !== current.baseUrl ||
       next.endpoint !== current.endpoint ||
       next.wireApi !== current.wireApi
         ? models.listByProvider(providerId)
         : [];
-    if (
-      repointedModels.some((model) =>
-        modelHasRuntimeHistory(database, model.id),
-      )
-    ) {
-      throw new ProviderRouteError(
-        "provider.transport_in_use",
-        "A model of this Provider has run history, so its Base URL, endpoint, or wire API cannot be changed; create a new Provider instead",
-        409,
-      );
-    }
     const provider = database.transaction(() => {
       const updated = providers.update(next, expectedUpdatedAt);
       for (const model of repointedModels) {

@@ -24,8 +24,6 @@ export const errors: typeof errorsZh = {
       "The provider still has models; please delete or move them first.",
     providerEnvironmentManaged:
       "An environment-managed provider cannot be deleted; you can disable it instead.",
-    providerTransportInUse:
-      "A model of this provider already has run history, so its base URL, endpoint and wire API cannot be changed; please create a new provider.",
     providerCredentialRequired:
       "Creating a provider requires a credentialRef (a raw key or an env:NAME reference).",
     modelEnvironmentManaged:
@@ -464,7 +462,6 @@ export const errors: typeof errorsZh = {
     providerEnvironmentManaged: "Environment-managed providers cannot be deleted; you can disable them instead",
     providerModelsInUse: "The provider still has models; delete or move them first",
     providerNotFound: "Provider not found",
-    providerTransportInUse: "A model of this provider has run history, so its base URL, endpoint, or wire API cannot be changed; create a new provider instead",
     providerVersionConflict: "provider {id} was updated elsewhere; refresh and try again",
     quotaUnavailable: "The trial quota service is temporarily unavailable.",
     rateLimited: "Too many requests; please try again later.",

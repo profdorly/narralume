@@ -15,7 +15,7 @@
 
 ### 添加模型后先探测
 
-新建模型后，以及把模型改指向另一个上游模型或 Provider、或者修改其 Provider 的 Base URL、端点或 Wire API 后，请在模型卡上点一次“探测”；这类修改会清除之前探测记录的能力标记。与模型的 Provider 和上游模型名一样，Provider 下任一模型有了运行历史后，这个 Provider 的 Base URL、端点和 Wire API 就不能再修改，请新建 Provider。探测会依次检查文本、流式、工具调用和结构化输出，并把结果保存为模型的能力标记。每个探测请求都采用章节任务的请求形状：推理强度 `low` 加 `temperature`，输出上限 1024 token，给推理模型留出作答空间。探测不发送 `top_p`：章节任务不发送它，而且有些模型不接受它与 `temperature` 同时出现。
+新建模型后，以及把模型改指向另一个上游模型或 Provider、或者修改其 Provider 的 Base URL、端点或 Wire API 后，请在模型卡上点一次“探测”；这类修改会清除之前探测记录的能力标记。已在进行的任务继续使用启动时的配置。探测会依次检查文本、流式、工具调用和结构化输出，并把结果保存为模型的能力标记。每个探测请求都采用章节任务的请求形状：推理强度 `low` 加 `temperature`，输出上限 1024 token，给推理模型留出作答空间。探测不发送 `top_p`：章节任务不发送它，而且有些模型不接受它与 `temperature` 同时出现。
 
 文本阶段还会识别请求限制：有些模型（例如 OpenAI 的推理模型）不接受 `temperature`/`top_p`，有的只在章节任务所用的推理强度下不接受；把推理强度转换为 Anthropic 扩展思考的网关只接受等于 1 的 `temperature`；在 Chat Completions 上还有模型拒绝 `max_tokens`、要求改用 `max_completion_tokens`。上游错误信息指明被拒参数时，探测会调整请求，在该阶段的说明里写明调整，并用调整后的请求继续检查其余阶段。上游一旦接受调整后的请求，探测就记录 `samplingParameters: false` 或 `maxCompletionTokens: true`（后者只对 Chat Completions 渠道记录），即使随后的回复没有通过文本检查。`samplingParameters` 只用 `temperature` 测得：`true` 不代表 `top_p` 可用，`false` 会让任务同时省略 `temperature` 和 `top_p`。措辞不同的拒绝会让文本阶段失败，不记录这两个标记。探测之后新发起的任务会据此省略采样参数，或改发 `max_completion_tokens`；已经调用过模型的任务会沿用它为这类调用冻结的设置，所以探测后请重新发起任务。
 

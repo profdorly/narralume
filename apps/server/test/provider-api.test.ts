@@ -1119,17 +1119,20 @@ describe("provider/model/assignment API", () => {
     });
   });
 
-  it("refuses to change a Provider's base URL, endpoint or wire API once one of its models has run history", async () => {
+  it("allows changing a Provider's base URL after one of its models has run history and clears its probe-written flags", async () => {
     const { app, database } = await setup();
     const provider = await createProvider(app);
-    const probed = { streaming: true, samplingParameters: false };
     const created = await app.inject({
       method: "POST",
       url: "/api/models",
       payload: {
         providerId: provider.id,
         modelId: "gpt-writer",
-        capabilities: probed,
+        capabilities: {
+          reasoning: true,
+          streaming: true,
+          samplingParameters: false,
+        },
       },
     });
     expect(created.statusCode, created.body).toBe(201);
@@ -1144,39 +1147,28 @@ describe("provider/model/assignment API", () => {
       )
       .run("call-history", model.id, new Date().toISOString());
 
-    const edit = (change: { name?: string; baseUrl?: string }) =>
-      app.inject({
-        method: "PUT",
-        url: `/api/providers/${provider.id}`,
-        payload: {
-          name: change.name ?? "自建 Provider",
-          wireApi: "openai-chat",
-          baseUrl: change.baseUrl ?? "https://custom.example.com/v1",
-          expectedUpdatedAt: provider.updatedAt,
-        },
-      });
-
-    const refused = await edit({ baseUrl: "https://proxy.example.com/v1" });
-    expect(refused.statusCode, refused.body).toBe(409);
-    expect(refused.json()).toMatchObject({
-      error: { code: "provider.transport_in_use" },
+    // A mistyped base URL stays fixable even though the model has run
+    // history; runs in progress keep their frozen snapshots.
+    const edited = await app.inject({
+      method: "PUT",
+      url: `/api/providers/${provider.id}`,
+      payload: {
+        name: "自建 Provider",
+        wireApi: "openai-chat",
+        baseUrl: "https://proxy.example.com/v1",
+        expectedUpdatedAt: provider.updatedAt,
+      },
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    expect(edited.json()).toMatchObject({
+      baseUrl: "https://proxy.example.com/v1",
     });
     const models = (
       await app.inject({ method: "GET", url: "/api/models" })
     ).json() as { id: string; updatedAt: string; capabilities: object }[];
-    expect(models.find((candidate) => candidate.id === model.id)).toMatchObject(
-      { updatedAt: model.updatedAt, capabilities: probed },
-    );
-    const providers = (
-      await app.inject({ method: "GET", url: "/api/providers" })
-    ).json() as { id: string; baseUrl: string }[];
-    expect(
-      providers.find((candidate) => candidate.id === provider.id)?.baseUrl,
-    ).toBe("https://custom.example.com/v1");
-
-    // Edits that keep the transport are still allowed.
-    const renamed = await edit({ name: "改名 Provider" });
-    expect(renamed.statusCode, renamed.body).toBe(200);
+    const stored = models.find((candidate) => candidate.id === model.id);
+    expect(stored?.capabilities).toEqual({ reasoning: true });
+    expect(stored?.updatedAt).not.toBe(model.updatedAt);
   });
 
   it("refuses the write-back of a probe that measured a Provider's previous base URL", async () => {
