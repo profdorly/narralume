@@ -37,6 +37,8 @@ import {
   requireProviderDisablable,
 } from "@narralume/services";
 
+import { withoutProbedCapabilities } from "./probed-capabilities.js";
+
 const ProviderParamsSchema = z.object({ providerId: z.string().trim().min(1) });
 const ModelParamsSchema = z.object({ modelId: z.string().trim().min(1) });
 const AssignmentParamsSchema = z.object({ role: AssignmentRoleSchema });
@@ -117,7 +119,35 @@ export function registerProviderRoutes(
     if (!next.enabled) {
       requireProviderDisablable(models, assignments, providerId);
     }
-    const provider = providers.update(next, expectedUpdatedAt);
+    // The base URL, endpoint and wire API decide which upstream serves the
+    // Provider's models, so changing them re-points every model under it:
+    // the probe-written flags of those models return to unknown until they
+    // are probed again. The edit stays allowed even when a model has run
+    // history (a mistyped base URL must be fixable); runs already in
+    // progress keep using their frozen snapshots. Bumping each model's
+    // updatedAt also makes a probe that measured the previous upstream fail
+    // its write-back with a version conflict instead of recording that
+    // evidence.
+    const repointedModels =
+      next.baseUrl !== current.baseUrl ||
+      next.endpoint !== current.endpoint ||
+      next.wireApi !== current.wireApi
+        ? models.listByProvider(providerId)
+        : [];
+    const provider = database.transaction(() => {
+      const updated = providers.update(next, expectedUpdatedAt);
+      for (const model of repointedModels) {
+        models.update(
+          {
+            ...model,
+            capabilities: withoutProbedCapabilities(model.capabilities),
+            updatedAt: nextUpdatedAt(model.updatedAt),
+          },
+          model.updatedAt,
+        );
+      }
+      return updated;
+    });
     return PublicProviderSchema.parse(publicProvider(provider));
   });
 
@@ -178,10 +208,22 @@ export function registerProviderRoutes(
     // every other stored field stay as configured. The probed structured tier
     // (native | json-mode | prompt | none) is stored additively as flags:
     // native/json-mode map to their own key, "prompt" is structuredOutput
-    // without either flag, "none" is all three false.
+    // without either flag, "none" is all three false. The stream, tool and
+    // structured-output stages are sent without a reasoning effort when the
+    // provider rejected it in the text stage, so a rejected effort never
+    // turns into negative streaming/tools/structured evidence. Request-shape
+    // flags (samplingParameters, and maxCompletionTokens on openai-chat) are
+    // written only when the provider accepted a text-stage request, even if
+    // its response then failed the text check. Without an accepted request
+    // (bad credentials, network errors, unrecognized rejections) the stored
+    // request-shape flags are left unchanged: absent stays unknown, and a
+    // value from an earlier probe of this model is kept.
     const structuredCapability = stages.find(
       (stage) => stage.stage === "structured-output",
     )?.capability;
+    const requestCapabilities = stages.find(
+      (stage) => stage.stage === "text",
+    )?.requestCapabilities;
     models.update(
       {
         ...model,
@@ -192,6 +234,17 @@ export function registerProviderRoutes(
           structuredOutput: passed(stages, "structured-output"),
           structuredOutputNative: structuredCapability === "native",
           structuredOutputJsonMode: structuredCapability === "json-mode",
+          ...(requestCapabilities === undefined
+            ? {}
+            : {
+                samplingParameters: requestCapabilities.samplingParameters,
+                ...(provider.wireApi === "openai-chat"
+                  ? {
+                      maxCompletionTokens:
+                        requestCapabilities.maxCompletionTokens,
+                    }
+                  : {}),
+              }),
         },
         updatedAt: nextUpdatedAt(model.updatedAt),
       },
@@ -262,6 +315,18 @@ export function registerProviderRoutes(
     const next = {
       ...current,
       ...input,
+      // Probe-written flags are evidence about the (provider, upstream model)
+      // pair they were measured on. Re-pointing the row makes them describe a
+      // different model: stale request-shape flags would silently change the
+      // request body, and stale negative flags would be negative evidence the
+      // probe never produced for this model. They return to unknown until the
+      // model is probed again. The settings form round-trips capabilities, so
+      // the submitted values are no evidence about the new target either.
+      capabilities:
+        input.providerId !== current.providerId ||
+        input.modelId !== current.modelId
+          ? withoutProbedCapabilities(input.capabilities)
+          : input.capabilities,
       metadataSource: "manual" as const,
       metadataVerifiedAt: updatedAt,
       id: current.id,

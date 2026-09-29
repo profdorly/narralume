@@ -51,7 +51,11 @@ export class OpenAIChatAdapter implements ModelAdapter {
     const { response, timing, requestId } = await postJson(
       this.config,
       "chat/completions",
-      buildChatBody(request, wantsStream),
+      buildChatBody(
+        request,
+        wantsStream,
+        this.config.chatOutputTokenParameter ?? "max_tokens",
+      ),
       {
         ...(options.signal === undefined ? {} : { signal: options.signal }),
         headers: { authorization: `Bearer ${this.config.apiKey}` },
@@ -167,6 +171,7 @@ export class OpenAIChatAdapter implements ModelAdapter {
 function buildChatBody(
   request: ModelRequest,
   stream: boolean,
+  outputTokenParameter: NonNullable<AdapterConfig["chatOutputTokenParameter"]>,
 ): Record<string, unknown> {
   const messages = request.messages.flatMap(mapChatMessage);
   if (request.instructions)
@@ -183,7 +188,7 @@ function buildChatBody(
     body.reasoning_effort = request.reasoningEffort;
   }
   if (request.maxOutputTokens !== undefined)
-    body.max_tokens = request.maxOutputTokens;
+    body[outputTokenParameter] = request.maxOutputTokens;
   if (request.stopSequences?.length) body.stop = request.stopSequences;
   if (request.promptCacheKey) body.prompt_cache_key = request.promptCacheKey;
   if (request.tools?.length) {

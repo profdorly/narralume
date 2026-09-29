@@ -203,6 +203,13 @@ export interface AdapterConfig {
   /** Provider-specific query parameters appended to the resolved endpoint. */
   queryParams?: Readonly<Record<string, string>>;
   anthropicVersion?: string;
+  /**
+   * Output-token limit field of the openai-chat protocol. Defaults to
+   * "max_tokens"; models that reject it (e.g. OpenAI reasoning models) need
+   * "max_completion_tokens". Selected from the probed `maxCompletionTokens`
+   * model capability; other protocols have their own fixed field.
+   */
+  chatOutputTokenParameter?: "max_tokens" | "max_completion_tokens";
   timeoutMs?: number;
   maxRetries?: number;
   retryBaseDelayMs?: number;

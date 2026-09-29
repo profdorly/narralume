@@ -221,6 +221,16 @@ export interface ProbeStage {
   detail: string;
   /** 仅 structured-output 阶段返回：native | json-mode | prompt | none */
   capability?: string;
+  /**
+   * Set only on the text stage once the provider accepted a request, even
+   * when the response then failed the text check: the accepted request shape,
+   * measured without reasoning effort when the provider rejected it.
+   * samplingParameters covers temperature only; the probe never sends top_p.
+   */
+  requestCapabilities?: {
+    samplingParameters: boolean;
+    maxCompletionTokens: boolean;
+  };
 }
 
 export interface ProviderProbeResult {

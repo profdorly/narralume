@@ -96,7 +96,15 @@ export const ModelConfigSchema = z.object({
   maxOutputTokens: z.number().int().positive().nullable(),
   /** Default sampling parameters (temperature/top_p etc). */
   sampling: z.record(z.string(), z.unknown()),
-  /** Capability flags (streaming/structuredOutput/tools/reasoning). */
+  /**
+   * Capability flags (streaming/structuredOutput/tools/reasoning, plus the
+   * probed request-shape flags samplingParameters and maxCompletionTokens).
+   * An absent flag is unknown; only the connection probe records negative
+   * evidence. samplingParameters is measured with temperature only (the
+   * probe never sends top_p); false makes runs omit temperature and top_p.
+   * Changing providerId or modelId, or the Provider's baseUrl, endpoint or
+   * wireApi, clears the probe-written flags.
+   */
   capabilities: z.record(z.string(), z.boolean()),
   /** Provenance of the physical limit declaration. */
   metadataSource: ModelMetadataSourceSchema,

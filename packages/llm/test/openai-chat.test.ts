@@ -214,4 +214,45 @@ describe("OpenAI Chat Completions adapter", () => {
       { role: "user", content: "return ok" },
     ]);
   });
+
+  it("sends max_completion_tokens only when the config selects it", async () => {
+    const transport = captureFetch(
+      jsonResponse({
+        id: "chatcmpl-limit",
+        choices: [{ message: { content: "OK" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 3, completion_tokens: 1 },
+      }),
+    );
+    const request = {
+      model: "reasoner",
+      messages: [{ role: "user" as const, content: "ping" }],
+      maxOutputTokens: 256,
+    };
+    const gatewayWith = (
+      chatOutputTokenParameter?: "max_tokens" | "max_completion_tokens",
+    ) =>
+      new ModelGateway(
+        new OpenAIChatAdapter({
+          protocol: "openai-chat",
+          baseUrl: "https://api.example.com/v1",
+          apiKey: "secret",
+          fetch: transport.fetch,
+          ...(chatOutputTokenParameter === undefined
+            ? {}
+            : { chatOutputTokenParameter }),
+        }),
+      );
+
+    await gatewayWith().generate(request);
+    await gatewayWith("max_tokens").generate(request);
+    await gatewayWith("max_completion_tokens").generate(request);
+
+    expect(transport.requests[0]?.body.max_tokens).toBe(256);
+    expect(transport.requests[0]?.body).not.toHaveProperty(
+      "max_completion_tokens",
+    );
+    expect(transport.requests[1]?.body.max_tokens).toBe(256);
+    expect(transport.requests[2]?.body.max_completion_tokens).toBe(256);
+    expect(transport.requests[2]?.body).not.toHaveProperty("max_tokens");
+  });
 });

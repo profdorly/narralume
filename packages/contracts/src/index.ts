@@ -51,6 +51,20 @@ export const ConnectionTestStageSchema = z.object({
   status: z.enum(["passed", "failed", "unsupported", "skipped"]),
   latencyMs: z.number().int().nonnegative(),
   detail: z.string(),
+  /** Set only on the structured-output stage. */
+  capability: z.enum(["native", "json-mode", "prompt", "none"]).optional(),
+  /**
+   * Set only on the text stage once the provider accepted a request, even
+   * when the response then failed the text check: the accepted request shape,
+   * measured without reasoning effort when the provider rejected it.
+   * samplingParameters covers temperature only; the probe never sends top_p.
+   */
+  requestCapabilities: z
+    .object({
+      samplingParameters: z.boolean(),
+      maxCompletionTokens: z.boolean(),
+    })
+    .optional(),
 });
 
 export const ApiErrorSchema = z.object({

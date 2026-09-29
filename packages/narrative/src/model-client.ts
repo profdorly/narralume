@@ -11,6 +11,8 @@ import {
   createModelAdapter,
   collectModelEvents,
   generateOpenAIEmbeddings,
+  isMaxTokensUnsupportedError,
+  isSamplingParameterUnsupportedError,
   ModelError,
   ModelGateway,
   StructuredOutputError,
@@ -230,7 +232,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
           signal.aborted,
           candidate.physicalAttempts(),
         );
-        const normalized = modelStepError(scopedError, signal.aborted);
+        const normalized = modelStepError(scopedError, signal.aborted, {
+          runtime: candidate.runtime,
+          request: fullRequest,
+        });
         failedUsage = addBudgetUsage(
           failedUsage,
           pricedFailureUsage(
@@ -574,7 +579,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
           candidate.physicalAttempts(),
           repairAttempts,
         );
-        const normalized = modelStepError(scopedError, signal.aborted);
+        const normalized = modelStepError(scopedError, signal.aborted, {
+          runtime: candidate.runtime,
+          request: fullRequest,
+        });
         failedUsage = addBudgetUsage(
           failedUsage,
           pricedFailureUsage(
@@ -624,6 +632,7 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
                 resolved.provider,
                 credential.apiKey,
                 physicalAttempts,
+                resolved.model.capabilities,
               ),
             ),
           ),
@@ -740,8 +749,9 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
     provider: StoredProvider,
     apiKey: string,
     physicalAttempts: PhysicalAttemptCounter,
+    capabilities: Readonly<Record<string, boolean>> = {},
   ): AdapterConfig {
-    return this.adapterConfig(
+    const config = this.adapterConfig(
       run,
       step,
       {
@@ -756,6 +766,12 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
       provider,
       physicalAttempts,
     );
+    // Only the connection probe records that a Chat Completions model rejects
+    // max_tokens; unknown keeps the protocol default.
+    return provider.wireApi === "openai-chat" &&
+      capabilities.maxCompletionTokens === true
+      ? { ...config, chatOutputTokenParameter: "max_completion_tokens" }
+      : config;
   }
 
   private adapterConfig(
@@ -1245,11 +1261,21 @@ function applyRuntimeRequest(
   ].filter((value): value is number => value !== null);
   const maxOutputTokens = Math.max(1, Math.min(...outputCandidates));
   const sampling = mergedSampling(runtime.protocol, runtime.sampling, request);
-  return {
+  const applied: ModelRequest = {
     ...request,
     maxOutputTokens,
     ...sampling,
   };
+  if (runtime.capabilities.samplingParameters === false) {
+    // The connection probe recorded that this model rejects temperature
+    // (e.g. OpenAI reasoning models). The probe never sends top_p, but a model
+    // that rejects temperature is not trusted with top_p either, so neither
+    // the model defaults nor the worker request may send them. Unknown keeps
+    // the requested values.
+    delete applied.temperature;
+    delete applied.topP;
+  }
+  return applied;
 }
 
 function snapshotRuntime(
@@ -1639,7 +1665,11 @@ function addBudgetUsage(
   };
 }
 
-function modelStepError(error: unknown, cancelled: boolean): RunStepError {
+function modelStepError(
+  error: unknown,
+  cancelled: boolean,
+  attempt?: { runtime: CandidateRuntime; request: ModelRequest },
+): RunStepError {
   if (cancelled) {
     // Preserve the partial output accumulated before the abort so recovery
     // can offer continue/adopt/regenerate on top of it.
@@ -1702,10 +1732,18 @@ function modelStepError(error: unknown, cancelled: boolean): RunStepError {
     };
   }
   if (error instanceof ModelError) {
+    const constraint =
+      attempt === undefined ? null : requestConstraintHint(error, attempt);
     return {
       code: `model.${error.category}`,
-      message: error.message,
+      message:
+        constraint === null
+          ? error.message
+          : `${error.message} (${constraint.hint})`,
       retryable: error.retryable,
+      ...(constraint === null
+        ? {}
+        : { details: { requestConstraint: constraint.reason } }),
     };
   }
   return {
@@ -1713,6 +1751,60 @@ function modelStepError(error: unknown, cancelled: boolean): RunStepError {
     message: error instanceof Error ? error.message : String(error),
     retryable: false,
   };
+}
+
+/**
+ * Explains a provider rejection of a request constraint that only the
+ * connection probe records (sampling parameters, the Chat Completions
+ * max_tokens field). The call is deliberately not retried with an adjusted
+ * request. While the capability is unknown the hint points the author at the
+ * probe. When the probe already recorded that the model accepts the
+ * parameter, re-probing would record the same value, so the hint says the
+ * request falls outside the probe evidence instead (for example a reasoning
+ * effort other than the probe's, or top_p, which the probe never sends).
+ */
+function requestConstraintHint(
+  error: ModelError,
+  attempt: { runtime: CandidateRuntime; request: ModelRequest },
+): { reason: string; hint: string } | null {
+  const { capabilities, protocol } = attempt.runtime;
+  const effort =
+    attempt.request.reasoningEffort === undefined
+      ? ""
+      : ` at reasoning effort "${attempt.request.reasoningEffort}"`;
+  if (isSamplingParameterUnsupportedError(error)) {
+    if (capabilities.samplingParameters === undefined) {
+      return {
+        reason: "sampling_parameters_unsupported",
+        hint: "this model rejects temperature/top_p; run Probe on it in Settings so runs started afterwards omit them",
+      };
+    }
+    if (capabilities.samplingParameters === true) {
+      const topP =
+        attempt.request.topP === undefined
+          ? ""
+          : " (the probe does not send top_p)";
+      return {
+        reason: "sampling_parameters_outside_probe_evidence",
+        hint: `this model rejected temperature/top_p${effort} although its connection probe accepted temperature${topP}; the probe evidence does not cover this request`,
+      };
+    }
+  }
+  if (protocol === "openai-chat" && isMaxTokensUnsupportedError(error)) {
+    if (capabilities.maxCompletionTokens === undefined) {
+      return {
+        reason: "max_tokens_unsupported",
+        hint: "this model requires max_completion_tokens; run Probe on it in Settings so runs started afterwards send it",
+      };
+    }
+    if (capabilities.maxCompletionTokens === false) {
+      return {
+        reason: "max_tokens_outside_probe_evidence",
+        hint: `this model rejected max_tokens${effort} although its connection probe accepted it; the probe evidence does not cover this request`,
+      };
+    }
+  }
+  return null;
 }
 
 const PROVIDER_CONCURRENCY = 2;
