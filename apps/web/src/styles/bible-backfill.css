@@ -1,0 +1,318 @@
+/* 故事圣经页首：「从正文补全故事圣经」面板。 */
+
+.bible-backfill {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--vera);
+  border-radius: var(--radius-card);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-lift);
+}
+
+.bible-backfill__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bible-backfill__seal {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--vera-hairline);
+  border-radius: 50%;
+  color: var(--vera);
+}
+
+.bible-backfill__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bible-backfill__eyebrow {
+  color: var(--vera);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+}
+
+.bible-backfill__heading h2 {
+  margin-top: 0.12rem;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+}
+
+.bible-backfill__heading h2:focus-visible {
+  outline: 2px solid var(--vera-soft);
+  outline-offset: 2px;
+}
+
+.bible-backfill__summary {
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.bible-backfill__toggle {
+  flex: 0 0 auto;
+}
+
+.bible-backfill__body[hidden] {
+  display: none;
+}
+
+.bible-backfill__body,
+.bible-backfill__idle,
+.bible-backfill__active,
+.bible-backfill__finished {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bible-backfill__intro,
+.bible-backfill__scope,
+.bible-backfill__note,
+.bible-backfill__stage p,
+.bible-backfill__next p {
+  max-width: 48rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.75;
+}
+
+.bible-backfill__note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.bible-backfill__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bible-backfill__run-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+}
+
+.bible-backfill__progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bible-backfill__progress p {
+  flex: 0 0 auto;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.bible-backfill__bar {
+  flex: 1 1 auto;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--paper-sunk) 70%, transparent);
+}
+
+.bible-backfill__bar span {
+  display: block;
+  height: 100%;
+  background: var(--vera);
+  transition: width 240ms ease;
+}
+
+.bible-backfill__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
+
+.bible-backfill__stage[data-tone="attention"] {
+  border-color: var(--vera-hairline);
+}
+
+.bible-backfill__stage h3,
+.bible-backfill__finished h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 550;
+}
+
+.bible-backfill__review {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.bible-backfill__error-text {
+  color: var(--vera-deep);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.bible-backfill__detail {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  word-break: break-word;
+}
+
+.bible-backfill__items {
+  display: grid;
+  gap: 0.2rem;
+  max-height: 16rem;
+  overflow: auto;
+  padding: 0.3rem 0;
+  list-style: none;
+}
+
+.bible-backfill__items li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 2px;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+}
+
+.bible-backfill__items li[aria-current="step"] {
+  background: color-mix(in srgb, var(--vera-soft) 60%, transparent);
+  color: var(--ink);
+}
+
+.bible-backfill__items li[data-status="applied"] svg {
+  color: var(--canon);
+}
+
+.bible-backfill__items li[data-status="failed"] svg {
+  color: var(--vera-deep);
+}
+
+.bible-backfill__item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bible-backfill__item-status {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.bible-backfill__items-details summary {
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+}
+
+.bible-backfill__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+
+.bible-backfill__counts div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.bible-backfill__counts dt {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+
+.bible-backfill__counts dd {
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.bible-backfill__next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--hairline);
+}
+
+.bible-backfill__next h4 {
+  font-size: 0.84rem;
+  font-weight: 550;
+}
+
+.bible-backfill__modes {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.bible-backfill__modes legend {
+  margin-bottom: 0.4rem;
+  font-weight: 550;
+}
+
+.bible-backfill__modes label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  cursor: pointer;
+}
+
+.bible-backfill__modes span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.bible-backfill__modes small {
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.bible-backfill__cost {
+  color: var(--ink-faint);
+  font-size: 0.76rem;
+}
+
+.bible-backfill__spin {
+  animation: bible-backfill-spin 1s linear infinite;
+}
+
+@keyframes bible-backfill-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bible-backfill__spin {
+    animation: none;
+  }
+  .bible-backfill__bar span {
+    transition: none;
+  }
+}

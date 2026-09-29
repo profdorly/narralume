@@ -1,0 +1,608 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { setLocale } from "../src/i18n";
+import type {
+  BibleBackfillDetailDto,
+  BibleBackfillItemDto,
+  BibleBackfillJobDto,
+  StoryBible,
+} from "../src/lib/api";
+import { BibleWorkspace } from "../src/workspaces/bible";
+import { BibleBackfillPanel } from "../src/workspaces/bible/backfill-panel";
+
+/* 「从正文补全故事圣经」面板：开始确认、进度、逐章裁定、停机处理与完成指引。 */
+
+const NOW = "2026-09-28T10:00:00.000Z";
+
+const BIBLE = {
+  project: {
+    id: "p-1",
+    title: "Tide Lamp",
+    subtitle: null,
+    premise: null,
+    language: "en",
+    phase: "writing",
+    archivedAt: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+  intent: null,
+  outline: [],
+  entities: [{ id: "e-1", name: "Shen Yan" }],
+  facts: [],
+  relationships: [],
+  timeline: [],
+  foreshadows: [],
+  occupiedOutlineNodeIds: [],
+  documents: ["One", "Two", "Three"].map((title, index) => ({
+    id: `doc-${index + 1}`,
+    projectId: "p-1",
+    kind: "chapter",
+    title: `Chapter ${title}`,
+    currentVersionId: `ver-${index + 1}`,
+    archivedAt: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  })),
+} as unknown as StoryBible;
+
+function job(overrides: Partial<BibleBackfillJobDto> = {}): BibleBackfillJobDto {
+  return {
+    id: "job-1",
+    projectId: "p-1",
+    status: "running",
+    mode: "review_each",
+    error: null,
+    pauseRequested: false,
+    cancelRequested: false,
+    currentOrdinal: 1,
+    createdAt: NOW,
+    updatedAt: NOW,
+    version: 1,
+    ...overrides,
+  };
+}
+
+function item(
+  ordinal: number,
+  status: BibleBackfillItemDto["status"],
+  overrides: Partial<BibleBackfillItemDto> = {},
+): BibleBackfillItemDto {
+  return {
+    ordinal,
+    outlineNodeId: `node-${ordinal + 1}`,
+    documentId: `doc-${ordinal + 1}`,
+    versionId: `ver-${ordinal + 1}`,
+    title: `Chapter ${["One", "Two", "Three"][ordinal]}`,
+    attempt: 1,
+    runId: null,
+    changeSetId: null,
+    status,
+    skipReason: null,
+    error: null,
+    updatedAt: NOW,
+    ...overrides,
+  };
+}
+
+function detail(
+  jobValue: BibleBackfillJobDto | null,
+  items: BibleBackfillItemDto[],
+  availableActions: BibleBackfillDetailDto["availableActions"] = [],
+): BibleBackfillDetailDto {
+  const count = (status: BibleBackfillItemDto["status"]) =>
+    items.filter((entry) => entry.status === status).length;
+  return {
+    job: jobValue,
+    items,
+    counts: {
+      total: items.length,
+      pending: count("pending"),
+      settling: count("settling"),
+      awaitingDecision: count("awaiting_decision"),
+      applied: count("applied"),
+      rejected: count("rejected"),
+      empty: count("empty"),
+      failed: count("failed"),
+      skipped: count("skipped"),
+    },
+    availableActions,
+  };
+}
+
+const EMPTY = detail(null, []);
+
+const CHANGE_SET = {
+  id: "ccs-2",
+  projectId: "p-1",
+  runId: "run-2",
+  stepId: "step-2",
+  changes: {
+    summary: "Lamp heat reveals the missing name",
+    factCandidates: [
+      { subjectId: "e-1", predicate: "can read", value: "blank letters" },
+    ],
+  },
+  status: "candidate",
+  createdAt: NOW,
+  decidedAt: null,
+};
+
+function json(value: unknown, status = 200) {
+  return Promise.resolve(
+    new Response(JSON.stringify(value), {
+      status,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+}
+
+interface Recorded {
+  url: string;
+  method: string;
+  body: Record<string, unknown> | null;
+}
+
+/** 路由式 fetch 桩：current 可在测试中替换；未知请求返回 404。 */
+function stubApi(routes: {
+  current: () => BibleBackfillDetailDto;
+  onStart?: (body: Record<string, unknown>) => Promise<Response>;
+  onAction?: (body: Record<string, unknown>) => Promise<Response>;
+  onDecision?: (body: Record<string, unknown>) => Promise<Response>;
+  changeSets?: () => unknown[];
+  extra?: (url: string) => Promise<Response> | null;
+}) {
+  const calls: Recorded[] = [];
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
+    calls.push({ url, method, body });
+    if (url === "/api/projects/p-1/bible-backfills/current")
+      return json(routes.current());
+    if (url === "/api/projects/p-1/bible-backfills" && method === "POST")
+      return routes.onStart ? routes.onStart(body!) : json({}, 500);
+    if (url === "/api/projects/p-1/bible-backfills/job-1/actions")
+      return routes.onAction ? routes.onAction(body!) : json({}, 500);
+    if (url === "/api/projects/p-1/canon-change-sets")
+      return json({ changeSets: routes.changeSets?.() ?? [] });
+    if (url.startsWith("/api/projects/p-1/canon-change-sets/") && url.endsWith("/decisions"))
+      return routes.onDecision ? routes.onDecision(body!) : json({}, 500);
+    const extra = routes.extra?.(url);
+    if (extra) return extra;
+    return json({ error: { code: "route.not_found", message: `unexpected ${url}` } }, 404);
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return { calls, fetchMock };
+}
+
+function renderPanel(options: { focus?: boolean; onOpen?: (section: string) => void } = {}) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <BibleBackfillPanel
+          projectId="p-1"
+          bible={BIBLE}
+          focus={options.focus ?? true}
+          onOpenCandidateDesk={options.onOpen ?? (() => undefined)}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function actionResponse(value: BibleBackfillDetailDto) {
+  return json({ ...value, idempotentReplay: false });
+}
+
+class EventSourceStub {
+  static current: EventSourceStub | null = null;
+  private readonly listeners = new Map<string, EventListener[]>();
+  constructor() {
+    EventSourceStub.current = this;
+  }
+  addEventListener(type: string, listener: EventListener) {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+  }
+  removeEventListener() {}
+  close() {}
+  emit(type: string, data: unknown) {
+    const event = new MessageEvent(type, { data: JSON.stringify(data) });
+    for (const listener of this.listeners.get(type) ?? []) listener(event);
+  }
+}
+
+beforeEach(() => {
+  setLocale("en");
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  EventSourceStub.current = null;
+});
+
+describe("Complete Story Bible from manuscript", () => {
+  it("idle state explains the pass and starts it after the confirmation dialog", async () => {
+    let current = EMPTY;
+    const { calls } = stubApi({
+      current: () => current,
+      onStart: () => {
+        current = detail(job({ mode: "auto_apply_stop_on_conflict", currentOrdinal: 0 }), [
+          item(0, "settling", { runId: "run-1" }),
+          item(1, "pending"),
+          item(2, "pending"),
+        ], ["pause", "cancel", "skip_item"]);
+        return json({ ...current, idempotentReplay: false }, 202);
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByText(/Found 3 chapters with manuscript text/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Complete Story Bible from manuscript" })).toBeInTheDocument();
+    expect(screen.getByText(/proposes those story changes/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    const dialog = screen.getByRole("alertdialog", { name: "Complete Story Bible from manuscript" });
+    expect(within(dialog).getByRole("radio", { name: /Review each chapter \(recommended\)/ })).toBeChecked();
+    expect(within(dialog).getByText(/It will process 3 chapters with manuscript text/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Uses the writing model configured in Settings/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("radio", { name: /Apply automatically, stop on conflicts/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start completion" }));
+
+    await screen.findByText("Reading chapter 1 of 3: Chapter One");
+    const start = calls.find((call) => call.method === "POST" && call.url.endsWith("/bible-backfills"));
+    expect(start?.body).toEqual({
+      requestId: expect.any(String),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("explains how to re-import when the manuscript has no chapters", async () => {
+    stubApi({
+      current: () => EMPTY,
+      onStart: () =>
+        json(
+          {
+            error: {
+              code: "bible_backfill.no_chapters",
+              message: "There is no chapter manuscript to complete the Story Bible from",
+              requestId: "req-1",
+            },
+          },
+          422,
+        ),
+    });
+    renderPanel();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Start" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start completion" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText("No separate chapters to read")).toBeInTheDocument();
+    expect(within(alert).getByText(/Re-import the file with chapter headings/)).toBeInTheDocument();
+  });
+
+  it("running state shows progress, accessible chapter statuses, and pauses", async () => {
+    let current = detail(job({ currentOrdinal: 1 }), [
+      item(0, "applied"),
+      item(1, "settling", { runId: "run-2" }),
+      item(2, "pending"),
+    ], ["pause", "cancel", "skip_item"]);
+    const { calls } = stubApi({
+      current: () => current,
+      onAction: () => {
+        current = { ...current, job: job({ pauseRequested: true }), availableActions: ["cancel", "skip_item"] };
+        return actionResponse(current);
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByText("Reading chapter 2 of 3: Chapter Two")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Completion progress" })).toHaveAttribute("aria-valuenow", "1");
+    expect(screen.getByText("1 of 3 chapters done")).toBeInTheDocument();
+    const list = screen.getByRole("list", { name: "Chapter progress" });
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "Chapter OneApplied",
+      "Chapter TwoReading",
+      "Chapter ThreeWaiting",
+    ]);
+    expect(rows[1]).toHaveAttribute("aria-current", "step");
+
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(await screen.findByText("Pausing after the current chapter finishes…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pause" })).not.toBeInTheDocument();
+    const pause = calls.find((call) => call.url.endsWith("/job-1/actions"));
+    expect(pause?.body).toEqual({ requestId: expect.any(String), action: "pause" });
+  });
+
+  it("review-each decision applies through the change-set decision route and refreshes", async () => {
+    let decided = false;
+    let current = detail(job({ status: "awaiting_decision", currentOrdinal: 1 }), [
+      item(0, "applied"),
+      item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+      item(2, "pending"),
+    ], ["pause", "cancel", "skip_item"]);
+    const { calls } = stubApi({
+      current: () => current,
+      changeSets: () => [decided ? { ...CHANGE_SET, status: "applied" } : CHANGE_SET],
+      onDecision: () => {
+        decided = true;
+        current = detail(job({ status: "running", currentOrdinal: 2 }), [
+          item(0, "applied"),
+          item(1, "applied", { changeSetId: "ccs-2" }),
+          item(2, "settling", { runId: "run-3" }),
+        ], ["pause", "cancel", "skip_item"]);
+        return json({ changeSet: { ...CHANGE_SET, status: "applied" } });
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("heading", { name: "Review chapter 2 of 3: Chapter Two" })).toBeInTheDocument();
+    expect(await screen.findByText("Lamp heat reveals the missing name")).toBeInTheDocument();
+    expect(screen.getByText("Shen Yan · can read: blank letters")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Defer & continue" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Apply & continue" }));
+
+    expect(await screen.findByText("Reading chapter 3 of 3: Chapter Three")).toBeInTheDocument();
+    const decision = calls.find((call) => call.url.endsWith("/canon-change-sets/ccs-2/decisions"));
+    expect(decision?.body).toEqual({
+      action: "apply",
+      expectedStatus: "candidate",
+      conflictPolicy: "reject",
+      requestId: "ccs-2:apply:reject",
+    });
+  });
+
+  it("auto-apply conflict offers force apply via the decision route and then resumes", async () => {
+    let current = detail(
+      job({
+        status: "awaiting_user",
+        mode: "auto_apply_stop_on_conflict",
+        currentOrdinal: 1,
+        error: {
+          code: "settlement.conflict",
+          message: "These story changes conflict with the current canon",
+          ordinal: 1,
+          changeSetId: "ccs-2",
+          conflicts: [{ path: "factCandidates.0", existingIds: ["fact-locked"], reason: "target_locked" }],
+          forceAllowed: true,
+        },
+      }),
+      [
+        item(0, "applied"),
+        item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+        item(2, "pending"),
+      ],
+      ["resume", "cancel", "skip_item"],
+    );
+    const { calls } = stubApi({
+      current: () => current,
+      changeSets: () => [CHANGE_SET],
+      onDecision: () => json({ changeSet: { ...CHANGE_SET, status: "applied" } }),
+      onAction: () => {
+        current = detail(job({ status: "running", mode: "auto_apply_stop_on_conflict", currentOrdinal: 2 }), [
+          item(0, "applied"),
+          item(1, "applied"),
+          item(2, "settling"),
+        ], ["pause", "cancel"]);
+        return actionResponse(current);
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("heading", { name: "Chapter 2 conflicts with the current canon" })).toBeInTheDocument();
+    expect(screen.getByText(/The target record is locked · factCandidates.0/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Force apply & continue" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm force adopt" }));
+
+    expect(await screen.findByText("Reading chapter 3 of 3: Chapter Three")).toBeInTheDocument();
+    const decision = calls.find((call) => call.url.endsWith("/decisions"));
+    expect(decision?.body).toMatchObject({ action: "apply", conflictPolicy: "force", requestId: "ccs-2:apply:force" });
+    const resume = calls.find((call) => call.url.endsWith("/job-1/actions"));
+    expect(resume?.body).toEqual({ requestId: expect.any(String), action: "resume" });
+    expect(calls.indexOf(decision!)).toBeLessThan(calls.indexOf(resume!));
+  });
+
+  it("child failure offers retry, skip, and a link to the run", async () => {
+    const failure = {
+      code: "child.failed",
+      message: "Provider request timed out",
+      category: "timeout",
+      runId: "run-2",
+      stepId: "step-2",
+      ordinal: 1,
+    };
+    let current = detail(job({ status: "awaiting_user", currentOrdinal: 1, error: failure }), [
+      item(0, "applied"),
+      item(1, "failed", { runId: "run-2", error: failure }),
+      item(2, "pending"),
+    ], ["cancel", "skip_item", "retry_item"]);
+    const actions: Array<Record<string, unknown>> = [];
+    stubApi({
+      current: () => current,
+      onAction: (body) => {
+        actions.push(body);
+        current = detail(job({ status: "running", currentOrdinal: 1 }), [
+          item(0, "applied"),
+          item(1, "pending", { attempt: 2 }),
+          item(2, "pending"),
+        ], ["pause", "cancel", "skip_item"]);
+        return actionResponse(current);
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByRole("heading", { name: "Chapter 2 could not be settled" })).toBeInTheDocument();
+    expect(screen.getByText("Provider request timed out")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View run" })).toHaveAttribute("href", "/projects/p-1/runs?run=run-2");
+    expect(screen.getByRole("button", { name: "Skip chapter" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry chapter" }));
+
+    await waitFor(() => expect(actions).toEqual([{ requestId: expect.any(String), action: "retry_item", ordinal: 1 }]));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Retry chapter" })).not.toBeInTheDocument());
+  });
+
+  it("paused state resumes, and cancelling asks for confirmation", async () => {
+    let current = detail(job({ status: "paused", currentOrdinal: 1 }), [
+      item(0, "applied"),
+      item(1, "pending"),
+      item(2, "pending"),
+    ], ["resume", "cancel", "skip_item"]);
+    const actions: Array<Record<string, unknown>> = [];
+    stubApi({
+      current: () => current,
+      onAction: (body) => {
+        actions.push(body);
+        current =
+          body.action === "cancel"
+            ? detail(job({ status: "cancelled", currentOrdinal: null }), [
+                item(0, "applied"),
+                item(1, "pending"),
+                item(2, "pending"),
+              ])
+            : current;
+        return actionResponse(current);
+      },
+    });
+    renderPanel();
+
+    expect(await screen.findByText("Paused. Progress is saved; resume whenever you're ready.")).toBeInTheDocument();
+    expect(screen.getByText("Paused · 1 of 3 chapters done")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+    await waitFor(() => expect(actions[0]).toEqual({ requestId: expect.any(String), action: "resume" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel completion" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Cancel completing the Story Bible?" });
+    expect(within(dialog).getByText(/Changes already applied stay in the Story Bible/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Yes, cancel" }));
+    expect(await screen.findByRole("heading", { name: "Story Bible completion was cancelled" })).toBeInTheDocument();
+    expect(actions[1]).toEqual({ requestId: expect.any(String), action: "cancel" });
+  });
+
+  it("completed state summarizes counts and points to the AI candidate panels", async () => {
+    stubApi({
+      current: () =>
+        detail(job({ status: "completed", currentOrdinal: null }), [
+          item(0, "applied"),
+          item(1, "empty"),
+          item(2, "skipped", { skipReason: "already_settled" }),
+        ]),
+    });
+    const onOpen = vi.fn();
+    renderPanel({ onOpen });
+
+    expect(await screen.findByRole("heading", { name: "Story Bible completion finished" })).toBeInTheDocument();
+    expect(screen.getByText("Completed · 3 chapters")).toBeInTheDocument();
+    const results = screen.getByLabelText("Results");
+    expect(within(results).getByText("Applied").nextSibling).toHaveTextContent("1");
+    expect(within(results).getByText("No changes").nextSibling).toHaveTextContent("1");
+    expect(within(results).getByText("Skipped").nextSibling).toHaveTextContent("1");
+    expect(screen.getByRole("heading", { name: "Fill in the rest of the Story Bible" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Suggest Entities with AI" }));
+    expect(onOpen).toHaveBeenCalledWith("entities");
+    expect(screen.getByRole("button", { name: "Run again" })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Chapter progress · 3"));
+    expect(screen.getByText("Already settled")).toBeInTheDocument();
+  });
+
+  it("refetches progress when a bible_backfill.status event arrives", async () => {
+    vi.stubGlobal("EventSource", EventSourceStub);
+    let current = detail(job({ currentOrdinal: 0 }), [
+      item(0, "settling", { runId: "run-1" }),
+      item(1, "pending"),
+    ], ["pause", "cancel"]);
+    stubApi({ current: () => current });
+    renderPanel();
+
+    expect(await screen.findByText("Reading chapter 1 of 2: Chapter One")).toBeInTheDocument();
+    current = detail(job({ currentOrdinal: 1 }), [
+      item(0, "empty"),
+      item(1, "settling", { runId: "run-2" }),
+    ], ["pause", "cancel"]);
+    act(() => {
+      EventSourceStub.current?.emit("bible_backfill.status", {
+        type: "bible_backfill.status",
+        projectId: "p-1",
+        jobId: "job-1",
+        status: "running",
+        action: "item.empty",
+      });
+    });
+    expect(await screen.findByText("Reading chapter 2 of 2: Chapter Two")).toBeInTheDocument();
+  });
+
+  it("stays collapsed for projects that never ran it without chapter manuscripts", async () => {
+    stubApi({ current: () => EMPTY });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <BibleBackfillPanel
+            projectId="p-1"
+            bible={{ ...BIBLE, documents: [] }}
+            onOpenCandidateDesk={() => undefined}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Not started")).toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /Show/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "Start" })).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByText("It will process every imported chapter that has manuscript text.")).toBeInTheDocument();
+  });
+});
+
+describe("Story Bible workspace", () => {
+  it("opens the completion panel from ?backfill=open and switches to a section's AI candidate panel", async () => {
+    stubApi({
+      current: () =>
+        detail(job({ status: "completed", currentOrdinal: null }), [item(0, "applied")]),
+      extra: (url) => {
+        if (url === "/api/projects/p-1/story-bible") return json(BIBLE);
+        if (url === "/api/projects/p-1/runs") return json([]);
+        if (url.includes("/canon-spreads/") && url.endsWith("/candidates")) return json([]);
+        return null;
+      },
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/projects/p-1/bible?spread=outline&view=board&backfill=open"]}>
+          <Routes>
+            <Route path="/projects/:projectId/bible" element={<BibleWorkspace />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const heading = await screen.findByRole("heading", { name: "Complete Story Bible from manuscript" });
+    await waitFor(() => expect(heading).toHaveFocus());
+    fireEvent.click(await screen.findByRole("button", { name: "Suggest Intent with AI" }));
+    expect(screen.getByRole("button", { name: "View Intent" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Canon edit instruction" })).toHaveFocus(),
+    );
+  });
+});

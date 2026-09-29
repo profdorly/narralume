@@ -51,6 +51,15 @@ export interface ServerEventHandlers {
     eventType: string,
     payload: Record<string, unknown>,
   ) => void;
+  /** 「从正文补全故事圣经」协调器每次状态迁移。 */
+  onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
+}
+
+export interface BibleBackfillStatusEvent {
+  projectId: string;
+  jobId: string;
+  status: string;
+  action: string;
 }
 
 /**
@@ -81,6 +90,13 @@ export function subscribeServerEvents(handlers: ServerEventHandlers): () => void
         parsed.eventType,
         parsed.payload,
       );
+    if (parsed.type === "bible_backfill.status")
+      handlers.onBibleBackfillStatus?.({
+        projectId: parsed.projectId,
+        jobId: parsed.jobId,
+        status: parsed.status,
+        action: parsed.action,
+      });
   };
 
   const bindKernel = () => {
@@ -104,6 +120,7 @@ export function subscribeServerEvents(handlers: ServerEventHandlers): () => void
     source.addEventListener("model.event", forward as EventListener);
     source.addEventListener("run.status", forward as EventListener);
     source.addEventListener("run.event", forward as EventListener);
+    source.addEventListener("bible_backfill.status", forward as EventListener);
   };
 
   const initial = readDriverOverride() ?? currentDriverMode();
@@ -141,6 +158,8 @@ export function useServerEvents(
         ref.current.onRunStatus?.(runId, status),
       onRunEvent: (runId, stepId, sequence, eventType, payload) =>
         ref.current.onRunEvent?.(runId, stepId, sequence, eventType, payload),
+      onBibleBackfillStatus: (event) =>
+        ref.current.onBibleBackfillStatus?.(event),
     });
   }, [enabled]);
 }

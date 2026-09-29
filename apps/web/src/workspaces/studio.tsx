@@ -25,13 +25,11 @@ import { ProjectRequiredState } from "../components/project-required-state";
 import { Skeleton } from "../components/skeleton";
 import {
   appendDocumentVersion,
-  ApiError,
   createChapterRun,
   createDocumentReview,
   createDocumentComment,
   createSelectionEdit,
   createStoryDocument,
-  decideCanonChangeSet,
   decideEditProposal,
   decideReviewIssue,
   decideRevisionProposal,
@@ -47,7 +45,6 @@ import {
   saveDocumentDraft,
   setStoryDocumentArchived,
   setDocumentCommentStatus,
-  type CanonChangeSetView,
   type DocumentComment,
   type DocumentDraft,
   type DocumentVersion,
@@ -74,6 +71,7 @@ import { useServerEvents } from "../lib/sse";
 import { rememberTask, rememberedTasks } from "../lib/task-ledger";
 import { CoCreateWorkspace } from "./studio/cocreate";
 import { WritingTaskPanel } from "./studio/task-panel";
+import { CanonChangeSetReview } from "./shared/canon-change-review";
 
 type CreateDocumentInput = {
   kind: StoryDocument["kind"];
@@ -908,8 +906,6 @@ function RevisionProposalPanel({ projectId, activeDocumentId }: { projectId: str
 
 function CanonChangesPanel({ projectId, document, versions }: { projectId: string; document: StoryDocument; versions: DocumentVersion[] }) {
   const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const [forceTarget, setForceTarget] = useState<CanonChangeSetView | null>(null);
   const query = useQuery({
     queryKey: ["project", projectId, "canon-change-sets"],
     queryFn: ({ signal }) => getCanonChangeSets(projectId, signal),
@@ -921,21 +917,6 @@ function CanonChangesPanel({ projectId, document, versions }: { projectId: strin
   const storyQuery = useQuery({
     queryKey: ["project", projectId, "story-bible"],
     queryFn: ({ signal }) => getStoryBible(projectId, signal),
-  });
-  const mutation = useMutation({
-    mutationFn: (input: { set: CanonChangeSetView; action: "apply" | "reject"; conflictPolicy?: "reject" | "force" }) =>
-      decideCanonChangeSet(projectId, input.set.id, {
-        action: input.action,
-        expectedStatus: "candidate",
-        conflictPolicy: input.conflictPolicy ?? "reject",
-      }),
-    onSuccess: () => {
-      setForceTarget(null);
-      void queryClient.invalidateQueries({ queryKey: ["project", projectId, "canon-change-sets"] });
-      void queryClient.invalidateQueries({ queryKey: ["project", projectId, "runs"] });
-      void queryClient.invalidateQueries({ queryKey: ["project", projectId, "overview"] });
-      void queryClient.invalidateQueries({ queryKey: ["project", projectId, "autopilot"] });
-    },
   });
   const relatedRunIds = new Set((runsQuery.data ?? [])
     .filter((run) => document.outlineNodeId && run.targetOutlineNodeId === document.outlineNodeId)
@@ -951,7 +932,6 @@ function CanonChangesPanel({ projectId, document, versions }: { projectId: strin
     run.recipe === "manual-settlement" && runOriginDocumentId(run.policy) === document.id);
   const activeSettlement = settlementRuns.find((run) => !TERMINAL_RUN_STATUSES.has(run.status));
   const failedSettlement = [...settlementRuns].reverse().find((run) => run.status === "failed");
-  const conflict = settlementConflictDetails(mutation.error);
   if (query.isPending || runsQuery.isPending) return <Panel title={t("studio.canon.title")} count={0}><Skeleton lines={2} /></Panel>;
   return <Panel title={t("studio.canon.title")} count={sets.length}>
     {query.isError || runsQuery.isError ? <ErrorNote error={query.error ?? runsQuery.error} title={t("studio.errors.canonLoad")} /> : <>
@@ -961,61 +941,10 @@ function CanonChangesPanel({ projectId, document, versions }: { projectId: strin
           <p className="studio__panel-empty">{t("studio.canon.empty")}</p>
         ) : sets.length > 0 ? <>
         <p className="studio__section-intro">{t("studio.canon.intro")}</p>
-        {sets.map((set) => {
-          const items = canonChangeItems(set.changes, entityNames);
-          return (
-          <article key={set.id} className="studio__proposal" data-status={set.status}>
-            <strong>{canonSummary(set.changes) ?? t("studio.canon.fallbackSummary")}</strong>
-            {items.length > 0 ? <ul className="studio__canon-items">{items.map((item, index) => <li key={`${item.label}-${index}`}><span>{item.label}</span><p>{item.text}</p></li>)}</ul> : <p className="studio__panel-empty">{t("studio.canon.noItems")}</p>}
-            <small>{set.createdAt.slice(0, 16)}</small>
-            {set.status === "candidate" ? (
-              <div className="studio__proposal-actions">
-                <button type="button" className="btn btn--primary" disabled={mutation.isPending} onClick={() => mutation.mutate({ set, action: "apply" })}>{t("studio.canon.apply")}</button>
-                {conflict?.forceAllowed && mutation.variables?.set.id === set.id ? <button type="button" className="btn" disabled={mutation.isPending} onClick={() => setForceTarget(set)}>{t("studio.canon.forceApply")}</button> : null}
-                <button type="button" className="btn" disabled={mutation.isPending} onClick={() => mutation.mutate({ set, action: "reject" })}>{t("studio.canon.defer")}</button>
-              </div>
-            ) : null}
-          </article>
-        );})}
-        {mutation.isError ? conflict ? <div className="studio__settlement-status" data-tone="failed" role="alert"><strong>{t("studio.canon.conflictTitle")}</strong><ul>{conflict.conflicts.map((item, index) => <li key={`${item.path}-${index}`}>{settlementConflictLabel(item.reason)} · {item.path}{item.existingIds.length > 0 ? ` · ${t("studio.canon.conflictRecords", { ids: item.existingIds.join(", ") })}` : ""}</li>)}</ul>{conflict.forceAllowed ? <p>{t("studio.canon.conflictForceable")}</p> : <p>{t("studio.canon.conflictNotForceable")}</p>}</div> : <ErrorNote error={mutation.error} title={t("studio.errors.canonDecideFailed")} /> : null}
+        <CanonChangeSetReview projectId={projectId} sets={sets} entityNames={entityNames} />
       </> : null}
       </>}
-    {forceTarget ? <ConfirmDialog title={t("studio.canon.forceTitle")} confirmLabel={t("studio.canon.forceConfirm")} danger pending={mutation.isPending} onCancel={() => setForceTarget(null)} onConfirm={() => mutation.mutate({ set: forceTarget, action: "apply", conflictPolicy: "force" })}><p>{t("studio.canon.forceBody")}</p></ConfirmDialog> : null}
   </Panel>;
-}
-
-interface SettlementConflictDetails {
-  conflicts: Array<{ path: string; existingIds: string[]; reason: string }>;
-  forceAllowed: boolean;
-}
-
-function settlementConflictDetails(error: unknown): SettlementConflictDetails | null {
-  if (!(error instanceof ApiError) || error.code !== "settlement.conflict") return null;
-  const details = error.details;
-  if (!isUnknownRecord(details) || !Array.isArray(details.conflicts) || typeof details.forceAllowed !== "boolean") return null;
-  const conflicts = details.conflicts.filter(isUnknownRecord).flatMap((item) =>
-    typeof item.path === "string" && typeof item.reason === "string" && Array.isArray(item.existingIds)
-      ? [{ path: item.path, reason: item.reason, existingIds: item.existingIds.filter((id): id is string => typeof id === "string") }]
-      : [],
-  );
-  return { conflicts, forceAllowed: details.forceAllowed };
-}
-
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
-function settlementConflictLabel(reason: string): string {
-  const keys: Record<string, MessageKey> = {
-    target_locked: "studio.canon.reason.targetLocked",
-    status_changed: "studio.canon.reason.statusChanged",
-    target_not_current: "studio.canon.reason.targetNotCurrent",
-    target_slot_mismatch: "studio.canon.reason.targetSlotMismatch",
-    target_not_found: "studio.canon.reason.targetNotFound",
-    target_pair_mismatch: "studio.canon.reason.targetPairMismatch",
-  };
-  const messageKey = keys[reason];
-  return messageKey ? translate(getLocale(), messageKey) : reason;
 }
 
 function CommentPanel({ comments, pending, onToggle }: { comments: DocumentComment[]; pending: boolean; onToggle: (comment: DocumentComment) => void }) { const { t } = useI18n(); return <Panel title={t("studio.comments.title")} count={comments.length}>{comments.length === 0 ? <p className="studio__panel-empty">{t("studio.comments.empty")}</p> : comments.map((comment) => <article key={comment.id} className="studio__pin"><span className="studio__pin-state" data-s={comment.status}>{comment.status === "open" ? t("studio.comments.open") : t("studio.comments.resolved")}</span><blockquote>{comment.quote}</blockquote><p>{comment.body}</p><small>{t("studio.comments.position", { start: comment.startOffset, end: comment.endOffset })}</small><button type="button" className="btn" disabled={pending} onClick={() => onToggle(comment)}>{comment.status === "open" ? t("studio.comments.markResolved") : t("studio.comments.reopen")}</button></article>)}</Panel>; }
@@ -1087,46 +1016,6 @@ function runOriginDocumentId(policy: unknown): string | null {
   if (!origin || typeof origin !== "object") return null;
   const documentId = (origin as Record<string, unknown>).documentId;
   return typeof documentId === "string" ? documentId : null;
-}
-
-function canonSummary(changes: Record<string, unknown>): string | null {
-  return typeof changes.summary === "string" && changes.summary.trim() ? changes.summary : null;
-}
-
-function canonChangeItems(
-  changes: Record<string, unknown>,
-  entityNames: Map<string, string>,
-): Array<{ label: string; text: string }> {
-  const locale = getLocale();
-  const rows: Array<{ label: string; text: string }> = [];
-  const records = (key: string) => Array.isArray(changes[key])
-    ? (changes[key] as unknown[]).filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
-    : [];
-  const text = (record: Record<string, unknown>, key: string) => typeof record[key] === "string" ? record[key] : "";
-  const entity = (id: string) => entityNames.get(id) ?? translate(locale, "studio.canon.unknownEntity");
-  for (const item of records("stateDelta")) {
-    rows.push({ label: translate(locale, "studio.canon.itemLabel.stateDelta"), text: translate(locale, "studio.canon.stateDeltaText", { key: text(item, "key"), before: text(item, "before") || translate(locale, "studio.canon.noPriorRecord"), after: text(item, "after") }) });
-  }
-  for (const item of records("factCandidates")) {
-    const value = item.value === null || item.value === undefined ? translate(locale, "studio.canon.factNoLongerHolds") : String(item.value);
-    rows.push({ label: translate(locale, "studio.canon.itemLabel.fact"), text: translate(locale, "studio.canon.factText", { entity: entity(text(item, "subjectId")), predicate: text(item, "predicate"), value }) });
-  }
-  for (const item of records("timelineCandidates")) {
-    rows.push({ label: translate(locale, "studio.canon.itemLabel.timeline"), text: [text(item, "title"), text(item, "storyTime"), text(item, "description")].filter(Boolean).join(" · ") });
-  }
-  for (const item of records("relationshipCandidates")) {
-    rows.push({ label: translate(locale, "studio.canon.itemLabel.relationship"), text: translate(locale, "studio.canon.relationshipText", { from: entity(text(item, "fromEntityId")), to: entity(text(item, "toEntityId")), relation: text(item, "relation"), change: text(item, "change") }) });
-  }
-  for (const item of records("foreshadowCandidates")) {
-    const actionKeys: Record<string, MessageKey> = {
-      plant: "studio.canon.foreshadowAction.plant",
-      develop: "studio.canon.foreshadowAction.develop",
-      resolve: "studio.canon.foreshadowAction.resolve",
-    };
-    const action = translate(locale, actionKeys[text(item, "action")] ?? "studio.canon.foreshadowAction.fallback");
-    rows.push({ label: translate(locale, "studio.canon.itemLabel.foreshadow"), text: translate(locale, "studio.canon.foreshadowText", { action, title: text(item, "title") }) });
-  }
-  return rows.filter((row) => row.text.replace(/[：:；；·「」]/g, "").trim());
 }
 
 /* ---- 高亮：把正文中的证据句提警出框（与旧审稿室同一手势） --------------------- */
