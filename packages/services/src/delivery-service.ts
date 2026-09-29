@@ -1436,6 +1436,7 @@ export class DeliveryService {
       projectId,
       root.id,
     ).length;
+    const labels = importNoteLabels(this.projects.get(projectId)!.language);
     for (const candidate of candidates) {
       if (candidate.kind === "document") {
         const title =
@@ -1574,7 +1575,9 @@ export class DeliveryService {
             projectId,
             fromEntityId: from.id,
             toEntityId: to.id,
-            relation: stringField(candidate.payload, "relation") ?? "关联",
+            relation:
+              stringField(candidate.payload, "relation") ??
+              labels.defaultRelation,
             intensity: null,
             state: {
               description: stringField(candidate.payload, "description"),
@@ -1641,7 +1644,7 @@ export class DeliveryService {
         );
         this.documents.appendVersion(projectId, document.id, {
           id: randomUuid(),
-          content: renderAnalysisCandidate(candidate),
+          content: renderAnalysisCandidate(candidate, labels),
           source: `import-analysis:${candidate.id}`,
           expectedCurrentVersionId: null,
           now,
@@ -3248,7 +3251,27 @@ function entityByImportedName(
   );
 }
 
-function renderAnalysisCandidate(candidate: ImportCandidate): string {
+/** 导入落库时生成的说明文字跟随作品创作语言；与 promptLanguageOf 一致，非 en 一律按中文。 */
+function importNoteLabels(language: string) {
+  return language === "en"
+    ? {
+        defaultRelation: "related",
+        evidence: "Source evidence",
+        position: "Position: ",
+        contentHash: "Content hash: ",
+      }
+    : {
+        defaultRelation: "关联",
+        evidence: "原文证据",
+        position: "位置：",
+        contentHash: "正文哈希：",
+      };
+}
+
+function renderAnalysisCandidate(
+  candidate: ImportCandidate,
+  labels: ReturnType<typeof importNoteLabels>,
+): string {
   const evidence = Array.isArray(candidate.payload.evidence)
     ? candidate.payload.evidence.filter(
         (item): item is Record<string, unknown> =>
@@ -3261,11 +3284,11 @@ function renderAnalysisCandidate(candidate: ImportCandidate): string {
       .filter(([key, value]) => key !== "evidence" && typeof value === "string")
       .map(([key, value]) => `- ${key}: ${String(value)}`),
     "",
-    "## 原文证据",
+    `## ${labels.evidence}`,
     ...evidence.flatMap((item) => [
       `[P${String(item.paragraphOrdinal ?? "?")}] ${String(item.quote ?? "")}`,
-      `位置：${String(item.start ?? "?")}–${String(item.end ?? "?")}`,
-      `正文哈希：${String(item.contentHash ?? "")}`,
+      `${labels.position}${String(item.start ?? "?")}–${String(item.end ?? "?")}`,
+      `${labels.contentHash}${String(item.contentHash ?? "")}`,
     ]),
   ].join("\n");
 }

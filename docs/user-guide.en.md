@@ -67,7 +67,7 @@ Prose is split into chapters at recognized headings:
 - Portuguese, Spanish, or English headings on a line of their own, up to 80 characters: `Capítulo`, `Chapter`, `Parte`, `Part`, `Livro`, `Libro`, or `Book` followed by a number (digits, Roman numerals such as `II`, or spelled-out numbers such as `Um`, `Três`, `One`, `Twenty-One`); `Prólogo`, `Prologue`, `Epílogo`, `Epilogue`, `Interlúdio`, and `Interlude` may appear without a number. A title may follow the number after `:`, `.`, `-`, `–`, `—`, or a space, for example `CAPÍTULO II — O Retorno`.
 - DOCX paragraphs using the Title or Heading 1–3 styles (including the same built-in styles in localized Word, such as Portuguese "Título 1") or outline levels 1–3; `h1` to `h3` in HTML and EPUB.
 
-Text before the first heading (title page, epigraph, and similar) becomes its own section named after the work; when no heading is recognized, the whole text is imported as one manuscript.
+Text before the first heading (title page, epigraph, and similar) becomes its own section named after the work; when no heading is recognized, the whole text is imported as one manuscript. AI analysis writes its candidates in the manuscript's own language.
 
 ### Covers, duplication, and archive
 

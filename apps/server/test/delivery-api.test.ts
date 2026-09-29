@@ -865,6 +865,77 @@ describe("delivery API", () => {
     }
   });
 
+  it("labels staged analysis and imported notes in the English project language", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "Tide Letters",
+        language: "en",
+      },
+    );
+    const preview = await previewImport(
+      app,
+      "tide.md",
+      "markdown",
+      [
+        "# 第一章 退潮信",
+        "沈砚在邮局地板上发现一封覆着盐粒的空白信。",
+        "",
+        "# 第二章 无名地址",
+        "她把信举到灯前，收件人的名字才从纸纤维里浮出。",
+      ].join("\n"),
+      project.id,
+    );
+    const analysis = await request<{ run: { id: string } }>(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/analyze`,
+      { requestId: "analyze-en", policy: { maxRetries: 0 } },
+      202,
+    );
+    expect(await finishRun(app, project.id, analysis.run.id)).toBe("completed");
+    const ready = await request<ImportDetail>(
+      app,
+      "GET",
+      `/api/imports/${preview.batch.id}`,
+      undefined,
+      200,
+    );
+    expect(ready.candidates.map((item) => item.title)).toEqual(
+      expect.arrayContaining([
+        "Author intent candidate",
+        "沈砚 · Character arc",
+      ]),
+    );
+    await request(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    const documents = await request<{ id: string; title: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents`,
+    );
+    const arc = documents.find(
+      (document) => document.title === "沈砚 · Character arc",
+    );
+    const versions = await request<{ content: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents/${arc!.id}/versions`,
+    );
+    expect(versions[0]!.content).toContain("## Source evidence");
+    expect(versions[0]!.content).toContain("Content hash: ");
+    expect(versions[0]!.content).not.toContain("原文证据");
+  });
+
   it("reports quality and exports a 200-document manuscript within the delivery budget", async () => {
     const { app, database } = await setup();
     const project = await request<{ id: string }>(

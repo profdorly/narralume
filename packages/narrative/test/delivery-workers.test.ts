@@ -177,6 +177,117 @@ describe("DeliveryWorkerSuite", () => {
     ).toBeGreaterThan(27_000);
   });
 
+  it.each([
+    {
+      language: "zh-CN",
+      invariant: "必须使用与原文正文相同的语言书写",
+      synthesisInvariant: "保持与输入分析相同的原文语言",
+      scaffold: ["目标作品：《Long Import》", "分段 1/3", "正文：\n"],
+      foreign: "Target work:",
+      intentTitle: "作者意图候选",
+      arcTitle: "Rita · 角色弧",
+    },
+    {
+      language: "en",
+      invariant: "in the same language as the source manuscript text",
+      synthesisInvariant: "in the same source-manuscript language",
+      scaffold: [
+        'Target work: "Long Import"',
+        "Segment 1/3",
+        "Manuscript text:\n",
+      ],
+      foreign: "目标作品",
+      intentTitle: "Author intent candidate",
+      arcTitle: "Rita · Character arc",
+    },
+  ])(
+    "keeps import analysis in the manuscript language for $language projects",
+    async ({
+      language,
+      invariant,
+      synthesisInvariant,
+      scaffold,
+      foreign,
+      intentTitle,
+      arcTitle,
+    }) => {
+      database.raw
+        .prepare("UPDATE projects SET language = ? WHERE id = ?")
+        .run(language, "p1");
+      const requests = new Map<
+        string,
+        { instructions: string; content: string }
+      >();
+      const model: NarrativeModelClient = {
+        async text() {
+          throw new Error("unused");
+        },
+        structured: vi.fn(
+          async (_run, _step, purpose, request, _contract, validate) => {
+            requests.set(purpose, {
+              instructions: String(request.instructions),
+              content: String(request.messages[0]?.content),
+            });
+            const checked = validate({
+              ...minimalAnalysis(),
+              characterArcs: purpose.startsWith("import-analysis-synthesis")
+                ? [
+                    {
+                      characterName: "Rita",
+                      startState: "Espera no cais.",
+                      turningPoint: "Recebe a carta.",
+                      direction: "Parte para o mar.",
+                      evidenceParagraphs: [1],
+                    },
+                  ]
+                : [],
+            });
+            if (!checked.success) throw new Error(checked.issues.join("; "));
+            return {
+              value: checked.data,
+              usage: {
+                inputTokens: 10,
+                outputTokens: 10,
+                calls: 1,
+                costUsd: 0,
+                wallTimeMs: 5,
+              },
+              mode: "native" as const,
+              attempts: 1,
+            };
+          },
+        ),
+      };
+      const supervisor = new HarnessSupervisor(
+        runs,
+        new DeliveryWorkerSuite(
+          database,
+          model,
+          () => new Date(now),
+        ).registry(),
+        { now: () => new Date(now), retryDelayMs: 0 },
+      );
+      for (let index = 0; index < 5; index += 1) {
+        await supervisor.processRun("run-1", "worker");
+        if (runs.getRun("run-1")?.status === "completed") break;
+      }
+      expect(runs.getRun("run-1")?.status).toBe("completed");
+
+      const chunk = requests.get("import-analysis-chunk-1")!;
+      expect(chunk.instructions).toContain(invariant);
+      for (const part of scaffold) expect(chunk.content).toContain(part);
+      expect(chunk.content).not.toContain(foreign);
+      expect(
+        requests.get("import-analysis-synthesis-1")!.instructions,
+      ).toContain(synthesisInvariant);
+
+      const titles = delivery
+        .listImportCandidates("batch-1")
+        .map((candidate) => candidate.title);
+      expect(titles).toEqual(expect.arrayContaining([intentTitle, arcTitle]));
+    },
+  );
+
   it("distills a writing sample into an inactive draft profile with a deduped name", async () => {
     delivery.insertStyleProfile({
       id: "style-existing",
