@@ -71,6 +71,42 @@ export class ModelError extends Error {
   }
 }
 
+/**
+ * True when the provider rejected the request because the model does not
+ * accept sampling parameters (temperature/top_p), e.g. OpenAI reasoning
+ * models with a reasoning effort other than "none".
+ */
+export function isSamplingParameterUnsupportedError(error: unknown): boolean {
+  const message = invalidRequestMessage(error);
+  if (message === null) return false;
+  return (
+    rejectsParameter(message) &&
+    (message.includes("temperature") || message.includes("top_p"))
+  );
+}
+
+/**
+ * True when the provider rejected the Chat Completions `max_tokens` field,
+ * e.g. OpenAI reasoning models that require `max_completion_tokens`.
+ */
+export function isMaxTokensUnsupportedError(error: unknown): boolean {
+  const message = invalidRequestMessage(error);
+  if (message === null || !message.includes("max_tokens")) return false;
+  return message.includes("max_completion_tokens") || rejectsParameter(message);
+}
+
+function invalidRequestMessage(error: unknown): string | null {
+  return error instanceof ModelError && error.category === "invalid_request"
+    ? error.message.toLowerCase()
+    : null;
+}
+
+function rejectsParameter(lowerMessage: string): boolean {
+  return (
+    lowerMessage.includes("unsupported") || lowerMessage.includes("not support")
+  );
+}
+
 export function scrubSecrets(input: string): string {
   let result = input;
   result = result.replace(SECRET_PATTERNS[0], "[REDACTED_KEY]");

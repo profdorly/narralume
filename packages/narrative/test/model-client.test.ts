@@ -36,6 +36,7 @@ function seedAssignment(
     maxOutputTokens?: number | null;
     providerEnabled?: boolean;
     modelEnabled?: boolean;
+    capabilities?: Record<string, boolean>;
   } = {},
 ): void {
   const role = input.role ?? "writing";
@@ -67,7 +68,7 @@ function seedAssignment(
     maxOutputTokens:
       input.maxOutputTokens === undefined ? 32_000 : input.maxOutputTokens,
     sampling: { temperature: 0.4 },
-    capabilities: {},
+    capabilities: input.capabilities ?? {},
     enabled: input.modelEnabled ?? true,
     createdAt: NOW,
     updatedAt: NOW,
@@ -251,6 +252,221 @@ describe("GatewayNarrativeModelClient B1 assignment runtime", () => {
     expect(requests[0]).toMatchObject({ max_tokens: 12_000 });
     database.close();
   });
+
+  it("omits temperature and top_p for models probed as rejecting sampling parameters", async () => {
+    const database = new NodeNarrativeDatabase();
+    database.migrate();
+    seedAssignment(database, { capabilities: { samplingParameters: false } });
+    const { runs, step } = createRun(database, "run-no-sampling");
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        requests.push(body);
+        return chatResponse(
+          "response_format" in body ||
+            JSON.stringify(body.messages).includes("JSON")
+            ? '{"ok":true}'
+            : "推理模型续写",
+        );
+      }),
+    );
+    const client = new GatewayNarrativeModelClient(database, {});
+    const run = runs.getRun("run-no-sampling")!;
+
+    const result = await client.text(
+      run,
+      step,
+      "chapter-draft",
+      {
+        messages: [{ role: "user", content: "继续" }],
+        temperature: 0.82,
+        topP: 0.9,
+        reasoningEffort: "low",
+      },
+      new AbortController().signal,
+    );
+    await client.structured(
+      run,
+      step,
+      "chapter-review",
+      {
+        messages: [{ role: "user", content: "审稿" }],
+        temperature: 0.2,
+        reasoningEffort: "low",
+      },
+      {
+        name: "probe",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          required: ["ok"],
+          properties: { ok: { type: "boolean" } },
+        },
+      },
+      (value) =>
+        (value as { ok?: unknown }).ok === true
+          ? { success: true as const, data: value }
+          : { success: false as const, issues: ["ok must be true"] },
+      new AbortController().signal,
+    );
+
+    expect(result.text).toBe("推理模型续写");
+    expect(requests).toHaveLength(2);
+    for (const body of requests) {
+      expect(body).not.toHaveProperty("temperature");
+      expect(body).not.toHaveProperty("top_p");
+      expect(body).toMatchObject({ reasoning_effort: "low" });
+    }
+    const applied = database.raw
+      .prepare(
+        "SELECT applied_json FROM model_assignment_snapshots WHERE run_id = ? AND purpose = ?",
+      )
+      .get("run-no-sampling", "chapter-draft") as { applied_json: string };
+    expect(JSON.parse(applied.applied_json)).toMatchObject({
+      sampling: { reasoningEffort: "low" },
+      capabilities: { samplingParameters: false },
+    });
+    expect(JSON.parse(applied.applied_json).sampling).not.toHaveProperty(
+      "temperature",
+    );
+    database.close();
+  });
+
+  it("keeps sampling parameters while the capability is unknown", async () => {
+    const database = new NodeNarrativeDatabase();
+    database.migrate();
+    seedAssignment(database);
+    const { runs, step } = createRun(database, "run-sampling-unknown");
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        requests.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>,
+        );
+        return chatResponse();
+      }),
+    );
+    const client = new GatewayNarrativeModelClient(database, {});
+
+    await client.text(
+      runs.getRun("run-sampling-unknown")!,
+      step,
+      "chapter-draft",
+      { messages: [{ role: "user", content: "继续" }], topP: 0.9 },
+      new AbortController().signal,
+    );
+    await client.text(
+      runs.getRun("run-sampling-unknown")!,
+      step,
+      "chapter-review",
+      {
+        messages: [{ role: "user", content: "审稿" }],
+        temperature: 0.65,
+      },
+      new AbortController().signal,
+    );
+
+    // The model default (0.4) applies unless the worker overrides it.
+    expect(requests[0]).toMatchObject({
+      temperature: 0.4,
+      top_p: 0.9,
+      max_tokens: 32_000,
+    });
+    expect(requests[1]).toMatchObject({ temperature: 0.65 });
+    expect(requests[1]).not.toHaveProperty("max_completion_tokens");
+    database.close();
+  });
+
+  it("sends max_completion_tokens for Chat Completions models probed as requiring it", async () => {
+    const database = new NodeNarrativeDatabase();
+    database.migrate();
+    seedAssignment(database, {
+      capabilities: { samplingParameters: true, maxCompletionTokens: true },
+    });
+    const { runs, step } = createRun(database, "run-completion-tokens");
+    const requests: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        requests.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>,
+        );
+        return chatResponse();
+      }),
+    );
+
+    await new GatewayNarrativeModelClient(database, {}).text(
+      runs.getRun("run-completion-tokens")!,
+      step,
+      "chapter-draft",
+      {
+        messages: [{ role: "user", content: "继续" }],
+        maxOutputTokens: 8_000,
+      },
+      new AbortController().signal,
+    );
+
+    expect(requests[0]).toMatchObject({
+      max_completion_tokens: 8_000,
+      temperature: 0.4,
+    });
+    expect(requests[0]).not.toHaveProperty("max_tokens");
+    database.close();
+  });
+
+  it.each([
+    [
+      "sampling_parameters_unsupported",
+      "Unsupported parameter: 'temperature' is not supported with this model.",
+      "rejects temperature/top_p",
+    ],
+    [
+      "max_tokens_unsupported",
+      "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.",
+      "requires max_completion_tokens",
+    ],
+  ])(
+    "points unprobed request constraints at the connection probe without retrying (%s)",
+    async (requestConstraint, providerMessage, hint) => {
+      const database = new NodeNarrativeDatabase();
+      database.migrate();
+      seedAssignment(database);
+      const { runs, step } = createRun(database, `run-${requestConstraint}`);
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                message: providerMessage,
+                type: "invalid_request_error",
+              },
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          ),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(
+        new GatewayNarrativeModelClient(database, {}).text(
+          runs.getRun(`run-${requestConstraint}`)!,
+          step,
+          "chapter-draft",
+          { messages: [{ role: "user", content: "继续" }] },
+          new AbortController().signal,
+        ),
+      ).rejects.toMatchObject({
+        code: "model.invalid_request",
+        retryable: false,
+        message: expect.stringContaining(`${hint}; run Probe on it`),
+        details: { requestConstraint },
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      database.close();
+    },
+  );
 
   it.each([
     [32_000, 32_000],
