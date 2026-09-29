@@ -1029,6 +1029,15 @@ function FinishedState({
         ))}
       </dl>
       <UsageLine usage={detail.usage} final />
+      {/* 导入时抽取、补全过程中没有哪一章锚定的时间线事件：明确告诉作者还剩多少。 */}
+      {detail.unanchoredImportedEvents > 0 ? (
+        <p className="bible-backfill__note">
+          <CircleAlert size={13} aria-hidden="true" />
+          {t("bible.backfill.finished.unanchoredEvents", {
+            count: detail.unanchoredImportedEvents,
+          })}
+        </p>
+      ) : null}
       {reason ? <StopReasonText reason={reason} /> : null}
       {job.status === "completed" ? (
         <div className="bible-backfill__next">
@@ -1235,6 +1244,7 @@ function toDetail(value: BibleBackfillCreatedDto): BibleBackfillDetailDto {
     counts: value.counts,
     usage: value.usage,
     availableActions: value.availableActions,
+    unanchoredImportedEvents: value.unanchoredImportedEvents,
   };
 }
 
@@ -1286,7 +1296,7 @@ const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
 /** review_required 停机列出的、本章要改动的现有记录。 */
 interface ReviewTarget {
   path: string;
-  action: "withdraw" | "supersede" | "update" | "end" | "develop" | "resolve";
+  action: "withdraw" | "supersede" | "update" | "end" | "anchor" | "develop" | "resolve";
   label: string | null;
   /** 伏笔已回收或已放弃，本章要把它重新打开。 */
   reopens: boolean;
@@ -1297,6 +1307,7 @@ const REVIEW_ACTIONS: Record<ReviewTarget["action"], MessageKey> = {
   supersede: "bible.backfill.attention.reviewAction.supersede",
   update: "bible.backfill.attention.reviewAction.update",
   end: "bible.backfill.attention.reviewAction.end",
+  anchor: "bible.backfill.attention.reviewAction.anchor",
   develop: "bible.backfill.attention.reviewAction.develop",
   resolve: "bible.backfill.attention.reviewAction.resolve",
 };

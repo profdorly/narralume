@@ -154,6 +154,88 @@ describe("chapter settlement fact object contract", () => {
   });
 });
 
+describe("chapter settlement timeline anchoring", () => {
+  const timelineEvent = {
+    title: "Helena chega a Vila do Sal",
+    description: null,
+    storyTime: null,
+    participantIds: [],
+    causeEventIds: [],
+    visibility: "reader",
+    knownBy: [],
+    evidenceParagraphs: [1],
+  };
+
+  it("reads change sets stored before anchoring existed as new events", () => {
+    const stored = GroundedSettlementSchema.parse({
+      ...settlement([]),
+      timelineCandidates: [
+        { ...timelineEvent, evidence: [groundedEvidence("Helena")] },
+      ],
+    });
+    expect(stored.timelineCandidates[0]!.anchorEventId).toBeNull();
+  });
+
+  it("requires model output to state anchorEventId instead of defaulting to a new event", () => {
+    const result = zodValidator(SettlementSchema)({
+      ...settlement([]),
+      timelineCandidates: [timelineEvent],
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.issues.join("\n")).toContain(
+      "timelineCandidates.0.anchorEventId",
+    );
+    expect(
+      SettlementSchema.safeParse({
+        ...settlement([]),
+        timelineCandidates: [{ ...timelineEvent, anchorEventId: null }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("carries an anchor to an existing event through the grounded payload", () => {
+    const anchored = GroundedSettlementSchema.parse({
+      ...settlement([]),
+      timelineCandidates: [
+        {
+          ...timelineEvent,
+          anchorEventId: "imported-arrival",
+          evidence: [groundedEvidence("Helena")],
+        },
+      ],
+    });
+    expect(anchored.timelineCandidates[0]!.anchorEventId).toBe(
+      "imported-arrival",
+    );
+    expect(
+      SettlementSchema.safeParse({
+        ...settlement([]),
+        timelineCandidates: [{ ...timelineEvent, anchorEventId: "" }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("requires the model to state anchorEventId on every timeline item", () => {
+    const schema = SETTLEMENT_CONTRACT.schema as {
+      properties: {
+        timelineCandidates: {
+          items: {
+            required: string[];
+            properties: Record<string, { type: string | string[] }>;
+          };
+        };
+      };
+    };
+    const items = schema.properties.timelineCandidates.items;
+    expect(items.required).toContain("anchorEventId");
+    expect(items.properties.anchorEventId!.type).toEqual(["string", "null"]);
+    expect(Object.keys(items.properties).sort()).toEqual(
+      [...items.required].sort(),
+    );
+  });
+});
+
 function settlement(factCandidates: unknown[]) {
   return {
     summary: "结算摘要",

@@ -78,8 +78,8 @@ function database(): NodeNarrativeDatabase {
 describe("NodeNarrativeDatabase", () => {
   it("applies the B1 migrations idempotently and enforces checksums", () => {
     const db = database();
-    expect(db.currentMigration()).toBe(46);
-    expect(db.migrate()).toBe(46);
+    expect(db.currentMigration()).toBe(47);
+    expect(db.migrate()).toBe(47);
     expect(
       db.raw
         .prepare("SELECT checksum FROM schema_migrations WHERE version = 23")
@@ -284,7 +284,7 @@ describe("NodeNarrativeDatabase", () => {
         project.createdAt,
       );
 
-    expect(db.migrate()).toBe(46);
+    expect(db.migrate()).toBe(47);
     expect(
       db.raw
         .prepare(
@@ -302,7 +302,7 @@ describe("NodeNarrativeDatabase", () => {
       .prepare("UPDATE schema_migrations SET checksum = ? WHERE version = 23")
       .run(MUTATED_MIGRATION_023_CHECKSUM);
 
-    expect(db.migrate()).toBe(46);
+    expect(db.migrate()).toBe(47);
     expect(
       db.raw
         .prepare("SELECT checksum FROM schema_migrations WHERE version = 23")

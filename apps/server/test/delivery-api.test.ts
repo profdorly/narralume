@@ -459,12 +459,21 @@ describe("delivery API", () => {
       intent: { promise: string };
       outline: { kind: string }[];
       entities: { name: string }[];
+      foreshadows: { sourceId: string | null }[];
     }>(app, "GET", `/api/projects/${project.id}/story-bible`, undefined, 200);
     expect(bible.intent.promise).toContain("沈砚");
     expect(
       bible.outline.filter((item) => item.kind === "chapter"),
     ).toHaveLength(2);
     expect(bible.entities.map((entity) => entity.name)).toContain("沈砚");
+    // Imported foreshadows keep the import candidate they came from.
+    const foreshadowCandidateIds = ready.candidates
+      .filter((candidate) => candidate.kind === "foreshadow")
+      .map((candidate) => candidate.id);
+    expect(foreshadowCandidateIds.length).toBeGreaterThan(0);
+    expect(
+      bible.foreshadows.map((foreshadow) => foreshadow.sourceId).sort(),
+    ).toEqual(foreshadowCandidateIds.sort());
 
     const quality = await request<{
       score: number;

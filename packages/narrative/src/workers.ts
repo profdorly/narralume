@@ -21,6 +21,7 @@ import {
   type RunBudgetUsage,
   type RunStepError,
   type RunSnapshot,
+  type TimelineEvent,
 } from "@narralume/domain";
 import type {
   StepExecutionResult,
@@ -44,6 +45,10 @@ import {
 } from "@narralume/persistence";
 
 import type { NarrativeModelClient } from "./model-client.js";
+import {
+  detectManuscriptLanguage,
+  manuscriptLanguageHint,
+} from "./manuscript-language.js";
 import {
   optionalEmbeddings,
   recordEmbeddingDegradation,
@@ -72,6 +77,17 @@ import {
   promptInvariants,
 } from "@narralume/harness";
 import { StoryStatePacketBuilder } from "./story-state-packet.js";
+import {
+  importEvidenceDocuments,
+  importSourceText,
+  type ImportSourceText,
+} from "./import-evidence.js";
+import {
+  selectAnchorableTimeline,
+  unanchoredTimelineBlock,
+  type AnchorableTimeline,
+  type TimelineEvidencePlacement,
+} from "./unanchored-timeline.js";
 import {
   REVIEW_CONTRACT,
   ReviewResultSchema,
@@ -1298,10 +1314,10 @@ export class ChapterWorkerSuite {
           .listCurrentRelationships(snapshot.run.projectId)
           .map((relationship) => [relationship.id, relationship]),
       ),
-      timelineEventIds: new Set(
+      timelineEvents: new Map(
         this.state
           .listTimeline(snapshot.run.projectId)
-          .map((event) => event.id),
+          .map((event) => [event.id, event]),
       ),
       foreshadows: new Map(
         this.state
@@ -1312,6 +1328,14 @@ export class ChapterWorkerSuite {
         this.story.listOutline(snapshot.run.projectId).map((node) => node.id),
       ),
     };
+    // 结算产出跟随章节正文的语言（指令里的语言不变量）；检测出语言时再加一行参考。
+    const languageHint = manuscriptLanguageHint(
+      promptLanguageOf(this.projectLanguage(snapshot.run.projectId)),
+      detectManuscriptLanguage(content),
+    );
+    const referenceExistingStoryState =
+      manual !== null &&
+      snapshot.run.policy.referenceExistingStoryState === true;
     const result = await this.model.structured(
       snapshot.run,
       step,
@@ -1326,13 +1350,24 @@ export class ChapterWorkerSuite {
             role: "user",
             content: [
               `<authoritative-context>${authoritative}</authoritative-context>`,
-              ...(manual &&
-              snapshot.run.policy.referenceExistingStoryState === true
+              ...(referenceExistingStoryState
                 ? [
                     `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId)}</settlement-note>`,
+                    `<unanchored-timeline>${unanchoredTimelineBlock(
+                      this.anchorableTimeline(
+                        snapshot.run.projectId,
+                        manual.outlineNode.id,
+                        [...settlementState.timelineEvents.values()],
+                      ),
+                      entities,
+                      promptLanguageOf(
+                        this.projectLanguage(snapshot.run.projectId),
+                      ),
+                    )}</unanchored-timeline>`,
                   ]
                 : []),
               `<entities>${JSON.stringify(entities.map(({ id, name, type }) => ({ id, name, type })))}</entities>`,
+              ...(languageHint ? [languageHint] : []),
               "<manuscript>",
               locator.render(),
               "</manuscript>",
@@ -1354,6 +1389,7 @@ export class ChapterWorkerSuite {
           entityIds,
           settlementState,
           locator,
+          referenceExistingStoryState,
         ),
       ),
       signal,
@@ -1741,22 +1777,95 @@ export class ChapterWorkerSuite {
   }
 
   /* 「从正文补全故事圣经」逐章结算时的提示：导入时已抽取的关系、时间线、
-     伏笔（尚未锚定章节）已在权威上下文里，应按稳定 ID 引用而不是重复创建。 */
+     伏笔应按稳定 ID 引用而不是重复创建；尚未锚定章节、且导入证据落在本章
+     （或无法定位章节）的时间线事件单独列在 <unanchored-timeline> 中，本章
+     写到的事件按 ID 锚定到本章。锚定规则只出现在这里：普通结算的
+     anchorEventId 一律为 null（校验同样拒绝）。 */
   private existingStoryStateNote(projectId: string): string {
     return instructionsFor(this.projectLanguage(projectId), {
       "zh-CN": [
         "这一章来自导入的已完成正文，正在按章节顺序补全故事圣经。",
-        "导入时已经抽取了人物关系、时间线事件和伏笔，它们出现在权威上下文中，但还没有锚定到具体章节。",
-        "本章正文涉及这些已有条目时，请按它们的稳定 ID 引用：关系用 update/end，时间线事件作为 causeEventIds 引用，伏笔用 develop/resolve；不要为同一件事再 start/plant 一条新的。",
-        "只有本章引入了权威上下文中确实不存在的关系、事件或伏笔时才新建。",
+        "导入时已经抽取了人物关系、时间线事件和伏笔，但它们还没有锚定到具体章节。关系与伏笔出现在权威上下文中；导入证据落在本章、或无法定位到章节的未锚定时间线事件列在 <unanchored-timeline> 中。",
+        "本章正文涉及这些已有条目时，请按它们的稳定 ID 引用：关系用 update/end，伏笔用 develop/resolve；本章写到的正是 <unanchored-timeline> 中某个事件发生时，在 timelineCandidates 中用 anchorEventId 填该事件 ID，把它锚定到本章，不要为同一件事再新建一条事件。已有事件也可以作为 causeEventIds 引用。不要为同一件事再 start/plant 一条新的。",
+        "锚定规则：只锚定 <unanchored-timeline> 中列出的事件，且本章正文写到它发生（只是回忆或提到的不要锚定）；锚定时 title 原样照抄该事件的标题，description 填 null，participantIds 与 causeEventIds 填空数组，storyTime、knownBy 与 evidenceParagraphs 照常填写。已有事件保留自己的描述、参与者、因果与可见性，visibility 照填但不会改变它。每个事件只能锚定一次；新建事件时 anchorEventId 填 null。",
+        "只有本章引入了上下文中确实不存在的关系、事件或伏笔时才新建。",
       ],
       en: [
         "This chapter comes from an imported, finished manuscript; the Story Bible is being completed chapter by chapter in reading order.",
-        "Relationships, timeline events and foreshadows were already extracted during import. They appear in the authoritative context but are not anchored to a chapter yet.",
-        "When this chapter touches one of them, reference it by its stable ID: update/end relationships, cite existing timeline events in causeEventIds, develop/resolve foreshadows. Do not start/plant a duplicate for the same thing.",
-        "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the authoritative context.",
+        "Relationships, timeline events and foreshadows were already extracted during import, but they are not anchored to a chapter yet. Relationships and foreshadows appear in the authoritative context; the unanchored timeline events whose import evidence cites this chapter, or that could not be placed in a chapter, are listed in <unanchored-timeline>.",
+        "When this chapter touches one of them, reference it by its stable ID: update/end relationships and develop/resolve foreshadows. When this chapter shows one of the events in <unanchored-timeline> happening, anchor it to this chapter by putting its ID in a timelineCandidates item's anchorEventId instead of creating a new event for the same thing. Existing events can also be cited in causeEventIds. Do not start/plant a duplicate for the same thing.",
+        "Anchoring rules: anchor only events listed in <unanchored-timeline> that this chapter's prose shows happening (not ones it merely recalls or mentions); copy the event's title exactly, set description to null and participantIds and causeEventIds to empty arrays, and fill storyTime, knownBy and evidenceParagraphs as usual. The existing event keeps its own description, participants, causes and visibility; fill visibility as usual, it does not change the event. Each event can be anchored once; a new event has anchorEventId null.",
+        "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the context.",
       ],
     });
+  }
+
+  /**
+   * The unanchored events a backfill settlement of this chapter may anchor
+   * (see selectAnchorableTimeline). An imported event is placed by its import
+   * candidate's located evidence: each evidence paragraph names the document
+   * candidate it comes from, and the chapter that candidate created carries
+   * it as `importCandidateId`; reading order is the outline's chapter order,
+   * the order the backfill settles in.
+   */
+  private anchorableTimeline(
+    projectId: string,
+    outlineNodeId: string,
+    events: readonly TimelineEvent[],
+  ): AnchorableTimeline {
+    const chapters = this.story
+      .listOutline(projectId)
+      .filter((node) => node.kind === "chapter");
+    const positionByDocumentCandidate = new Map<string, number>();
+    chapters.forEach((node, position) => {
+      const candidateId = node.metadata.importCandidateId;
+      if (typeof candidateId === "string") {
+        positionByDocumentCandidate.set(candidateId, position);
+      }
+    });
+    const sources = new Map<string, ImportSourceText>();
+    const sourceOf = (batchId: string) => () => {
+      let source = sources.get(batchId);
+      if (!source) {
+        source = importSourceText(
+          this.delivery
+            .listImportCandidates(batchId)
+            .filter((candidate) => candidate.kind === "document"),
+        );
+        sources.set(batchId, source);
+      }
+      return source;
+    };
+    const placements = new Map<string, TimelineEvidencePlacement>();
+    for (const event of events) {
+      if (event.outlineNodeId !== null || !event.sourceId) continue;
+      const candidate = this.delivery.getImportCandidate(event.sourceId);
+      if (candidate?.kind !== "timeline") continue;
+      const batch = this.delivery.getImportBatch(candidate.batchId);
+      if ((batch?.appliedProjectId ?? batch?.targetProjectId) !== projectId) {
+        continue;
+      }
+      const positions = importEvidenceDocuments(
+        candidate.payload.evidence,
+        sourceOf(candidate.batchId),
+      ).map((documentCandidateId) =>
+        documentCandidateId === null
+          ? undefined
+          : positionByDocumentCandidate.get(documentCandidateId),
+      );
+      placements.set(event.id, {
+        chapters: positions.filter(
+          (position): position is number => position !== undefined,
+        ),
+        unplaced: positions.filter((position) => position === undefined).length,
+      });
+    }
+    const current = chapters.findIndex((node) => node.id === outlineNodeId);
+    return selectAnchorableTimeline(
+      events,
+      placements,
+      current < 0 ? null : current,
+    );
   }
 
   /* 手动结算没有 context.compile 步骤：权威上下文直接用作者视角的故事
@@ -2008,6 +2117,7 @@ function stripContextTagPrefixes(settlement: Settlement): Settlement {
     })),
     timelineCandidates: settlement.timelineCandidates.map((event) => ({
       ...event,
+      anchorEventId: nullableId(event.anchorEventId),
       participantIds: event.participantIds.map(id),
       causeEventIds: event.causeEventIds.map(id),
       knownBy: event.knownBy.map((knowledge) => ({
@@ -2038,11 +2148,17 @@ function settlementSemanticIssues(
   current: {
     facts: ReadonlyMap<string, CanonFact>;
     relationships: ReadonlyMap<string, RelationshipEvent>;
-    timelineEventIds: ReadonlySet<string>;
+    /** Current (not voided) timeline events. */
+    timelineEvents: ReadonlyMap<string, TimelineEvent>;
     foreshadows: ReadonlyMap<string, Foreshadow>;
     outlineNodeIds: ReadonlySet<string>;
   },
   locator: ParagraphLocator,
+  /**
+   * Whether this is a Story Bible completion (backfill) settlement, the only
+   * kind that is shown unanchored events and told how to anchor them.
+   */
+  allowAnchoring: boolean,
 ): string[] {
   const issues: string[] = [];
   const requireEntity = (id: string, path: string) => {
@@ -2096,7 +2212,9 @@ function settlementSemanticIssues(
       ),
     );
   });
+  const anchoredEventIds = new Set<string>();
   settlement.timelineCandidates.forEach((event, index) => {
+    const path = `timelineCandidates.${index}`;
     event.participantIds.forEach((id) =>
       requireEntity(id, `timelineCandidates.${index}.participantIds`),
     );
@@ -2107,12 +2225,48 @@ function settlementSemanticIssues(
       ),
     );
     event.causeEventIds.forEach((id) => {
-      if (!current.timelineEventIds.has(id)) {
+      if (!current.timelineEvents.has(id)) {
         issues.push(
           `timelineCandidates.${index}.causeEventIds: 未知时间线事件 ID ${id}（只能引用上下文中 [timeline:…] 标注的事件 ID）`,
         );
       }
     });
+    if (event.anchorEventId !== null && !allowAnchoring) {
+      issues.push(
+        `${path}.anchorEventId: 只有「从正文补全故事圣经」的逐章结算可以锚定已有事件；本次结算的 anchorEventId 必须为 null（新建事件）`,
+      );
+    } else if (event.anchorEventId !== null) {
+      const target = current.timelineEvents.get(event.anchorEventId);
+      if (!target) {
+        issues.push(
+          `${path}.anchorEventId: 未知时间线事件 ID ${event.anchorEventId}（只能锚定上下文中列出的、尚未锚定到章节的已有事件；新建事件填 null）`,
+        );
+      } else if (target.outlineNodeId !== null) {
+        issues.push(
+          `${path}.anchorEventId: 事件 ${target.id} 已锚定到章节，不能再锚定（本章若只是提到它，可作为 causeEventIds 引用；新建事件填 null）`,
+        );
+      } else if (normalizeTitle(target.title) !== normalizeTitle(event.title)) {
+        issues.push(
+          `${path}.title: 锚定已有事件时 title 必须原样照抄该事件的标题「${target.title}」`,
+        );
+      }
+      if (anchoredEventIds.has(event.anchorEventId)) {
+        issues.push(
+          `${path}.anchorEventId: 同一个事件 ${event.anchorEventId} 只能锚定一次`,
+        );
+      }
+      anchoredEventIds.add(event.anchorEventId);
+      if (event.description !== null) {
+        issues.push(
+          `${path}.description: 锚定已有事件时 description 必须为 null（已有事件保留自己的描述）`,
+        );
+      }
+      if (event.participantIds.length > 0 || event.causeEventIds.length > 0) {
+        issues.push(
+          `${path}.participantIds: 锚定已有事件时 participantIds 与 causeEventIds 必须为空数组（已有事件保留自己的参与者与因果）`,
+        );
+      }
+    }
     issues.push(
       ...locator.validate(
         event.evidenceParagraphs,
@@ -2278,6 +2432,10 @@ function bindSettlementEvidence(
     relationshipCandidates: settlement.relationshipCandidates.map(bind),
     foreshadowCandidates: settlement.foreshadowCandidates.map(bind),
   };
+}
+
+function normalizeTitle(value: string): string {
+  return value.trim().replace(/\s+/gu, " ");
 }
 
 function settlementEntityIds(settlement: Record<string, unknown>): string[] {

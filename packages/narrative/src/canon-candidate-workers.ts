@@ -34,7 +34,12 @@ import {
   CanonCandidateModelResultSchema,
   canonCandidateModelValidator,
 } from "./canon-candidate-schemas.js";
-import { instructionsFor } from "./prompt-language.js";
+import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
+import {
+  detectManuscriptLanguage,
+  manuscriptLanguageHint,
+  type DetectedManuscriptLanguage,
+} from "./manuscript-language.js";
 import type { NarrativeModelClient } from "./model-client.js";
 import { requireActiveProject } from "./project-guard.js";
 
@@ -44,7 +49,17 @@ interface CanonContextArtifact extends Readonly<Record<string, unknown>> {
   baseFingerprint: string;
   current: CanonSpreadState["value"];
   prompt: string;
+  /** 从近期正文与章节摘要检测出的作品语言；早于此字段的产物读作 unknown。 */
+  manuscriptLanguage: DetectedManuscriptLanguage;
 }
+
+/** 故事圣经候选的文字跟随作品正文的语言，而非指令语言：作品语言只有 zh-CN / en，
+ *  导入的其他语言（如葡语）原稿也必须得到同语言的候选。 */
+const CANON_LANGUAGE_INVARIANT = {
+  "zh-CN":
+    "语言不变量：summary、每项的 title、rationale、impact，以及 afterJson 中的所有文字字段（名称、别名、描述、摘要、目标、冲突、谓词与值、关系、事件标题等）必须使用作品正文（recentManuscript 与章节摘要）的语言书写，即使它不同于本指令的语言；作品还没有正文时沿用故事圣经已有内容的语言。人物、地点等专有名词保留原文写法，不得翻译。字段名、枚举值与 ID 保持结构定义不变。",
+  en: "Language invariant: write summary, every item's title, rationale, and impact, and every text field inside afterJson (names, aliases, descriptions, summaries, goals, conflicts, predicates and values, relations, event titles, and so on) in the language of the work's prose (recentManuscript and the chapter summaries), even when it differs from the language of these instructions; when the work has no prose yet, follow the language of the existing Story Bible content. Keep character, place, and other proper names exactly as written in the source, never translated. Field names, enum values, and IDs stay as defined by the schema.",
+} as const;
 
 export class CanonCandidateWorkerSuite {
   private readonly canon: SqliteCanonRepository;
@@ -187,6 +202,12 @@ export class CanonCandidateWorkerSuite {
         basePromptTokens: estimateTokens(JSON.stringify(packet)),
       }),
     );
+    const detectionText = [
+      ...documents.map((document) => document.content ?? ""),
+      ...packet.supportingIndex.chapterSummaries.chapters.map(
+        (chapter) => chapter.summary,
+      ),
+    ].join("\n\n");
     return {
       artifactKind: "canon-context",
       output: {
@@ -195,6 +216,7 @@ export class CanonCandidateWorkerSuite {
         baseFingerprint: current.fingerprint,
         current: current.value,
         prompt: JSON.stringify(packet),
+        manuscriptLanguage: detectManuscriptLanguage(detectionText),
       } satisfies CanonContextArtifact,
       usage: zeroUsage(),
     };
@@ -208,35 +230,48 @@ export class CanonCandidateWorkerSuite {
     const context = canonContextArtifact(
       requiredArtifact(snapshot, "canon.context"),
     );
+    const language =
+      this.projects.get(snapshot.run.projectId)?.language ?? null;
+    // 候选文字跟随作品正文的语言（指令里的语言不变量）；检测出语言时再加一行参考。
+    const languageHint = manuscriptLanguageHint(
+      promptLanguageOf(language),
+      context.manuscriptLanguage,
+    );
     const result = await this.model.structured(
       snapshot.run,
       step,
       "canon-revision",
       {
-        instructions: instructionsFor(
-          this.projects.get(snapshot.run.projectId)?.language ?? null,
+        instructions: instructionsFor(language, {
+          "zh-CN": [
+            "你是长篇小说的故事圣经编辑。只根据提供的作品材料，为指定 Canon Spread 生成少量、可逐项裁定的候选修改。",
+            "不要直接改写数据库，不要声称候选已经生效。每项必须说明理由和影响；没有必要的改动不要凑数。",
+            "create 的 targetId 必须为 null；update 必须使用 currentSpread 中真实存在的 id。作者意图只能 update 且 targetId 固定为 intent。",
+            "只有 facts 可以 withdraw，此时 afterJson 为 null；其他 create/update 的 afterJson 必须是一个 JSON 对象序列化后的字符串。",
+            `afterJson 只能使用这些字段：${candidateAfterInstructions(context.spread)}。update 只放要改的字段，create 提供完整必填字段。`,
+            "引用实体、大纲、因果或依赖时只能使用 supportingIndex 中给出的真实 ID。不得生成数据库 ID。",
+            "不要修改锁定策略本身；如果建议触及锁定内容，仍作为候选说明，系统会要求作者二次确认。",
+            CANON_LANGUAGE_INVARIANT["zh-CN"],
+          ],
+          en: [
+            "You are the story bible editor of a long-form novel. Working only from the provided project material, generate a small number of individually adjudicable change candidates for the given Canon Spread.",
+            "Never rewrite the database directly and never claim candidates took effect. Every item must state its reasoning and impact; do not pad with unnecessary changes.",
+            "create's targetId must be null; update must use ids that actually exist in currentSpread. Author intent may only be updated, with targetId fixed to intent.",
+            "Only facts can be withdrawn, with afterJson null in that case; every other create/update must carry afterJson as a serialized JSON object string.",
+            `afterJson accepts only these fields: ${candidateAfterInstructions(context.spread)}. update carries only changed fields; create provides every required field.`,
+            "When referencing entities, outline nodes, causes, or dependencies, use only real IDs given in supportingIndex. Never invent database IDs.",
+            "Do not modify lock policies themselves; when a suggestion touches locked content, still describe it as a candidate and the system will ask the author to confirm again.",
+            CANON_LANGUAGE_INVARIANT.en,
+          ],
+        }),
+        messages: [
           {
-            "zh-CN": [
-              "你是长篇小说的故事圣经编辑。只根据提供的作品材料，为指定 Canon Spread 生成少量、可逐项裁定的候选修改。",
-              "不要直接改写数据库，不要声称候选已经生效。每项必须说明理由和影响；没有必要的改动不要凑数。",
-              "create 的 targetId 必须为 null；update 必须使用 currentSpread 中真实存在的 id。作者意图只能 update 且 targetId 固定为 intent。",
-              "只有 facts 可以 withdraw，此时 afterJson 为 null；其他 create/update 的 afterJson 必须是一个 JSON 对象序列化后的字符串。",
-              `afterJson 只能使用这些字段：${candidateAfterInstructions(context.spread)}。update 只放要改的字段，create 提供完整必填字段。`,
-              "引用实体、大纲、因果或依赖时只能使用 supportingIndex 中给出的真实 ID。不得生成数据库 ID。",
-              "不要修改锁定策略本身；如果建议触及锁定内容，仍作为候选说明，系统会要求作者二次确认。",
-            ],
-            en: [
-              "You are the story bible editor of a long-form novel. Working only from the provided project material, generate a small number of individually adjudicable change candidates for the given Canon Spread.",
-              "Never rewrite the database directly and never claim candidates took effect. Every item must state its reasoning and impact; do not pad with unnecessary changes.",
-              "create's targetId must be null; update must use ids that actually exist in currentSpread. Author intent may only be updated, with targetId fixed to intent.",
-              "Only facts can be withdrawn, with afterJson null in that case; every other create/update must carry afterJson as a serialized JSON object string.",
-              `afterJson accepts only these fields: ${candidateAfterInstructions(context.spread)}. update carries only changed fields; create provides every required field.`,
-              "When referencing entities, outline nodes, causes, or dependencies, use only real IDs given in supportingIndex. Never invent database IDs.",
-              "Do not modify lock policies themselves; when a suggestion touches locked content, still describe it as a candidate and the system will ask the author to confirm again.",
-            ],
+            role: "user",
+            content: languageHint
+              ? `${languageHint}\n\n${context.prompt}`
+              : context.prompt,
           },
-        ),
-        messages: [{ role: "user", content: context.prompt }],
+        ],
         reasoningEffort: "medium",
         maxOutputTokens: policyNumber(
           snapshot.run.policy,
@@ -321,7 +356,20 @@ function canonContextArtifact(
         ? value.current
         : null,
     prompt: stringField(value, "prompt"),
+    manuscriptLanguage: detectedLanguageField(value.manuscriptLanguage),
   };
+}
+
+const DETECTED_LANGUAGES: readonly DetectedManuscriptLanguage[] = [
+  "Portuguese",
+  "Spanish",
+  "English",
+  "Chinese",
+  "unknown",
+];
+
+function detectedLanguageField(value: unknown): DetectedManuscriptLanguage {
+  return DETECTED_LANGUAGES.find((language) => language === value) ?? "unknown";
 }
 
 function requiredArtifact(

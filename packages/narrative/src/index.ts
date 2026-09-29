@@ -11,6 +11,8 @@ export * from "./outline-context.js";
 export * from "./outline-baseline.js";
 export { requirePlanningEntitiesReady } from "./planning-entities.js";
 export * from "./paragraph-locator.js";
+export * from "./import-evidence.js";
+export * from "./unanchored-timeline.js";
 export * from "./revision-application-service.js";
 export * from "./schemas.js";
 export * from "./automation-schemas.js";

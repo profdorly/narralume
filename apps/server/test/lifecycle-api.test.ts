@@ -295,7 +295,7 @@ describe("product lifecycle API", () => {
     });
     const restoredDatabase = new NodeNarrativeDatabase(receipt.databasePath);
     try {
-      expect(restoredDatabase.currentMigration()).toBe(46);
+      expect(restoredDatabase.currentMigration()).toBe(47);
       expect(
         Number(
           (

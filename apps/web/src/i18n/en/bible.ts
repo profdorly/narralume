@@ -287,7 +287,7 @@ export const bible: typeof bibleZh = {
       reviewEach: "Review each chapter (recommended)",
       reviewEachHint: "Pauses after every chapter that produced changes so you can apply or reject them before the next chapter is read.",
       autoApply: "Apply automatically, stop on conflicts",
-      autoApplyHint: "Adopts each chapter's changes as soon as they're ready. It stops for you when a change conflicts with the current canon (it targets a locked, missing, or since-changed record), or when a chapter would withdraw or replace a fact, change or end a relationship, or resolve a foreshadow that neither this completion nor the import created, such as anything you entered yourself. New facts, events, relationships, and foreshadows are added without stopping. Otherwise it keeps reading the whole book unattended, with no spending cap.",
+      autoApplyHint: "Adopts each chapter's changes as soon as they're ready. It stops for you when a change conflicts with the current canon (it targets a locked, missing, or since-changed record), when a chapter would withdraw or replace a fact, change or end a relationship, anchor a timeline event to the chapter, or develop or resolve a foreshadow that neither this completion nor the import created, such as anything you entered yourself, and when it would reopen a resolved or abandoned foreshadow. Foreshadows from an import applied before this update have no recorded origin, so they count as yours. New facts, events, relationships, and foreshadows are added without stopping, and an event the import extracted is anchored to its chapter instead of being added again. Otherwise it keeps reading the whole book unattended, with no spending cap.",
       scopeCount: "It will process {count} chapters with manuscript text (chapters already settled are skipped).",
       scopeAll: "It will process all imported chapters that have manuscript text.",
       cost: "Uses the writing model configured in Settings and incurs model cost for every chapter. Each chapter takes at least one model call; an invalid or failed response is retried automatically (up to 5 attempts, and a malformed reply can add a repair call), and one more embedding call is made per chapter when an embedding model is assigned. There is no spending cap. You can pause or cancel at any time, and the panel shows the calls and tokens used so far.",
@@ -372,6 +372,7 @@ export const bible: typeof bibleZh = {
         supersede: "Replace fact",
         update: "Change relationship",
         end: "End relationship",
+        anchor: "Anchor timeline event to this chapter",
         develop: "Develop foreshadow",
         reopen: "Reopen foreshadow",
         resolve: "Resolve foreshadow",
@@ -417,6 +418,8 @@ export const bible: typeof bibleZh = {
         failed: "Failed",
         awaitingDecision: "Left for review in Studio",
       },
+      unanchoredEvents:
+        "Imported timeline events still not anchored to a chapter: {count}. No settled chapter showed them happening (for example, backstory the prose only mentions). They stay in the Timeline section, where you can place or remove them.",
     },
     next: {
       title: "Fill in the rest of the Story Bible",

@@ -134,6 +134,7 @@ beforeEach(() => {
     dependencies: [],
     evidenceNodeIds: [],
     resolutionNodeId: null,
+    sourceId: null,
     createdAt: now,
     updatedAt: now,
   });
@@ -438,6 +439,7 @@ describe("StoryStatePacketBuilder", () => {
       dependencies: [],
       evidenceNodeIds: ["chapter-1"],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -453,6 +455,7 @@ describe("StoryStatePacketBuilder", () => {
       dependencies: ["dependency"],
       evidenceNodeIds: [],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });

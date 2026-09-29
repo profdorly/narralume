@@ -28,6 +28,7 @@ import {
   type SettlementRunOutcome,
 } from "./bible-backfill-service.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
+import { isImportDerivedSource } from "./import-provenance.js";
 import type { RunCoordinator } from "./run-coordinator.js";
 import { deterministicUuid } from "./request-idempotency.js";
 import {
@@ -38,6 +39,19 @@ import {
 
 /** Run-policy flag read by the settlement worker (see settleChapter). */
 export const BIBLE_BACKFILL_POLICY_FLAG = "referenceExistingStoryState";
+
+/**
+ * Import candidate kind that creates each kind of changed record, for the
+ * kinds whose rows keep the creating import candidate as their source id.
+ * Imports create no facts.
+ */
+const IMPORT_CANDIDATE_KINDS: Partial<
+  Record<SettlementChangedRecord["kind"], string>
+> = {
+  relationship: "relationship",
+  timeline: "timeline",
+  foreshadow: "foreshadow",
+};
 
 /** Deterministic child-run id: one settlement run per (job, version, attempt). */
 export function bibleBackfillRunId(
@@ -525,9 +539,9 @@ export class BibleBackfillCoordinator {
       return this.changed(job.id, "job.awaiting_decision");
     }
     // Auto mode only adds to what this job and the import produced: a change
-    // that would withdraw, supersede, end, change, develop or resolve
-    // anything else (for example a fact the author entered), or reopen a
-    // finished foreshadow, waits for the author.
+    // that would withdraw, supersede, end, change, anchor, develop or resolve
+    // anything else (for example a fact or an event the author entered), or
+    // reopen a finished foreshadow, waits for the author.
     const reviewTargets = this.recordsNeedingReview(job, changeSet.id);
     if (reviewTargets.length > 0) {
       return this.park(job, now, {
@@ -582,13 +596,15 @@ export class BibleBackfillCoordinator {
 
   /**
    * Existing records the change set would withdraw, supersede, end, change,
-   * develop or resolve that were created neither by this job's earlier
-   * applied change sets nor by the manuscript import. Import provenance is
-   * known only for relationships (their source is the import candidate);
-   * imports create no facts, and foreshadows keep no source at all, so an
-   * imported or author-entered foreshadow always counts as needing review.
-   * Reopening a resolved or abandoned foreshadow always needs review, even
-   * one this job planted: its status there is the author's call.
+   * anchor, develop or resolve that were created neither by this job's
+   * earlier applied change sets nor by the manuscript import. Import
+   * provenance is the record's source id naming an applied import candidate
+   * of the same kind in this project: relationships and timeline events
+   * always keep it, foreshadows since migration 047 (older imported ones have
+   * none and count as the author's).
+   * Imports create no facts. Reopening a resolved or abandoned foreshadow
+   * always needs review, even one the import or this job created: its status
+   * there is the author's call.
    */
   private recordsNeedingReview(
     job: BibleBackfillJob,
@@ -609,21 +625,25 @@ export class BibleBackfillCoordinator {
             target.createdByChangeSetId &&
             jobChangeSets.has(target.createdByChangeSetId)
           ) &&
-            !this.isImportedRelationship(job.projectId, target)),
+            !this.isImportDerived(job.projectId, target)),
       );
   }
 
-  private isImportedRelationship(
+  /** Whether the record was created by applying this project's manuscript import. */
+  private isImportDerived(
     projectId: string,
     target: SettlementChangedRecord,
   ): boolean {
-    if (target.kind !== "relationship" || !target.sourceId) return false;
-    const candidate = this.deliveries.getImportCandidate(target.sourceId);
-    if (candidate?.kind !== "relationship" || candidate.status !== "applied") {
-      return false;
-    }
-    const batch = this.deliveries.getImportBatch(candidate.batchId);
-    return (batch?.appliedProjectId ?? batch?.targetProjectId) === projectId;
+    const candidateKind = IMPORT_CANDIDATE_KINDS[target.kind];
+    return (
+      candidateKind !== undefined &&
+      isImportDerivedSource(
+        this.deliveries,
+        projectId,
+        candidateKind,
+        target.sourceId,
+      )
+    );
   }
 
   private failItem(

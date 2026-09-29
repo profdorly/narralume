@@ -579,6 +579,7 @@ describe("ChapterWorkerSuite", () => {
         factCandidates: [],
         timelineCandidates: [
           {
+            anchorEventId: null,
             title: "灯塔熄灭",
             description: "父亲遗忘了一个人",
             storyTime: null,
@@ -1166,6 +1167,7 @@ function scriptedModel(
                   factCandidates: [],
                   timelineCandidates: [
                     {
+                      anchorEventId: null,
                       title: "灯塔熄灭",
                       description: "父亲遗忘了一个人",
                       storyTime: null,

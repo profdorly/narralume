@@ -16,6 +16,7 @@ import type {
 import { classifyStepError } from "@narralume/harness";
 import {
   SqliteBibleBackfillRepository,
+  SqliteDeliveryRepository,
   SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteCanonRepository,
@@ -32,6 +33,7 @@ import {
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
+import { isImportDerivedSource } from "./import-provenance.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
 import {
   deterministicRequestId,
@@ -115,6 +117,7 @@ export class BibleBackfillService {
   private readonly reviews: SqliteReviewRepository;
   private readonly runs: SqliteRunRepository;
   private readonly requestReplays: SqliteRequestReplayRepository;
+  private readonly deliveries: SqliteDeliveryRepository;
 
   constructor(
     private readonly database: NarrativeDatabase,
@@ -133,6 +136,7 @@ export class BibleBackfillService {
     this.reviews = new SqliteReviewRepository(database);
     this.runs = new SqliteRunRepository(database);
     this.requestReplays = new SqliteRequestReplayRepository(database);
+    this.deliveries = new SqliteDeliveryRepository(database);
   }
 
   create(
@@ -195,7 +199,9 @@ export class BibleBackfillService {
   current(projectId: string): BibleBackfillDetailDto {
     this.requireProject(projectId);
     const job = this.backfills.findCurrentJob(projectId);
-    return job ? this.detailOf(job) : emptyDetail();
+    return job
+      ? this.detailOf(job)
+      : emptyDetail(this.unanchoredImportedEvents(projectId));
   }
 
   detail(projectId: string, jobId: string): BibleBackfillDetailDto {
@@ -358,7 +364,27 @@ export class BibleBackfillService {
       counts,
       usage: this.usageOf(job),
       availableActions: availableActions(job, items),
+      unanchoredImportedEvents: this.unanchoredImportedEvents(job.projectId),
     });
+  }
+
+  /**
+   * Current timeline events this project's manuscript import created that no
+   * chapter has anchored yet (see BibleBackfillDetailSchema).
+   */
+  private unanchoredImportedEvents(projectId: string): number {
+    return this.state
+      .listTimeline(projectId)
+      .filter(
+        (event) =>
+          event.outlineNodeId === null &&
+          isImportDerivedSource(
+            this.deliveries,
+            projectId,
+            "timeline",
+            event.sourceId,
+          ),
+      ).length;
   }
 
   /** Recorded usage of the job's settlement runs; cost only when priced. */
@@ -1060,7 +1086,7 @@ function notAvailable(action: string, job: BibleBackfillJob) {
   );
 }
 
-function emptyDetail(): BibleBackfillDetailDto {
+function emptyDetail(unanchoredImportedEvents: number): BibleBackfillDetailDto {
   return BibleBackfillDetailSchema.parse({
     job: null,
     items: [],
@@ -1077,5 +1103,6 @@ function emptyDetail(): BibleBackfillDetailDto {
     },
     usage: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     availableActions: [],
+    unanchoredImportedEvents,
   });
 }

@@ -129,6 +129,7 @@ function detail(
     },
     usage,
     availableActions,
+    unanchoredImportedEvents: 0,
   };
 }
 
@@ -648,7 +649,35 @@ describe("Complete Story Bible from manuscript", () => {
     expect(screen.getByRole("button", { name: "Run again" })).toBeInTheDocument();
     fireEvent.click(screen.getByText("Chapter progress · 3"));
     expect(screen.getByText("Already settled")).toBeInTheDocument();
+    // Nothing imported is left unanchored, so no leftover note.
+    expect(screen.queryByText(/still not anchored/)).not.toBeInTheDocument();
   });
+
+  it.each([
+    {
+      locale: "en" as const,
+      text: "Imported timeline events still not anchored to a chapter: 12. No settled chapter showed them happening (for example, backstory the prose only mentions). They stay in the Timeline section, where you can place or remove them.",
+    },
+    {
+      locale: "zh-CN" as const,
+      text: "仍有 12 个导入的时间线事件没有锚定到章节：补全过程中没有哪一章写到它们发生（例如正文只是提到的前史）。它们保留在时间线板块中，可在那里安排章节或删除。",
+    },
+  ])(
+    "tells the author at completion how many imported events stay unanchored ($locale)",
+    async ({ locale, text }) => {
+      setLocale(locale);
+      stubApi({
+        current: () => ({
+          ...detail(job({ status: "completed", currentOrdinal: null }), [
+            item(0, "applied"),
+          ]),
+          unanchoredImportedEvents: 12,
+        }),
+      });
+      renderPanel();
+      expect(await screen.findByText(text)).toBeInTheDocument();
+    },
+  );
 
   it("refetches progress when a bible_backfill.status event arrives", async () => {
     vi.stubGlobal("EventSource", EventSourceStub);
@@ -815,6 +844,88 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     expect(resume?.body).toEqual({ requestId: expect.any(String), action: "resume" });
     expect(calls.indexOf(decision!)).toBeLessThan(calls.indexOf(resume!));
   });
+
+  it.each([
+    {
+      locale: "en" as const,
+      action: "Anchor timeline event to this chapter",
+      anchorLabel: "Timeline · anchor",
+      anchorText: "Anchor the existing event “Helena chega a Vila do Sal” to this chapter; no new event is created · story time: Outono · the event keeps its own description, participants, causes and visibility",
+      newLabel: "Timeline",
+    },
+    {
+      locale: "zh-CN" as const,
+      action: "把时间线事件锚定到本章",
+      anchorLabel: "时间线 · 锚定",
+      anchorText: "把已有事件「Helena chega a Vila do Sal」锚定到本章，不新建事件 · 故事时间：Outono · 事件保留自己的描述、参与者、因果与可见性",
+      newLabel: "时间线",
+    },
+  ])(
+    "shows an anchored timeline event as adopting the existing event ($locale)",
+    async ({ locale, action, anchorLabel, anchorText, newLabel }) => {
+      setLocale(locale);
+      stubApi({
+        current: () =>
+          detail(
+            job({
+              status: "awaiting_user",
+              mode: "auto_apply_stop_on_conflict",
+              currentOrdinal: 1,
+              error: {
+                code: "bible_backfill.review_required",
+                ordinal: 1,
+                changeSetId: "ccs-2",
+                targets: [
+                  {
+                    path: "timelineCandidates.0",
+                    kind: "timeline",
+                    action: "anchor",
+                    id: "event-1",
+                    label: "Helena chega a Vila do Sal",
+                  },
+                ],
+              },
+            }),
+            [
+              item(0, "applied"),
+              item(1, "awaiting_decision", { runId: "run-2", changeSetId: "ccs-2" }),
+              item(2, "pending"),
+            ],
+            ["cancel", "skip_item"],
+          ),
+        changeSets: () => [
+          {
+            ...CHANGE_SET,
+            changes: {
+              summary: "Helena chega a Vila do Sal",
+              timelineCandidates: [
+                {
+                  anchorEventId: "event-1",
+                  title: "Helena chega a Vila do Sal",
+                  description: null,
+                  storyTime: "Outono",
+                },
+                {
+                  anchorEventId: null,
+                  title: "O farol é vendido",
+                  description: "A dona da pensão conta.",
+                  storyTime: null,
+                },
+              ],
+            },
+          },
+        ],
+      });
+      renderPanel();
+
+      expect(await screen.findByText(action)).toBeInTheDocument();
+      expect(screen.getByText(action).parentElement).toHaveTextContent("Helena chega a Vila do Sal");
+      const anchored = await screen.findByText(anchorText);
+      expect(anchored.parentElement).toHaveTextContent(anchorLabel);
+      const created = screen.getByText("O farol é vendido · A dona da pensão conta.");
+      expect(created.previousElementSibling).toHaveTextContent(new RegExp(`^${newLabel}$`, "u"));
+    },
+  );
 
   it("offers Resume on a review stop once the change set was decided elsewhere", async () => {
     stubApi({

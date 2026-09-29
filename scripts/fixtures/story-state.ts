@@ -262,6 +262,7 @@ export function seedStoryState(database: NarrativeDatabase) {
     dependencies: [],
     evidenceNodeIds: [chapters[0]!.id, scene.id, chapters[11]!.id],
     resolutionNodeId: chapters[11]!.id,
+    sourceId: null,
     createdAt: now,
     updatedAt: now,
   });

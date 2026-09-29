@@ -17,9 +17,11 @@ import {
 
 import {
   detectManuscriptLanguage,
+  manuscriptLanguageHint,
   type DetectedManuscriptLanguage,
 } from "./manuscript-language.js";
 import type { NarrativeModelClient } from "./model-client.js";
+import { documentCandidateAt, importSourceText } from "./import-evidence.js";
 import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 import { ParagraphLocator } from "./paragraph-locator.js";
 import {
@@ -294,15 +296,23 @@ export class DeliveryWorkerSuite {
       requiredArtifact(snapshot, "import.analyze"),
     );
     const now = this.now().toISOString();
-    const sourceText = this.importedText(batchId);
-    const locator = new ParagraphLocator(sourceText);
+    const source = this.importedSource(batchId);
+    const locator = new ParagraphLocator(source.text);
     const labels =
       IMPORT_STAGE_LABELS[
         promptLanguageOf(this.projects.get(snapshot.run.projectId)?.language)
       ];
+    // Each located paragraph also records the document candidate (chapter)
+    // it comes from, so later work can tell which chapter an item cites.
     const withEvidence = <T extends { evidenceParagraphs: number[] }>(
       item: T,
-    ) => ({ ...item, evidence: locator.locate(item.evidenceParagraphs) });
+    ) => ({
+      ...item,
+      evidence: locator.locate(item.evidenceParagraphs).map((evidence) => ({
+        ...evidence,
+        documentCandidateId: documentCandidateAt(source.spans, evidence.start),
+      })),
+    });
     const candidates = [
       {
         id: `${batchId}:intent:0`,
@@ -412,14 +422,15 @@ export class DeliveryWorkerSuite {
   }
 
   private importedText(batchId: string): string {
-    return this.delivery
-      .listImportCandidates(batchId)
-      .filter((candidate) => candidate.kind === "document")
-      .map((candidate) => {
-        const content = candidate.payload.content;
-        return `# ${candidate.title}\n${typeof content === "string" ? content : ""}`;
-      })
-      .join("\n\n");
+    return this.importedSource(batchId).text;
+  }
+
+  private importedSource(batchId: string) {
+    return importSourceText(
+      this.delivery
+        .listImportCandidates(batchId)
+        .filter((candidate) => candidate.kind === "document"),
+    );
   }
 
   /** 贴样文提炼风格档案：产物是一条未启用的 style profile 草稿，作者审核后启用。
@@ -535,17 +546,6 @@ const IMPORT_STAGE_LABELS: Record<
   en: { intent: "Author intent candidate", characterArc: "Character arc" },
 };
 
-/** 代码检测的原稿语言在中文提示中的写法。 */
-const DETECTED_LANGUAGE_NAMES_ZH: Record<
-  Exclude<DetectedManuscriptLanguage, "unknown">,
-  string
-> = {
-  Portuguese: "葡萄牙语",
-  Spanish: "西班牙语",
-  English: "英语",
-  Chinese: "中文",
-};
-
 /** 分段分析的用户消息。检测到原稿语言时加一行参考（尽力而为的启发式检测）；
  *  指令中的语言不变量仍要求跟随正文本身。 */
 function importAnalysisMessage(input: {
@@ -558,16 +558,15 @@ function importAnalysisMessage(input: {
   text: string;
   manuscriptLanguage: DetectedManuscriptLanguage;
 }): string {
-  const detected = input.manuscriptLanguage;
+  const language = promptLanguageOf(input.language);
+  const hint = manuscriptLanguageHint(language, input.manuscriptLanguage) ?? "";
   const lines =
-    promptLanguageOf(input.language) === "en"
+    language === "en"
       ? [
           `Target work: "${input.projectTitle}"`,
           input.premise ? `Existing premise: ${input.premise}` : "",
           `Imported file: ${input.filename}`,
-          detected === "unknown"
-            ? ""
-            : `Manuscript language (detected): ${detected}. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.`,
+          hint,
           `Segment ${input.segment}/${input.segments}`,
           `Manuscript text:\n${input.text}`,
           "Deconstruct the synopsis, themes, audience, tone boundaries, entities, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and 1-4 general-purpose writing Skills.",
@@ -576,9 +575,7 @@ function importAnalysisMessage(input: {
           `目标作品：《${input.projectTitle}》`,
           input.premise ? `已有命题：${input.premise}` : "",
           `导入文件：${input.filename}`,
-          detected === "unknown"
-            ? ""
-            : `原稿语言（自动检测）：${DETECTED_LANGUAGE_NAMES_ZH[detected]}。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。`,
+          hint,
           `分段 ${input.segment}/${input.segments}`,
           `正文：\n${input.text}`,
           "请拆解概要、主题、受众、语气边界、实体、关系、时间线、伏笔、角色弧、场景、风格档案与 1-4 条通用写作 Skill。",

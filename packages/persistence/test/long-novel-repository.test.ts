@@ -262,6 +262,7 @@ describe("SqliteLongNovelRepository", () => {
       dependencies: [],
       evidenceNodeIds: ["chapter-1"],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -277,6 +278,7 @@ describe("SqliteLongNovelRepository", () => {
       dependencies: ["clue-key"],
       evidenceNodeIds: [],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
     });

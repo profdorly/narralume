@@ -320,6 +320,7 @@ describe("narrative state and retrieval", () => {
       dependencies: [],
       evidenceNodeIds: [chapter1.id],
       resolutionNodeId: null,
+      sourceId: null,
       createdAt: now,
       updatedAt: now,
       updatedAt: now,

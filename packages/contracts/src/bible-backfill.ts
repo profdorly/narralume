@@ -193,6 +193,13 @@ export const BibleBackfillDetailSchema = z.object({
   counts: BibleBackfillCountsSchema,
   usage: BibleBackfillUsageSchema,
   availableActions: z.array(BibleBackfillActionSchema),
+  /**
+   * Current timeline events the manuscript import created that are still not
+   * anchored to a chapter: no settled chapter showed them happening (for
+   * example backstory the prose only mentions). Shown to the author when the
+   * job finishes so leftover events are never silent.
+   */
+  unanchoredImportedEvents: z.number().int().nonnegative(),
 });
 export type BibleBackfillDetailDto = z.infer<typeof BibleBackfillDetailSchema>;
 

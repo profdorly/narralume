@@ -47,6 +47,7 @@ import { migration043 } from "./migrations/043-persona-card-profile.js";
 import { migration044 } from "./migrations/044-lorebooks.js";
 import { migration045 } from "./migrations/045-knowledge-corrections.js";
 import { migration046 } from "./migrations/046-bible-backfill.js";
+import { migration047 } from "./migrations/047-foreshadow-source.js";
 
 export interface Migration {
   readonly version: number;
@@ -115,6 +116,7 @@ const MIGRATIONS: readonly Migration[] = [
   migration044,
   migration045,
   migration046,
+  migration047,
 ];
 
 interface MigrationRow {

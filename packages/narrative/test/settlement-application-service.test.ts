@@ -713,7 +713,8 @@ describe("SettlementApplicationService", () => {
         label: "Broken key",
         createdByChangeSetId: "change-1",
         sourceType: null,
-        sourceId: null,
+        // A settlement-planted foreshadow records its change set as source.
+        sourceId: "change-1",
         reopens: false,
       },
     ]);
@@ -749,6 +750,160 @@ describe("SettlementApplicationService", () => {
           factId: "change-1:fact:0",
         }),
       ]),
+    );
+  });
+
+  describe("anchoring an existing timeline event", () => {
+    function seedEvent(
+      id: string,
+      overrides: { outlineNodeId?: string | null; storyTime?: string } = {},
+    ) {
+      state.insertTimelineEvent({
+        id,
+        projectId: "p1",
+        title: "Hero wakes",
+        description: "Imported from the manuscript.",
+        outlineNodeId: overrides.outlineNodeId ?? null,
+        storyTimeStart: overrides.storyTime ?? null,
+        storyTimeEnd: overrides.storyTime ?? null,
+        sequence: 1,
+        participants: ["hero"],
+        causes: [],
+        visibility: "reader",
+        sourceId: `${id}-candidate`,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    function anchorPayload(eventId: string): Record<string, unknown> {
+      const payload = settlementPayload("awake");
+      const [timeline] = payload.timelineCandidates as Record<
+        string,
+        unknown
+      >[];
+      return {
+        ...payload,
+        timelineCandidates: [{ ...timeline, anchorEventId: eventId }],
+      };
+    }
+
+    it("anchors the event to the settled chapter instead of inserting one", () => {
+      seedEvent("imported-wake");
+      seedChangeSet("anchor-1", anchorPayload("imported-wake"));
+      const service = new SettlementApplicationService(database);
+
+      expect(
+        service
+          .changedExistingRecords("p1", "anchor-1")
+          .filter((record) => record.kind === "timeline"),
+      ).toEqual([
+        {
+          path: "timelineCandidates.0",
+          kind: "timeline",
+          action: "anchor",
+          id: "imported-wake",
+          label: "Hero wakes",
+          createdByChangeSetId: null,
+          sourceType: null,
+          sourceId: "imported-wake-candidate",
+        },
+      ]);
+
+      const result = service.apply({
+        projectId: "p1",
+        changeSetId: "anchor-1",
+        now: "2026-08-10T00:02:00.000Z",
+      });
+      expect(result.applied.timelineEventIds).toEqual(["imported-wake"]);
+      expect(state.listTimeline("p1")).toEqual([
+        expect.objectContaining({
+          id: "imported-wake",
+          title: "Hero wakes",
+          description: "Imported from the manuscript.",
+          outlineNodeId: "chapter-1",
+          storyTimeStart: "dawn",
+          storyTimeEnd: "dawn",
+          participants: ["hero"],
+          sourceId: "imported-wake-candidate",
+          updatedAt: "2026-08-10T00:02:00.000Z",
+        }),
+      ]);
+      expect(state.listKnowledge("p1")).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "anchor-1:knowledge:timeline:0:0",
+            timelineEventId: "imported-wake",
+            learnedAtNodeId: "chapter-1",
+          }),
+        ]),
+      );
+      expect(state.listRevisions("p1", "timeline", "imported-wake")).toEqual([
+        expect.objectContaining({ operation: "create" }),
+        expect.objectContaining({ operation: "update" }),
+      ]);
+    });
+
+    it.each([
+      {
+        name: "already anchored",
+        seed: () => seedEvent("event", { outlineNodeId: "chapter-2" }),
+        reason: "target_already_anchored",
+      },
+      {
+        name: "voided",
+        seed: () => {
+          seedEvent("event");
+          state.removeTimelineEvent("p1", "event", now);
+        },
+        reason: "target_voided",
+      },
+      { name: "missing", seed: () => undefined, reason: "target_not_found" },
+    ])(
+      "refuses to anchor an event that is $name, even when forced",
+      ({ seed, reason }) => {
+        seed();
+        seedChangeSet("anchor-2", anchorPayload("event"));
+        const service = new SettlementApplicationService(database);
+        expect(
+          service
+            .changedExistingRecords("p1", "anchor-2")
+            .filter((record) => record.kind === "timeline"),
+        ).toEqual([]);
+        const timelineBefore = state.listTimeline("p1", {
+          includeVoided: true,
+        });
+
+        for (const conflictPolicy of ["reject", "force"] as const) {
+          let error: unknown;
+          try {
+            service.apply({
+              projectId: "p1",
+              changeSetId: "anchor-2",
+              conflictPolicy,
+              now,
+            });
+          } catch (caught) {
+            error = caught;
+          }
+          expect(error).toBeInstanceOf(SettlementConflictError);
+          expect((error as SettlementConflictError).conflicts).toEqual([
+            {
+              path: "timelineCandidates.0",
+              existingIds: ["event"],
+              reason,
+            },
+          ]);
+        }
+        // Nothing from the change set was applied.
+        expect(state.listTimeline("p1", { includeVoided: true })).toEqual(
+          timelineBefore,
+        );
+        expect(canon.listEffectiveFacts("p1")).toEqual([]);
+        expect(reviews.getCanonChangeSet("p1", "anchor-2")?.status).toBe(
+          "candidate",
+        );
+      },
     );
   });
 });

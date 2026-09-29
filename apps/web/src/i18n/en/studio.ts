@@ -309,10 +309,15 @@ export const studio: typeof studioZh = {
     factText: "{entity} · {predicate}: {value}",
     relationshipText: "{from} and {to}: {relation}; {change}",
     foreshadowText: "{action} “{title}”",
+    timelineAnchorText: "Anchor the existing event “{title}” to this chapter; no new event is created",
+    timelineAnchorStoryTime: "story time: {storyTime}",
+    timelineAnchorKeeps:
+      "the event keeps its own description, participants, causes and visibility",
     itemLabel: {
       stateDelta: "State change",
       fact: "Story fact",
       timeline: "Timeline",
+      timelineAnchor: "Timeline · anchor",
       relationship: "Relationship",
       foreshadow: "Foreshadowing",
     },
@@ -329,6 +334,9 @@ export const studio: typeof studioZh = {
       targetSlotMismatch: "The target does not match the proposition",
       targetNotFound: "The target record does not exist",
       targetPairMismatch: "The relationship sides do not match the target",
+      targetVoided: "The target event was removed",
+      targetAlreadyAnchored: "The target event is already anchored to a chapter",
+      settlementUnanchored: "These story changes have no chapter to anchor the event to",
     },
   },
   comments: {

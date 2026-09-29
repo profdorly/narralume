@@ -191,6 +191,7 @@ database.transaction(() => {
     dependencies: [],
     evidenceNodeIds: [chapter.id],
     resolutionNodeId: null,
+    sourceId: null,
     createdAt: now,
     updatedAt: now,
   });
