@@ -197,7 +197,7 @@
 
 .bible-backfill__items li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.5rem;
   padding: 0.25rem 0.4rem;
@@ -317,6 +317,23 @@
   color: var(--ink-faint);
   font-size: 0.74rem;
   line-height: 1.6;
+}
+
+.bible-backfill__item-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+}
+
+.bible-backfill__sections-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  margin: 0 0 0.75rem;
+  cursor: pointer;
 }
 
 .bible-backfill__cost {

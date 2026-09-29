@@ -35,6 +35,16 @@ import {
 
 import { isImportDerivedSource } from "./import-provenance.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";
+
+/** Item note code of a chapter the author asked to read again ("Re-read chapter"). */
+export const BIBLE_BACKFILL_REREAD_NOTE = "bible_backfill.item.reread";
+/** Run-policy flag telling the settlement worker the chapter was read before. */
+export const BIBLE_BACKFILL_REREAD_POLICY_FLAG = "bibleBackfillReread";
+
+/** Whether an item is a requested re-read of an already settled chapter. */
+export function isRereadItem(item: Pick<BibleBackfillItem, "note">): boolean {
+  return item.note?.reread === true;
+}
 import {
   deterministicRequestId,
   deterministicUuid,
@@ -179,7 +189,11 @@ export class BibleBackfillService {
         );
       }
       requireWritingAssignment(this.database, this.environment);
-      const items = this.materializeItems(projectId, input.chapterIds);
+      const items = this.materializeItems(
+        projectId,
+        input.chapterIds,
+        input.rereadSettled,
+      );
       const job = this.backfills.createJob({
         id: jobId,
         projectId,
@@ -401,6 +415,7 @@ export class BibleBackfillService {
   private materializeItems(
     projectId: string,
     chapterIds: readonly string[] | undefined,
+    rereadSettled: boolean,
   ): BibleBackfillItemSeed[] {
     const chapters = this.story
       .listOutline(projectId)
@@ -440,17 +455,22 @@ export class BibleBackfillService {
         withoutManuscript.push(node.id);
         continue;
       }
+      const settled = this.isVersionSettled(
+        projectId,
+        node.id,
+        version,
+        settlementIndex,
+      );
+      // A requested re-read settles an already settled text again; the note
+      // tells the coordinator not to adopt that earlier settlement.
+      const reread = rereadSettled && settled;
       items.push({
         outlineNodeId: node.id,
         documentId: document.id,
         versionId: version.id,
-        skipReason: this.isVersionSettled(
-          projectId,
-          node.id,
-          version,
-          settlementIndex,
-        )
-          ? "already_settled"
+        skipReason: settled && !reread ? "already_settled" : null,
+        note: reread
+          ? { code: BIBLE_BACKFILL_REREAD_NOTE, reread: true }
           : null,
       });
     }

@@ -64,6 +64,12 @@ export const CreateBibleBackfillRequestSchema = z
     mode: BibleBackfillModeSchema.default("review_each"),
     /** Outline chapter node ids to include; omitted = every chapter with a manuscript. */
     chapterIds: z.array(IdSchema).min(1).max(5_000).optional(),
+    /**
+     * Read the selected chapters again even when their current text was
+     * already settled ("Re-read chapter"): the settlement adds what is missing
+     * and corrects what is wrong instead of skipping the chapter.
+     */
+    rereadSettled: z.boolean().default(false),
   })
   .strict();
 export type CreateBibleBackfillRequest = z.infer<

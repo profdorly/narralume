@@ -2299,6 +2299,8 @@ export async function startBibleBackfill(
     requestId: string;
     mode?: BibleBackfillMode;
     chapterIds?: string[];
+    /** 重新读已结算过的章节（“Re-read chapter”），补缺漏、纠正错误。 */
+    rereadSettled?: boolean;
   },
 ): Promise<BibleBackfillCreatedDto> {
   return requestJson(

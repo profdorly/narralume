@@ -149,7 +149,7 @@ export const shelf: typeof shelfZh = {
     appliedTitle: "“{name}” is on the shelf",
     appliedBody:
       "The chapters were imported as saved prose, but the Story Bible hasn't been filled in chapter by chapter yet. Let AI read them in order to add chapter summaries, facts, character knowledge, and more to the Story Bible.",
-    completeBible: "Complete Story Bible with AI",
+    completeBible: "Generate Story Bible with AI",
     openProject: "Open project overview",
   },
 };

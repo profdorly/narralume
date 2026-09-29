@@ -176,7 +176,7 @@ export const delivery = {
       viewRun: "查看分析运行",
       applied: "导入已应用。",
       openTarget: "打开目标项目",
-      completeBible: "用 AI 补全故事圣经",
+      completeBible: "用 AI 生成故事圣经",
       empty: "还没有导入批次。",
     },
     agentSkills: {

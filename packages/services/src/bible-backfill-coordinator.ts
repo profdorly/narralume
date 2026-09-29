@@ -18,11 +18,13 @@ import {
 } from "@narralume/persistence";
 
 import {
+  BIBLE_BACKFILL_REREAD_POLICY_FLAG,
   BibleBackfillService,
   childFailureError,
   currentBackfillItem,
   finalizeBackfillCancellation,
   isOwnBackfillRun,
+  isRereadItem,
   isTerminalBackfillJob,
   settlementRunOutcome,
   type SettlementRunOutcome,
@@ -324,8 +326,10 @@ export class BibleBackfillCoordinator {
     }
     // A settlement of exactly this text that already exists — in flight,
     // still undecided, applied, or empty — is adopted instead of settling
-    // the same text twice.
-    const adopted = this.existingSettlement(job, versionId);
+    // the same text twice. A requested re-read settles the text again, so it
+    // only adopts a settlement still in flight or undecided.
+    const reread = isRereadItem(item);
+    const adopted = this.existingSettlement(job, versionId, reread);
     if (adopted) {
       const { run, adoption } = adopted;
       const { status, changeSetId } = adoption;
@@ -353,6 +357,7 @@ export class BibleBackfillCoordinator {
       return this.changed(job.id, `item.adopted.${adoption.outcome}`);
     }
     if (
+      !reread &&
       this.service.isVersionSettled(job.projectId, item.outlineNodeId, version)
     ) {
       this.backfills.updateItem(
@@ -387,6 +392,7 @@ export class BibleBackfillCoordinator {
           bibleBackfillJobId: job.id,
           bibleBackfillOrdinal: item.ordinal,
           [BIBLE_BACKFILL_POLICY_FLAG]: true,
+          ...(reread ? { [BIBLE_BACKFILL_REREAD_POLICY_FLAG]: true } : {}),
         },
         now,
       });
@@ -418,6 +424,7 @@ export class BibleBackfillCoordinator {
   private existingSettlement(
     job: BibleBackfillJob,
     versionId: string,
+    reread = false,
   ): { run: NarrativeRun; adoption: Adoption } | null {
     const candidates = this.runs
       .listRunsForDocumentVersion(job.projectId, "manual-settlement", versionId)
@@ -428,7 +435,15 @@ export class BibleBackfillCoordinator {
         adoption: adoptionOf(
           settlementRunOutcome(this.database, job.projectId, run),
         ),
-      }));
+      }))
+      // A re-read must not stop at the settlement it was asked to redo.
+      .filter(
+        ({ adoption }) =>
+          !reread ||
+          (adoption !== null &&
+            adoption.outcome !== "applied" &&
+            adoption.outcome !== "empty"),
+      );
     const found =
       candidates.find(({ adoption }) => adoption?.outcome === "applied") ??
       candidates.find(

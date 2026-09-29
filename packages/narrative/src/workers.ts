@@ -1353,6 +1353,11 @@ export class ChapterWorkerSuite {
               ...(referenceExistingStoryState
                 ? [
                     `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId)}</settlement-note>`,
+                    ...(snapshot.run.policy.bibleBackfillReread === true
+                      ? [
+                          `<reread-note>${this.rereadNote(snapshot.run.projectId)}</reread-note>`,
+                        ]
+                      : []),
                     `<unanchored-timeline>${unanchoredTimelineBlock(
                       this.anchorableTimeline(
                         snapshot.run.projectId,
@@ -1781,6 +1786,23 @@ export class ChapterWorkerSuite {
      （或无法定位章节）的时间线事件单独列在 <unanchored-timeline> 中，本章
      写到的事件按 ID 锚定到本章。锚定规则只出现在这里：普通结算的
      anchorEventId 一律为 null（校验同样拒绝）。 */
+  /* 作者要求重新读一遍已结算过的章节（“Re-read chapter”）：故事圣经里已有
+     这一章产生的条目，只补缺漏、纠正错误，不重复已有记录。 */
+  private rereadNote(projectId: string): string {
+    return instructionsFor(this.projectLanguage(projectId), {
+      "zh-CN": [
+        "作者要求重新阅读这一章：它此前已经结算过，权威上下文中的事实、关系、时间线、人物认知和伏笔里已经包含这一章产生的条目。",
+        "只补充这些条目遗漏的内容、纠正与正文不符的内容：已有事实要改用 supersede 或 withdraw 并引用其 ID，关系用 update/end，伏笔用 develop/resolve。",
+        "不要为已经记录的同一件事再新建事实、事件、关系或伏笔；没有需要补充或纠正的内容时，各候选数组留空。",
+      ],
+      en: [
+        "The author asked to read this chapter again: it was settled before, so the facts, relationships, timeline, character knowledge and foreshadows in the authoritative context already include the records it produced.",
+        "Only add what those records miss and correct what contradicts the prose: supersede or withdraw an existing fact by its ID, update/end relationships, develop/resolve foreshadows.",
+        "Do not create a new fact, event, relationship or foreshadow for something already recorded; when nothing needs adding or correcting, leave the candidate arrays empty.",
+      ],
+    });
+  }
+
   private existingStoryStateNote(projectId: string): string {
     return instructionsFor(this.projectLanguage(projectId), {
       "zh-CN": [
