@@ -2,6 +2,7 @@ import type { ProjectCoverMutation } from "@narralume/contracts";
 import { createCanonFact, type CanonAuthority } from "@narralume/domain";
 import {
   SqliteAutomationRepository,
+  SqliteBibleBackfillRepository,
   SqliteCanonRepository,
   SqliteDocumentRepository,
   SqliteProjectCoverRepository,
@@ -74,6 +75,10 @@ export function softDeleteProject(
       runs.setRunStatus(run.id, "cancelled", input.now, "project_deleted");
     for (const session of activeSessions)
       automation.setSessionStatus(session.id, "cancelled", input.now);
+    new SqliteBibleBackfillRepository(database).cancelActiveJobs(
+      input.projectId,
+      input.now,
+    );
     return projects.softDelete(
       input.projectId,
       input.expectedUpdatedAt,

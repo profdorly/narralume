@@ -47,7 +47,12 @@ export {
   sessionProductProjection,
   sessionStopReason,
 } from "./automation-service.js";
-export { startManualSettlementRun } from "./manual-settlement.js";
+export {
+  createManualSettlementRun,
+  findActiveManualSettlementRun,
+  startManualSettlementRun,
+  type ManualSettlementOrigin,
+} from "./manual-settlement.js";
 export {
   acceptEditProposal,
   cancelRunsInvalidatedByRevert,
@@ -108,6 +113,8 @@ export {
 export * from "./run-coordinator.js";
 export * from "./event-hub.js";
 export * from "./autopilot-coordinator.js";
+export * from "./bible-backfill-service.js";
+export * from "./bible-backfill-coordinator.js";
 export * from "./long-goal-coordinator.js";
 export * from "./assistant-tool-executor.js";
 export * from "./project-bootstrap.js";
@@ -130,6 +137,7 @@ export * from "./route-error.js";
 export * from "./agent-skill-routes.js";
 export * from "./assistant-routes.js";
 export * from "./automation-routes.js";
+export * from "./bible-backfill-routes.js";
 export * from "./canon-candidate-routes.js";
 export * from "./delivery-routes.js";
 export * from "./long-novel-routes.js";

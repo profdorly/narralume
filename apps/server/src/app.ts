@@ -24,6 +24,7 @@ import {
 import {
   AssistantToolExecutor,
   AutopilotCoordinator,
+  BibleBackfillCoordinator,
   LongGoalCoordinator,
   RunCoordinator,
   ServerEventHub,
@@ -31,6 +32,7 @@ import {
   registerAgentSkillRoutes,
   registerAssistantRoutes,
   registerAutomationRoutes,
+  registerBibleBackfillRoutes,
   registerCanonCandidateRoutes,
   registerDeliveryRoutes,
   registerLongNovelRoutes,
@@ -145,6 +147,7 @@ export async function buildApp(
     "startup recovery: expired leases requeued, orphaned calls/streams interrupted",
   );
   let autopilotCoordinator: AutopilotCoordinator | null = null;
+  let bibleBackfillCoordinator: BibleBackfillCoordinator | null = null;
   let backupScheduler: DatabaseBackupScheduler | null = null;
   let assistantAutoExecutor: AssistantToolExecutor | null = null;
   let longGoalCoordinatorRef: LongGoalCoordinator | null = null;
@@ -154,7 +157,10 @@ export async function buildApp(
         { type: "run.status", runId, status: action.type, action },
         "run.status",
       );
-      if (enableBackgroundWorker) autopilotCoordinator?.wake();
+      if (enableBackgroundWorker) {
+        autopilotCoordinator?.wake();
+        bibleBackfillCoordinator?.wake();
+      }
       if (action.type === "complete_run" && assistantAutoExecutor) {
         try {
           assistantAutoExecutor.runAutoActivitiesForTurn(runId);
@@ -214,6 +220,27 @@ export async function buildApp(
     () => new Date(),
     enableBackgroundWorker,
     environment,
+  );
+  bibleBackfillCoordinator = new BibleBackfillCoordinator(
+    database,
+    coordinator,
+    {
+      environment,
+      autoRunWorker: enableBackgroundWorker,
+      onChange: (job, action) =>
+        events.broadcast(
+          {
+            type: "bible_backfill.status",
+            projectId: job.projectId,
+            jobId: job.id,
+            status: job.status,
+            action,
+          },
+          "bible_backfill.status",
+        ),
+      onError: (error) =>
+        app.log.error({ err: error }, "bible backfill coordinator failed"),
+    },
   );
   const longGoalCoordinator = new LongGoalCoordinator(database, {
     runCoordinator: coordinator,
@@ -333,6 +360,9 @@ export async function buildApp(
         autopilotCoordinator.wake();
       }
     },
+    onCanonChangeSetDecided: () => {
+      if (enableBackgroundWorker) bibleBackfillCoordinator.wake();
+    },
   });
   registerLongNovelRoutes(routes, database);
   registerTemplateRoutes(routes, database);
@@ -346,6 +376,12 @@ export async function buildApp(
     runCoordinator: coordinator,
     autopilotCoordinator,
     longGoalCoordinator,
+    enableBackgroundWorker,
+    environment,
+  });
+  registerBibleBackfillRoutes(routes, database, {
+    coordinator: bibleBackfillCoordinator,
+    runCoordinator: coordinator,
     enableBackgroundWorker,
     environment,
   });
@@ -375,6 +411,7 @@ export async function buildApp(
     longGoalCoordinator.reconcileAll();
     coordinator.wake();
     autopilotCoordinator.wake();
+    bibleBackfillCoordinator.wake();
     if (backupService) {
       const projects = new SqliteProjectRepository(database);
       backupScheduler = new DatabaseBackupScheduler(
@@ -441,6 +478,7 @@ export async function buildApp(
   app.addHook("onClose", async () => {
     await backupScheduler?.stop();
     await autopilotCoordinator?.stop();
+    await bibleBackfillCoordinator?.stop();
     await coordinator.stop();
     events.close();
     if (ownsDatabase) database.close();

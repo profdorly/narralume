@@ -61,6 +61,15 @@ Click "Import manuscript" and choose Markdown, plain text, DOCX, HTML, EPUB, or 
 
 A project bundle suits migrating a work already organized in NarraLume; Markdown, plain text, DOCX, and EPUB suit importing prose or older drafts. Imports never carry model keys.
 
+### Complete the Story Bible from the manuscript
+
+Imported chapters arrive as saved prose, but they have not been settled chapter by chapter, so chapter summaries, canon facts, character knowledge, and chapter-anchored timeline, relation, and foreshadow changes are still missing. "Complete Story Bible from manuscript" (offered after an import and in the Story Bible workspace) settles every chapter in reading order through the same story-change pipeline used when you save a chapter by hand. It requires an assigned default generation model; without one it refuses to start rather than skipping chapters.
+
+- "Review each chapter" (default) pauses after every chapter that produced changes. Adopt or reject them in the "Story changes" panel; the next chapter is settled only after that decision, because later chapters build on the canon the earlier ones established. Chapters with no story changes continue automatically.
+- "Apply automatically, stop on conflicts" adopts each chapter's changes as soon as they are ready. When a change conflicts with current canon (for example a locked fact), it stops and shows the conflict. Resolve it in the "Story changes" panel, then resume.
+- You can pause, resume, or cancel at any time, skip a chapter, and retry a chapter whose settlement failed. Progress is saved, so the job continues where it stopped after a restart. Cancelling keeps already adopted changes; changes still awaiting a decision stay in the "Story changes" panel.
+- Chapters whose current text was already settled are skipped. Relations, timeline events, and foreshadows extracted during import are referenced and updated rather than created again.
+
 ### Covers, duplication, and archive
 
 From a work's more-actions menu you can edit the title, subtitle, premise, and cover. Covers support JPG, PNG, and WebP, and can be adjusted in a 3:4 portrait frame after upload.
