@@ -5,7 +5,7 @@ import { createDocument } from "@narralume/domain";
 import { SqliteDocumentRepository } from "@narralume/persistence";
 import { NodeNarrativeDatabase } from "@narralume/persistence/node";
 import JSZip from "jszip";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
@@ -737,6 +737,308 @@ describe("delivery API", () => {
     });
   });
 
+  it("splits Portuguese text, DOCX heading styles, and EPUB headings into chapters", async () => {
+    const { app } = await setup();
+    const text = [
+      "O Farol",
+      "Para Ana.",
+      "Prólogo",
+      "A noite caiu sobre a baía.",
+      "Capítulo 1",
+      "Era uma vez uma cidade à beira-mar.",
+      `Capítulo 2 — ${"a maré subia devagar e ninguém reparou, ".repeat(3)}`,
+      "CAPÍTULO II — O Retorno",
+      "— Voltei — disse ele.",
+      "Epílogo",
+      "Anos depois, a luz ainda girava.",
+    ].join("\n\n");
+    const textPreview = await previewImport(app, "O Farol.txt", "text", text);
+    expect(documentCandidates(textPreview)).toEqual([
+      { title: "O Farol", kind: "chapter" },
+      { title: "Prólogo", kind: "chapter" },
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "CAPÍTULO II — O Retorno", kind: "chapter" },
+      { title: "Epílogo", kind: "chapter" },
+    ]);
+    expect(
+      textPreview.candidates.find((item) => item.kind === "style")?.title,
+    ).toBe("Source text statistics style");
+
+    const docx = new JSZip();
+    docx.file(
+      "word/styles.xml",
+      '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Ttulo1"><w:name w:val="heading 1"/></w:style><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>',
+    );
+    const paragraph = (value: string, style: string) =>
+      `<w:p><w:pPr><w:pStyle w:val="${style}"/></w:pPr><w:r><w:t>${value}</w:t></w:r></w:p>`;
+    docx.file(
+      "word/document.xml",
+      `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${[
+        paragraph("Um Começo", "Ttulo1"),
+        paragraph("A primeira página.", "Normal"),
+        paragraph("Outro Rumo", "Heading1"),
+        paragraph("A segunda página.", "Normal"),
+      ].join("")}</w:body></w:document>`,
+    );
+    const docxPreview = await previewImport(
+      app,
+      "livro.docx",
+      "docx",
+      await docx.generateAsync({ type: "nodebuffer" }),
+    );
+    expect(documentCandidates(docxPreview)).toEqual([
+      { title: "Um Começo", kind: "chapter" },
+      { title: "Outro Rumo", kind: "chapter" },
+    ]);
+
+    const epub = new JSZip();
+    epub.file(
+      "META-INF/container.xml",
+      '<container><rootfiles><rootfile full-path="OEBPS/content.opf" /></rootfiles></container>',
+    );
+    epub.file(
+      "OEBPS/content.opf",
+      '<package><manifest><item id="c1" href="c1.xhtml" media-type="application/xhtml+xml" /><item id="c2" href="c2.xhtml" media-type="application/xhtml+xml" /></manifest><spine><itemref idref="c1" /><itemref idref="c2" /></spine></package>',
+    );
+    epub.file(
+      "OEBPS/c1.xhtml",
+      "<html><head><title>Capítulo 1</title></head><body><h1>\n  <span>Capítulo 1</span>\n</h1><p>Primeiro.</p></body></html>",
+    );
+    epub.file(
+      "OEBPS/c2.xhtml",
+      "<html><head><title>Capítulo 2</title></head><body><h2>A Fuga</h2><p>Segundo.</p></body></html>",
+    );
+    const epubPreview = await previewImport(
+      app,
+      "livro.epub",
+      "epub",
+      await epub.generateAsync({ type: "nodebuffer" }),
+    );
+    expect(documentCandidates(epubPreview)).toEqual([
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "A Fuga", kind: "chapter" },
+    ]);
+  });
+
+  it("imports an HTML manuscript end to end, splitting headings and applying chapters", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "O Farol",
+        language: "en",
+      },
+    );
+    const html = [
+      "<!doctype html><html><head><title>Capítulo 1</title><style>h1{}</style></head><body>",
+      "<p>Para Ana.</p>",
+      '<h1 class="chapter"><span>Capítulo 1</span></h1>',
+      "<p>Era uma vez &amp; outra vez.</p><p>Capítulo 3. Era a última página.</p>",
+      '<h1><img src="c2.png" alt="Capítulo 2 — O Rio"/></h1>',
+      "<p>A água subia.<br/>Devagar.</p><script>alert(1)</script>",
+      "</body></html>",
+    ].join("\n");
+    const preview = await previewImport(
+      app,
+      "o-farol.html",
+      "html",
+      html,
+      project.id,
+    );
+    expect(preview.batch).toMatchObject({ status: expect.any(String) });
+    expect(documentCandidates(preview)).toEqual([
+      { title: "o-farol", kind: "chapter" },
+      { title: "Capítulo 1", kind: "chapter" },
+      { title: "Capítulo 2 — O Rio", kind: "chapter" },
+    ]);
+    const contents = preview.candidates
+      .filter((item) => item.kind === "document")
+      .map((item) => item.payload?.content);
+    expect(contents).toEqual([
+      "Para Ana.",
+      "Era uma vez & outra vez.\n\nCapítulo 3. Era a última página.",
+      "A água subia.\nDevagar.",
+    ]);
+    expect(JSON.stringify(contents)).not.toMatch(/alert|h1\{\}|<|#/u);
+
+    await request(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    const documents = await request<{ title: string; kind: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents`,
+    );
+    expect(
+      documents
+        .filter((document) => document.kind === "chapter")
+        .map((document) => document.title)
+        .sort(),
+    ).toEqual(["Capítulo 1", "Capítulo 2 — O Rio", "o-farol"].sort());
+  });
+
+  it("rejects a DOCX whose document.xml and styles.xml together exceed the expansion limit", async () => {
+    const { app } = await setup();
+    const limit = 100 * 1024 * 1024;
+    // 真实 ZIP 的声明大小与解压校验会先拦下超限条目；这里替换读取结果，
+    // 只让两个 XML 的合计长度越过上限，单个 document.xml 仍在限内。
+    const documentXml = `<w:document/>${" ".repeat(limit - 1024)}`;
+    const stylesXml = `<w:styles/>${" ".repeat(2048)}`;
+    const entry = (name: string, text: string) => ({
+      name,
+      dir: false,
+      _data: { uncompressedSize: 1 },
+      async: async () => text,
+    });
+    const files = {
+      "word/document.xml": entry("word/document.xml", documentXml),
+      "word/styles.xml": entry("word/styles.xml", stylesXml),
+    };
+    vi.spyOn(JSZip, "loadAsync").mockResolvedValue({
+      files,
+      file: (name: string) => files[name as keyof typeof files] ?? null,
+    } as unknown as JSZip);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/imports/preview",
+      payload: {
+        targetProjectId: null,
+        filename: "oversized.docx",
+        format: "docx",
+        contentBase64: Buffer.from("stub").toString("base64"),
+      },
+    });
+    expect(response.statusCode).toBe(422);
+    expect(response.json()).toMatchObject({
+      error: { code: "import.docx.document_too_large" },
+    });
+    expect(documentXml.length).toBeLessThanOrEqual(limit);
+    expect(documentXml.length + stylesXml.length).toBeGreaterThan(limit);
+  });
+
+  it("round-trips exported DOCX and EPUB chapters through import", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "O Farol",
+        language: "en",
+      },
+    );
+    const source = await previewImport(
+      app,
+      "o-farol.md",
+      "markdown",
+      "# Um Começo\n\nA primeira página.\n\n# Outro Rumo\n\nA segunda página.",
+      project.id,
+    );
+    await request(
+      app,
+      "POST",
+      `/api/imports/${source.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    for (const format of ["docx", "epub"] as const) {
+      const exported = await app.inject({
+        method: "GET",
+        url: `/api/projects/${project.id}/exports/${format}`,
+      });
+      expect(exported.statusCode).toBe(200);
+      const reimported = await previewImport(
+        app,
+        `o-farol.${format}`,
+        format,
+        exported.rawPayload,
+      );
+      expect(documentCandidates(reimported)).toEqual([
+        { title: "Um Começo", kind: "chapter" },
+        { title: "Outro Rumo", kind: "chapter" },
+      ]);
+    }
+  });
+
+  it("labels staged analysis and imported notes in the English project language", async () => {
+    const { app } = await setup();
+    const project = await request<{ id: string }>(
+      app,
+      "POST",
+      "/api/projects",
+      {
+        requestId: globalThis.crypto.randomUUID(),
+        title: "Tide Letters",
+        language: "en",
+      },
+    );
+    const preview = await previewImport(
+      app,
+      "tide.md",
+      "markdown",
+      [
+        "# 第一章 退潮信",
+        "沈砚在邮局地板上发现一封覆着盐粒的空白信。",
+        "",
+        "# 第二章 无名地址",
+        "她把信举到灯前，收件人的名字才从纸纤维里浮出。",
+      ].join("\n"),
+      project.id,
+    );
+    const analysis = await request<{ run: { id: string } }>(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/analyze`,
+      { requestId: "analyze-en", policy: { maxRetries: 0 } },
+      202,
+    );
+    expect(await finishRun(app, project.id, analysis.run.id)).toBe("completed");
+    const ready = await request<ImportDetail>(
+      app,
+      "GET",
+      `/api/imports/${preview.batch.id}`,
+      undefined,
+      200,
+    );
+    expect(ready.candidates.map((item) => item.title)).toEqual(
+      expect.arrayContaining([
+        "Author intent candidate",
+        "沈砚 · Character arc",
+      ]),
+    );
+    await request(
+      app,
+      "POST",
+      `/api/imports/${preview.batch.id}/actions`,
+      { action: "apply", selectedCandidateIds: [] },
+      200,
+    );
+    const documents = await request<{ id: string; title: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents`,
+    );
+    const arc = documents.find(
+      (document) => document.title === "沈砚 · Character arc",
+    );
+    const versions = await request<{ content: string }[]>(
+      app,
+      "GET",
+      `/api/projects/${project.id}/documents/${arc!.id}/versions`,
+    );
+    expect(versions[0]!.content).toContain("## Source evidence");
+    expect(versions[0]!.content).toContain("Content hash: ");
+    expect(versions[0]!.content).not.toContain("原文证据");
+  });
+
   it("reports quality and exports a 200-document manuscript within the delivery budget", async () => {
     const { app, database } = await setup();
     const project = await request<{ id: string }>(
@@ -1174,6 +1476,27 @@ async function request<T = unknown>(
       : await app.inject({ method, url, payload });
   expect(response.statusCode, response.body).toBe(expected);
   return response.json() as T;
+}
+
+async function previewImport(
+  app: Awaited<ReturnType<typeof buildApp>>,
+  filename: string,
+  format: "markdown" | "text" | "docx" | "epub" | "html",
+  content: string | Buffer,
+  targetProjectId: string | null = null,
+) {
+  return request<ImportDetail>(app, "POST", "/api/imports/preview", {
+    targetProjectId,
+    filename,
+    format,
+    contentBase64: Buffer.from(content).toString("base64"),
+  });
+}
+
+function documentCandidates(detail: ImportDetail) {
+  return detail.candidates
+    .filter((item) => item.kind === "document")
+    .map((item) => ({ title: item.title, kind: item.payload?.kind }));
 }
 
 function deliveryModel(

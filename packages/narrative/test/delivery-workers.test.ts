@@ -1,4 +1,4 @@
-import { createProject } from "@narralume/domain";
+import { createProject, sha256Hex } from "@narralume/domain";
 import {
   buildImportAnalysisRecipe,
   buildStyleExtractionRecipe,
@@ -177,6 +177,248 @@ describe("DeliveryWorkerSuite", () => {
     ).toBeGreaterThan(27_000);
   });
 
+  it.each([
+    {
+      language: "zh-CN",
+      invariant: "必须使用与原文正文相同的语言书写",
+      synthesisInvariant: "保持与输入分析相同的原文语言",
+      synthesisMessage: "保持输入分析的语言",
+      scaffold: ["目标作品：《Long Import》", "分段 1/3", "正文：\n"],
+      foreign: "Target work:",
+      foreignSynthesis: "Keep the language of the input analyses",
+      intentTitle: "作者意图候选",
+      arcTitle: "Rita · 角色弧",
+    },
+    {
+      language: "en",
+      invariant: "in the same language as the source manuscript text",
+      synthesisInvariant: "in the same source-manuscript language",
+      synthesisMessage: "Keep the language of the input analyses",
+      scaffold: [
+        'Target work: "Long Import"',
+        "Segment 1/3",
+        "Manuscript text:\n",
+      ],
+      foreign: "目标作品",
+      foreignSynthesis: "保持输入分析的语言",
+      intentTitle: "Author intent candidate",
+      arcTitle: "Rita · Character arc",
+    },
+  ])(
+    "keeps import analysis in the manuscript language for $language projects",
+    async ({
+      language,
+      invariant,
+      synthesisInvariant,
+      synthesisMessage,
+      scaffold,
+      foreign,
+      foreignSynthesis,
+      intentTitle,
+      arcTitle,
+    }) => {
+      database.raw
+        .prepare("UPDATE projects SET language = ? WHERE id = ?")
+        .run(language, "p1");
+      const requests = new Map<
+        string,
+        { instructions: string; content: string }
+      >();
+      const model: NarrativeModelClient = {
+        async text() {
+          throw new Error("unused");
+        },
+        structured: vi.fn(
+          async (_run, _step, purpose, request, _contract, validate) => {
+            requests.set(purpose, {
+              instructions: String(request.instructions),
+              content: String(request.messages[0]?.content),
+            });
+            const checked = validate({
+              ...minimalAnalysis(),
+              characterArcs: purpose.startsWith("import-analysis-synthesis")
+                ? [
+                    {
+                      characterName: "Rita",
+                      startState: "Espera no cais.",
+                      turningPoint: "Recebe a carta.",
+                      direction: "Parte para o mar.",
+                      evidenceParagraphs: [1],
+                    },
+                  ]
+                : [],
+            });
+            if (!checked.success) throw new Error(checked.issues.join("; "));
+            return {
+              value: checked.data,
+              usage: {
+                inputTokens: 10,
+                outputTokens: 10,
+                calls: 1,
+                costUsd: 0,
+                wallTimeMs: 5,
+              },
+              mode: "native" as const,
+              attempts: 1,
+            };
+          },
+        ),
+      };
+      const supervisor = new HarnessSupervisor(
+        runs,
+        new DeliveryWorkerSuite(
+          database,
+          model,
+          () => new Date(now),
+        ).registry(),
+        { now: () => new Date(now), retryDelayMs: 0 },
+      );
+      for (let index = 0; index < 5; index += 1) {
+        await supervisor.processRun("run-1", "worker");
+        if (runs.getRun("run-1")?.status === "completed") break;
+      }
+      expect(runs.getRun("run-1")?.status).toBe("completed");
+
+      const chunk = requests.get("import-analysis-chunk-1")!;
+      expect(chunk.instructions).toContain(invariant);
+      for (const part of scaffold) expect(chunk.content).toContain(part);
+      expect(chunk.content).not.toContain(foreign);
+      const synthesis = requests.get("import-analysis-synthesis-1")!;
+      expect(synthesis.instructions).toContain(synthesisInvariant);
+      expect(synthesis.instructions).toContain(synthesisMessage);
+      expect(synthesis.content).toContain(synthesisMessage);
+      expect(synthesis.content).not.toContain(foreignSynthesis);
+      expect(synthesis.content).toMatch(
+        /<accumulated>\{.*\}<\/accumulated>\n<next>\{.*\}<\/next>$/su,
+      );
+
+      const titles = delivery
+        .listImportCandidates("batch-1")
+        .map((candidate) => candidate.title);
+      expect(titles).toEqual(expect.arrayContaining([intentTitle, arcTitle]));
+      // 占位正文（AAAA…）检测不出语言，不加检测行。
+      expect(chunk.content).not.toMatch(/detected|自动检测/u);
+    },
+  );
+
+  it.each([
+    {
+      language: "en",
+      line: "Manuscript language (detected): Portuguese. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.",
+      invariant: "in the same language as the source manuscript text",
+    },
+    {
+      language: "zh-CN",
+      line: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+      invariant: "必须使用与原文正文相同的语言书写",
+    },
+  ])(
+    "adds the detected manuscript language to $language chunk messages and keeps the invariant",
+    async ({ language, line, invariant }) => {
+      database.raw
+        .prepare("UPDATE projects SET language = ? WHERE id = ?")
+        .run(language, "p1");
+      delivery.upsertImportCandidate({
+        id: "batch-1:document:0",
+        batchId: "batch-1",
+        kind: "document",
+        ordinal: 0,
+        title: "Capítulo 1",
+        payload: {
+          content:
+            "Ela abriu a porta e não viu ninguém.\n\nO farol ainda girava quando o barco chegou à baía.",
+        },
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      });
+      const recorder = recordingModel();
+      await runImportUntilDone(recorder.model);
+
+      const [chunk] = recorder.calls("import-analysis-chunk-1");
+      expect(chunk!.content).toContain(line);
+      expect(chunk!.instructions).toContain(invariant);
+    },
+  );
+
+  it("does not reuse a chunk analysis cached under the previous prompts", async () => {
+    // 旧版本的输入摘要只含来源哈希、分段序号与正文，不含提示词版本与语言。
+    // 分段正文由 importedText 拼成：“# 标题\n正文”。
+    delivery.upsertImportAnalysisArtifact({
+      id: "batch-1:chunk:0:legacy",
+      batchId: "batch-1",
+      runId: "run-1",
+      stage: "chunk",
+      ordinal: 0,
+      inputDigest: sha256Hex(
+        `source-hash\0chunk\x000\0# Long\n${"A".repeat(9_000)}`,
+      ),
+      output: { ...minimalAnalysis(), synopsis: "Produced by old prompts." },
+      outputDigest: "legacy-output-digest",
+      usage: {
+        inputTokens: 1,
+        outputTokens: 1,
+        calls: 1,
+        costUsd: 0,
+        wallTimeMs: 1,
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+    const recorder = recordingModel();
+    await runImportUntilDone(recorder.model);
+
+    expect(recorder.calls("import-analysis-chunk-1")).toHaveLength(1);
+    expect(importPipeline()).toMatchObject({ reusedArtifacts: 0 });
+    expect(
+      delivery
+        .listImportAnalysisArtifacts("batch-1")
+        .find(
+          (artifact) => artifact.stage === "chunk" && artifact.ordinal === 0,
+        )?.output,
+    ).toMatchObject({ synopsis: "A complete import analysis." });
+  });
+
+  it.each([
+    { switchLanguage: false, expectedCalls: 1 },
+    { switchLanguage: true, expectedCalls: 2 },
+  ])(
+    "reuses cached chunk and synthesis analyses only for the same prompt language (switch: $switchLanguage)",
+    async ({ switchLanguage, expectedCalls }) => {
+      const recorder = recordingModel({
+        failOnce: "import-analysis-synthesis-2",
+      });
+      await supervisorFor(recorder.model).processRun("run-1", "worker");
+      expect(runs.getSnapshot("run-1").steps[0]).toMatchObject({
+        status: "failed",
+        error: { retryable: true },
+      });
+      // 三个分段与第一次合并已经缓存。
+      expect(delivery.listImportAnalysisArtifacts("batch-1")).toHaveLength(4);
+      if (switchLanguage)
+        database.raw
+          .prepare("UPDATE projects SET language = ? WHERE id = ?")
+          .run("en", "p1");
+
+      await runImportUntilDone(recorder.model);
+
+      for (const purpose of [
+        "import-analysis-chunk-1",
+        "import-analysis-chunk-3",
+        "import-analysis-synthesis-1",
+      ])
+        expect(recorder.calls(purpose)).toHaveLength(expectedCalls);
+      expect(recorder.calls("import-analysis-synthesis-2")).toHaveLength(2);
+      const retried = recorder.calls("import-analysis-chunk-1").at(-1)!;
+      expect(retried.content).toContain(
+        switchLanguage ? "Manuscript text:" : "正文：",
+      );
+      expect(importPipeline()).toMatchObject({
+        reusedArtifacts: switchLanguage ? 0 : 4,
+      });
+    },
+  );
+
   it("distills a writing sample into an inactive draft profile with a deduped name", async () => {
     delivery.insertStyleProfile({
       id: "style-existing",
@@ -276,6 +518,78 @@ describe("DeliveryWorkerSuite", () => {
     ).toMatchObject({ active: true });
   });
 });
+
+function recordingModel(options: { failOnce?: string } = {}) {
+  const requests: { purpose: string; instructions: string; content: string }[] =
+    [];
+  let failed = false;
+  const model: NarrativeModelClient = {
+    async text() {
+      throw new Error("unused");
+    },
+    structured: vi.fn(
+      async (_run, _step, purpose, request, _contract, validate) => {
+        requests.push({
+          purpose,
+          instructions: String(request.instructions),
+          content: String(request.messages[0]?.content),
+        });
+        if (purpose === options.failOnce && !failed) {
+          failed = true;
+          throw {
+            code: "model.network",
+            message: "temporary failure",
+            retryable: true,
+          };
+        }
+        const checked = validate(minimalAnalysis());
+        if (!checked.success) throw new Error(checked.issues.join("; "));
+        return {
+          value: checked.data,
+          usage: {
+            inputTokens: 10,
+            outputTokens: 10,
+            calls: 1,
+            costUsd: 0,
+            wallTimeMs: 5,
+          },
+          mode: "native" as const,
+          attempts: 1,
+        };
+      },
+    ),
+  };
+  return {
+    model,
+    calls: (purpose: string) =>
+      requests.filter((request) => request.purpose === purpose),
+  };
+}
+
+function supervisorFor(model: NarrativeModelClient) {
+  return new HarnessSupervisor(
+    runs,
+    new DeliveryWorkerSuite(database, model, () => new Date(now)).registry(),
+    { now: () => new Date(clockNow()), retryDelayMs: 0 },
+  );
+}
+
+async function runImportUntilDone(model: NarrativeModelClient) {
+  const supervisor = supervisorFor(model);
+  for (let index = 0; index < 12; index += 1) {
+    clockMs += 5_000;
+    await supervisor.processRun("run-1", "worker");
+    if (runs.getRun("run-1")?.status === "completed") break;
+  }
+  expect(runs.getRun("run-1")?.status).toBe("completed");
+}
+
+function importPipeline() {
+  return runs
+    .getSnapshot("run-1")
+    .steps.find((step) => step.kind === "import.analyze")?.outputArtifact
+    ?.importPipeline;
+}
 
 function minimalAnalysis() {
   return {

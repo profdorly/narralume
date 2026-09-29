@@ -1,3 +1,4 @@
+import type { ProjectLanguage } from "@narralume/contracts";
 import type {
   NarrativeRunStep,
   RunBudgetUsage,
@@ -14,8 +15,12 @@ import {
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
+import {
+  detectManuscriptLanguage,
+  type DetectedManuscriptLanguage,
+} from "./manuscript-language.js";
 import type { NarrativeModelClient } from "./model-client.js";
-import { instructionsFor } from "./prompt-language.js";
+import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 import { ParagraphLocator } from "./paragraph-locator.js";
 import {
   requireActiveProject,
@@ -104,6 +109,11 @@ export class DeliveryWorkerSuite {
     );
     const locator = new ParagraphLocator(documents);
     const chunks = splitImportParagraphs(locator, chunkCharacters);
+    // 整部原稿检测一次，各分段使用同一个语言参考。
+    const manuscriptLanguage = detectManuscriptLanguage(documents);
+    // 缓存的分段与合并结果只在同一版提示词、同一提示语言下复用：重试前升级了
+    // 提示词或改了作品语言时，旧产物必须重新生成。
+    const promptKey = `${IMPORT_ANALYSIS_PROMPT_VERSION}\0${promptLanguageOf(project.language)}`;
     const chunkResults = await concurrentMap(
       chunks,
       Math.max(
@@ -116,7 +126,7 @@ export class DeliveryWorkerSuite {
       signal,
       async (chunk, index, chunkSignal): Promise<ImportChunkResult> => {
         const inputDigest = sha256(
-          `${batch.sourceHash}\0chunk\0${index}\0${chunk.text}`,
+          `${batch.sourceHash}\0chunk\0${index}\0${promptKey}\0${chunk.text}`,
         );
         const cached = this.delivery.getImportAnalysisArtifact(
           batchId,
@@ -146,7 +156,9 @@ export class DeliveryWorkerSuite {
             language: project.language,
             filename: batch.filename,
             text: chunk.promptText,
-            rangeLabel: `分段 ${index + 1}/${chunks.length}`,
+            segment: index + 1,
+            segments: chunks.length,
+            manuscriptLanguage,
             maxOutputTokens: policyNumber(
               snapshot.run.policy,
               "analysisMaxOutputTokens",
@@ -198,7 +210,7 @@ export class DeliveryWorkerSuite {
     let aggregateDigest = digests[0]!;
     for (let index = 1; index < analyses.length; index += 1) {
       const inputDigest = sha256(
-        `${aggregateDigest}\0${digests[index]}\0synthesis\0${index}`,
+        `${aggregateDigest}\0${digests[index]}\0synthesis\0${index}\0${promptKey}`,
       );
       const cached = this.delivery.getImportAnalysisArtifact(
         batchId,
@@ -284,6 +296,10 @@ export class DeliveryWorkerSuite {
     const now = this.now().toISOString();
     const sourceText = this.importedText(batchId);
     const locator = new ParagraphLocator(sourceText);
+    const labels =
+      IMPORT_STAGE_LABELS[
+        promptLanguageOf(this.projects.get(snapshot.run.projectId)?.language)
+      ];
     const withEvidence = <T extends { evidenceParagraphs: number[] }>(
       item: T,
     ) => ({ ...item, evidence: locator.locate(item.evidenceParagraphs) });
@@ -292,7 +308,7 @@ export class DeliveryWorkerSuite {
         id: `${batchId}:intent:0`,
         kind: "intent" as const,
         ordinal: 0,
-        title: "作者意图候选",
+        title: labels.intent,
         payload: {
           promise: analysis.synopsis,
           themes: analysis.themes,
@@ -351,7 +367,7 @@ export class DeliveryWorkerSuite {
         id: `${batchId}:character-arc:${index}`,
         kind: "character-arc" as const,
         ordinal: index,
-        title: `${arc.characterName} · 角色弧`,
+        title: `${arc.characterName} · ${labels.characterArc}`,
         payload: arc,
       })),
       ...analysis.scenes.map(withEvidence).map((scene, index) => ({
@@ -486,13 +502,99 @@ export class DeliveryWorkerSuite {
   }
 }
 
+/** 拆书提示词（分段分析与合并）的版本，参与缓存产物的输入摘要。
+ *  修改这两类提示词的指令或消息格式时递增，使旧提示词产出的缓存分析不再被复用。 */
+const IMPORT_ANALYSIS_PROMPT_VERSION = "import-analysis-prompt-3";
+
+/** 拆书候选的产出语言跟随原文，而非指令语言：作品语言只有 zh-CN / en，
+ *  其他语言（如葡语）的原稿也必须得到同语言的候选。 */
+const IMPORT_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
+  "zh-CN":
+    "语言不变量：所有自然语言字段（title、synopsis、themes、audience、tone、boundaries、实体描述、关系、时间线、伏笔、角色弧、场景、风格档案与 Skill 的文字）必须使用与原文正文相同的语言书写，即使它不同于本指令的语言；人物、地点等专有名词保留原文写法，不得翻译。字段名与枚举值保持结构定义不变。",
+  en: "Language invariant: write every natural-language field (title, synopsis, themes, audience, tone, boundaries, entity descriptions, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and Skill texts) in the same language as the source manuscript text, even when it differs from the language of these instructions; keep character, place, and other proper names exactly as written in the source, never translated. Field names and enum values stay as defined by the schema.",
+};
+
+/** 合并步骤看不到原稿，只能沿用输入分析的语言；指令与用户消息都明确要求这一点。 */
+const IMPORT_SYNTHESIS_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
+  "zh-CN":
+    "语言不变量：保持输入分析的语言。合并结果的所有自然语言字段保持与输入分析相同的原文语言，不得翻译成本指令的语言；专有名词保留原文写法。字段名与枚举值保持结构定义不变。",
+  en: "Language invariant: Keep the language of the input analyses. Keep every natural-language field of the merged result in the same source-manuscript language as the input analyses; never translate it into the language of these instructions, and keep proper names exactly as written. Field names and enum values stay as defined by the schema.",
+};
+
+const IMPORT_SYNTHESIS_MESSAGE_LEAD: Record<ProjectLanguage, string> = {
+  "zh-CN":
+    "保持输入分析的语言：合并结果沿用 <accumulated> 与 <next> 中自然语言字段已经使用的语言，不要翻译。",
+  en: "Keep the language of the input analyses: write the merged result in the language already used by the natural-language fields of <accumulated> and <next>; do not translate.",
+};
+
+const IMPORT_STAGE_LABELS: Record<
+  ProjectLanguage,
+  { intent: string; characterArc: string }
+> = {
+  "zh-CN": { intent: "作者意图候选", characterArc: "角色弧" },
+  en: { intent: "Author intent candidate", characterArc: "Character arc" },
+};
+
+/** 代码检测的原稿语言在中文提示中的写法。 */
+const DETECTED_LANGUAGE_NAMES_ZH: Record<
+  Exclude<DetectedManuscriptLanguage, "unknown">,
+  string
+> = {
+  Portuguese: "葡萄牙语",
+  Spanish: "西班牙语",
+  English: "英语",
+  Chinese: "中文",
+};
+
+/** 分段分析的用户消息。检测到原稿语言时加一行参考（尽力而为的启发式检测）；
+ *  指令中的语言不变量仍要求跟随正文本身。 */
+function importAnalysisMessage(input: {
+  language: string | null;
+  projectTitle: string;
+  premise: string | null;
+  filename: string;
+  segment: number;
+  segments: number;
+  text: string;
+  manuscriptLanguage: DetectedManuscriptLanguage;
+}): string {
+  const detected = input.manuscriptLanguage;
+  const lines =
+    promptLanguageOf(input.language) === "en"
+      ? [
+          `Target work: "${input.projectTitle}"`,
+          input.premise ? `Existing premise: ${input.premise}` : "",
+          `Imported file: ${input.filename}`,
+          detected === "unknown"
+            ? ""
+            : `Manuscript language (detected): ${detected}. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.`,
+          `Segment ${input.segment}/${input.segments}`,
+          `Manuscript text:\n${input.text}`,
+          "Deconstruct the synopsis, themes, audience, tone boundaries, entities, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and 1-4 general-purpose writing Skills.",
+        ]
+      : [
+          `目标作品：《${input.projectTitle}》`,
+          input.premise ? `已有命题：${input.premise}` : "",
+          `导入文件：${input.filename}`,
+          detected === "unknown"
+            ? ""
+            : `原稿语言（自动检测）：${DETECTED_LANGUAGE_NAMES_ZH[detected]}。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。`,
+          `分段 ${input.segment}/${input.segments}`,
+          `正文：\n${input.text}`,
+          "请拆解概要、主题、受众、语气边界、实体、关系、时间线、伏笔、角色弧、场景、风格档案与 1-4 条通用写作 Skill。",
+        ];
+  return lines.filter(Boolean).join("\n\n");
+}
+
 function importAnalysisRequest(input: {
   projectTitle: string;
   premise: string | null;
   language: string | null;
   filename: string;
   text: string;
-  rangeLabel: string;
+  segment: number;
+  segments: number;
+  manuscriptLanguage: DetectedManuscriptLanguage;
   maxOutputTokens: number;
 }) {
   return {
@@ -503,6 +605,7 @@ function importAnalysisRequest(input: {
         "风格规则要可操作且与题材事实分离；examples 只能摘取很短的原文片段。",
         "Writing Skill 是可开关的流程指令，不能包含具体人物、世界事实或要求复制原文。",
         "分开提取关系、时间线、伏笔、角色弧和场景；每一项必须用 evidenceParagraphs 给出本分段中带 [P#] 标签的一个或多个原文段号。",
+        IMPORT_LANGUAGE_INVARIANT["zh-CN"],
       ],
       en: [
         "You are the deconstruction editor of a long-form novel. Analyze only the given text; do not continue it, fill gaps, or imitate its sentences.",
@@ -510,21 +613,13 @@ function importAnalysisRequest(input: {
         "Style rules must be actionable and separated from genre facts; examples may quote only very short excerpts of the original text.",
         "A Writing Skill is a switchable process instruction and must not contain specific characters, world facts, or demands to copy the original text.",
         "Extract relations, timeline, foreshadowing, character arcs, and scenes separately; every item must cite one or more source paragraphs tagged [P#] within this segment through evidenceParagraphs.",
+        IMPORT_LANGUAGE_INVARIANT.en,
       ],
     }),
     messages: [
       {
         role: "user" as const,
-        content: [
-          `目标作品：《${input.projectTitle}》`,
-          input.premise ? `已有命题：${input.premise}` : "",
-          `导入文件：${input.filename}`,
-          input.rangeLabel,
-          `正文：\n${input.text}`,
-          "请拆解概要、主题、受众、语气边界、实体、关系、时间线、伏笔、角色弧、场景、风格档案与 1-4 条通用写作 Skill。",
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
+        content: importAnalysisMessage(input),
       },
     ],
     reasoningEffort: "medium" as const,
@@ -545,18 +640,20 @@ function importSynthesisRequest(
         "证据 evidenceParagraphs 必须原样保留自输入分析，不得改写、合并段号或创造段号。",
         "时间线按全书因果顺序重新编号；同名实体谨慎合并，无法确认时分别保留。",
         "输出仍是同一份完整 ImportAnalysis JSON。",
+        IMPORT_SYNTHESIS_LANGUAGE_INVARIANT["zh-CN"],
       ],
       en: [
         "You are the merge editor for long-form deconstruction results. Merge two segment analyses, deduplicating without dropping information unique to the later segment.",
         "Evidence evidenceParagraphs must be preserved verbatim from the input analyses; never rewrite, merge, or invent paragraph numbers.",
         "Renumber the timeline by whole-book causal order; merge same-name entities cautiously and keep them separate when unsure.",
         "The output remains the same complete ImportAnalysis JSON.",
+        IMPORT_SYNTHESIS_LANGUAGE_INVARIANT.en,
       ],
     }),
     messages: [
       {
         role: "user" as const,
-        content: `<accumulated>${JSON.stringify(accumulated)}</accumulated>\n<next>${JSON.stringify(next)}</next>`,
+        content: `${IMPORT_SYNTHESIS_MESSAGE_LEAD[promptLanguageOf(language)]}\n\n<accumulated>${JSON.stringify(accumulated)}</accumulated>\n<next>${JSON.stringify(next)}</next>`,
       },
     ],
     reasoningEffort: "medium" as const,
