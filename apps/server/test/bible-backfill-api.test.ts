@@ -3,7 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCanonFact } from "@narralume/domain";
-import type { NarrativeModelClient } from "@narralume/narrative";
+import {
+  SettlementApplicationService,
+  type NarrativeModelClient,
+} from "@narralume/narrative";
 import {
   SqliteBibleBackfillRepository,
   SqliteCanonRepository,
@@ -11,7 +14,7 @@ import {
   SqliteStoryRepository,
 } from "@narralume/persistence";
 import { NodeNarrativeDatabase } from "@narralume/persistence/node";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
@@ -82,6 +85,8 @@ interface ModelScript {
   calls: SettlementCall[];
   /** Returns the settlement value for a call, or throws a model error. */
   respond: (call: SettlementCall) => unknown;
+  /** Priced usage per call (the default call is unpriced). */
+  costUsd?: number;
 }
 
 function scriptedModel(script: ModelScript): NarrativeModelClient {
@@ -89,7 +94,7 @@ function scriptedModel(script: ModelScript): NarrativeModelClient {
     inputTokens: 100,
     outputTokens: 100,
     calls: 1,
-    costUsd: 0,
+    costUsd: script.costUsd ?? 0,
     wallTimeMs: 5,
   };
   return {
@@ -282,6 +287,12 @@ interface BackfillDetail {
     error: Record<string, unknown> | null;
   }[];
   counts: Record<string, number>;
+  usage: {
+    calls: number;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number | null;
+  };
   availableActions: string[];
   idempotentReplay?: boolean;
 }
@@ -426,6 +437,7 @@ describe("Story Bible backfill API", () => {
       idempotentReplay: false,
       job: { status: "running", mode: "review_each", currentOrdinal: 0 },
       counts: { total: 3, pending: 3 },
+      usage: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     });
     expect(job.items.map((item) => item.outlineNodeId)).toEqual(
       book.chapters.map((chapter) => chapter.outlineNodeId),
@@ -541,22 +553,39 @@ describe("Story Bible backfill API", () => {
     expect(detail).toMatchObject({
       job: { status: "completed", currentOrdinal: null },
       counts: { applied: 1, empty: 1, rejected: 1 },
+      // One settle call per chapter; the scripted model is unpriced.
+      usage: { calls: 3, inputTokens: 300, outputTokens: 300, costUsd: null },
       availableActions: [],
     });
     expect((await current(app, book.projectId)).job!.id).toBe(jobId);
 
-    // Every chapter now carries a settlement summary: a new request skips them all.
+    // Applied and empty chapters count as settled; the rejected chapter is
+    // read again by a new completion.
     const again = await startBackfill(app, book.projectId, {
       requestId: globalThis.crypto.randomUUID(),
     });
     expect(again.statusCode, again.body).toBe(202);
-    expect(again.json()).toMatchObject({
-      job: { status: "completed" },
-      counts: { skipped: 3 },
+    const againDetail = again.json() as BackfillDetail;
+    expect(againDetail).toMatchObject({
+      job: { status: "running", currentOrdinal: 2 },
+      counts: { skipped: 2, pending: 1 },
+      usage: { calls: 0 },
     });
+    expect(againDetail.items.map((item) => item.skipReason)).toEqual([
+      "already_settled",
+      "already_settled",
+      null,
+    ]);
+    const rereading = await settle(app, book.projectId, againDetail.job!.id);
+    expect(rereading.items[2]).toMatchObject({ status: "settling" });
+    expect(rereading.items[2]!.runId).not.toBe(detail.items[2]!.runId);
     expect(
-      (again.json() as BackfillDetail).items.map((item) => item.skipReason),
-    ).toEqual(["already_settled", "already_settled", "already_settled"]);
+      (
+        await act(app, book.projectId, againDetail.job!.id, {
+          action: "cancel",
+        })
+      ).json(),
+    ).toMatchObject({ job: { status: "cancelled" } });
 
     // A writing-path settlement is unchanged: no backfill note.
     const versions = await app.inject({
@@ -1018,6 +1047,110 @@ describe("Story Bible backfill API", () => {
     expect(next.items[0]!.status).toBe("applied");
     expect(next.job!.status).toBe("awaiting_decision");
     expect(await settlementRuns(second.app, book.projectId)).toHaveLength(2);
+  });
+
+  it("parks a job on an unexpected error without stalling other projects, then resumes it", async () => {
+    const heroes = new Map<string, string>();
+    const script: ModelScript = {
+      calls: [],
+      costUsd: 0.002,
+      respond: (call) =>
+        settlement([
+          fact(
+            heroes.get(String(call.policy.documentId))!,
+            `第${Number(call.policy.bibleBackfillOrdinal) + 1}章状态`,
+            "清醒",
+          ),
+        ]),
+    };
+    const { app } = await setup(script, { enableRunWorker: true });
+    const stalled = await importBook(app);
+    const other = await importBook(app);
+    for (const book of [stalled, other]) {
+      for (const chapter of book.chapters) {
+        heroes.set(chapter.documentId, book.heroId);
+      }
+    }
+    // The first auto-apply of the stalled project throws something that is
+    // not a settlement error, as a vanished entity would.
+    const apply = SettlementApplicationService.prototype.apply;
+    let thrown = false;
+    vi.spyOn(
+      SettlementApplicationService.prototype,
+      "apply",
+    ).mockImplementation(function (
+      this: SettlementApplicationService,
+      input: Parameters<SettlementApplicationService["apply"]>[0],
+    ) {
+      if (!thrown && input.projectId === stalled.projectId) {
+        thrown = true;
+        throw new Error("canon entity vanished mid-apply");
+      }
+      return apply.call(this, input);
+    });
+
+    const stalledJob = (
+      (
+        await startBackfill(app, stalled.projectId, {
+          requestId: globalThis.crypto.randomUUID(),
+          mode: "auto_apply_stop_on_conflict",
+        })
+      ).json() as BackfillDetail
+    ).job!.id;
+    const otherJob = await startBackfill(app, other.projectId, {
+      requestId: globalThis.crypto.randomUUID(),
+      mode: "auto_apply_stop_on_conflict",
+    });
+    expect(otherJob.statusCode, otherJob.body).toBe(202);
+
+    const parked = await waitFor(app, stalled.projectId, (state) =>
+      state.job?.status === "awaiting_user" ? state : null,
+    );
+    expect(parked.job).toMatchObject({
+      status: "awaiting_user",
+      error: {
+        code: "bible_backfill.unexpected",
+        message: "canon entity vanished mid-apply",
+        ordinal: 0,
+      },
+    });
+    expect(parked.items[0]!.status).toBe("awaiting_decision");
+    expect(parked.availableActions).toEqual(
+      expect.arrayContaining(["resume", "cancel"]),
+    );
+
+    // The other project's job keeps advancing to the end meanwhile.
+    const finished = await waitFor(app, other.projectId, (state) =>
+      state.job?.status === "completed" ? state : null,
+    );
+    expect(finished.counts).toMatchObject({ applied: 3 });
+    expect(finished.usage).toMatchObject({
+      calls: 3,
+      inputTokens: 300,
+      outputTokens: 300,
+    });
+    expect(finished.usage.costUsd).toBeCloseTo(0.006, 10);
+    const stillParked = await current(app, stalled.projectId);
+    expect(stillParked.job!.status).toBe("awaiting_user");
+    expect(stillParked.items.map((item) => item.status)).toEqual([
+      "awaiting_decision",
+      "pending",
+      "pending",
+    ]);
+
+    // Resume retries the same transition and the job runs to completion.
+    const resumed = await act(app, stalled.projectId, stalledJob, {
+      action: "resume",
+    });
+    expect(resumed.statusCode, resumed.body).toBe(200);
+    const done = await waitFor(app, stalled.projectId, (state) =>
+      state.job?.status === "completed" ? state : null,
+    );
+    expect(done).toMatchObject({
+      job: { error: null },
+      counts: { applied: 3 },
+      usage: { calls: 3 },
+    });
   });
 });
 

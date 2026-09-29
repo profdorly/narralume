@@ -32,9 +32,9 @@ import { useI18n, type MessageKey } from "../../i18n";
 import {
   actOnBibleBackfill,
   ApiError,
-  apiErrorMessage,
   getCanonChangeSets,
   getCurrentBibleBackfill,
+  knownApiErrorMessage,
   startBibleBackfill,
   type BibleBackfillAction,
   type BibleBackfillCreatedDto,
@@ -42,8 +42,10 @@ import {
   type BibleBackfillItemDto,
   type BibleBackfillJobDto,
   type BibleBackfillMode,
+  type BibleBackfillUsageDto,
   type StoryBible,
 } from "../../lib/api";
+import { formatCount } from "../../lib/fmt";
 import { projectWorkspacePath } from "../../lib/project-route";
 import { useServerEvents } from "../../lib/sse";
 import {
@@ -270,9 +272,7 @@ export function BibleBackfillPanel({
             ? t("bible.backfill.summary.awaitingUser")
             : job.status === "completed"
               ? t("bible.backfill.summary.completed", { total })
-              : job.status === "cancelled"
-                ? t("bible.backfill.summary.cancelled", { done, total })
-                : t("bible.backfill.summary.failed");
+              : t("bible.backfill.summary.cancelled", { done, total });
 
   const showStartError =
     startMutation.isError && !(job && ACTIVE_STATUSES.has(job.status));
@@ -351,7 +351,6 @@ export function BibleBackfillPanel({
             />
           ) : (
             <FinishedState
-              projectId={projectId}
               detail={detail!}
               job={job}
               items={items}
@@ -569,6 +568,7 @@ function ActiveState({
           {t("bible.backfill.progress.count", { done, total })}
         </p>
       </div>
+      <UsageLine usage={detail.usage} />
 
       {job.status === "running" && (job.cancelRequested || job.pauseRequested || current) ? (
         <p className="bible-backfill__note">
@@ -614,7 +614,7 @@ function ActiveState({
             entityNames={entityNames}
             labels={{
               apply: t("bible.backfill.decision.apply"),
-              defer: t("bible.backfill.decision.defer"),
+              defer: t("bible.backfill.decision.reject"),
               forceApply: t("bible.backfill.decision.force"),
             }}
             disabled={actionPending}
@@ -803,9 +803,7 @@ function AttentionState({
     stringField(current?.error ?? null, "runId") ??
     current?.runId ??
     null;
-  const message = error ? jobErrorMessage(error) : null;
-  const rawMessage =
-    error && typeof error.message === "string" ? error.message : null;
+  const reason = error ? stopReason(error, t) : null;
 
   const title = conflict
     ? t("bible.backfill.attention.conflictTitle", { current: position })
@@ -840,12 +838,7 @@ function AttentionState({
       ) : (
         <>
           {itemFailed ? <p>{t("bible.backfill.attention.failedIntro")}</p> : null}
-          {message ? <p className="bible-backfill__error-text">{message}</p> : null}
-          {rawMessage && rawMessage !== message ? (
-            <p className="bible-backfill__detail">
-              {t("bible.backfill.attention.detail", { message: rawMessage })}
-            </p>
-          ) : null}
+          {reason ? <StopReasonText reason={reason} /> : null}
           {error?.code.startsWith("model.") ? (
             <Link to="/settings">{t("bible.backfill.errors.openSettings")}</Link>
           ) : null}
@@ -891,7 +884,6 @@ function AttentionState({
 /* ---- 已结束 ------------------------------------------------------------- */
 
 function FinishedState({
-  projectId,
   detail,
   job,
   items,
@@ -899,7 +891,6 @@ function FinishedState({
   onStartAgain,
   onOpenCandidateDesk,
 }: {
-  projectId: string;
   detail: BibleBackfillDetailDto;
   job: BibleBackfillJobDto;
   items: BibleBackfillItemDto[];
@@ -911,9 +902,7 @@ function FinishedState({
   const title =
     job.status === "completed"
       ? t("bible.backfill.finished.completedTitle")
-      : job.status === "cancelled"
-        ? t("bible.backfill.finished.cancelledTitle")
-        : t("bible.backfill.finished.failedTitle");
+      : t("bible.backfill.finished.cancelledTitle");
   const counts: Array<{ key: MessageKey; value: number }> = [
     { key: "bible.backfill.finished.counts.total", value: detail.counts.total },
     { key: "bible.backfill.finished.counts.applied", value: detail.counts.applied },
@@ -922,7 +911,8 @@ function FinishedState({
     { key: "bible.backfill.finished.counts.skipped", value: detail.counts.skipped },
     { key: "bible.backfill.finished.counts.failed", value: detail.counts.failed },
   ];
-  const failedRunId = job.status === "failed" ? stringField(job.error, "runId") : null;
+  /* 取消途中遇到意外错误时，任务以 cancelled 结束并记下原因。 */
+  const reason = job.status === "cancelled" && job.error ? stopReason(job.error, t) : null;
   return (
     <div className="bible-backfill__finished">
       <h3>
@@ -944,21 +934,8 @@ function FinishedState({
           </div>
         ))}
       </dl>
-      {job.status === "failed" && job.error ? (
-        <p className="bible-backfill__error-text" role="alert">
-          {jobErrorMessage(job.error)}
-          {failedRunId ? (
-            <>
-              {" "}
-              <Link
-                to={`${projectWorkspacePath(projectId, "runs")}?run=${encodeURIComponent(failedRunId)}`}
-              >
-                {t("bible.backfill.actions.viewRun")}
-              </Link>
-            </>
-          ) : null}
-        </p>
-      ) : null}
+      <UsageLine usage={detail.usage} final />
+      {reason ? <StopReasonText reason={reason} /> : null}
       {job.status === "completed" ? (
         <div className="bible-backfill__next">
           <h4>{t("bible.backfill.next.title")}</h4>
@@ -1085,6 +1062,7 @@ function toDetail(value: BibleBackfillCreatedDto): BibleBackfillDetailDto {
     job: value.job,
     items: value.items,
     counts: value.counts,
+    usage: value.usage,
     availableActions: value.availableActions,
   };
 }
@@ -1118,7 +1096,104 @@ function stringField(error: BackfillError | null, key: string): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
-function jobErrorMessage(error: BackfillError): string {
-  const message = typeof error.message === "string" ? error.message : error.code;
-  return apiErrorMessage(new ApiError(error.code, message, 409, errorPayload(error)));
+/** 协调器写入 job.error 的停机原因码 → 面板文案；detail 表示附带服务端原始说明。 */
+const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
+  "child.awaiting_user": { key: "bible.backfill.stopReason.childAwaitingUser" },
+  "child.failed": { key: "bible.backfill.stopReason.childFailed", detail: true },
+  "child.fatal": { key: "bible.backfill.stopReason.childFatal", detail: true },
+  "run.cancelled": { key: "bible.backfill.stopReason.runCancelled" },
+  "bible_backfill.chapter.changed": { key: "bible.backfill.stopReason.chapterChanged" },
+  "bible_backfill.run.missing": { key: "bible.backfill.stopReason.runMissing" },
+  "bible_backfill.unexpected": { key: "bible.backfill.stopReason.unexpected", detail: true },
+  "bible_backfill.cancelled": { key: "bible.backfill.stopReason.cancelled" },
+  "settlement.anchor.missing": { key: "bible.backfill.stopReason.anchorMissing" },
+  "canon_change_set.not_found": { key: "bible.backfill.stopReason.changeSetMissing" },
+  "document.version.not_found": { key: "bible.backfill.stopReason.versionMissing" },
+};
+
+interface StopReason {
+  message: string;
+  /** 服务端原始说明（多为英文），只作次要详情。 */
+  detail: string | null;
+  /** 未识别的原因码，只作次要详情。 */
+  code: string | null;
+}
+
+function stopReason(
+  error: BackfillError,
+  t: (key: MessageKey) => string,
+): StopReason {
+  const raw =
+    typeof error.message === "string" && error.message.trim()
+      ? error.message
+      : null;
+  const known = STOP_REASONS[error.code];
+  if (known) {
+    return { message: t(known.key), detail: known.detail ? raw : null, code: null };
+  }
+  const translated = knownApiErrorMessage(error.code);
+  if (translated) {
+    return { message: translated, detail: raw !== translated ? raw : null, code: null };
+  }
+  return { message: t("bible.backfill.stopReason.unknown"), detail: raw, code: error.code };
+}
+
+function StopReasonText({ reason }: { reason: StopReason }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <p className="bible-backfill__error-text">{reason.message}</p>
+      {reason.detail ? (
+        <p className="bible-backfill__detail">
+          {t("bible.backfill.attention.detail", { message: reason.detail })}
+        </p>
+      ) : null}
+      {reason.code ? (
+        <p className="bible-backfill__detail mono">
+          {t("bible.backfill.attention.code", { code: reason.code })}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/** 子运行已记录的用量；只有计价产生了非零费用时才显示费用。 */
+function UsageLine({
+  usage,
+  final = false,
+}: {
+  usage: BibleBackfillUsageDto;
+  final?: boolean;
+}) {
+  const { locale, t } = useI18n();
+  const values = {
+    calls: formatCount(usage.calls, locale),
+    tokens: formatCount(usage.inputTokens + usage.outputTokens, locale),
+  };
+  const text =
+    usage.costUsd !== null
+      ? t(
+          final
+            ? "bible.backfill.usage.totalWithCost"
+            : "bible.backfill.usage.soFarWithCost",
+          { ...values, cost: formatUsd(usage.costUsd, locale) },
+        )
+      : t(final ? "bible.backfill.usage.total" : "bible.backfill.usage.soFar", values);
+  return (
+    <div className="bible-backfill__usage">
+      <p className="mono">{text}</p>
+      {usage.costUsd === null ? (
+        <p className="bible-backfill__detail">{t("bible.backfill.usage.pricingHint")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function formatUsd(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: value < 0.01 ? 4 : 2,
+  }).format(value);
 }

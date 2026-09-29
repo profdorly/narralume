@@ -7,8 +7,7 @@ export type BibleBackfillJobStatus =
   | "awaiting_decision"
   | "awaiting_user"
   | "completed"
-  | "cancelled"
-  | "failed";
+  | "cancelled";
 export type BibleBackfillMode = "review_each" | "auto_apply_stop_on_conflict";
 export type BibleBackfillItemStatus =
   | "pending"
@@ -22,7 +21,7 @@ export type BibleBackfillItemStatus =
 export type BibleBackfillSkipReason = "already_settled" | "author_skipped";
 
 export const TERMINAL_BIBLE_BACKFILL_STATUSES: readonly BibleBackfillJobStatus[] =
-  ["completed", "cancelled", "failed"];
+  ["completed", "cancelled"];
 
 export interface BibleBackfillJob {
   id: string;
@@ -58,6 +57,14 @@ export interface BibleBackfillItemSeed {
   documentId: string;
   versionId: string;
   skipReason: BibleBackfillSkipReason | null;
+}
+
+/** Summed recorded model usage of a job's settlement runs. */
+export interface BibleBackfillUsage {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
 }
 
 export type BibleBackfillItemPatch = Partial<
@@ -147,7 +154,7 @@ export class SqliteBibleBackfillRepository {
     const row = this.database.raw
       .prepare(
         `SELECT * FROM bible_backfill_jobs
-         WHERE project_id = ? AND status NOT IN ('completed','cancelled','failed')
+         WHERE project_id = ? AND status NOT IN ('completed','cancelled')
          LIMIT 1`,
       )
       .get(projectId) as JobRow | undefined;
@@ -159,7 +166,7 @@ export class SqliteBibleBackfillRepository {
     const row = this.database.raw
       .prepare(
         `SELECT * FROM bible_backfill_jobs WHERE project_id = ?
-         ORDER BY CASE WHEN status IN ('completed','cancelled','failed') THEN 1 ELSE 0 END,
+         ORDER BY CASE WHEN status IN ('completed','cancelled') THEN 1 ELSE 0 END,
                   created_at DESC, rowid DESC
          LIMIT 1`,
       )
@@ -216,6 +223,36 @@ export class SqliteBibleBackfillRepository {
       .prepare("SELECT * FROM bible_backfill_items WHERE run_id = ? LIMIT 1")
       .get(runId) as ItemRow | undefined;
     return row ? mapItem(row) : null;
+  }
+
+  /**
+   * Summed recorded usage of the settlement runs this job created (every
+   * attempt carries `policy.bibleBackfillJobId`) plus runs its items adopted.
+   */
+  usageForJob(projectId: string, jobId: string): BibleBackfillUsage {
+    const row = this.database.raw
+      .prepare(
+        `SELECT
+           COALESCE(SUM(json_extract(budget_used_json, '$.calls')), 0) AS calls,
+           COALESCE(SUM(json_extract(budget_used_json, '$.inputTokens')), 0) AS input_tokens,
+           COALESCE(SUM(json_extract(budget_used_json, '$.outputTokens')), 0) AS output_tokens,
+           COALESCE(SUM(json_extract(budget_used_json, '$.costUsd')), 0) AS cost_usd
+         FROM runs
+         WHERE project_id = ? AND (
+           json_extract(policy_json, '$.bibleBackfillJobId') = ?
+           OR id IN (
+             SELECT run_id FROM bible_backfill_items
+             WHERE job_id = ? AND run_id IS NOT NULL
+           )
+         )`,
+      )
+      .get(projectId, jobId, jobId) as UsageRow;
+    return {
+      calls: Number(row.calls),
+      inputTokens: Number(row.input_tokens),
+      outputTokens: Number(row.output_tokens),
+      costUsd: Number(row.cost_usd),
+    };
   }
 
   updateItem(
@@ -292,7 +329,7 @@ export class SqliteBibleBackfillRepository {
       .prepare(
         `UPDATE bible_backfill_jobs SET ${column} = 1, updated_at = ?,
            version = version + 1
-         WHERE id = ? AND status NOT IN ('completed','cancelled','failed')`,
+         WHERE id = ? AND status NOT IN ('completed','cancelled')`,
       )
       .run(now, id);
     if (result.changes !== 1) {
@@ -309,7 +346,7 @@ export class SqliteBibleBackfillRepository {
           `UPDATE bible_backfill_jobs SET status = 'cancelled',
              pause_requested = 0, cancel_requested = 0,
              updated_at = ?, version = version + 1
-           WHERE project_id = ? AND status NOT IN ('completed','cancelled','failed')`,
+           WHERE project_id = ? AND status NOT IN ('completed','cancelled')`,
         )
         .run(now, projectId).changes,
     );
@@ -337,6 +374,13 @@ interface JobRow {
   created_at: string;
   updated_at: string;
   version: number;
+}
+
+interface UsageRow {
+  calls: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
 }
 
 interface ItemRow {

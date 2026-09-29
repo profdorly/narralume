@@ -147,6 +147,14 @@ describe("migration 046 (bible-backfill)", () => {
         )
         .run(),
     ).toThrow(/CHECK/u);
+    // Jobs end only as completed or cancelled; failures park in awaiting_user.
+    expect(() =>
+      database.raw
+        .prepare(
+          "UPDATE bible_backfill_jobs SET status = 'failed' WHERE id = 'job-1'",
+        )
+        .run(),
+    ).toThrow(/CHECK/u);
 
     backfills.requestControl("job-1", "pause", later);
     expect(backfills.setJobStatus("job-1", "paused", later)).toMatchObject({

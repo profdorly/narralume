@@ -127,12 +127,16 @@ export class ApiError extends Error {
 
 export function apiErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    const key = errorLookupKey(`message.${errorCodeKey(error.code)}`);
-    if (key) return translate(getLocale(), key);
-    return error.message;
+    return knownApiErrorMessage(error.code) ?? error.message;
   }
   if (error instanceof Error) return error.message;
   return translate(getLocale(), "errors.message.requestFailed");
+}
+
+/** 按错误码查字典给出本地化文案；字典里没有该码时返回 null。 */
+export function knownApiErrorMessage(code: string): string | null {
+  const key = errorLookupKey(`message.${errorCodeKey(code)}`);
+  return key ? translate(getLocale(), key) : null;
 }
 
 /** 后端错误码（request.unknown_field、assignment.model_limits.required 等）转字典键的 camelCase。 */
@@ -2275,6 +2279,7 @@ export type {
   BibleBackfillJobDto,
   BibleBackfillJobStatus,
   BibleBackfillMode,
+  BibleBackfillUsageDto,
 } from "@narralume/contracts";
 
 /** 建任务；同一 requestId 重放返回原任务（idempotentReplay）。 */

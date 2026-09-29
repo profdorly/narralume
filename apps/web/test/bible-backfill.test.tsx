@@ -103,6 +103,12 @@ function detail(
   jobValue: BibleBackfillJobDto | null,
   items: BibleBackfillItemDto[],
   availableActions: BibleBackfillDetailDto["availableActions"] = [],
+  usage: BibleBackfillDetailDto["usage"] = {
+    calls: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: null,
+  },
 ): BibleBackfillDetailDto {
   const count = (status: BibleBackfillItemDto["status"]) =>
     items.filter((entry) => entry.status === status).length;
@@ -120,6 +126,7 @@ function detail(
       failed: count("failed"),
       skipped: count("skipped"),
     },
+    usage,
     availableActions,
   };
 }
@@ -263,7 +270,13 @@ describe("Complete Story Bible from manuscript", () => {
     const dialog = screen.getByRole("alertdialog", { name: "Complete Story Bible from manuscript" });
     expect(within(dialog).getByRole("radio", { name: /Review each chapter \(recommended\)/ })).toBeChecked();
     expect(within(dialog).getByText(/It will process 3 chapters with manuscript text/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/Uses the writing model configured in Settings/)).toBeInTheDocument();
+    const cost = within(dialog).getByText(/Uses the writing model configured in Settings/);
+    expect(cost).toHaveTextContent(/at least one model call/);
+    expect(cost).toHaveTextContent(/up to 5 attempts/);
+    expect(cost).toHaveTextContent(/one more embedding call/);
+    expect(cost).toHaveTextContent(/no spending cap/);
+    expect(cost).toHaveTextContent(/pause or cancel at any time/);
+    expect(cost).not.toHaveTextContent(/one model call and/);
     fireEvent.click(within(dialog).getByRole("radio", { name: /Apply automatically, stop on conflicts/ }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Start completion" }));
 
@@ -360,7 +373,9 @@ describe("Complete Story Bible from manuscript", () => {
     expect(await screen.findByRole("heading", { name: "Review chapter 2 of 3: Chapter Two" })).toBeInTheDocument();
     expect(await screen.findByText("Lamp heat reveals the missing name")).toBeInTheDocument();
     expect(screen.getByText("Shen Yan · can read: blank letters")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Defer & continue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reject & continue" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Defer/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/A rejected chapter is read again the next time/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Apply & continue" }));
 
     expect(await screen.findByText("Reading chapter 3 of 3: Chapter Three")).toBeInTheDocument();
@@ -453,13 +468,106 @@ describe("Complete Story Bible from manuscript", () => {
     renderPanel();
 
     expect(await screen.findByRole("heading", { name: "Chapter 2 could not be settled" })).toBeInTheDocument();
-    expect(screen.getByText("Provider request timed out")).toBeInTheDocument();
+    expect(screen.getByText("The model call for this chapter kept failing after its automatic retries.")).toBeInTheDocument();
+    expect(screen.getByText("Details: Provider request timed out")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View run" })).toHaveAttribute("href", "/projects/p-1/runs?run=run-2");
     expect(screen.getByRole("button", { name: "Skip chapter" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry chapter" }));
 
     await waitFor(() => expect(actions).toEqual([{ requestId: expect.any(String), action: "retry_item", ordinal: 1 }]));
     await waitFor(() => expect(screen.queryByRole("button", { name: "Retry chapter" })).not.toBeInTheDocument());
+  });
+
+  it("shows the usage recorded so far, with a cost only when pricing produced one", async () => {
+    const running = (usage: BibleBackfillDetailDto["usage"]) =>
+      detail(job({ currentOrdinal: 1 }), [
+        item(0, "applied"),
+        item(1, "settling", { runId: "run-2" }),
+        item(2, "pending"),
+      ], ["pause", "cancel", "skip_item"], usage);
+    stubApi({
+      current: () => running({ calls: 4, inputTokens: 1_200, outputTokens: 300, costUsd: null }),
+    });
+    renderPanel();
+    expect(await screen.findByText("Used so far: 4 model calls, 1,500 tokens")).toBeInTheDocument();
+    expect(
+      screen.getByText("Cost estimates appear once model prices are configured in NARRATIVE_MODEL_PRICING_JSON."),
+    ).toBeInTheDocument();
+    cleanup();
+
+    stubApi({
+      current: () => running({ calls: 4, inputTokens: 1_200, outputTokens: 300, costUsd: 0.0042 }),
+    });
+    renderPanel();
+    expect(await screen.findByText("Used so far: 4 model calls, 1,500 tokens, ~$0.0042")).toBeInTheDocument();
+    expect(screen.queryByText(/NARRATIVE_MODEL_PRICING_JSON/)).not.toBeInTheDocument();
+  });
+
+  it("explains stop reasons in Chinese without surfacing raw codes as the message", async () => {
+    setLocale("zh-CN");
+    const cases: Array<{
+      error: NonNullable<BibleBackfillJobDto["error"]>;
+      current: BibleBackfillItemDto;
+      message: string;
+      secondary: string[];
+    }> = [
+      {
+        error: { code: "child.awaiting_user", runId: "run-2", ordinal: 1 },
+        current: item(1, "settling", { runId: "run-2" }),
+        message: "本章的结算运行已停下，正在等你处理。点“继续”即可接着运行，或打开运行记录查看详情。",
+        secondary: [],
+      },
+      {
+        error: {
+          code: "bible_backfill.chapter.changed",
+          message: "The chapter manuscript no longer matches the outline chapter it was queued for",
+          ordinal: 1,
+        },
+        current: item(1, "failed"),
+        message: "本章正文已与排队时的章节对不上，可能已被移动、归档或删除。",
+        secondary: [],
+      },
+      {
+        error: { code: "settlement.anchor.missing", message: "Manual settlement has no chapter anchor", ordinal: 1 },
+        current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
+        message: "本章的故事变化无法锚定：对应的正文或大纲章节已不存在。",
+        secondary: [],
+      },
+      {
+        error: { code: "bible_backfill.unexpected", message: "canon entity vanished", ordinal: 1 },
+        current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
+        message: "补全遇到意外错误，已在这里停下。进度已保存：可以点“继续”重试，或取消补全。",
+        secondary: ["详情：canon entity vanished"],
+      },
+      {
+        error: { code: "bible_backfill.brand_new", message: "Something new broke", ordinal: 1 },
+        current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
+        message: "补全因无法识别的原因停下。可以点“继续”重试，或打开运行记录查看详情。",
+        secondary: ["详情：Something new broke", "错误代码：bible_backfill.brand_new"],
+      },
+    ];
+    for (const entry of cases) {
+      stubApi({
+        current: () =>
+          detail(
+            job({ status: "awaiting_user", currentOrdinal: 1, error: entry.error }),
+            [item(0, "applied"), entry.current, item(2, "pending")],
+            entry.current.status === "failed" ? ["cancel", "skip_item", "retry_item"] : ["resume", "cancel", "skip_item"],
+          ),
+      });
+      renderPanel();
+      expect(await screen.findByText(entry.message)).toBeInTheDocument();
+      for (const text of entry.secondary) expect(screen.getByText(text)).toBeInTheDocument();
+      expect(screen.getByText("已停下 · 需要你处理")).toBeInTheDocument();
+      const errorTexts = document.querySelectorAll(".bible-backfill__error-text");
+      expect(errorTexts).toHaveLength(1);
+      expect(errorTexts[0]!.textContent).not.toMatch(/[a-z]+[._][a-z_]+/);
+      if (entry.error.code === "child.awaiting_user" || entry.error.code === "bible_backfill.unexpected") {
+        expect(screen.getByRole("button", { name: "继续" })).toBeInTheDocument();
+      }
+      cleanup();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("paused state resumes, and cancelling asks for confirmation", async () => {
@@ -502,17 +610,24 @@ describe("Complete Story Bible from manuscript", () => {
   it("completed state summarizes counts and points to the AI candidate panels", async () => {
     stubApi({
       current: () =>
-        detail(job({ status: "completed", currentOrdinal: null }), [
-          item(0, "applied"),
-          item(1, "empty"),
-          item(2, "skipped", { skipReason: "already_settled" }),
-        ]),
+        detail(
+          job({ status: "completed", currentOrdinal: null }),
+          [
+            item(0, "applied"),
+            item(1, "empty"),
+            item(2, "skipped", { skipReason: "already_settled" }),
+          ],
+          [],
+          { calls: 3, inputTokens: 21_000, outputTokens: 2_400, costUsd: 1.237 },
+        ),
     });
     const onOpen = vi.fn();
     renderPanel({ onOpen });
 
     expect(await screen.findByRole("heading", { name: "Story Bible completion finished" })).toBeInTheDocument();
     expect(screen.getByText("Completed · 3 chapters")).toBeInTheDocument();
+    expect(screen.getByText("Used: 3 model calls, 23.4K tokens, ~$1.24")).toBeInTheDocument();
+    expect(screen.queryByText(/NARRATIVE_MODEL_PRICING_JSON/)).not.toBeInTheDocument();
     const results = screen.getByLabelText("Results");
     expect(within(results).getByText("Applied").nextSibling).toHaveTextContent("1");
     expect(within(results).getByText("No changes").nextSibling).toHaveTextContent("1");

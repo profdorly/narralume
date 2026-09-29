@@ -119,6 +119,17 @@
   letter-spacing: 0.04em;
 }
 
+.bible-backfill__usage {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.bible-backfill__usage > p:first-child {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
 .bible-backfill__bar {
   flex: 1 1 auto;
   height: 4px;

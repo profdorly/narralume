@@ -5,6 +5,7 @@ import {
   type BibleBackfillActionRequest,
   type BibleBackfillCreatedDto,
   type BibleBackfillDetailDto,
+  type BibleBackfillUsageDto,
   type CreateBibleBackfillRequest,
 } from "@narralume/contracts";
 import type { DocumentVersion } from "@narralume/domain";
@@ -39,6 +40,20 @@ export class BibleBackfillError extends ServiceError {
     super(code, message, statusCode);
     this.name = "BibleBackfillError";
   }
+}
+
+const SUMMARY_ID_SUFFIX = ":summary";
+const APPLIED_CHANGE_SET_STATUSES: ReadonlySet<string> = new Set([
+  "applied",
+  "partially_applied",
+]);
+
+/** Project-wide settlement outcomes used to decide whether a chapter is settled. */
+export interface SettlementIndex {
+  /** Versions whose settlement change set was applied. */
+  appliedVersionIds: ReadonlySet<string>;
+  /** Latest change-set status per settlement run. */
+  changeSetStatusByRunId: ReadonlyMap<string, string>;
 }
 
 /** Item states that no longer block the next chapter. */
@@ -239,29 +254,38 @@ export class BibleBackfillService {
   }
 
   /**
-   * Whether a chapter version already went through settlement: a settlement
-   * summary (chapter commit or manual settlement both record `stateDelta.changes`;
-   * import summaries do not) for exactly this text, or an applied change set
-   * produced from this version.
+   * Whether a chapter version already went through settlement *and its
+   * outcome was kept*: an applied change set produced from this version, or
+   * a settlement summary for exactly this text (chapter commit and manual
+   * settlement record `stateDelta.changes`; import summaries do not) whose
+   * run's change set was applied — or that produced no change set at all
+   * (an empty settlement). A rejected or still undecided change set leaves
+   * the chapter unsettled, so a later completion reads it again.
    */
   isVersionSettled(
     projectId: string,
     outlineNodeId: string,
     version: DocumentVersion,
-    appliedVersionIds: ReadonlySet<string> = this.appliedSettlementVersionIds(
-      projectId,
-    ),
+    index: SettlementIndex = this.settlementIndex(projectId),
   ): boolean {
+    if (index.appliedVersionIds.has(version.id)) return true;
     const summary = this.state.latestSummary(
       projectId,
       "chapter",
       outlineNodeId,
     );
-    return (
-      (summary?.sourceHash === version.contentHash &&
-        Array.isArray(summary.stateDelta.changes)) ||
-      appliedVersionIds.has(version.id)
-    );
+    if (
+      summary?.sourceHash !== version.contentHash ||
+      !Array.isArray(summary.stateDelta.changes)
+    ) {
+      return false;
+    }
+    // Settlement workers key the summary as `${runId}:summary`.
+    const runId = summary.id.endsWith(SUMMARY_ID_SUFFIX)
+      ? summary.id.slice(0, -SUMMARY_ID_SUFFIX.length)
+      : null;
+    const status = runId ? index.changeSetStatusByRunId.get(runId) : undefined;
+    return status === undefined || APPLIED_CHANGE_SET_STATUSES.has(status);
   }
 
   detailOf(job: BibleBackfillJob): BibleBackfillDetailDto {
@@ -316,8 +340,20 @@ export class BibleBackfillService {
         updatedAt: item.updatedAt,
       })),
       counts,
+      usage: this.usageOf(job),
       availableActions: availableActions(job, items),
     });
+  }
+
+  /** Recorded usage of the job's settlement runs; cost only when priced. */
+  private usageOf(job: BibleBackfillJob): BibleBackfillUsageDto {
+    const usage = this.backfills.usageForJob(job.projectId, job.id);
+    return {
+      calls: usage.calls,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      costUsd: usage.costUsd > 0 ? usage.costUsd : null,
+    };
   }
 
   private materializeItems(
@@ -340,7 +376,7 @@ export class BibleBackfillService {
         );
       }
     }
-    const appliedVersionIds = this.appliedSettlementVersionIds(projectId);
+    const settlementIndex = this.settlementIndex(projectId);
     const withoutManuscript: string[] = [];
     const items: BibleBackfillItemSeed[] = [];
     for (const node of chapters) {
@@ -370,7 +406,7 @@ export class BibleBackfillService {
           projectId,
           node.id,
           version,
-          appliedVersionIds,
+          settlementIndex,
         )
           ? "already_settled"
           : null,
@@ -394,20 +430,26 @@ export class BibleBackfillService {
     return items;
   }
 
-  /** Versions whose settlement change set was already applied. */
-  private appliedSettlementVersionIds(projectId: string): Set<string> {
-    const versionIds = new Set<string>();
+  /**
+   * One pass over the project's change sets: which versions had their
+   * settlement applied, and each settlement run's change-set status.
+   */
+  private settlementIndex(projectId: string): SettlementIndex {
+    const appliedVersionIds = new Set<string>();
+    const changeSetStatusByRunId = new Map<string, string>();
     for (const changeSet of this.reviews.listCanonChangeSets(projectId)) {
-      if (!["applied", "partially_applied"].includes(changeSet.status)) {
-        continue;
+      // Listed newest first: keep each run's latest change set.
+      if (!changeSetStatusByRunId.has(changeSet.runId)) {
+        changeSetStatusByRunId.set(changeSet.runId, changeSet.status);
       }
+      if (!APPLIED_CHANGE_SET_STATUSES.has(changeSet.status)) continue;
       const run = this.runs.getRun(changeSet.runId);
       if (!run) continue;
       if (
         run.recipe === "manual-settlement" &&
         typeof run.policy.documentVersionId === "string"
       ) {
-        versionIds.add(run.policy.documentVersionId);
+        appliedVersionIds.add(run.policy.documentVersionId);
       } else if (run.recipe === "chapter-production") {
         const commit = this.runs
           .getSnapshot(run.id)
@@ -416,10 +458,10 @@ export class BibleBackfillService {
               step.kind === "chapter.commit" && step.status === "succeeded",
           );
         const versionId = commit?.outputArtifact?.versionId;
-        if (typeof versionId === "string") versionIds.add(versionId);
+        if (typeof versionId === "string") appliedVersionIds.add(versionId);
       }
     }
-    return versionIds;
+    return { appliedVersionIds, changeSetStatusByRunId };
   }
 
   private pause(job: BibleBackfillJob, now: string): void {
@@ -586,11 +628,15 @@ export class BibleBackfillService {
   }
 }
 
-/** Marks an interrupted chapter as failed(cancelled) and ends the job. */
+/**
+ * Marks an interrupted chapter as failed(cancelled) and ends the job;
+ * `error` records why the job ended when that was not the author's cancel alone.
+ */
 export function finalizeBackfillCancellation(
   backfills: SqliteBibleBackfillRepository,
   jobId: string,
   now: string,
+  error: Readonly<Record<string, unknown>> | null = null,
 ): void {
   for (const item of backfills.listItems(jobId)) {
     if (item.status === "settling") {
@@ -608,7 +654,7 @@ export function finalizeBackfillCancellation(
       );
     }
   }
-  backfills.setJobStatus(jobId, "cancelled", now);
+  backfills.setJobStatus(jobId, "cancelled", now, error);
 }
 
 function availableActions(
@@ -664,6 +710,7 @@ function emptyDetail(): BibleBackfillDetailDto {
       failed: 0,
       skipped: 0,
     },
+    usage: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     availableActions: [],
   });
 }

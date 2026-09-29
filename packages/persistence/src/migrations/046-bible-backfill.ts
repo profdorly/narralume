@@ -11,7 +11,7 @@ export const migration046 = {
       id TEXT PRIMARY KEY,
       project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
       status TEXT NOT NULL CHECK (status IN (
-        'running','paused','awaiting_decision','awaiting_user','completed','cancelled','failed'
+        'running','paused','awaiting_decision','awaiting_user','completed','cancelled'
       )),
       mode TEXT NOT NULL CHECK (mode IN ('review_each','auto_apply_stop_on_conflict')),
       request_hash TEXT NOT NULL CHECK (length(request_hash) > 0),
@@ -25,7 +25,7 @@ export const migration046 = {
 
     CREATE UNIQUE INDEX bible_backfill_jobs_one_active_idx
       ON bible_backfill_jobs(project_id)
-      WHERE status NOT IN ('completed','cancelled','failed');
+      WHERE status NOT IN ('completed','cancelled');
     CREATE INDEX bible_backfill_jobs_project_idx
       ON bible_backfill_jobs(project_id, created_at DESC);
     CREATE INDEX bible_backfill_jobs_poll_idx

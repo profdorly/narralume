@@ -106,18 +106,42 @@ export class BibleBackfillCoordinator {
     await this.#draining;
   }
 
-  /** One durable transition for one job; false when nothing could change. */
+  /**
+   * One durable transition for one job; false when nothing could change.
+   * An unexpected error rolls the transition back and stops only this job
+   * (see stopOnUnexpectedError); it never escapes to the caller.
+   */
   async advanceJob(jobId: string): Promise<boolean> {
     if (this.#controller.signal.aborted) return false;
-    return this.database.transaction(() => this.advanceJobState(jobId));
+    try {
+      return this.database.transaction(() => this.advanceJobState(jobId));
+    } catch (error) {
+      if (this.#controller.signal.aborted) return false;
+      return this.stopOnUnexpectedError(jobId, error);
+    }
   }
 
   private async drain(): Promise<void> {
+    // Jobs that could not even be stopped are left for the next wake so they
+    // cannot starve the others.
+    const stuck = new Set<string>();
     try {
       while (!this.#controller.signal.aborted) {
         let progressed = false;
         for (const job of this.backfills.listActionableJobs()) {
-          if (await this.advanceJob(job.id)) {
+          if (this.#controller.signal.aborted) return;
+          if (stuck.has(job.id)) continue;
+          let advanced: boolean;
+          try {
+            advanced = await this.advanceJob(job.id);
+          } catch (error) {
+            stuck.add(job.id);
+            if (!this.#controller.signal.aborted) {
+              this.options.onError?.(error);
+            }
+            continue;
+          }
+          if (advanced) {
             progressed = true;
             break;
           }
@@ -125,8 +149,37 @@ export class BibleBackfillCoordinator {
         if (!progressed) return;
       }
     } catch (error) {
+      // Listing the jobs itself failed; the next wake starts over.
       if (!this.#controller.signal.aborted) this.options.onError?.(error);
     }
+  }
+
+  /**
+   * Parks the job for the author after an error nothing else handled (for
+   * example an entity deleted between park and resume), so it neither spins
+   * as `running` nor blocks other projects' jobs. Resume retries the same
+   * transition; when a cancel was pending the cancellation is completed.
+   * Throws only when the job cannot be written at all.
+   */
+  private stopOnUnexpectedError(jobId: string, error: unknown): boolean {
+    this.options.onError?.(error);
+    return this.database.transaction(() => {
+      const job = this.backfills.getJob(jobId);
+      if (!job || isTerminalBackfillJob(job)) return false;
+      const now = this.now();
+      const item = currentBackfillItem(this.backfills.listItems(job.id));
+      const record = {
+        code: "bible_backfill.unexpected",
+        message: unexpectedErrorMessage(error),
+        ...(item ? { ordinal: item.ordinal } : {}),
+      };
+      if (job.cancelRequested) {
+        finalizeBackfillCancellation(this.backfills, job.id, now, record);
+        return this.changed(job.id, "job.cancelled");
+      }
+      this.backfills.setJobStatus(job.id, "awaiting_user", now, record);
+      return this.changed(job.id, "job.awaiting_user");
+    });
   }
 
   private advanceJobState(jobId: string): boolean {
@@ -489,4 +542,15 @@ export class BibleBackfillCoordinator {
   private now(): string {
     return (this.options.now?.() ?? new Date()).toISOString();
   }
+}
+
+/** A bounded, author-facing description of an unexpected error. */
+function unexpectedErrorMessage(error: unknown): string {
+  const message =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === "object" && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return (message.trim() || "Unexpected error").slice(0, 500);
 }

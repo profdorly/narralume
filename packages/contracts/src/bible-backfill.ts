@@ -13,6 +13,11 @@ export const BibleBackfillModeSchema = z.enum([
 ]);
 export type BibleBackfillMode = z.infer<typeof BibleBackfillModeSchema>;
 
+/**
+ * A job only ends as completed or cancelled. Anything that stops it early —
+ * a failed chapter, a conflict, an unexpected error — parks it in
+ * awaiting_user, from which the author can resume, retry, skip or cancel.
+ */
 export const BibleBackfillJobStatusSchema = z.enum([
   "running",
   "paused",
@@ -20,7 +25,6 @@ export const BibleBackfillJobStatusSchema = z.enum([
   "awaiting_user",
   "completed",
   "cancelled",
-  "failed",
 ]);
 export type BibleBackfillJobStatus = z.infer<
   typeof BibleBackfillJobStatusSchema
@@ -145,10 +149,27 @@ export const BibleBackfillCountsSchema = z.object({
   skipped: z.number().int().nonnegative(),
 });
 
+/**
+ * Model usage recorded by the settlement runs this job created or adopted,
+ * retries and embedding calls included.
+ */
+export const BibleBackfillUsageSchema = z.object({
+  calls: z.number().int().nonnegative(),
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  /**
+   * Estimated cost; null when no recorded call carried a price
+   * (NARRATIVE_MODEL_PRICING_JSON unset or not covering the model).
+   */
+  costUsd: z.number().positive().nullable(),
+});
+export type BibleBackfillUsageDto = z.infer<typeof BibleBackfillUsageSchema>;
+
 export const BibleBackfillDetailSchema = z.object({
   job: BibleBackfillJobSchema.nullable(),
   items: z.array(BibleBackfillItemSchema),
   counts: BibleBackfillCountsSchema,
+  usage: BibleBackfillUsageSchema,
   availableActions: z.array(BibleBackfillActionSchema),
 });
 export type BibleBackfillDetailDto = z.infer<typeof BibleBackfillDetailSchema>;

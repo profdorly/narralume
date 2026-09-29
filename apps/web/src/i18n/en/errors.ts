@@ -543,6 +543,7 @@ export const errors: typeof errorsZh = {
     sessionRequired: "Human verification is required.",
     settlementChangesInvalid: "Unsupported change-set payload",
     settlementConflict: "These story changes conflict with the current canon",
+    settlementAnchorMissing: "The chapter manuscript or outline chapter these story changes belong to no longer exists, so they can't be anchored to it.",
     skillNameConflict: "A writing skill with this name already exists in this project; please choose another name",
     skillNotFound: "Writing skill not found",
     skillPackageDuplicateReference: "The skill ZIP contains a duplicate reference path",

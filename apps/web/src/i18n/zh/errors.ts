@@ -509,6 +509,7 @@ export const errors = {
     sessionRequired: "需要完成人机验证。",
     settlementChangesInvalid: "变更集内容不受支持：{issues}",
     settlementConflict: "这些故事变化与当前正典存在冲突",
+    settlementAnchorMissing: "这组故事变化对应的章节正文或大纲章节已不存在，无法锚定到章节。",
     skillNameConflict: "当前作品已有同名 Writing Skill，请使用其他名称",
     skillNotFound: "写作 Skill 不存在",
     skillPackageDuplicateReference: "Skill ZIP 包含重复引用路径：{path}",
