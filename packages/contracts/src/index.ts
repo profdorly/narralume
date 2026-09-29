@@ -20,6 +20,7 @@ export * from "./assistant.js";
 export * from "./assistant-tool-policy.js";
 export * from "./agent-skills.js";
 export * from "./canon-candidate.js";
+export * from "./bible-backfill.js";
 
 export const HealthResponseSchema = z.object({
   status: z.literal("ok"),
@@ -98,6 +99,15 @@ export const ServerEventSchema = z.discriminatedUnion("type", [
     /** The persisted run_events type, e.g. "run.step.retry_scheduled". */
     eventType: z.string(),
     payload: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    type: z.literal("bible_backfill.status"),
+    projectId: z.string(),
+    jobId: z.string(),
+    /** Job status after the transition. */
+    status: z.string(),
+    /** Coordinator transition, e.g. "item.settling" or "job.awaiting_decision". */
+    action: z.string(),
   }),
 ]);
 export type ServerEvent = z.infer<typeof ServerEventSchema>;

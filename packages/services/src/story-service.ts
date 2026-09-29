@@ -2,6 +2,7 @@ import type { ProjectCoverMutation } from "@narralume/contracts";
 import { createCanonFact, type CanonAuthority } from "@narralume/domain";
 import {
   SqliteAutomationRepository,
+  SqliteBibleBackfillRepository,
   SqliteCanonRepository,
   SqliteDocumentRepository,
   SqliteProjectCoverRepository,
@@ -74,6 +75,10 @@ export function softDeleteProject(
       runs.setRunStatus(run.id, "cancelled", input.now, "project_deleted");
     for (const session of activeSessions)
       automation.setSessionStatus(session.id, "cancelled", input.now);
+    new SqliteBibleBackfillRepository(database).cancelActiveJobs(
+      input.projectId,
+      input.now,
+    );
     return projects.softDelete(
       input.projectId,
       input.expectedUpdatedAt,
@@ -236,6 +241,9 @@ export function commitDocumentVersion(
     triggerSettlement: boolean;
     environment: Readonly<Record<string, string | undefined>>;
     coordinatorWake: () => void;
+    /** See startManualSettlementRun: a Story Bible completion re-target. */
+    interruptRun?: (runId: string, reason: string) => void;
+    bibleBackfillWake?: () => void;
   },
 ) {
   const documents = new SqliteDocumentRepository(database);
@@ -292,6 +300,10 @@ export function commitDocumentVersion(
       database,
       environment: input.environment,
       coordinatorWake: input.coordinatorWake,
+      ...(input.interruptRun ? { interruptRun: input.interruptRun } : {}),
+      ...(input.bibleBackfillWake
+        ? { bibleBackfillWake: input.bibleBackfillWake }
+        : {}),
       projectId: input.projectId,
       document,
       versionId: version.id,

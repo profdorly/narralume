@@ -26,6 +26,7 @@ import {
 import {
   AssistantToolExecutor,
   AutopilotCoordinator,
+  BibleBackfillCoordinator,
   LongGoalCoordinator,
   RouteTable,
   RunCoordinator,
@@ -34,6 +35,7 @@ import {
   registerAgentSkillRoutes,
   registerAssistantRoutes,
   registerAutomationRoutes,
+  registerBibleBackfillRoutes,
   registerCanonCandidateRoutes,
   registerDeliveryRoutes,
   registerLongNovelRoutes,
@@ -159,6 +161,7 @@ async function boot(): Promise<void> {
   runStore.recoverExpiredLeases(recoveryNow);
 
   let autopilotCoordinator: AutopilotCoordinator | null = null;
+  let bibleBackfillCoordinator: BibleBackfillCoordinator | null = null;
   let assistantAutoExecutor: AssistantToolExecutor | null = null;
   let longGoalCoordinatorRef: LongGoalCoordinator | null = null;
   const supervisor = new HarnessSupervisor(runStore, workers, {
@@ -168,6 +171,7 @@ async function boot(): Promise<void> {
         "run.status",
       );
       autopilotCoordinator?.wake();
+      bibleBackfillCoordinator?.wake();
       if (action.type === "complete_run" && assistantAutoExecutor) {
         try {
           assistantAutoExecutor.runAutoActivitiesForTurn(runId);
@@ -226,6 +230,27 @@ async function boot(): Promise<void> {
     true,
     {},
   );
+  bibleBackfillCoordinator = new BibleBackfillCoordinator(
+    database,
+    coordinator,
+    {
+      environment: {},
+      autoRunWorker: true,
+      onChange: (job, action) =>
+        events.broadcast(
+          {
+            type: "bible_backfill.status",
+            projectId: job.projectId,
+            jobId: job.id,
+            status: job.status,
+            action,
+          },
+          "bible_backfill.status",
+        ),
+      onError: (error) =>
+        console.error("bible backfill coordinator failed", error),
+    },
+  );
   const longGoalCoordinator = new LongGoalCoordinator(database, {
     runCoordinator: coordinator,
     autopilotCoordinator,
@@ -242,10 +267,12 @@ async function boot(): Promise<void> {
   });
 
   const table = new RouteTable();
+  const bibleBackfillWake = () => bibleBackfillCoordinator.wake();
   registerStoryRoutes(table, database, {
     coordinator,
     enableBackgroundWorker: true,
     environment: {},
+    bibleBackfillWake,
   });
   registerProjectCoverRoutes(table, database);
   registerAgentSkillRoutes(table, database);
@@ -260,6 +287,7 @@ async function boot(): Promise<void> {
       coordinator.wake();
       autopilotCoordinator.wake();
     },
+    onCanonChangeSetDecided: () => bibleBackfillCoordinator.wake(),
   });
   registerLongNovelRoutes(table, database);
   registerTemplateRoutes(table, database);
@@ -298,6 +326,12 @@ async function boot(): Promise<void> {
     enableBackgroundWorker: true,
     environment: {},
   });
+  registerBibleBackfillRoutes(table, database, {
+    coordinator: bibleBackfillCoordinator,
+    runCoordinator: coordinator,
+    enableBackgroundWorker: true,
+    environment: {},
+  });
   registerCanonCandidateRoutes(table, database, {
     runCoordinator: coordinator,
     enableBackgroundWorker: true,
@@ -307,6 +341,7 @@ async function boot(): Promise<void> {
     coordinator,
     enableBackgroundWorker: true,
     environment: {},
+    bibleBackfillWake,
   });
   registerDeliveryRoutes(table, database, {
     coordinator,
@@ -358,6 +393,7 @@ async function boot(): Promise<void> {
   longGoalCoordinator.reconcileAll();
   coordinator.wake();
   autopilotCoordinator.wake();
+  bibleBackfillCoordinator.wake();
 
   post({ type: "ready" });
 

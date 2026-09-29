@@ -1,6 +1,7 @@
 export * from "./assignment-repository.js";
 export * from "./assistant-repository.js";
 export * from "./assistant-goal-repository.js";
+export * from "./bible-backfill-repository.js";
 export * from "./canon-repository.js";
 export * from "./context-receipt-repository.js";
 export * from "./document-repository.js";

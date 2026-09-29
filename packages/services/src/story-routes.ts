@@ -138,9 +138,20 @@ export function registerStoryRoutes(
     coordinator: RunCoordinator;
     enableBackgroundWorker: boolean;
     environment: Readonly<Record<string, string | undefined>>;
+    /** Wakes the Story Bible completion after a commit re-targeted it. */
+    bibleBackfillWake?: () => void;
   },
 ): void {
   registerStoryStateRoutes(app, database);
+  /* 进行中的「从正文补全故事圣经」任务接管章节新版本时的回调。 */
+  const backfillHooks = {
+    interruptRun: (runId: string, reason: string) => {
+      options.coordinator.interrupt(runId, reason);
+    },
+    ...(options.bibleBackfillWake
+      ? { bibleBackfillWake: options.bibleBackfillWake }
+      : {}),
+  };
   const projects = new SqliteProjectRepository(database);
   const requestReplays = new SqliteRequestReplayRepository(database);
   const covers = new SqliteProjectCoverRepository(database);
@@ -1123,6 +1134,7 @@ export function registerStoryRoutes(
         coordinatorWake: () => {
           if (options.enableBackgroundWorker) options.coordinator.wake();
         },
+        ...backfillHooks,
       });
       return { status: 201, body: DocumentVersionSchema.parse(version) };
     },
@@ -1155,6 +1167,7 @@ export function registerStoryRoutes(
         coordinatorWake: () => {
           if (options.enableBackgroundWorker) options.coordinator.wake();
         },
+        ...backfillHooks,
       });
       return { status: 201, body: DocumentVersionSchema.parse(version) };
     },

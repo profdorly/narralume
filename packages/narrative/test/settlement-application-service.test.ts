@@ -1,12 +1,17 @@
 import {
   createCanonEntity,
   createCanonFact,
+  createDocument,
   createOutlineNode,
   createProject,
 } from "@narralume/domain";
-import { buildChapterRecipe } from "@narralume/harness";
+import {
+  buildChapterRecipe,
+  buildManualSettlementRecipe,
+} from "@narralume/harness";
 import {
   SqliteCanonRepository,
+  SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteReviewRepository,
@@ -400,6 +405,320 @@ describe("SettlementApplicationService", () => {
     expect(state.listTimeline("p1")).toHaveLength(1);
   });
 
+  it("anchors a manual settlement to the settled document's chapter", () => {
+    const documents = new SqliteDocumentRepository(database);
+    documents.insert(
+      createDocument({
+        id: "doc-2",
+        projectId: "p1",
+        kind: "chapter",
+        title: "Chapter 2",
+        outlineNodeId: "chapter-2",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "doc-2");
+    seedChangeSet("manual-change", settlementPayload("awake"), "manual-run");
+
+    new SettlementApplicationService(database).apply({
+      projectId: "p1",
+      changeSetId: "manual-change",
+      now,
+    });
+
+    expect(
+      new SqliteRunRepository(database).getRun("manual-run")
+        ?.targetOutlineNodeId,
+    ).toBeNull();
+    expect(canon.listEffectiveFacts("p1")).toEqual([
+      expect.objectContaining({
+        id: "manual-change:fact:0",
+        validFromNodeId: "chapter-2",
+      }),
+    ]);
+    expect(state.listKnowledge("p1")).toEqual([
+      expect.objectContaining({
+        factId: "manual-change:fact:0",
+        learnedAtNodeId: "chapter-2",
+      }),
+      expect.objectContaining({
+        timelineEventId: "manual-change:timeline:0",
+        learnedAtNodeId: "chapter-2",
+      }),
+    ]);
+    expect(state.listTimeline("p1")).toEqual([
+      expect.objectContaining({ outlineNodeId: "chapter-2" }),
+    ]);
+    expect(state.listCurrentRelationships("p1")).toEqual([
+      expect.objectContaining({ outlineNodeId: "chapter-2" }),
+    ]);
+    expect(state.listForeshadows("p1")).toEqual([
+      expect.objectContaining({ evidenceNodeIds: ["chapter-2"] }),
+    ]);
+  });
+
+  it("refuses to apply a manual settlement whose chapter cannot be resolved", () => {
+    new SqliteDocumentRepository(database).insert(
+      createDocument({
+        id: "loose-note",
+        projectId: "p1",
+        kind: "note",
+        title: "Loose note",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "loose-note");
+    seedChangeSet("manual-change", settlementPayload("awake"), "manual-run");
+
+    expect(() =>
+      new SettlementApplicationService(database).apply({
+        projectId: "p1",
+        changeSetId: "manual-change",
+        now,
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        name: "SettlementApplicationError",
+        code: "settlement.anchor.missing",
+      }),
+    );
+    expect(reviews.requireCanonChangeSet("p1", "manual-change").status).toBe(
+      "candidate",
+    );
+    expect(canon.listEffectiveFacts("p1")).toHaveLength(0);
+  });
+
+  it("anchors a manual settlement to the chapter recorded when it was committed", () => {
+    // Settled as chapter 1, then the document was re-bound to chapter 2.
+    new SqliteDocumentRepository(database).insert(
+      createDocument({
+        id: "doc-2",
+        projectId: "p1",
+        kind: "chapter",
+        title: "Chapter 2",
+        outlineNodeId: "chapter-2",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "doc-2");
+    seedChangeSet(
+      "manual-change",
+      { ...settlementPayload("awake"), settledOutlineNodeId: "chapter-1" },
+      "manual-run",
+    );
+    // A document deleted after settling does not block its chapter's changes.
+    createManualSettlementRun("orphan-run", "deleted-doc");
+    seedChangeSet(
+      "orphan-change",
+      {
+        ...settlementPayload("rested", {
+          operation: "assert",
+          factId: null,
+        }),
+        settledOutlineNodeId: "chapter-2",
+      },
+      "orphan-run",
+    );
+    const service = new SettlementApplicationService(database);
+
+    service.apply({ projectId: "p1", changeSetId: "manual-change", now });
+    service.apply({ projectId: "p1", changeSetId: "orphan-change", now });
+
+    expect(canon.listEffectiveFacts("p1")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "manual-change:fact:0",
+          validFromNodeId: "chapter-1",
+        }),
+        expect.objectContaining({
+          id: "orphan-change:fact:0",
+          validFromNodeId: "chapter-2",
+        }),
+      ]),
+    );
+    expect(state.listTimeline("p1")).toEqual([
+      expect.objectContaining({
+        id: "manual-change:timeline:0",
+        outlineNodeId: "chapter-1",
+      }),
+      expect.objectContaining({
+        id: "orphan-change:timeline:0",
+        outlineNodeId: "chapter-2",
+      }),
+    ]);
+  });
+
+  it("refuses a recorded chapter that no longer exists instead of falling back", () => {
+    new SqliteDocumentRepository(database).insert(
+      createDocument({
+        id: "doc-2",
+        projectId: "p1",
+        kind: "chapter",
+        title: "Chapter 2",
+        outlineNodeId: "chapter-2",
+        now,
+      }),
+    );
+    createManualSettlementRun("manual-run", "doc-2");
+    seedChangeSet(
+      "manual-change",
+      {
+        ...settlementPayload("awake"),
+        settledOutlineNodeId: "deleted-chapter",
+      },
+      "manual-run",
+    );
+
+    expect(() =>
+      new SettlementApplicationService(database).apply({
+        projectId: "p1",
+        changeSetId: "manual-change",
+        now,
+      }),
+    ).toThrow(expect.objectContaining({ code: "settlement.anchor.missing" }));
+    expect(canon.listEffectiveFacts("p1")).toHaveLength(0);
+  });
+
+  it("lists the existing records a change set would change, with their provenance", () => {
+    const service = new SettlementApplicationService(database);
+    seedChangeSet("change-1", settlementPayload("awake"));
+    service.apply({ projectId: "p1", changeSetId: "change-1", now });
+    for (const [id, authority] of [
+      ["author-mood", "confirmed"],
+      ["locked-mood", "locked"],
+    ] as const) {
+      canon.insertFact(
+        createCanonFact({
+          id,
+          projectId: "p1",
+          subjectId: "rival",
+          predicate: id,
+          value: "calm",
+          authority,
+          sourceType: "author",
+          now,
+        }),
+      );
+    }
+    const relationship = state.listCurrentRelationships("p1")[0]!;
+    const foreshadow = state.listForeshadows("p1")[0]!;
+    const payload = settlementPayload("alert", {
+      operation: "supersede",
+      factId: "change-1:fact:0",
+    });
+    const factCandidate = (
+      payload.factCandidates as Record<string, unknown>[]
+    )[0]!;
+    seedChangeSet(
+      "change-2",
+      {
+        ...payload,
+        factCandidates: [
+          factCandidate,
+          {
+            ...factCandidate,
+            operation: "withdraw",
+            factId: "author-mood",
+            subjectId: "rival",
+            predicate: "author-mood",
+            value: null,
+          },
+          // Locked: apply() reports a conflict instead.
+          {
+            ...factCandidate,
+            operation: "withdraw",
+            factId: "locked-mood",
+            subjectId: "rival",
+            predicate: "locked-mood",
+            value: null,
+          },
+        ],
+        relationshipCandidates: [
+          {
+            action: "end",
+            relationshipId: relationship.id,
+            fromEntityId: "hero",
+            toEntityId: "rival",
+            relation: "trusts",
+            change: "trust breaks",
+            evidenceParagraphs: [1],
+            evidence: [groundedEvidence("breaks")],
+          },
+        ],
+        foreshadowCandidates: [
+          {
+            foreshadowId: foreshadow.id,
+            title: "Broken key",
+            action: "resolve",
+            expectedStatus: "planted",
+            importance: 3,
+            targetFromNodeId: null,
+            targetToNodeId: null,
+            evidenceParagraphs: [1],
+            evidence: [groundedEvidence("key")],
+          },
+          // Status changed since: apply() reports a conflict instead.
+          {
+            foreshadowId: foreshadow.id,
+            title: "Broken key",
+            action: "resolve",
+            expectedStatus: "developing",
+            importance: 3,
+            targetFromNodeId: null,
+            targetToNodeId: null,
+            evidenceParagraphs: [1],
+            evidence: [groundedEvidence("key")],
+          },
+        ],
+      },
+      "run-2",
+    );
+
+    expect(service.changedExistingRecords("p1", "change-2")).toEqual([
+      {
+        path: "factCandidates.0",
+        kind: "fact",
+        action: "supersede",
+        id: "change-1:fact:0",
+        label: "Hero · condition: awake",
+        createdByChangeSetId: "change-1",
+        sourceType: "canon_change_set",
+        sourceId: "change-1",
+      },
+      {
+        path: "factCandidates.1",
+        kind: "fact",
+        action: "withdraw",
+        id: "author-mood",
+        label: "Rival · author-mood: calm",
+        createdByChangeSetId: null,
+        sourceType: "author",
+        sourceId: null,
+      },
+      {
+        path: "relationshipCandidates.0",
+        kind: "relationship",
+        action: "end",
+        id: relationship.id,
+        label: "Hero → Rival: trusts",
+        createdByChangeSetId: "change-1",
+        sourceType: null,
+        sourceId: "change-1",
+      },
+      {
+        path: "foreshadowCandidates.0",
+        kind: "foreshadow",
+        action: "resolve",
+        id: foreshadow.id,
+        label: "Broken key",
+        createdByChangeSetId: "change-1",
+        sourceType: null,
+        sourceId: null,
+        reopens: false,
+      },
+    ]);
+  });
+
   it("reuses an identical proposition while recording new knowledge", () => {
     seedChangeSet("change-1", settlementPayload("awake"));
     const service = new SettlementApplicationService(database);
@@ -433,6 +752,21 @@ describe("SettlementApplicationService", () => {
     );
   });
 });
+
+function createManualSettlementRun(id: string, documentId: string): void {
+  const recipe = buildManualSettlementRecipe(id);
+  new SqliteRunRepository(database).create({
+    id,
+    projectId: "p1",
+    recipe: recipe.name,
+    recipeVersion: recipe.version,
+    mode: "manual",
+    targetOutlineNodeId: null,
+    policy: { documentId, documentVersionId: `${documentId}:v1` },
+    steps: recipe.steps,
+    now,
+  });
+}
 
 function seedChangeSet(
   id: string,

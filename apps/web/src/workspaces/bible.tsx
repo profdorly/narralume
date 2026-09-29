@@ -4,7 +4,7 @@
 import "../styles/bible.css";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import { ErrorNote } from "../components/error-note";
@@ -21,7 +21,8 @@ import {
   outlineStatusLabel,
   projectPhaseLabel,
 } from "../lib/labels";
-import { useProjectId } from "../lib/project-route";
+import { BIBLE_BACKFILL_PARAM, useProjectId } from "../lib/project-route";
+import { BibleBackfillPanel } from "./bible/backfill-panel";
 import { BibleEditor, type BibleEditorSection } from "./bible/editor";
 import { CanonCandidatePanel } from "./bible/candidate-panel";
 import { StoryBoard } from "./bible/story-board";
@@ -60,6 +61,37 @@ export function BibleWorkspace() {
       { replace: true },
     );
   };
+  const backfillFocus = searchParams.get(BIBLE_BACKFILL_PARAM) === "open";
+  /* 补全完成后的「用 AI 补充…」：切到对应板块的列表视图，再聚焦 AI 候选面板。 */
+  const deskFocusRef = useRef<BibleSectionId | null>(null);
+  const focusCandidateDesk = () => {
+    const desk = document.querySelector<HTMLElement>(".bible-ai");
+    desk?.scrollIntoView?.({ block: "center" });
+    desk?.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+  };
+  const openCandidateDesk = (section: BibleSectionId) => {
+    if (section === activeSection && outlineView === "list") {
+      focusCandidateDesk();
+      return;
+    }
+    deskFocusRef.current = section;
+    setActiveSectionState(section);
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set("spread", section);
+        next.delete("view");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+  useEffect(() => {
+    if (deskFocusRef.current !== activeSection || outlineView !== "list")
+      return;
+    deskFocusRef.current = null;
+    focusCandidateDesk();
+  }, [activeSection, outlineView]);
   const query = useQuery({
     queryKey: ["project", projectId, "bible"],
     queryFn: ({ signal }) => getStoryBible(projectId!, signal),
@@ -104,6 +136,15 @@ export function BibleWorkspace() {
           ) : null
         }
       />
+
+      {bible ? (
+        <BibleBackfillPanel
+          projectId={projectId}
+          bible={bible}
+          focus={backfillFocus}
+          onOpenCandidateDesk={openCandidateDesk}
+        />
+      ) : null}
 
       {query.isError ? (
         <div className="bible__error">

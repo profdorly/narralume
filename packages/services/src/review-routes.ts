@@ -53,6 +53,8 @@ export function registerReviewRoutes(
   database: NarrativeDatabase,
   options: {
     onSettlementDecisionResolved?: () => void;
+    /** Fires after every committed (or replayed) change-set decision. */
+    onCanonChangeSetDecided?: (projectId: string, changeSetId: string) => void;
   } = {},
 ): void {
   const projects = new SqliteProjectRepository(database);
@@ -289,6 +291,7 @@ export function registerReviewRoutes(
           };
         });
         if (outcome.resumed) options.onSettlementDecisionResolved?.();
+        options.onCanonChangeSetDecided?.(projectId, changeSetId);
         return outcome.result;
       } catch (error) {
         if (error instanceof ReviewRouteError) throw error;

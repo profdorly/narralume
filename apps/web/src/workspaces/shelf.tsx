@@ -71,7 +71,7 @@ import {
 } from "../lib/api";
 import { coverHue, formatRelativeDate, shortId } from "../lib/fmt";
 import { importCandidateKindLabel, projectPhaseLabel } from "../lib/labels";
-import { projectWorkspacePath } from "../lib/project-route";
+import { bibleBackfillPath, projectWorkspacePath } from "../lib/project-route";
 import { rememberTask } from "../lib/task-ledger";
 
 /* ==========================================================================
@@ -524,10 +524,10 @@ export function ShelfWorkspace() {
         <ImportDialog
           detail={importBatch}
           onClose={() => setImportBatch(null)}
-          onApplied={(projectId) => {
+          onApplied={() => void refresh()}
+          onOpen={(path) => {
             setImportBatch(null);
-            void refresh();
-            navigate(projectWorkspacePath(projectId, "overview"));
+            navigate(path);
           }}
         />
       ) : null}
@@ -1460,19 +1460,60 @@ function ImportDialog({
   detail,
   onClose,
   onApplied,
+  onOpen,
 }: {
   detail: ImportBatchDetail;
   onClose: () => void;
   onApplied: (projectId: string) => void;
+  onOpen: (path: string) => void;
 }) {
   const { t } = useI18n();
   const [selected, setSelected] = useState<string[]>(() =>
     detail.candidates.map((candidate) => candidate.id),
   );
+  const [appliedProjectId, setAppliedProjectId] = useState<string | null>(
+    null,
+  );
   const mutation = useMutation({
     mutationFn: (ids: string[]) => applyStoryImport(detail.batch.id, ids),
-    onSuccess: ({ projectId }) => onApplied(projectId),
+    onSuccess: ({ projectId }, ids) => {
+      onApplied(projectId);
+      /* 带正文入藏时先给出「用 AI 补全故事圣经」入口；否则照旧直达项目概览。 */
+      const importedProse = detail.candidates.some(
+        (candidate) => candidate.kind === "document" && ids.includes(candidate.id),
+      );
+      if (importedProse) setAppliedProjectId(projectId);
+      else onOpen(projectWorkspacePath(projectId, "overview"));
+    },
   });
+
+  if (appliedProjectId) {
+    return (
+      <ShelfDialog
+        eyebrow="FICHE"
+        title={t("shelf.import.appliedTitle", { name: detail.batch.filename })}
+        note={t("shelf.import.appliedBody")}
+        onClose={() => onOpen(projectWorkspacePath(appliedProjectId, "overview"))}
+      >
+        <div className="shelf-dialog__actions">
+          <button
+            type="button"
+            className="btn btn--outline"
+            onClick={() => onOpen(projectWorkspacePath(appliedProjectId, "overview"))}
+          >
+            {t("shelf.import.openProject")}
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => onOpen(bibleBackfillPath(appliedProjectId))}
+          >
+            {t("shelf.import.completeBible")}
+          </button>
+        </div>
+      </ShelfDialog>
+    );
+  }
 
   const toggle = (id: string) =>
     setSelected((current) =>

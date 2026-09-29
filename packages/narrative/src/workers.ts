@@ -56,11 +56,13 @@ import {
   type GroundedParagraphEvidence,
 } from "./paragraph-locator.js";
 import {
+  SETTLED_OUTLINE_NODE_KEY,
   SettlementApplicationService,
   SettlementConflictError,
 } from "./settlement-application-service.js";
 import {
   authoredInstructions,
+  instructionsFor,
   promptLanguageOf,
   workCraftLayer,
 } from "./prompt-language.js";
@@ -1324,6 +1326,12 @@ export class ChapterWorkerSuite {
             role: "user",
             content: [
               `<authoritative-context>${authoritative}</authoritative-context>`,
+              ...(manual &&
+              snapshot.run.policy.referenceExistingStoryState === true
+                ? [
+                    `<settlement-note>${this.existingStoryStateNote(snapshot.run.projectId)}</settlement-note>`,
+                  ]
+                : []),
               `<entities>${JSON.stringify(entities.map(({ id, name, type }) => ({ id, name, type })))}</entities>`,
               "<manuscript>",
               locator.render(),
@@ -1732,6 +1740,25 @@ export class ChapterWorkerSuite {
     };
   }
 
+  /* 「从正文补全故事圣经」逐章结算时的提示：导入时已抽取的关系、时间线、
+     伏笔（尚未锚定章节）已在权威上下文里，应按稳定 ID 引用而不是重复创建。 */
+  private existingStoryStateNote(projectId: string): string {
+    return instructionsFor(this.projectLanguage(projectId), {
+      "zh-CN": [
+        "这一章来自导入的已完成正文，正在按章节顺序补全故事圣经。",
+        "导入时已经抽取了人物关系、时间线事件和伏笔，它们出现在权威上下文中，但还没有锚定到具体章节。",
+        "本章正文涉及这些已有条目时，请按它们的稳定 ID 引用：关系用 update/end，时间线事件作为 causeEventIds 引用，伏笔用 develop/resolve；不要为同一件事再 start/plant 一条新的。",
+        "只有本章引入了权威上下文中确实不存在的关系、事件或伏笔时才新建。",
+      ],
+      en: [
+        "This chapter comes from an imported, finished manuscript; the Story Bible is being completed chapter by chapter in reading order.",
+        "Relationships, timeline events and foreshadows were already extracted during import. They appear in the authoritative context but are not anchored to a chapter yet.",
+        "When this chapter touches one of them, reference it by its stable ID: update/end relationships, cite existing timeline events in causeEventIds, develop/resolve foreshadows. Do not start/plant a duplicate for the same thing.",
+        "Only create a new relationship, event or foreshadow when the chapter introduces one that truly does not exist in the authoritative context.",
+      ],
+    });
+  }
+
   /* 手动结算没有 context.compile 步骤：权威上下文直接用作者视角的故事
      状态包（历史时点正典、知情状态、时间线、伏笔的稳定 ID 都在其中）。 */
   private manualSettlementContext(
@@ -1847,7 +1874,12 @@ export class ChapterWorkerSuite {
           projectId: run.projectId,
           runId: run.id,
           stepId: step.id,
-          changes: boundSettlement,
+          /* 锚点章节在结算时就确定：之后文档改绑或删除都不会移动或阻断它
+             （见 SettlementApplicationService.settlementAnchor）。 */
+          changes: {
+            ...boundSettlement,
+            [SETTLED_OUTLINE_NODE_KEY]: manual.outlineNode.id,
+          },
           status: "candidate",
           createdAt: now,
         });

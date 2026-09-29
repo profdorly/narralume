@@ -1,18 +1,26 @@
 import type { Document } from "@narralume/domain";
-import { buildManualSettlementRecipe } from "@narralume/harness";
-import {
-  type NarrativeDatabase,
-  SqliteRunRepository,
-} from "@narralume/persistence";
+import type { NarrativeDatabase } from "@narralume/persistence";
 
+import { retargetBackfillChapter } from "./bible-backfill-service.js";
 import { randomUuid } from "./internal/crypto.js";
-import { hasWritingAssignment, withRuntimeModelPolicy } from "./run-policy.js";
+import {
+  createManualSettlementRun,
+  findActiveManualSettlementRun,
+} from "./manual-settlement-run.js";
+import { hasWritingAssignment } from "./run-policy.js";
+
+export {
+  createManualSettlementRun,
+  findActiveManualSettlementRun,
+  type ManualSettlementOrigin,
+} from "./manual-settlement-run.js";
 
 /**
- * 手动章节结算：作者正式提交正文版本后自动开一个后台 Run，从该版本提取
- * 故事变化候选。它复用章节链的 settle/commit 步骤，但只产 candidate，
- * 不追加版本、不占主创作链互斥（targetOutlineNodeId 保持 null）。
+ * 写作台路径：作者正式提交正文版本后自动开一个后台结算 Run。
  * 没有可用写作模型时静默跳过——手动写作永远不能被模型配置阻塞。
+ * （「从正文补全故事圣经」走 createManualSettlementRun，缺模型时显式报错。）
+ * 若进行中的补全任务仍要结算这一章，则改由任务按新版本只结算一次，
+ * 不另开结算（见 retargetBackfillChapter）。
  */
 export function startManualSettlementRun(input: {
   database: NarrativeDatabase;
@@ -21,40 +29,48 @@ export function startManualSettlementRun(input: {
   projectId: string;
   document: Pick<Document, "id" | "kind" | "outlineNodeId">;
   versionId: string;
+  /** Interrupts a superseded, running Story Bible completion child run. */
+  interruptRun?: (runId: string, reason: string) => void;
+  /** Wakes the Story Bible completion after it took over this version. */
+  bibleBackfillWake?: () => void;
 }): string | null {
   const { database, environment, projectId, document, versionId } = input;
   if (document.kind !== "chapter" || !document.outlineNodeId) return null;
-  if (!hasWritingAssignment(database, environment)) return null;
-  const runs = new SqliteRunRepository(database);
-  /* 每个版本最多一条结算 Run；不同版本各自结算，串行或并发都安全。 */
-  const duplicate = runs
-    .listActiveRuns(projectId)
-    .find(
-      (run) =>
-        run.recipe === "manual-settlement" &&
-        run.policy.documentVersionId === versionId,
-    );
-  if (duplicate) return null;
-  const runId = randomUuid();
-  const recipe = buildManualSettlementRecipe(runId);
-  runs.create({
-    id: runId,
+  const now = new Date().toISOString();
+  const retarget = retargetBackfillChapter(database, {
     projectId,
-    recipe: recipe.name,
-    recipeVersion: recipe.version,
-    mode: "manual",
-    targetOutlineNodeId: null,
-    policy: withRuntimeModelPolicy(
-      {
-        documentId: document.id,
-        documentVersionId: versionId,
-        origin: { surface: "writing", documentId: document.id },
-      },
-      environment,
-    ),
-    steps: recipe.steps,
-    now: new Date().toISOString(),
+    documentId: document.id,
+    outlineNodeId: document.outlineNodeId,
+    versionId,
+    now,
+  });
+  if (retarget.handled) {
+    database.afterCommit(() => {
+      if (retarget.interruptRunId) {
+        input.interruptRun?.(
+          retarget.interruptRunId,
+          "bible_backfill_retargeted",
+        );
+      }
+      input.bibleBackfillWake?.();
+    });
+    return null;
+  }
+  if (!hasWritingAssignment(database, environment)) return null;
+  /* 每个版本最多一条结算 Run；不同版本各自结算，串行或并发都安全。 */
+  if (findActiveManualSettlementRun(database, projectId, versionId)) {
+    return null;
+  }
+  const run = createManualSettlementRun({
+    database,
+    environment,
+    runId: randomUuid(),
+    projectId,
+    document,
+    versionId,
+    origin: { surface: "writing", documentId: document.id },
+    now,
   });
   input.coordinatorWake();
-  return runId;
+  return run.id;
 }

@@ -455,6 +455,13 @@ export class SqliteDeliveryRepository {
     return this.requireImportCandidate(candidate.id);
   }
 
+  getImportCandidate(id: string): ImportCandidate | null {
+    const row = this.database.raw
+      .prepare("SELECT * FROM import_candidates WHERE id = ?")
+      .get(id) as ImportCandidateRow | undefined;
+    return row ? mapCandidate(row) : null;
+  }
+
   requireImportCandidate(id: string): ImportCandidate {
     const row = this.database.raw
       .prepare("SELECT * FROM import_candidates WHERE id = ?")

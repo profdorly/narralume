@@ -1,4 +1,8 @@
 import {
+  type BibleBackfillAction,
+  type BibleBackfillCreatedDto,
+  type BibleBackfillDetailDto,
+  type BibleBackfillMode,
   type StoryStateQuery,
   type StoryStateSnapshotDto,
   type KnowledgeEditorDto,
@@ -123,12 +127,16 @@ export class ApiError extends Error {
 
 export function apiErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    const key = errorLookupKey(`message.${errorCodeKey(error.code)}`);
-    if (key) return translate(getLocale(), key);
-    return error.message;
+    return knownApiErrorMessage(error.code) ?? error.message;
   }
   if (error instanceof Error) return error.message;
   return translate(getLocale(), "errors.message.requestFailed");
+}
+
+/** 按错误码查字典给出本地化文案；字典里没有该码时返回 null。 */
+export function knownApiErrorMessage(code: string): string | null {
+  const key = errorLookupKey(`message.${errorCodeKey(code)}`);
+  return key ? translate(getLocale(), key) : null;
 }
 
 /** 后端错误码（request.unknown_field、assignment.model_limits.required 等）转字典键的 camelCase。 */
@@ -2265,6 +2273,75 @@ export async function decideCanonChangeSet(
       ...input,
       requestId: `${changeSetId}:${input.action}:${input.conflictPolicy ?? "reject"}`,
     }),
+  );
+}
+
+/* ==========================================================================
+   从正文补全故事圣经（逐章顺序结算）
+   ========================================================================== */
+
+export type {
+  BibleBackfillAction,
+  BibleBackfillDetailDto,
+  BibleBackfillCreatedDto,
+  BibleBackfillItemDto,
+  BibleBackfillItemStatus,
+  BibleBackfillJobDto,
+  BibleBackfillJobStatus,
+  BibleBackfillMode,
+  BibleBackfillUsageDto,
+} from "@narralume/contracts";
+
+/** 建任务；同一 requestId 重放返回原任务（idempotentReplay）。 */
+export async function startBibleBackfill(
+  projectId: string,
+  input: {
+    requestId: string;
+    mode?: BibleBackfillMode;
+    chapterIds?: string[];
+  },
+): Promise<BibleBackfillCreatedDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills`,
+    jsonRequest("POST", input),
+  );
+}
+
+/** 当前任务：有活动任务取活动任务，否则取最近一次；从未开始时 job 为 null。 */
+export async function getCurrentBibleBackfill(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<BibleBackfillDetailDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/current`,
+    signal ? { signal } : {},
+  );
+}
+
+export async function getBibleBackfill(
+  projectId: string,
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<BibleBackfillDetailDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/${encodeURIComponent(jobId)}`,
+    signal ? { signal } : {},
+  );
+}
+
+/** 作者控制：pause / resume / cancel，skip_item / retry_item 需带 ordinal。 */
+export async function actOnBibleBackfill(
+  projectId: string,
+  jobId: string,
+  input: {
+    requestId: string;
+    action: BibleBackfillAction;
+    ordinal?: number;
+  },
+): Promise<BibleBackfillCreatedDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/${encodeURIComponent(jobId)}/actions`,
+    jsonRequest("POST", input),
   );
 }
 

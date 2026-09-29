@@ -162,6 +162,26 @@ export class SqliteRunRepository {
   }
 
   /**
+   * Every run of one recipe that targets a document version
+   * (policy.documentVersionId), newest first and without the display
+   * window's LIMIT — any status, so finished outcomes can be adopted.
+   */
+  listRunsForDocumentVersion(
+    projectId: string,
+    recipe: string,
+    documentVersionId: string,
+  ): NarrativeRun[] {
+    const rows = this.database.raw
+      .prepare(
+        `SELECT * FROM runs WHERE project_id = ? AND recipe = ?
+         AND json_extract(policy_json, '$.documentVersionId') = ?
+         ORDER BY created_at DESC, rowid DESC`,
+      )
+      .all(projectId, recipe, documentVersionId) as unknown as RunRow[];
+    return rows.map(mapRun);
+  }
+
+  /**
    * Non-terminal runs of one cocreate session (policy.sessionId), used to
    * cancel reply/adoption workers whose source context was reverted.
    */
