@@ -519,7 +519,7 @@ describe("Complete Story Bible from manuscript", () => {
   });
 
   it("explains stop reasons in Chinese without surfacing raw codes as the message", async () => {
-    setLocale("zh-CN");
+    setLocale("pt-BR");
     const cases: Array<{
       error: NonNullable<BibleBackfillJobDto["error"]>;
       current: BibleBackfillItemDto;
@@ -529,7 +529,7 @@ describe("Complete Story Bible from manuscript", () => {
       {
         error: { code: "child.awaiting_user", runId: "run-2", ordinal: 1 },
         current: item(1, "settling", { runId: "run-2" }),
-        message: "本章的结算运行已停下，正在等你处理。点“继续”即可接着运行，或打开运行记录查看详情。",
+        message: "A execução de acerto deste capítulo parou e está esperando você. Retome para continuá-la, ou abra a execução para ver os detalhes.",
         secondary: [],
       },
       {
@@ -539,26 +539,26 @@ describe("Complete Story Bible from manuscript", () => {
           ordinal: 1,
         },
         current: item(1, "failed"),
-        message: "本章正文已与排队时的章节对不上，可能已被移动、归档或删除。",
+        message: "O manuscrito deste capítulo já não corresponde ao capítulo para o qual foi enfileirado; pode ter sido movido, arquivado ou removido.",
         secondary: [],
       },
       {
         error: { code: "settlement.anchor.missing", message: "Manual settlement has no chapter anchor", ordinal: 1 },
         current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
-        message: "本章的故事变化无法锚定：对应的正文或大纲章节已不存在。",
+        message: "As mudanças da história deste capítulo não podem ser ancoradas porque o manuscrito ou o capítulo da estrutura já não existe.",
         secondary: [],
       },
       {
         error: { code: "bible_backfill.unexpected", message: "canon entity vanished", ordinal: 1 },
         current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
-        message: "补全遇到意外错误，已在这里停下。进度已保存：可以点“继续”重试，或取消补全。",
-        secondary: ["详情：canon entity vanished"],
+        message: "A conclusão encontrou um erro inesperado e parou aqui. O progresso está salvo: retome para tentar de novo, ou cancele.",
+        secondary: ["Detalhes: canon entity vanished"],
       },
       {
         error: { code: "bible_backfill.brand_new", message: "Something new broke", ordinal: 1 },
         current: item(1, "awaiting_decision", { changeSetId: "ccs-2" }),
-        message: "补全因无法识别的原因停下。可以点“继续”重试，或打开运行记录查看详情。",
-        secondary: ["详情：Something new broke", "错误代码：bible_backfill.brand_new"],
+        message: "A conclusão parou por um motivo que não consegue descrever. Retome para tentar de novo, ou abra a execução para ver os detalhes.",
+        secondary: ["Detalhes: Something new broke", "Código de erro: bible_backfill.brand_new"],
       },
     ];
     for (const entry of cases) {
@@ -573,12 +573,12 @@ describe("Complete Story Bible from manuscript", () => {
       renderPanel();
       expect(await screen.findByText(entry.message)).toBeInTheDocument();
       for (const text of entry.secondary) expect(screen.getByText(text)).toBeInTheDocument();
-      expect(screen.getByText("已停下 · 需要你处理")).toBeInTheDocument();
+      expect(screen.getByText("Parado · precisa da sua atenção")).toBeInTheDocument();
       const errorTexts = document.querySelectorAll(".bible-backfill__error-text");
       expect(errorTexts).toHaveLength(1);
       expect(errorTexts[0]!.textContent).not.toMatch(/[a-z]+[._][a-z_]+/);
       if (entry.error.code === "child.awaiting_user" || entry.error.code === "bible_backfill.unexpected") {
-        expect(screen.getByRole("button", { name: "继续" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Retomar" })).toBeInTheDocument();
       }
       cleanup();
       vi.unstubAllGlobals();
@@ -776,8 +776,8 @@ describe("Complete Story Bible from manuscript", () => {
       text: "Imported timeline events still not anchored to a chapter: 12. No settled chapter showed them happening (for example, backstory the prose only mentions). They stay in the Timeline section, where you can place or remove them.",
     },
     {
-      locale: "zh-CN" as const,
-      text: "仍有 12 个导入的时间线事件没有锚定到章节：补全过程中没有哪一章写到它们发生（例如正文只是提到的前史）。它们保留在时间线板块中，可在那里安排章节或删除。",
+      locale: "pt-BR" as const,
+      text: "Eventos da linha do tempo importados ainda sem âncora num capítulo: 12. Nenhum capítulo acertado mostrou que eles acontecem (por exemplo, um passado que a prosa só menciona). Eles permanecem na seção Linha do tempo, onde você pode colocá-los ou removê-los.",
     },
   ])(
     "tells the author at completion how many imported events stay unanchored ($locale)",
@@ -971,11 +971,11 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
       newLabel: "Timeline",
     },
     {
-      locale: "zh-CN" as const,
-      action: "把时间线事件锚定到本章",
-      anchorLabel: "时间线 · 锚定",
-      anchorText: "把已有事件「Helena chega a Vila do Sal」锚定到本章，不新建事件 · 故事时间：Outono · 事件保留自己的描述、参与者、因果与可见性",
-      newLabel: "时间线",
+      locale: "pt-BR" as const,
+      action: "Ancorar evento da linha do tempo neste capítulo",
+      anchorLabel: "Linha do tempo · âncora",
+      anchorText: "Ancorar o evento existente “Helena chega a Vila do Sal” a este capítulo; nenhum evento novo é criado · tempo da história: Outono · o evento mantém a própria descrição, participantes, causas e visibilidade",
+      newLabel: "Linha do tempo",
     },
   ])(
     "shows an anchored timeline event as adopting the existing event ($locale)",
@@ -1066,7 +1066,7 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
   });
 
   it("explains review stops, re-targeted chapters and the Studio change sets they leave in Chinese", async () => {
-    setLocale("zh-CN");
+    setLocale("pt-BR");
     stubApi({
       current: () =>
         detail(
@@ -1098,12 +1098,12 @@ describe("Story Bible completion around mid-job edits and author canon", () => {
     });
     renderPanel();
 
-    expect(await screen.findByRole("heading", { name: "第 2 章要改动不是本次补全创建的记录" })).toBeInTheDocument();
-    expect(screen.getByText("撤回事实")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "O capítulo 2 mudaria registros que esta conclusão não criou" })).toBeInTheDocument();
+    expect(screen.getByText("Retirar fato")).toBeInTheDocument();
     expect(
-      screen.getByText("补全期间被修改过，读取的是最新正文。 旧正文的变更集仍未裁定，留在写作台的“故事变化”面板。"),
+      screen.getByText("Editado durante a conclusão; o texto mais recente é lido. O conjunto de mudanças do texto anterior permanece indeciso no painel “Mudanças da história” da mesa de escrita."),
     ).toBeInTheDocument();
-    expect(screen.getByText(/跳过只是让补全继续往下读/)).toBeInTheDocument();
+    expect(screen.getByText(/Pular só faz a conclusão avançar/)).toBeInTheDocument();
     expect(document.body.textContent).not.toContain("bible_backfill.review_required");
   });
 

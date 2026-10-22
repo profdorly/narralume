@@ -334,4 +334,3 @@ AI 拆书会要求模型用原稿本身的语言书写候选；对葡语、西�
 - [配置](configuration.md)：模型协议、环境变量、Docker 和 Bridge/Relay。
 - [数据、隐私与备份](data-and-backup.md)：存储位置、作品包、项目快照和整库恢复。
 - [Docker Compose](docker.md)：自托管运行、更新、停止和备份。
-- [Cloudflare 部署](deploy-cloud.md)：公开 Web、Relay 和 Bridge 的部署边界。

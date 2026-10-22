@@ -1,6 +1,6 @@
-import type { components as componentsZh } from "../zh/components";
+import type { components as componentsPt } from "../pt-BR/components";
 
-export const components: typeof componentsZh = {
+export const components: typeof componentsPt = {
   confirmDialog: {
     pending: "Working…",
   },

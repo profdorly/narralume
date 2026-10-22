@@ -1,6 +1,6 @@
-import type { autopilot as autopilotZh } from "../zh/autopilot";
+import type { autopilot as autopilotPt } from "../pt-BR/autopilot";
 
-export const autopilot: typeof autopilotZh = {
+export const autopilot: typeof autopilotPt = {
   entities: {
     title: "New story elements in the plan",
     hint: "The plan proposes new characters, places, or other story elements. Review their purpose and rationale. Adoption adds them to the entity library; chapters in this window are created after your decisions.",
@@ -11,7 +11,7 @@ export const autopilot: typeof autopilotZh = {
     unavailable: "The current candidates are unavailable. Refresh or replan.",
   },
   page: {
-    seal: "创",
+    seal: "C",
     title: "AI Quick Creation",
     description:
       "Pick a project and let AI finish chapter after chapter following the story plan; you can step in anytime.",

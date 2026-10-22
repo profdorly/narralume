@@ -1,8 +1,8 @@
-import type { delivery as deliveryZh } from "../zh/delivery";
+import type { delivery as deliveryPt } from "../pt-BR/delivery";
 
-export const delivery: typeof deliveryZh = {
+export const delivery: typeof deliveryPt = {
   requiredState: {
-    seal: "付",
+    seal: "D",
     title: "Delivery",
     description:
       "Select a work to check manuscript quality, export files, and keep recoverable content snapshots here.",

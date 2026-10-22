@@ -11,12 +11,12 @@
 | [配置](configuration.md)               | 设置模型渠道、默认模型、Server、Docker 和通用代理。 |
 | [数据、隐私与备份](data-and-backup.md) | 了解浏览器存储、项目快照、作品包和整库恢复。        |
 
-## 自托管与部署
+## Autohospedagem
 
-| 文档                               | 适合谁                                                                |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| [Docker Compose](docker.md)        | 在自己的电脑或服务器上运行一套自托管实例。                            |
-| [Cloudflare 部署](deploy-cloud.md) | 维护公开在线体验时部署 Web、Relay 和本机 Bridge；普通用户通常不需要。 |
+| Documento                                                         | Para quem                                           |
+| ----------------------------------------------------------------- | --------------------------------------------------- |
+| [Docker Compose](docker.md)                                       | Rodar uma instância na própria máquina ou servidor. |
+| [ADR 001 — local-first](adr/001-local-first-e-fronteiras-saas.md) | Fronteiras de persistência e SaaS futuro.           |
 
 ## 参与项目
 

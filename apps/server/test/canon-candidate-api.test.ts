@@ -765,10 +765,10 @@ describe("Canon Spread candidate API", () => {
       hint: "Manuscript language (detected): Portuguese. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.",
     },
     {
-      language: "zh-CN",
+      language: "pt-BR",
       invariant:
-        "语言不变量：summary、每项的 title、rationale、impact，以及 afterJson 中的所有文字字段",
-      hint: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+        "Invariante de idioma: summary, o title, rationale e impact de cada item, e todos os campos de texto em afterJson",
+      hint: "Idioma do manuscrito (detectado): português. Escreva os campos em linguagem natural nesse idioma; se o texto estiver claramente em outra língua, siga o texto.",
     },
   ])(
     "asks a $language spread revision to keep the language of a Portuguese manuscript",
@@ -857,7 +857,7 @@ describe("Canon Spread candidate API", () => {
     const started = await startCandidate(app, projectId, "intent", "收紧焦点");
     await finishRun(app, projectId, started.runId);
     const [request] = capturedRequests;
-    expect(request!.instructions).toContain("语言不变量");
+    expect(request!.instructions).toContain("Invariante de idioma");
     expect(request!.content).not.toMatch(/detected|自动检测/u);
     expect(() => JSON.parse(request!.content)).not.toThrow();
   });

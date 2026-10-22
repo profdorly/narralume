@@ -1,6 +1,6 @@
-import type { assistant as assistantZh } from "../zh/assistant";
+import type { assistant as assistantPt } from "../pt-BR/assistant";
 
-export const assistant: typeof assistantZh = {
+export const assistant: typeof assistantPt = {
   trigger: {
     open: "Open Project Co-work",
     title: "Project Co-work (⌘J)",

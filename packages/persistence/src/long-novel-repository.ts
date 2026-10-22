@@ -224,7 +224,7 @@ export class SqliteLongNovelRepository {
         seenContent.add(fingerprint);
         return true;
       })
-      .map((memory) => `【${memory.title}】${memory.content}`)
+      .map((memory) => `[${memory.title}] ${memory.content}`)
       .join("\n");
     const stateDelta = mergeMemoryStateDeltas(selected);
     this.database.raw
@@ -232,7 +232,7 @@ export class SqliteLongNovelRepository {
         `INSERT INTO narrative_memories(
            id, project_id, layer, scope_type, scope_id, title, content,
            state_delta_json, source_hash, status, refreshed_at, created_at, updated_at
-         ) VALUES (?, ?, 'semantic', 'sleep', ?, '睡眠整理', ?, ?, ?, 'active', ?, ?, ?)
+         ) VALUES (?, ?, 'semantic', 'sleep', ?, 'Consolidação noturna', ?, ?, ?, 'active', ?, ?, ?)
          ON CONFLICT(project_id, layer, scope_type, scope_id, source_hash) DO UPDATE SET
            content = excluded.content,
            state_delta_json = excluded.state_delta_json,
@@ -432,7 +432,7 @@ export class SqliteLongNovelRepository {
         kind: "entity",
         sourceId: entity.id,
         label: entity.name,
-        impact: `将影响人物/设定“${entity.name}”及其关联事实。`,
+        impact: `Vai afetar a personagem ou o elemento “${entity.name}” e os fatos ligados a ele.`,
         severity: "info",
       });
       const facts = this.database.raw
@@ -450,7 +450,7 @@ export class SqliteLongNovelRepository {
           kind: "fact",
           sourceId: fact.id,
           label: fact.predicate,
-          impact: `需复核正典事实“${fact.predicate}”是否仍成立。`,
+          impact: `É preciso conferir se o fato canônico “${fact.predicate}” ainda vale.`,
           severity: "warning",
         });
     }
@@ -470,7 +470,7 @@ export class SqliteLongNovelRepository {
           kind: "entity",
           sourceId: relationship.id,
           label: relationship.relation,
-          impact: `需复核关联关系“${relationship.relation}”及双方动机。`,
+          impact: `É preciso conferir a relação “${relationship.relation}” e a motivação dos dois lados.`,
           severity: "warning",
         });
       const directEvents = this.database.raw
@@ -490,7 +490,8 @@ export class SqliteLongNovelRepository {
           kind: "timeline",
           sourceId: event.id,
           label: event.title,
-          impact: "该时间线事件直接包含被改动实体，需要重验参与结果。",
+          impact:
+            "Este evento da linha do tempo inclui a entidade alterada; o resultado da participação precisa ser conferido de novo.",
           severity: "warning",
         });
         const descendants = this.database.raw
@@ -514,7 +515,7 @@ export class SqliteLongNovelRepository {
             kind: "timeline",
             sourceId: descendant.id,
             label: descendant.title,
-            impact: `该事件位于“${event.title}”的下游因果链，需重新验证。`,
+            impact: `Este evento está na cadeia causal abaixo de “${event.title}” e precisa ser verificado de novo.`,
             severity: "warning",
           });
       }
@@ -531,7 +532,8 @@ export class SqliteLongNovelRepository {
         kind: "foreshadow",
         sourceId: clue.id,
         label: clue.title,
-        impact: "该改动触及尚未回收的伏笔，需要确认兑现窗口。",
+        impact:
+          "A mudança toca uma antecipação ainda não paga; confirme a janela de pagamento.",
         severity: "warning",
       });
       const dependents = this.database.raw
@@ -556,7 +558,7 @@ export class SqliteLongNovelRepository {
           kind: "foreshadow",
           sourceId: dependent.id,
           label: dependent.title,
-          impact: `该伏笔依赖“${clue.title}”，上游变化会传递到其回收条件。`,
+          impact: `Esta antecipação depende de “${clue.title}”; a mudança a montante chega às condições de pagamento.`,
           severity: "warning",
         });
     }
@@ -572,7 +574,8 @@ export class SqliteLongNovelRepository {
         kind: "outline",
         sourceId: node.id,
         label: node.title,
-        impact: "该大纲节点被直接提及，需要复核目标、冲突与结果。",
+        impact:
+          "Este nó da estrutura foi citado diretamente; confira objetivo, conflito e desfecho.",
         severity: "warning",
       });
       const descendants = this.database.raw
@@ -596,7 +599,7 @@ export class SqliteLongNovelRepository {
           kind: "outline",
           sourceId: descendant.id,
           label: descendant.title,
-          impact: `该节点是“${node.title}”的下游结构，需要随上游变更复核。`,
+          impact: `Este nó fica abaixo de “${node.title}” e precisa ser conferido com a mudança a montante.`,
           severity: "warning",
         });
     }
@@ -848,12 +851,12 @@ function memoryLayer(scopeType: string): MemoryLayer {
 function scopeLabel(scopeType: string): string {
   return (
     {
-      scene: "场景",
-      chapter: "章节",
-      arc: "故事弧",
-      volume: "卷",
-      book: "全书",
-      session: "会话",
+      scene: "cena",
+      chapter: "capítulo",
+      arc: "arco",
+      volume: "volume",
+      book: "livro",
+      session: "sessão",
     }[scopeType] ?? scopeType
   );
 }
@@ -903,65 +906,85 @@ function predictionSeeds(
   }> = [];
   for (const relationship of relationships.slice(0, 2))
     result.push({
-      title: `检验${relationship.source_name}与${relationship.target_name}的${relationship.relation}`,
-      summary: `${inputDirection(direction)}通过一次必须共同承担后果的选择，检验“${relationship.relation}”是否会强化、反转或破裂。`,
+      title: `Testar ${relationship.relation} entre ${relationship.source_name} e ${relationship.target_name}`,
+      summary: `${inputDirection(direction)}por uma escolha cujas consequências os dois tenham de assumir juntos, teste se “${relationship.relation}” se reforça, se inverte ou se rompe.`,
       impact: [
-        `关系强度：${relationship.intensity ?? "未知"}`,
-        `双方：${relationship.source_name} / ${relationship.target_name}`,
+        `Intensidade da relação: ${relationship.intensity ?? "desconhecida"}`,
+        `Par: ${relationship.source_name} / ${relationship.target_name}`,
       ],
-      risks: ["角色动机需要当前章节证据", "关系变化必须在结算中留痕"],
+      risks: [
+        "A motivação das personagens precisa de evidência neste capítulo",
+        "A mudança de relação precisa ficar registrada no acerto",
+      ],
       sourceIds: [relationship.id],
     });
   for (const fact of facts.slice(0, 2))
     result.push({
-      title: `兑现「${fact.subject_name}·${fact.predicate}」的后果`,
-      summary: `${inputDirection(direction)}让“${fact.subject_name}${fact.predicate}${fact.object_value ?? ""}”不再只是背景设定，而是限制本次选择的代价。`,
+      title: `Cobrar a consequência de “${fact.subject_name} · ${fact.predicate}”`,
+      summary: `${inputDirection(direction)}faça “${fact.subject_name}${fact.predicate}${fact.object_value ?? ""}” deixar de ser só pano de fundo e passar a limitar o preço desta escolha.`,
       impact: [
-        `${fact.authority === "locked" ? "锁定" : "确认"}正典参与因果`,
-        "减少设定与剧情脱节",
+        `${fact.authority === "locked" ? "Cânone travado" : "Cânone confirmado"} entra na causalidade`,
+        "Reduzir o descompasso entre configuração e trama",
       ],
-      risks: ["不得篡改事实本身", "需避免生硬解释设定"],
+      risks: [
+        "Não alterar o fato em si",
+        "Evitar explicar a configuração de forma rígida",
+      ],
       sourceIds: [fact.id],
     });
   for (const node of outline.slice(0, 2))
     result.push({
-      title: `推进「${node.title}」`,
-      summary: `${direction || "沿当前故事承诺推进"}；让“${node.title}”的冲突产生不可逆后果。${node.summary ?? ""}`,
+      title: `Avançar “${node.title}”`,
+      summary: `${direction || "Avançar a partir da promessa atual da história"}; faça o conflito de “${node.title}” produzir uma consequência irreversível. ${node.summary ?? ""}`,
       impact: [
-        "推进主线",
-        node.conflict ? `兑现冲突：${node.conflict}` : "建立新的因果链",
+        "Avançar a linha principal",
+        node.conflict
+          ? `Cobrar o conflito: ${node.conflict}`
+          : "Estabelecer uma nova cadeia causal",
       ],
-      risks: ["过早消耗主线张力", "需要复核人物动机"],
+      risks: [
+        "Gastar cedo demais a tensão da linha principal",
+        "Revisar a motivação das personagens",
+      ],
       sourceIds: [node.id],
     });
   for (const clue of foreshadows.slice(0, 2))
     result.push({
-      title: `放大伏笔「${clue.title}」`,
-      summary: `让“${clue.title}”从背景线索转为角色必须回应的事件，但暂不完全揭底。`,
-      impact: ["提高线索可见度", "连接后续回收窗口"],
-      risks: ["信息释放过快", "可能削弱悬念"],
+      title: `Ampliar a antecipação “${clue.title}”`,
+      summary: `Transforme “${clue.title}” de pista de fundo em evento ao qual a personagem precisa responder, sem revelar o fundo ainda.`,
+      impact: [
+        "Aumentar a visibilidade da pista",
+        "Ligar à janela de pagamento seguinte",
+      ],
+      risks: ["Liberar informação demais", "Pode enfraquecer o suspenso"],
       sourceIds: [clue.id],
     });
   result.push({
-    title: "反向施压",
-    summary: `从与“${intent?.current_focus ?? (direction || "当前目标")}”相反的方向制造代价，检验角色是否仍会坚持。`,
-    impact: ["强化角色能动性", "显露主题代价"],
-    risks: ["偏离作者当前意图", "需要新的铺垫"],
+    title: "Pressão no sentido contrário",
+    summary: `Do lado oposto a “${intent?.current_focus ?? (direction || "o foco atual")}”, crie um preço e teste se a personagem ainda insiste.`,
+    impact: ["Reforçar a agência da personagem", "Mostrar o preço do tema"],
+    risks: ["Desviar da intenção atual da autoria", "Pedir nova preparação"],
     sourceIds: [],
   });
   result.push({
-    title: "陌生变量",
-    summary: `引入一个不直接推翻现有正典的新变量，让“${direction || "当前计划"}”出现第二种解释。`,
-    impact: ["扩展选择空间", "制造信息差"],
-    risks: ["增加认知负担", "需要在后续章节回收"],
+    title: "Variável estranha",
+    summary: `Introduza uma variável que não derruba o cânone atual e dê a “${direction || "o plano atual"}” uma segunda leitura.`,
+    impact: ["Ampliar o espaço de escolha", "Criar assimetria de informação"],
+    risks: [
+      "Aumentar a carga cognitiva",
+      "Precisa de pagamento nos capítulos seguintes",
+    ],
     sourceIds: [],
   });
   result.push({
-    title: "延迟兑现",
+    title: "Adiar o pagamento",
     summary:
-      "暂缓主线答案，先让角色为一次看似较小的选择支付代价，再把后果接回主线。",
-    impact: ["积累因果势能", "保留悬念"],
-    risks: ["节奏可能变慢", "必须留下明确推进信号"],
+      "Adie a resposta da linha principal: primeiro cobre um preço por uma escolha aparentemente menor, depois devolva a consequência à linha principal.",
+    impact: ["Acumular potencial causal", "Manter o suspenso"],
+    risks: [
+      "O ritmo pode ficar mais lento",
+      "É preciso deixar um sinal claro de avanço",
+    ],
     sourceIds: [],
   });
   return result;
@@ -973,7 +996,9 @@ function stableId(...parts: string[]): string {
 
 function inputDirection(direction: string): string {
   const normalized = direction.trim();
-  return normalized ? `沿“${normalized}”推进，` : "沿当前故事承诺推进，";
+  return normalized
+    ? `Avançar ao longo de “${normalized}”: `
+    : "Avançar a partir da promessa atual da história: ";
 }
 
 function sha256(value: string): string {

@@ -1,6 +1,6 @@
-import type { errors as errorsZh } from "../zh/errors";
+import type { errors as errorsPt } from "../pt-BR/errors";
 
-export const errors: typeof errorsZh = {
+export const errors: typeof errorsPt = {
   hint: {
     requestUnknownField:
       "The request body contains unknown fields, which means the frontend is still sending a deprecated contract; please upgrade the frontend and try again.",

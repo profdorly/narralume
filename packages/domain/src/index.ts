@@ -22,12 +22,16 @@ export const PROJECT_PHASE_TRANSITIONS: Readonly<
   complete: ["complete", "revising"],
 };
 
+export const PROJECT_FORMS = ["short-story", "novella", "novel"] as const;
+export type ProjectForm = (typeof PROJECT_FORMS)[number];
+
 export interface Project {
   id: ProjectId;
   title: string;
   subtitle: string | null;
   premise: string | null;
   language: string;
+  form: ProjectForm;
   phase: ProjectPhase;
   archivedAt: IsoDateTime | null;
   createdAt: IsoDateTime;
@@ -40,6 +44,7 @@ export interface CreateProjectInput {
   subtitle?: string | null;
   premise?: string | null;
   language?: string;
+  form?: ProjectForm;
   now: IsoDateTime;
 }
 
@@ -57,7 +62,8 @@ export function createProject(input: CreateProjectInput): Project {
     title,
     subtitle: normalizeOptionalText(input.subtitle),
     premise: normalizeOptionalText(input.premise),
-    language: input.language?.trim() || "zh-CN",
+    language: input.language?.trim() || "pt-BR",
+    form: input.form ?? "novel",
     phase: "idea",
     archivedAt: null,
     createdAt: input.now,

@@ -134,7 +134,7 @@ export function LabWorkspace() {
 
   return (
     <div className="lab">
-      <PageBand index="LOOM · L2" title={t("lab.title")} meta={<span>{t("lab.meta")}</span>} />
+      <PageBand index="LABORATÓRIO · L2" title={t("lab.title")} meta={<span>{t("lab.meta")}</span>} />
 
       <div className="lab__layout">
         <div className="lab__column">

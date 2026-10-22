@@ -156,7 +156,7 @@ beforeEach(() => {
     // @ts-expect-error 测试替身
     URL.revokeObjectURL = vi.fn();
   }
-  window.localStorage.clear();setLocale("zh-CN");
+  window.localStorage.clear();setLocale("pt-BR");
 });
 
 afterEach(() => {
@@ -164,14 +164,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("交付", () => {
+describe("Entrega", () => {
   it("未选择作品时显示交付页自己的朱印空状态", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     renderDelivery("/delivery");
 
-    expect(screen.getByRole("heading", { name: "交付" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Entrega" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -189,7 +189,7 @@ describe("交付", () => {
     await screen.findByText("有大纲");
     // readiness 印 + 通过率
     const readiness = document.querySelector(".delivery__readiness");
-    expect(readiness?.textContent).toMatch(/建议检查/);
+    expect(readiness?.textContent).toMatch(/Revisão sugerida/);
     expect(readiness?.textContent).toMatch(/2\/3/);
     expect(screen.getByText("伏笔已收")).toBeInTheDocument();
     expect(screen.getByText(/仍有 2 处未收/)).toBeInTheDocument();
@@ -199,15 +199,15 @@ describe("交付", () => {
     expect(screen.getByText(/第三章还有 3 条批注未档/)).toBeInTheDocument();
 
     // 五格式
-    expect(await screen.findByText("导出格式")).toBeInTheDocument();
+    expect(await screen.findByText("Formatos de exportação")).toBeInTheDocument();
     expect(screen.getByText("Markdown")).toBeInTheDocument();
     expect(screen.getByText("DOCX")).toBeInTheDocument();
     expect(screen.getByText("EPUB")).toBeInTheDocument();
-    expect(screen.getByText("作品包")).toBeInTheDocument();
+    expect(screen.getByText("Pacote da história")).toBeInTheDocument();
 
     // 创作内容快照区（完整系统备份档已迁设置，不在本页）
-    expect(screen.getByText("创作内容快照")).toBeInTheDocument();
-    expect(screen.getByText(/完整包含故事设定、正文与草稿、批注、封面、审稿记录、共创会话和助手协作历史/)).toBeInTheDocument();
+    expect(screen.getByText("Instantâneos do conteúdo")).toBeInTheDocument();
+    expect(screen.getByText(/Um instantâneo cobre por completo/)).toBeInTheDocument();
     expect(screen.getByText(/上卷交付留底/)).toBeInTheDocument();
     expect(screen.queryByText("备份档")).not.toBeInTheDocument();
     // 至少见到一份备份的哈希（正断言）
@@ -244,9 +244,9 @@ describe("交付", () => {
     renderDelivery();
 
     // 等质量门落地后再按
-    await screen.findByText(/建议检查 · 2\/3/);
+    await screen.findByText(/Revisão sugerida/);
     const epubBtn = await screen.findByRole("button", {
-      name: /以 EPUB 导出当前作品/,
+      name: /Exportar a obra atual como EPUB/,
     });
     fireEvent.click(epubBtn);
 
@@ -295,10 +295,10 @@ describe("交付", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderDelivery();
 
-    await screen.findByText(/建议检查 · 2\/3/);
-    const input = await screen.findByPlaceholderText("交付前版本");
+    await screen.findByText(/Revisão sugerida/);
+    const input = await screen.findByPlaceholderText("Versão pré-entrega");
     fireEvent.change(input, { target: { value: "临时备份" } });
-    fireEvent.click(screen.getByRole("button", { name: /创建内容快照/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Criar instantâneo do conteúdo/ }));
 
     const call = await vi.waitFor(() => {
       const found = fetchMock.mock.calls.find(

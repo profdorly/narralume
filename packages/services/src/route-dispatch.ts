@@ -1,3 +1,4 @@
+import { LOCAL_OPERATOR } from "./auth-context.js";
 import {
   normalizeRouteResult,
   type RouteApp,
@@ -47,6 +48,7 @@ export class RouteTable implements RouteApp {
           body: context.body,
           headers: context.headers,
           log: context.log,
+          auth: LOCAL_OPERATOR,
         }),
       ).then((result) => normalizeRouteResult(result));
     }

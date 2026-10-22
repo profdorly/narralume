@@ -5,6 +5,7 @@ import type {
 } from "fastify";
 
 import {
+  LOCAL_OPERATOR,
   normalizeRouteResult,
   type RouteApp,
   type RouteMethod,
@@ -29,6 +30,7 @@ export function fastifyRouteApp(app: FastifyInstance): RouteApp {
             body: request.body,
             headers: request.headers as Record<string, string>,
             log: request.log,
+            auth: LOCAL_OPERATOR,
           }),
         );
         applyRouteResponse(reply, result);

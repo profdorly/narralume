@@ -505,7 +505,9 @@ describe("partial stream continue", () => {
     expect(captured.draftPrompts).toHaveLength(1);
     expect(captured.draftPrompts[0]).toContain("<existing-beginning>");
     expect(captured.draftPrompts[0]).toContain(PARTIAL_PREFIX);
-    expect(captured.draftPrompts[0]).toContain("只输出新增的续写部分");
+    expect(captured.draftPrompts[0]).toContain(
+      "entregue só a continuação nova",
+    );
     const version = database.raw
       .prepare("SELECT content, source, run_id FROM document_versions")
       .get() as { content: string; source: string; run_id: string };

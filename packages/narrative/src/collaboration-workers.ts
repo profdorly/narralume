@@ -251,13 +251,13 @@ export class CollaborationWorkerSuite {
       {
         id: `room-task:${session.id}`,
         kind: "task",
-        label: "共创回合任务",
+        label: "Tarefa da rodada de cocriação",
         content: [
-          `作品：《${project.title}》`,
-          project.premise ? `命题：${project.premise}` : "",
-          `会话：${session.title}`,
-          `发言策略：${session.speakerPolicy}`,
-          `本轮必须由 Persona ${expectedSpeakerId} 发言。`,
+          `Obra: «${project.title}»`,
+          project.premise ? `Premissa: ${project.premise}` : "",
+          `Sessão: ${session.title}`,
+          `Política de fala: ${session.speakerPolicy}`,
+          `Esta rodada deve ser falada pela Persona ${expectedSpeakerId}.`,
         ]
           .filter(Boolean)
           .join("\n"),
@@ -271,11 +271,11 @@ export class CollaborationWorkerSuite {
       {
         id: `room-roster:${session.id}`,
         kind: "session",
-        label: "在场 Persona",
+        label: "Personas presentes",
         content: participants
           .map(
             ({ persona, talkativeness }) =>
-              `- ${persona.id}｜${persona.name}｜${persona.kind}｜发言倾向 ${talkativeness}｜${clipText(persona.description ?? "未补充", 180)}`,
+              `- ${persona.id}｜${persona.name}｜${persona.kind}｜tendência de fala ${talkativeness}｜${clipText(persona.description ?? "não informado", 180)}`,
           )
           .join("\n"),
         authority: "locked",
@@ -288,7 +288,7 @@ export class CollaborationWorkerSuite {
       {
         id: `speaker-selection:${snapshot.run.id}`,
         kind: "task",
-        label: "本轮发言者决策",
+        label: "Decisão de falante desta rodada",
         content: `speakerPersonaId=${expectedSpeakerId}\nreason=${speakerSelectionReason}\nstableHash=${speakerSelectionHash}`,
         authority: "locked",
         priority: 100,
@@ -308,14 +308,14 @@ export class CollaborationWorkerSuite {
     sources.push({
       id: `room-speaker:${speakerPersona.id}`,
       kind: "session",
-      label: `当前发言 Persona · ${speakerPersona.name}`,
+      label: `Persona falando agora · ${speakerPersona.name}`,
       content: [
-        `ID：${speakerPersona.id}`,
-        `名称：${speakerPersona.name}`,
-        `种类：${speakerPersona.kind}`,
-        `设定：${speakerPersona.description ?? "未补充"}`,
-        `表演指令：${speakerPersona.instructions || "保持角色一致"}`,
-        `声线：${JSON.stringify(speakerPersona.voice)}`,
+        `ID: ${speakerPersona.id}`,
+        `Nome: ${speakerPersona.name}`,
+        `Tipo: ${speakerPersona.kind}`,
+        `Ficha: ${speakerPersona.description ?? "não informado"}`,
+        `Instruções de atuação: ${speakerPersona.instructions || "mantenha o personagem coerente"}`,
+        `Voz: ${JSON.stringify(speakerPersona.voice)}`,
       ].join("\n"),
       authority: "locked",
       priority: 100,
@@ -325,15 +325,15 @@ export class CollaborationWorkerSuite {
       sourceId: speakerPersona.id,
     });
     const profileContent = instructionsFor(project.language, {
-      "zh-CN": [
+      "pt-BR": [
         speakerPersona.profile.personality
-          ? `性格参考：${speakerPersona.profile.personality}`
+          ? `Referência de personalidade: ${speakerPersona.profile.personality}`
           : "",
         speakerPersona.profile.scenario
-          ? `情境参考：${speakerPersona.profile.scenario}`
+          ? `Referência de situação: ${speakerPersona.profile.scenario}`
           : "",
         speakerPersona.profile.exampleDialogue
-          ? `示例对白：\n${speakerPersona.profile.exampleDialogue}`
+          ? `Diálogo de exemplo:\n${speakerPersona.profile.exampleDialogue}`
           : "",
       ].filter(Boolean),
       en: [
@@ -355,7 +355,7 @@ export class CollaborationWorkerSuite {
         label: `${
           promptLanguageOf(project.language) === "en"
             ? "Current character card reference"
-            : "当前角色卡参考"
+            : "Referência atual da ficha de personagem"
         } · ${speakerPersona.name}`,
         content: profileContent,
         authority: "reference",
@@ -371,11 +371,11 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: `style:${activeStyle.id}`,
         kind: "style",
-        label: `启用风格 · ${activeStyle.name}`,
+        label: `Estilo ativo · ${activeStyle.name}`,
         content: [
           activeStyle.description ?? "",
-          ...activeStyle.rules.map((rule) => `必须：${rule}`),
-          ...activeStyle.negativeRules.map((rule) => `避免：${rule}`),
+          ...activeStyle.rules.map((rule) => `Deve: ${rule}`),
+          ...activeStyle.negativeRules.map((rule) => `Evite: ${rule}`),
         ]
           .filter(Boolean)
           .join("\n"),
@@ -394,7 +394,7 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: `skill:${skill.id}`,
         kind: "system",
-        label: `共创 Skill · ${skill.name}`,
+        label: `Skill de cocriação · ${skill.name}`,
         content: skill.instructions,
         authority: "locked",
         priority: 90 + skill.priority / 20,
@@ -408,7 +408,7 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: `director-note:${session.id}`,
         kind: "author-intent",
-        label: "当前 Author's Note / 导演注",
+        label: "Author's Note / nota de direção atual",
         content: session.directorNote,
         authority: "locked",
         priority: 100,
@@ -423,7 +423,7 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: "author-intent",
         kind: "author-intent",
-        label: "作者锁定意图",
+        label: "Intenção travada do autor",
         content: JSON.stringify(intent),
         authority: "locked",
         priority: 98,
@@ -443,7 +443,7 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: `transcript:${branch.id}`,
         kind: "session",
-        label: "当前分支最近回合",
+        label: "Rodadas recentes do ramo atual",
         content: transcript,
         authority: "confirmed",
         priority: 97,
@@ -462,7 +462,7 @@ export class CollaborationWorkerSuite {
       sources.push({
         id: `branch-summary:${branch.id}`,
         kind: "summary",
-        label: "当前分支较早回合摘要",
+        label: "Resumo das rodadas anteriores do ramo atual",
         content: branchSummary.summary,
         authority: "confirmed",
         priority: 84,
@@ -586,7 +586,7 @@ export class CollaborationWorkerSuite {
         label:
           (promptLanguageOf(project.language) === "en"
             ? "World lore"
-            : "世界信息") +
+            : "Informação de mundo") +
           " · " +
           entry.title,
         content: entry.content,
@@ -707,14 +707,14 @@ export class CollaborationWorkerSuite {
         instructions: instructionsFor(
           this.projects.get(snapshot.run.projectId)?.language ?? null,
           {
-            "zh-CN": [
-              "你在小说共创房间中扮演角色或叙述者。延续当前局面，用具体行动、对白和感官细节推进一小步。",
-              "不得替作者发言，不得解释模型行为，不得把导演注原样写进故事。保持角色认知边界。",
-              "每次只生成一个自然回合；content 直接可读，不加姓名前缀或 Markdown 围栏。",
+            "pt-BR": [
+              "Você interpreta um personagem ou o narrador numa sala de cocriação de romance. Continue a situação atual e avance um passo pequeno com ação concreta, diálogo e detalhe sensorial.",
+              "Nunca fale no lugar do autor, nunca explique o comportamento do modelo e nunca copie notas de direção literalmente para a história. Respeite o limite do que o personagem sabe.",
+              "Gere exatamente uma rodada natural; content deve ser lido direto, sem prefixo de nome nem cercas Markdown.",
               expected
-                ? `speakerPersonaId 必须严格等于 ${expected}。`
-                : `speakerPersonaId 必须从以下 ID 中选择：${allowed.join(", ")}。`,
-              "suggestedCanonFacts 只是候选，不宣告已进入正典。",
+                ? `speakerPersonaId deve ser estritamente igual a ${expected}.`
+                : `speakerPersonaId deve ser escolhido entre estes IDs: ${allowed.join(", ")}.`,
+              "suggestedCanonFacts são só candidatos; não declaram entrada no cânone.",
             ],
             en: [
               "You are playing a character or the narrator in a novel co-writing room. Continue the current situation and advance it one small step with concrete action, dialogue, and sensory detail.",
@@ -739,10 +739,12 @@ export class CollaborationWorkerSuite {
       collaborationValidator(CoCreateResponseSchema, (value) => {
         const issues: string[] = [];
         if (!allowed.includes(value.speakerPersonaId)) {
-          issues.push("speakerPersonaId: 不在当前启用参与者中");
+          issues.push(
+            "speakerPersonaId: não está entre os participantes ativos",
+          );
         }
         if (expected && value.speakerPersonaId !== expected) {
-          issues.push(`speakerPersonaId: 本轮必须为 ${expected}`);
+          issues.push(`speakerPersonaId: esta rodada deve ser ${expected}`);
         }
         return issues;
       }),
@@ -843,8 +845,8 @@ export class CollaborationWorkerSuite {
         const persona = turn.personaId
           ? this.creative.requirePersona(turn.personaId).name
           : turn.role === "director"
-            ? "导演注"
-            : "作者";
+            ? "nota de direção"
+            : "autor";
         return `[${turn.role}:${persona}] ${turn.content}`;
       })
       .join("\n\n");
@@ -891,10 +893,10 @@ export class CollaborationWorkerSuite {
           {
             role: "user",
             content: [
-              `期望标题：${stringField(source, "requestedTitle")}`,
-              `作者意图：${JSON.stringify(intent)}`,
-              `已启用风格与 Skill：${JSON.stringify(adoptionGuidance)}`,
-              `所选回合：\n${stringField(source, "transcript")}`,
+              `Título esperado: ${stringField(source, "requestedTitle")}`,
+              `Intenção do autor: ${JSON.stringify(intent)}`,
+              `Estilo e Skills ativos: ${JSON.stringify(adoptionGuidance)}`,
+              `Rodadas escolhidas:\n${stringField(source, "transcript")}`,
             ].join("\n\n"),
           },
         ],
@@ -1013,7 +1015,7 @@ export class CollaborationWorkerSuite {
             kind: "chapter",
             ordinal: this.story.listOutlineChildren(session.projectId, root.id)
               .length,
-            title: `共创章节 · ${draft.sceneTitle}`,
+            title: `Capítulo de cocriação · ${draft.sceneTitle}`,
             summary: draft.summary,
             now,
           }),
@@ -1236,12 +1238,12 @@ export class CollaborationWorkerSuite {
           {
             role: "user",
             content: [
-              `作者意图：${JSON.stringify(intent)}`,
-              `已启用风格与 Skill：${JSON.stringify(editGuidance)}`,
-              `指令：${instruction}`,
-              `前文：${left}`,
-              `【精确选区】${selected}【选区结束】`,
-              `后文：${right}`,
+              `Intenção do autor: ${JSON.stringify(intent)}`,
+              `Estilo e Skills ativos: ${JSON.stringify(editGuidance)}`,
+              `Instrução: ${instruction}`,
+              `Antes: ${left}`,
+              `【seleção exata】${selected}【fim da seleção】`,
+              `Depois: ${right}`,
             ].join("\n\n"),
           },
         ],

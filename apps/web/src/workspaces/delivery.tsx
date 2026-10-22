@@ -189,7 +189,7 @@ export function DeliveryWorkspace() {
   return (
     <div className="delivery">
       <PageBand
-        index="PRESS · 05"
+        index="ENTREGA · 05"
         title={t("delivery.requiredState.title")}
         meta={
           <span className="mono">

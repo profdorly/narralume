@@ -7,33 +7,35 @@ import {
 } from "../src/prompt-language.js";
 
 const FALLBACK = {
-  "zh-CN": "默认中文写作层。",
+  "pt-BR": "Camada de ofício padrão em português.",
   en: "Default English craft layer.",
 } as const;
 
 const INVARIANTS = {
-  "zh-CN": "锁定正典优先；只输出正文。",
+  "pt-BR": "O cânone travado vence; entregue só a prosa.",
   en: "Locked canon wins; output prose only.",
 } as const;
 
 describe("editableInstructionOf", () => {
   it("picks the requested language from bilingual JSON content", () => {
     const content = JSON.stringify({
-      "zh-CN": "中文层",
+      "pt-BR": "Camada em português",
       en: "English layer",
     });
     expect(editableInstructionOf(content, "en")).toBe("English layer");
-    expect(editableInstructionOf(content, "zh-CN")).toBe("中文层");
+    expect(editableInstructionOf(content, "pt-BR")).toBe("Camada em português");
   });
 
-  it("treats plain text as Chinese-only content", () => {
-    expect(editableInstructionOf("纯文本指令", "zh-CN")).toBe("纯文本指令");
-    expect(editableInstructionOf("纯文本指令", "en")).toBeNull();
+  it("treats plain text as Portuguese-only content", () => {
+    expect(editableInstructionOf("instrução em texto puro", "pt-BR")).toBe(
+      "instrução em texto puro",
+    );
+    expect(editableInstructionOf("instrução em texto puro", "en")).toBeNull();
   });
 
   it("returns null for blank or language-missing content", () => {
-    expect(editableInstructionOf("   ", "zh-CN")).toBeNull();
-    const missingEn = JSON.stringify({ "zh-CN": "仅中文" });
+    expect(editableInstructionOf("   ", "pt-BR")).toBeNull();
+    const missingEn = JSON.stringify({ "pt-BR": "só português" });
     expect(editableInstructionOf(missingEn, "en")).toBeNull();
   });
 });
@@ -41,26 +43,30 @@ describe("editableInstructionOf", () => {
 describe("authoredInstructions", () => {
   it("falls back to the shipped default and appends invariants", () => {
     const result = authoredInstructions({
-      language: "zh-CN",
+      language: "pt-BR",
       templateContent: null,
       fallback: FALLBACK,
       invariants: INVARIANTS,
     });
-    expect(result).toBe("默认中文写作层。\n锁定正典优先；只输出正文。");
+    expect(result).toBe(
+      "Camada de ofício padrão em português.\nO cânone travado vence; entregue só a prosa.",
+    );
   });
 
   it("lets the template override fully replace the craft layer", () => {
     const override = JSON.stringify({
-      "zh-CN": "作者自定义写作法。",
+      "pt-BR": "Ofício do autor.",
       en: "Author craft layer.",
     });
-    const zh = authoredInstructions({
-      language: "zh-CN",
+    const pt = authoredInstructions({
+      language: "pt-BR",
       templateContent: override,
       fallback: FALLBACK,
       invariants: INVARIANTS,
     });
-    expect(zh).toBe("作者自定义写作法。\n锁定正典优先；只输出正文。");
+    expect(pt).toBe(
+      "Ofício do autor.\nO cânone travado vence; entregue só a prosa.",
+    );
     const en = authoredInstructions({
       language: "en",
       templateContent: override,
@@ -73,18 +79,23 @@ describe("authoredInstructions", () => {
 
   it("keeps invariants intact even when the override omits them", () => {
     const result = authoredInstructions({
-      language: "zh-CN",
-      templateContent: JSON.stringify({ "zh-CN": "随便写。", en: "" }),
+      language: "pt-BR",
+      templateContent: JSON.stringify({
+        "pt-BR": "Escreva à vontade.",
+        en: "",
+      }),
       fallback: FALLBACK,
       invariants: INVARIANTS,
     });
-    expect(result.endsWith("锁定正典优先；只输出正文。")).toBe(true);
+    expect(
+      result.endsWith("O cânone travado vence; entregue só a prosa."),
+    ).toBe(true);
   });
 
   it("falls back to defaults when the stored override is unusable", () => {
     const result = authoredInstructions({
       language: "en",
-      templateContent: JSON.stringify({ "zh-CN": "只有中文。" }),
+      templateContent: JSON.stringify({ "pt-BR": "só português." }),
       fallback: FALLBACK,
       invariants: INVARIANTS,
     });
@@ -95,35 +106,35 @@ describe("authoredInstructions", () => {
 
   it("inserts the craft block between the step layer and invariants", () => {
     const result = authoredInstructions({
-      language: "zh-CN",
+      language: "pt-BR",
       templateContent: null,
       fallback: FALLBACK,
       invariants: INVARIANTS,
-      craft: "先对抗你的本能。",
+      craft: "Primeiro, lute contra o instinto.",
     });
     expect(result).toBe(
       [
-        "默认中文写作层。",
+        "Camada de ofício padrão em português.",
         "<writing-craft>",
-        "先对抗你的本能。",
+        "Primeiro, lute contra o instinto.",
         "</writing-craft>",
-        "锁定正典优先；只输出正文。",
+        "O cânone travado vence; entregue só a prosa.",
       ].join("\n"),
     );
   });
 
   it("omits the craft block when craft is missing or blank", () => {
     const base = {
-      language: "zh-CN" as const,
+      language: "pt-BR" as const,
       templateContent: null,
       fallback: FALLBACK,
       invariants: INVARIANTS,
     };
     expect(authoredInstructions({ ...base, craft: null })).toBe(
-      "默认中文写作层。\n锁定正典优先；只输出正文。",
+      "Camada de ofício padrão em português.\nO cânone travado vence; entregue só a prosa.",
     );
     expect(authoredInstructions({ ...base, craft: "   " })).toBe(
-      "默认中文写作层。\n锁定正典优先；只输出正文。",
+      "Camada de ofício padrão em português.\nO cânone travado vence; entregue só a prosa.",
     );
   });
 });
@@ -132,31 +143,31 @@ describe("workCraftLayer", () => {
   it("resolves the shipped default when no template exists", () => {
     expect(
       workCraftLayer({
-        language: "zh-CN",
+        language: "pt-BR",
         templateContent: null,
         fallback: FALLBACK,
       }),
-    ).toBe("默认中文写作层。");
+    ).toBe("Camada de ofício padrão em português.");
   });
 
   it("follows the user override of the chapter-draft template", () => {
     expect(
       workCraftLayer({
-        language: "zh-CN",
+        language: "pt-BR",
         templateContent: JSON.stringify({
-          "zh-CN": "作者自定义写作法。",
+          "pt-BR": "Ofício do autor.",
           en: "Author craft layer.",
         }),
         fallback: FALLBACK,
       }),
-    ).toBe("作者自定义写作法。");
+    ).toBe("Ofício do autor.");
   });
 
   it("falls back to the default when the override lacks the language", () => {
     expect(
       workCraftLayer({
         language: "en",
-        templateContent: JSON.stringify({ "zh-CN": "只有中文。" }),
+        templateContent: JSON.stringify({ "pt-BR": "só português." }),
         fallback: FALLBACK,
       }),
     ).toBe("Default English craft layer.");

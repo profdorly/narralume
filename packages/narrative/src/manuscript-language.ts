@@ -7,18 +7,18 @@ import type { ProjectLanguage } from "@narralume/contracts";
 export type DetectedManuscriptLanguage =
   "Portuguese" | "Spanish" | "English" | "Chinese" | "unknown";
 
-/** 代码检测的原稿语言在中文提示中的写法。 */
-const DETECTED_LANGUAGE_NAMES_ZH: Record<
+/** Names of detected manuscript languages in Portuguese prompt copy. */
+const DETECTED_LANGUAGE_NAMES_PT: Record<
   Exclude<DetectedManuscriptLanguage, "unknown">,
   string
 > = {
-  Portuguese: "葡萄牙语",
-  Spanish: "西班牙语",
-  English: "英语",
-  Chinese: "中文",
+  Portuguese: "português",
+  Spanish: "espanhol",
+  English: "inglês",
+  Chinese: "chinês",
 };
 
-/** 提示词中的原稿语言参考行（按指令语言书写）；检测不出语言时返回 null，不加这一行。 */
+/** Prompt hint for the detected manuscript language; omit the line when unknown. */
 export function manuscriptLanguageHint(
   language: ProjectLanguage,
   detected: DetectedManuscriptLanguage,
@@ -26,7 +26,7 @@ export function manuscriptLanguageHint(
   if (detected === "unknown") return null;
   return language === "en"
     ? `Manuscript language (detected): ${detected}. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.`
-    : `原稿语言（自动检测）：${DETECTED_LANGUAGE_NAMES_ZH[detected]}。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。`;
+    : `Idioma do manuscrito (detectado): ${DETECTED_LANGUAGE_NAMES_PT[detected]}. Escreva os campos em linguagem natural nesse idioma; se o texto estiver claramente em outra língua, siga o texto.`;
 }
 
 type ScoredLanguage = "Portuguese" | "Spanish" | "English" | "French";

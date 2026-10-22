@@ -24,114 +24,150 @@ test("人工认知维护：历史变化、更正撤销、并发保护与双语�
   const event = initial.timeline.find((event) => event.title === "灯塔熄灭")!;
   const url = `/projects/${project.id}/bible?spread=outline&view=state&chapter=${chapter(4)}&audience=character&character=${hero.id}`;
   await page.goto(url);
-  const state = page.getByRole("region", { name: "章节状态", exact: true });
-  const current = state.getByRole("region", { name: "认知记录", exact: true });
-  await state.getByRole("button", { name: "人工登记与更正" }).click();
+  const state = page.getByRole("region", {
+    name: "Estado do capítulo",
+    exact: true,
+  });
+  const current = state.getByRole("region", {
+    name: "Registros de conhecimento",
+    exact: true,
+  });
+  await state
+    .getByRole("button", { name: "Registrar e corrigir conhecimento" })
+    .click();
   const editor = state.getByRole("region", {
-    name: "作者维护认知记录",
+    name: "Manutenção do conhecimento da obra",
     exact: true,
   });
   await editor
-    .getByRole("button", { name: "登记认知变化", exact: true })
+    .getByRole("button", {
+      name: "Registrar mudança de conhecimento",
+      exact: true,
+    })
     .click();
-  let form = editor.getByRole("form", { name: "登记认知变化", exact: true });
-  await expect(form.getByLabel("谁的认知")).toHaveValue(`character:${hero.id}`);
-  await form.getByLabel("认知命题").selectOption(`fact:${oldFact.id}`);
-  await form.getByLabel("认知状态").selectOption("suspected");
-  await form.getByRole("button", { name: "保存认知登记" }).click();
-  await expect(editor.getByRole("status")).toContainText("认知记录已保存");
+  let form = editor.getByRole("form", {
+    name: "Registrar mudança de conhecimento",
+    exact: true,
+  });
+  await expect(form.getByLabel("De quem é o conhecimento")).toHaveValue(
+    `character:${hero.id}`,
+  );
+  await form
+    .getByLabel("Afirmação conhecida")
+    .selectOption(`fact:${oldFact.id}`);
+  await form.getByLabel("Estado de crença").selectOption("suspected");
+  await form
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
+  await expect(editor.getByRole("status")).toContainText("Conhecimento salvo");
   await expect(
     current
       .getByRole("article")
       .filter({ hasText: "议会" })
-      .getByText("怀疑", { exact: true }),
+      .getByText("Suspeita", { exact: true }),
   ).toBeVisible();
 
   const manual = () =>
     editor
       .getByRole("article")
-      .filter({ hasText: "人工登记" })
+      .filter({ hasText: "Registro manual" })
       .filter({ hasText: "议会" })
-      .filter({ hasText: "有效登记" });
-  await manual().getByRole("button", { name: "更正登记", exact: true }).click();
-  form = editor.getByRole("form", { name: "更正登记", exact: true });
-  await form.getByLabel("认知状态").selectOption("believed");
-  await form.getByLabel("习得的证据节点").selectOption(chapter(3));
+      .filter({ hasText: "Registro válido" });
+  await manual()
+    .getByRole("button", { name: "Corrigir registro", exact: true })
+    .click();
+  form = editor.getByRole("form", { name: "Corrigir registro", exact: true });
+  await form.getByLabel("Estado de crença").selectOption("believed");
   await form
-    .getByLabel("更正或撤销原因")
+    .getByLabel("Nó de evidência da aprendizagem")
+    .selectOption(chapter(3));
+  await form
+    .getByLabel("Motivo da correção ou da retirada")
     .fill("核对第三章，人物此时只是相信证词");
-  await form.getByRole("button", { name: "保存认知登记" }).click();
+  await form
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
   await expect(
     current
       .getByRole("article")
       .filter({ hasText: "议会" })
-      .getByText("相信", { exact: true }),
+      .getByText("Acredita", { exact: true }),
   ).toBeVisible();
   await expect(
     editor.getByText("核对第三章，人物此时只是相信证词"),
   ).toBeVisible();
-  await manual().getByRole("button", { name: "撤销登记", exact: true }).click();
-  form = editor.getByRole("form", { name: "撤销登记", exact: true });
-  await expect(form).toContainText("可能重新显示该主体更早的有效认知");
+  await manual()
+    .getByRole("button", { name: "Retirar registro", exact: true })
+    .click();
+  form = editor.getByRole("form", { name: "Retirar registro", exact: true });
+  await expect(form).toContainText(
+    "pode revelar um conhecimento anterior válido",
+  );
   await form
-    .getByLabel("更正或撤销原因")
+    .getByLabel("Motivo da correção ou da retirada")
     .fill("这次补录关联错了命题，保留原来的早期认知");
-  await form.getByRole("button", { name: "撤销登记", exact: true }).click();
+  await form
+    .getByRole("button", { name: "Retirar registro", exact: true })
+    .click();
   await expect(
     current
       .getByRole("article")
       .filter({ hasText: "议会" })
-      .getByText("误信", { exact: true }),
+      .getByText("Crença falsa", { exact: true }),
   ).toBeVisible();
-  await state.getByLabel("查看到哪一章").selectOption(chapter(12));
+  await state.getByLabel("Até o capítulo").selectOption(chapter(12));
   await expect(
     current
       .getByRole("article")
       .filter({ hasText: "守灯人" })
-      .getByText("已知", { exact: true }),
+      .getByText("Soube", { exact: true }),
   ).toBeVisible();
-  await state.getByLabel("查看到哪一章").selectOption(chapter(4));
+  await state.getByLabel("Até o capítulo").selectOption(chapter(4));
 
   const original = () =>
     editor
       .getByRole("article")
-      .filter({ hasText: "创作流程登记" })
+      .filter({ hasText: "Registrado durante a criação" })
       .filter({ hasText: "议会" })
-      .filter({ hasText: "有效登记" });
+      .filter({ hasText: "Registro válido" });
   await original()
-    .getByRole("button", { name: "更正登记", exact: true })
+    .getByRole("button", { name: "Corrigir registro", exact: true })
     .click();
-  form = editor.getByRole("form", { name: "更正登记", exact: true });
-  await form.getByLabel("认知状态").selectOption("suspected");
+  form = editor.getByRole("form", { name: "Corrigir registro", exact: true });
+  await form.getByLabel("Estado de crença").selectOption("suspected");
   await form
-    .getByLabel("更正或撤销原因")
+    .getByLabel("Motivo da correção ou da retirada")
     .fill("本页正在输入，发生冲突也要保留");
 
   const second = await context.newPage();
   await second.goto(url);
-  await second.getByRole("button", { name: "人工登记与更正" }).click();
+  await second
+    .getByRole("button", { name: "Registrar e corrigir conhecimento" })
+    .click();
   const secondEditor = second.getByRole("region", {
-    name: "作者维护认知记录",
+    name: "Manutenção do conhecimento da obra",
     exact: true,
   });
   await secondEditor
     .getByRole("article")
-    .filter({ hasText: "创作流程登记" })
+    .filter({ hasText: "Registrado durante a criação" })
     .filter({ hasText: "议会" })
-    .filter({ hasText: "有效登记" })
-    .getByRole("button", { name: "更正登记", exact: true })
+    .filter({ hasText: "Registro válido" })
+    .getByRole("button", { name: "Corrigir registro", exact: true })
     .click();
   const secondForm = secondEditor.getByRole("form", {
-    name: "更正登记",
+    name: "Corrigir registro",
     exact: true,
   });
-  await secondForm.getByLabel("认知状态").selectOption("believed");
+  await secondForm.getByLabel("Estado de crença").selectOption("believed");
   await secondForm
-    .getByLabel("更正或撤销原因")
+    .getByLabel("Motivo da correção ou da retirada")
     .fill("另一个页面已经核对并保存");
-  await secondForm.getByRole("button", { name: "保存认知登记" }).click();
+  await secondForm
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
   await expect(secondEditor.getByRole("status")).toContainText(
-    "认知记录已保存",
+    "Conhecimento salvo",
   );
   await second.close();
   await page.bringToFront();
@@ -146,17 +182,19 @@ test("人工认知维护：历史变化、更正撤销、并发保护与双语�
     window.dispatchEvent(new Event("visibilitychange")),
   );
   await refetched;
-  await expect(form.getByLabel("更正或撤销原因")).toHaveValue(
-    "本页正在输入，发生冲突也要保留",
-  );
-  await form.getByRole("button", { name: "保存认知登记" }).click();
+  await expect(
+    form.getByLabel("Motivo da correção ou da retirada"),
+  ).toHaveValue("本页正在输入，发生冲突也要保留");
+  await form
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
   await expect(form.getByRole("alert")).toContainText(
-    "认知记录或其引用资料已发生变化",
+    "O conhecimento ou as referências mudaram",
   );
-  await expect(form.getByLabel("认知状态")).toHaveValue("suspected");
-  await expect(form.getByLabel("更正或撤销原因")).toHaveValue(
-    "本页正在输入，发生冲突也要保留",
-  );
+  await expect(form.getByLabel("Estado de crença")).toHaveValue("suspected");
+  await expect(
+    form.getByLabel("Motivo da correção ou da retirada"),
+  ).toHaveValue("本页正在输入，发生冲突也要保留");
   await page.screenshot({
     path: testInfo.outputPath("knowledge-conflict.png"),
     fullPage: true,
@@ -166,7 +204,9 @@ test("人工认知维护：历史变化、更正撤销、并发保护与双语�
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await form.getByRole("button", { name: "放弃本次修改，重新载入" }).click();
+  await form
+    .getByRole("button", { name: "Descartar alterações e recarregar" })
+    .click();
   await expect(form).toHaveCount(0);
   await expect(editor.getByText("另一个页面已经核对并保存")).toBeVisible();
 

@@ -20,7 +20,7 @@ import { setLocale } from "../src/i18n";
 const CONVERSATION = {
   id: "assistant-conversation-1",
   projectId: "project-1",
-  title: "项目协作",
+  title: "Colaboração no projeto",
   status: "active",
   settings: { modelId: null, reasoningEffort: null },
   createdAt: "2026-08-13T01:00:00.000Z",
@@ -107,7 +107,7 @@ function renderAssistantHarness() {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   window.localStorage.clear();
   window.localStorage.setItem(
     "narralume:assistant-conversation:project-1",
@@ -132,13 +132,13 @@ describe("项目协作侧栏", () => {
     }));
     renderAssistantHarness();
 
-    const trigger = screen.getByRole("button", { name: "打开项目协作" });
-    expect(screen.queryByRole("complementary", { name: "项目协作" })).not.toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "Abrir colaboração no projeto" });
+    expect(screen.queryByRole("complementary", { name: "Colaboração no projeto" })).not.toBeInTheDocument();
     fireEvent.click(trigger);
-    expect(await screen.findByRole("complementary", { name: "项目协作" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "关闭项目协作" }));
-    expect(screen.queryByRole("complementary", { name: "项目协作" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "打开项目协作" })).toHaveFocus();
+    expect(await screen.findByRole("complementary", { name: "Colaboração no projeto" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Fechar colaboração no projeto" }));
+    expect(screen.queryByRole("complementary", { name: "Colaboração no projeto" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir colaboração no projeto" })).toHaveFocus();
   });
 
   it("只在打开时订阅当前会话关联运行的事件（CR-10）", async () => {
@@ -164,7 +164,7 @@ describe("项目协作侧栏", () => {
     renderAssistantHarness();
 
     expect(EventSourceStub.instances).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "打开项目协作" }));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir colaboração no projeto" }));
     await screen.findByText("请按当前细纲写这一章。");
     expect(EventSourceStub.instances).toHaveLength(1);
     const source = EventSourceStub.instances[0]!;
@@ -192,7 +192,7 @@ describe("项目协作侧栏", () => {
     });
     await waitFor(() => expect(detailRequests).toBeGreaterThan(initialRequests));
 
-    fireEvent.click(screen.getByRole("button", { name: "关闭项目协作" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fechar colaboração no projeto" }));
     expect(source.close).toHaveBeenCalledOnce();
   });
 
@@ -237,16 +237,16 @@ describe("项目协作侧栏", () => {
     renderAssistant();
 
     /* 默认态：显示全局默认模型 + 默认徽标 + 思考·低。 */
-    const trigger = await screen.findByRole("button", { name: /对话模型与思考档/ });
+    const trigger = await screen.findByRole("button", { name: /Modelo da conversa e esforço/ });
     await waitFor(() => expect(trigger).toHaveTextContent("default-model"));
-    expect(trigger).toHaveTextContent("默认");
-    expect(trigger).toHaveTextContent("思考·低");
+    expect(trigger).toHaveTextContent("Padrão");
+    expect(trigger).toHaveTextContent("Esforço · Baixo");
 
-    fireEvent.click(screen.getByRole("button", { name: /对话模型与思考档/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Modelo da conversa e esforço/ }));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /对话模型与思考档/ })).toHaveAttribute("aria-expanded", "true"),
+      expect(screen.getByRole("button", { name: /Modelo da conversa e esforço/ })).toHaveAttribute("aria-expanded", "true"),
     );
-    expect(screen.getByRole("listbox", { name: "对话模型" })).toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Modelo da conversa" })).toBeInTheDocument();
     /* 同协议模型可见，跨协议模型（anthropic）不出现。 */
     expect(await screen.findByRole("option", { name: "chat-model-2" })).toBeInTheDocument();
     expect(screen.queryByText("anthropic-model")).not.toBeInTheDocument();
@@ -261,10 +261,10 @@ describe("项目协作侧栏", () => {
 
     /* 重开弹层切思考档。 */
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /对话模型与思考档/ })).toHaveTextContent("chat-model-2"),
+      expect(screen.getByRole("button", { name: /Modelo da conversa e esforço/ })).toHaveTextContent("chat-model-2"),
     );
-    fireEvent.click(screen.getByRole("button", { name: /对话模型与思考档/ }));
-    fireEvent.click(await screen.findByRole("button", { name: "高" }));
+    fireEvent.click(screen.getByRole("button", { name: /Modelo da conversa e esforço/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Alto" }));
     await waitFor(() =>
       expect(configured.at(-1)).toEqual(
         expect.objectContaining({ action: "configure", reasoningEffort: "high" }),
@@ -319,7 +319,7 @@ describe("项目协作侧栏", () => {
     renderAssistant();
 
     /* 初始占位触发器显示“项目协作”；等数据加载、触发器可用后再点开。 */
-    const trigger = await screen.findByRole("button", { name: "项目协作" });
+    const trigger = await screen.findByRole("button", { name: "Colaboração no projeto" });
     await waitFor(() => expect(trigger).not.toBeDisabled());
     fireEvent.click(trigger);
     const option = await screen.findByRole(
@@ -330,7 +330,7 @@ describe("项目协作侧栏", () => {
     fireEvent.click(option);
     expect(await screen.findByText("只讨论人物线。")).toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole("button", { name: "归档当前协作对话" }),
+      screen.getByRole("button", { name: "Arquivar a conversa de colaboração atual" }),
     );
 
     await waitFor(() =>
@@ -368,16 +368,16 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    const trigger = await screen.findByRole("button", { name: "项目协作" });
+    const trigger = await screen.findByRole("button", { name: "Colaboração no projeto" });
     await waitFor(() => expect(trigger).not.toBeDisabled());
     fireEvent.click(trigger);
     fireEvent.click(
-      screen.getByRole("button", { name: "重命名当前协作对话" }),
+      screen.getByRole("button", { name: "Renomear a conversa de colaboração atual" }),
     );
-    const input = screen.getByLabelText("对话新名称");
-    expect(input).toHaveValue("项目协作");
+    const input = screen.getByLabelText("Novo nome da conversa");
+    expect(input).toHaveValue("Colaboração no projeto");
     fireEvent.change(input, { target: { value: "伏笔整理" } });
-    fireEvent.submit(screen.getByRole("button", { name: "保存" }).closest("form")!);
+    fireEvent.submit(screen.getByRole("button", { name: "Salvar" }).closest("form")!);
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -397,7 +397,7 @@ describe("项目协作侧栏", () => {
     const created = {
       ...CONVERSATION,
       id: "assistant-conversation-2",
-      title: "协作对话 2",
+      title: "Conversa de colaboração 2",
       createdAt: "2026-08-13T04:00:00.000Z",
       updatedAt: "2026-08-13T04:00:00.000Z",
     };
@@ -431,11 +431,11 @@ describe("项目协作侧栏", () => {
     renderAssistant();
 
     await screen.findByText("请按当前细纲写这一章。");
-    fireEvent.click(screen.getByRole("button", { name: "新建协作对话" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nova conversa de colaboração" }));
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "协作对话 2" }),
+        screen.getByRole("button", { name: "Conversa de colaboração 2" }),
       ).toBeEnabled(),
     );
     expect(
@@ -443,7 +443,7 @@ describe("项目协作侧栏", () => {
         "narralume:assistant-conversation:project-1",
       ),
     ).toBe(created.id);
-    expect(await screen.findByText("从你正在看的地方开始"))
+    expect(await screen.findByText("Comece de onde você está olhando"))
       .toBeInTheDocument();
   });
 
@@ -461,7 +461,7 @@ describe("项目协作侧栏", () => {
             {
               ...detail(false).activities[1],
               status: retried ? "completed" : "failed",
-              stage: retried ? "已交给现有任务链路" : "执行失败",
+              stage: retried ? "Entregue à cadeia de tarefas existente" : "A execução falhou",
               waitingReason: retried ? null : "当前有其他章节任务",
               availableActions: retried ? [] : ["retry"],
               sourceType: retried ? "run" : "assistant_tool",
@@ -482,10 +482,10 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    fireEvent.click(await screen.findByRole("button", { name: "重试执行" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Tentar de novo" }));
     await waitFor(() =>
       expect(
-        screen.getByRole("link", { name: /查看任务现场/ }),
+        screen.getByRole("link", { name: /Ver a cena da tarefa/ }),
       ).toBeInTheDocument(),
     );
     expect(fetchMock).toHaveBeenCalledWith(
@@ -527,21 +527,21 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    expect(screen.getByText("写作台")).toBeInTheDocument();
-    expect(screen.getByText("当前稿件")).toBeInTheDocument();
-    expect(screen.getByText("选中 14 字")).toBeInTheDocument();
+    expect(screen.getByText("Mesa de escrita")).toBeInTheDocument();
+    expect(screen.getByText("Rascunho atual")).toBeInTheDocument();
+    expect(screen.getByText("14 caracteres selecionados")).toBeInTheDocument();
     expect(
       await screen.findByText("请按当前细纲写这一章。"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("我可以生成候选正文，确认后才会开工。"),
     ).toBeInTheDocument();
-    expect(screen.getByText("生成指定章节的候选正文")).toBeInTheDocument();
+    expect(screen.getByText("Gerar prosa candidata de um capítulo")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "确认执行" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e executar" }));
     await waitFor(() =>
       expect(
-        screen.getByRole("link", { name: /查看任务现场/ }),
+        screen.getByRole("link", { name: /Ver a cena da tarefa/ }),
       ).toHaveAttribute(
         "href",
         "/projects/project-1/runs?run=chapter-run-1",
@@ -573,8 +573,8 @@ describe("项目协作侧栏", () => {
                 kind: "task",
                 layer: "primary",
                 status: "waiting",
-                goal: "完成《潮汐第一章》",
-                stage: "等待你确认",
+                goal: "Concluir “潮汐第一章”",
+                stage: "Esperando a sua confirmação",
                 summary: null,
                 waitingReason: "chapter_commit_approval_required",
                 availableActions: [
@@ -606,16 +606,16 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    const link = await screen.findByRole("link", { name: /前往处理/ });
+    const link = await screen.findByRole("link", { name: /Ir tratar disso/ });
     expect(link).toHaveAttribute(
       "href",
       "/projects/project-1/studio?run=chapter-run-1&document=document-1",
     );
     // waitingReason 现在是机器码，由前端标签表统一渲染成中文。
-    expect(await screen.findByText("正文候选等待采纳")).toBeInTheDocument();
+    expect(await screen.findByText("Manuscrito candidato aguardando adoção")).toBeInTheDocument();
 
     // 低风险取消动作直接在卡片上执行，不需要跳页。
-    fireEvent.click(screen.getByRole("button", { name: "取消任务" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar tarefa" }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/runs/chapter-run-1/actions",
@@ -644,8 +644,8 @@ describe("项目协作侧栏", () => {
                 kind: "task",
                 layer: "primary",
                 status: "failed",
-                goal: "完成《潮汐第一章》",
-                stage: "需要处理失败",
+                goal: "Concluir “潮汐第一章”",
+                stage: "A falha precisa de atenção",
                 summary: null,
                 waitingReason: null,
                 availableActions: ["retry_chapter"],
@@ -672,7 +672,7 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    const retry = await screen.findByRole("button", { name: "重试本章" });
+    const retry = await screen.findByRole("button", { name: "Tentar de novo este capítulo" });
     fireEvent.click(retry);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -725,15 +725,15 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
     await screen.findByText("请按当前细纲写这一章。");
-    fireEvent.change(screen.getByPlaceholderText("询问作品，或明确交代一项任务…"), {
+    fireEvent.change(screen.getByPlaceholderText("Pergunte sobre a obra, ou passe uma tarefa de forma explícita…"), {
       target: { value: "这段是否泄露了伏笔？" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar mensagem" }));
     await waitFor(() => expect(messageBodies).toHaveLength(1));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "发送消息" })).toBeEnabled(),
+      expect(screen.getByRole("button", { name: "Enviar mensagem" })).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar mensagem" }));
     await waitFor(() => expect(messageBodies).toHaveLength(2));
     expect(messageBodies[0]).toMatchObject({
       content: "这段是否泄露了伏笔？",
@@ -775,12 +775,12 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
     await screen.findByText("请按当前细纲写这一章。");
-    fireEvent.click(screen.getByRole("button", { name: "仅看项目" }));
-    expect(screen.getByText("项目全局")).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText("询问作品，或明确交代一项任务…"), {
+    fireEvent.click(screen.getByRole("button", { name: "Só o projeto" }));
+    expect(screen.getByText("Todo o projeto")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("Pergunte sobre a obra, ou passe uma tarefa de forma explícita…"), {
       target: { value: "只看整个项目。" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar mensagem" }));
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
@@ -812,7 +812,7 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
     await screen.findByText("请按当前细纲写这一章。");
-    const composer = screen.getByPlaceholderText("询问作品，或明确交代一项任务…");
+    const composer = screen.getByPlaceholderText("Pergunte sobre a obra, ou passe uma tarefa de forma explícita…");
     fireEvent.change(composer, { target: { value: "继续写" } });
     fireEvent.keyDown(composer, { key: "Enter", ctrlKey: true });
     expect(messageBodies).toHaveLength(0);
@@ -861,9 +861,9 @@ function detail(confirmed: boolean) {
         kind: "assistant_response",
         layer: "assistant",
         status: "completed",
-        goal: "理解你的请求",
-        stage: "已完成",
-        summary: "任务已经完成",
+        goal: "Compreendendo o seu pedido",
+        stage: "Concluído",
+        summary: "A tarefa foi concluída",
         waitingReason: null,
         availableActions: [],
         sourceType: "run",
@@ -880,9 +880,9 @@ function detail(confirmed: boolean) {
         kind: "tool",
         layer: "local",
         status: confirmed ? "completed" : "proposed",
-        goal: "生成指定章节的候选正文",
-        stage: confirmed ? "已交给现有任务链路" : "等待你确认",
-        summary: confirmed ? "已创建并关联任务" : null,
+        goal: "Gerar prosa candidata de um capítulo",
+        stage: confirmed ? "Entregue à cadeia de tarefas existente" : "Esperando a sua confirmação",
+        summary: confirmed ? "Criado e vinculado a uma tarefa" : null,
         waitingReason: null,
         availableActions: confirmed ? [] : ["confirm", "reject"],
         sourceType: confirmed ? "run" : "assistant_tool",

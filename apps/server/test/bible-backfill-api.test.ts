@@ -802,7 +802,9 @@ describe("Story Bible backfill API", () => {
       bibleBackfillReread: true,
     });
     expect(rereadCall.content).toContain("<reread-note>");
-    expect(rereadCall.content).toContain("重新阅读这一章");
+    expect(rereadCall.content).toContain(
+      "A autoria pediu para reler este capítulo",
+    );
     detail = await settle(app, book.projectId, rereadJob.job!.id);
     expect(detail.items[0]!.status).toBe("awaiting_decision");
     // The first pass's settlements never carried the re-read note.
@@ -2527,7 +2529,7 @@ describe("Story Bible backfill with mid-job edits and author canon", () => {
       "author-plan",
     ]);
     expect(script.calls[1]!.content).toContain(
-      "（另有 76 个未锚定事件未列出：它们的导入证据落在其他章节，或超出列表上限。）",
+      "(outros 76 eventos sem âncora não foram listados: a evidência de importação cita outros capítulos, ou a lista está cheia.)",
     );
     // The anchor applied in auto mode without a duplicate event.
     expect(

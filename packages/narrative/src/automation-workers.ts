@@ -180,12 +180,14 @@ export class AutomationWorkerSuite {
           {
             role: "user",
             content: [
-              `作品暂定名：${project.title}`,
-              project.premise ? `已有命题：${project.premise}` : "",
-              `作者素材：\n${braindump}`,
-              `创作偏好：${JSON.stringify(creativePreferences)}`,
-              `规划规模（仅写入故事指南针 compass.target）：${JSON.stringify(planningTarget)}`,
-              "给出一组相互协调、但仍可逐条采纳或丢弃的建书候选。",
+              `Título provisório da obra: ${project.title}`,
+              project.premise
+                ? `Premissa já existente: ${project.premise}`
+                : "",
+              `Material do autor:\n${braindump}`,
+              `Preferências criativas: ${JSON.stringify(creativePreferences)}`,
+              `Escala de planejamento (escrever só em compass.target da bússola): ${JSON.stringify(planningTarget)}`,
+              "Entregue um conjunto de candidatos de fundação da obra, coordenados entre si, mas ainda adotáveis ou descartáveis um a um.",
             ]
               .filter(Boolean)
               .join("\n\n"),
@@ -229,7 +231,7 @@ export class AutomationWorkerSuite {
       {
         id: `${setId}:intent`,
         kind: "intent" as const,
-        label: "作者意图",
+        label: "Intenção do autor",
         payload: {
           ...proposal.intent,
           baseline: {
@@ -240,7 +242,7 @@ export class AutomationWorkerSuite {
       {
         id: `${setId}:compass`,
         kind: "compass" as const,
-        label: "故事指南针",
+        label: "Bússola da história",
         payload: {
           ...proposal.compass,
           baseline: {
@@ -330,7 +332,7 @@ export class AutomationWorkerSuite {
       {
         id: "planning-task",
         kind: "task",
-        label: "本次规划任务",
+        label: "Tarefa de planejamento desta sessão",
         authority: "locked",
         priority: 100,
         required: true,
@@ -354,7 +356,7 @@ export class AutomationWorkerSuite {
       {
         id: "planning-intent",
         kind: "author-intent",
-        label: "作者意图与全书方向",
+        label: "Intenção do autor e direção do livro",
         authority: "locked",
         priority: 99,
         required: true,
@@ -372,7 +374,7 @@ export class AutomationWorkerSuite {
       {
         id: "planning-entities",
         kind: "canon",
-        label: "实体目录与作者拒绝记录",
+        label: "Catálogo de entidades e recusas do autor",
         authority: "confirmed",
         priority: 98,
         required: true,
@@ -400,7 +402,7 @@ export class AutomationWorkerSuite {
         .map((set, index): ContextSource => ({
           id: `story-line-decisions:${set.id}`,
           kind: "author-intent",
-          label: "故事线建议与作者逐项裁定",
+          label: "Propostas de linha e decisões item a item do autor",
           content: JSON.stringify({
             scopeNodeId: set.scopeNodeId,
             stale: set.stale,
@@ -424,7 +426,8 @@ export class AutomationWorkerSuite {
         .map((review, index): ContextSource => ({
           id: `planning-review:${review.id}`,
           kind: "summary",
-          label: "阶段复盘建议（不是已发生事实）",
+          label:
+            "Sugestões de retrospectiva de estágio (não são fatos ocorridos)",
           content: JSON.stringify({
             scopeId: review.scopeId,
             summary: review.summary,
@@ -440,7 +443,7 @@ export class AutomationWorkerSuite {
       ...steers.map((steer, index): ContextSource => ({
         id: `planning-steer:${index}`,
         kind: "author-intent",
-        label: "作者已确认的后续规划指示",
+        label: "Indicações de planejamento futuro já confirmadas pelo autor",
         content: steer.content,
         authority: "locked",
         priority: 99,
@@ -472,17 +475,17 @@ export class AutomationWorkerSuite {
       "rolling-outline",
       {
         instructions: instructionsFor(project.language, {
-          "zh-CN": [
-            "你是长篇小说滚动规划师。只详细规划当前可见窗口，不要一次冻结整部长篇。",
-            "计划必须承接已提交章节，兑现指南针，尊重作者锁定意图与 steer。",
-            "故事线候选中的 pending 尚未采纳，reject 已被作者拒绝，均不得当成作者方向。apply 的 result 是当时实际写入记录，当前指南针优先；不要重复被拒绝的变化。",
-            "指南针 longLines 的 development 是作者维护的阶段记录：scopeNodeId 指定当前卷或弧，stageGoal 是阶段目标，progress 是作者对进展的记录，openPromises 是尚未兑现的承诺，nextDevelopment 是后续方向。结合当前阶段选择本窗口推进的线，不要求每条线每章出场，也不为完成窗口而全部解决。evidenceChapterIds 指向已定稿章节；核对摘要和事实，不把计划目标或缺少证据的进展记录变成已经发生的事实。",
-            "每章要有目标、阻力、转折、结果与结尾钩子；结果必须推动因果链。",
-            "先判断既有角色、关系变化与场景能否承担剧情功能；新人物、地点或组织只在本窗口确有需要时提出，entityProposals 可以为空，不设新增数量指标，也不要因为初始名单有限就强迫每段剧情围绕同几个人。每项提案说明 narrativeRole 和 rationale，尊重拒绝记录，不换名重复被拒绝的功能。",
-            "章节 pov 和 entityRefs 显式使用 {kind: existing, id: 实体ID} 或 {kind: proposed, id: 提案key}；POV 只能引用人物。复用目录里的稳定 ID，不按名字猜测，不重复已有名字或别名；退役条目不可引用。每项提案必须服务本窗口至少一章，角色描述和剧情功能不是已经发生的事件。",
-            "运行剩余章数只表示本次委托的工作量，不表示故事弧、卷或全书必须结束。全书结局只由作者意图与已建立的叙事进展决定，不为用完窗口而提前收束。",
-            "volumeId/arcId 填写要继续的现有卷/弧 ID；只有剧情进入新阶段时才填 null 创建新卷/弧。一弧可以跨多个窗口，换窗口不等于换弧。继续已有结构时保留其目标和已经发生的结果。arcId 必须属于选定的 volumeId。",
-            "准确输出本次窗口要求的章节数量。nextArc 是可调整的远期骨架，不能当作已发生的事实；复盘建议需评估后落实到本次计划，不得当作作者命令或正典。",
+          "pt-BR": [
+            "Você é o planejador rolante de um romance. Detalhe só a janela visível agora; nunca congele o livro inteiro de uma vez.",
+            "O plano continua os capítulos já registrados, honra a bússola e respeita a intenção travada e os steers do autor.",
+            "Em propostas de linha, pending ainda não foi aceito e reject é recusa do autor; nenhum dos dois é rumo. O result de um apply registra o que de fato foi escrito na hora; a bússola atual prevalece. Não repita mudanças recusadas.",
+            "Cada longLines.development é registro de estágio do autor: scopeNodeId identifica o volume ou arco, stageGoal o objetivo atual, progress a nota de andamento, openPromises as promessas em aberto, nextDevelopment a direção seguinte. Escolha as linhas desta janela; nem toda linha precisa aparecer em todo capítulo nem se resolver no fim da janela. evidenceChapterIds apontam capítulos já registrados. Confira resumos e fatos; metas planejadas e progresso sem evidência não são eventos ocorridos.",
+            "Cada capítulo precisa de objetivo, resistência, virada, resultado e gancho de fecho; o resultado empurra a cadeia causal.",
+            "Antes, veja se personagens, relações e espaços já existentes carregam a história. Só proponha personagem, lugar ou organização nova quando esta janela precisar. entityProposals pode ficar vazio: não há cota, e o elenco inicial não precisa carregar todo conflito futuro. Explique narrativeRole e rationale, honre recusas, e não renomeie uma ideia recusada para repetir a função.",
+            "pov e entityRefs do capítulo usam {kind: existing, id: ID da entidade} ou {kind: proposed, id: chave da proposta}. POV só referencia personagem. Reuse IDs estáveis do catálogo; nunca infira identidade pelo nome nem duplique nome ou alias existente. Entradas aposentadas não se citam. Toda proposta serve pelo menos um capítulo desta janela. Descrição e papel narrativo não são eventos já ocorridos.",
+            "Capítulos restantes da execução descrevem a carga deste encargo, não o fim de um arco, volume ou livro. Encerre a obra só quando a intenção do autor e o andamento já estabelecido pedirem, nunca só para esgotar a janela.",
+            "volumeId/arcId recebem o volume/arco existente a continuar, ou null só quando a história entra em fase nova. Um arco pode atravessar várias janelas. Preserve objetivos e resultados já estabelecidos. arcId deve pertencer a volumeId.",
+            "Devolva exatamente a quantidade de capítulos pedida nesta janela. nextArc é esqueleto futuro revisável, não fato ocorrido. Avalie sugestões de recap e incorpore as úteis; não são ordem do autor nem cânone.",
           ],
           en: [
             "You are the rolling planner of a long-form novel. Plan only the currently visible window in detail; never freeze an entire long novel at once.",
@@ -786,10 +789,10 @@ export class AutomationWorkerSuite {
         instructions: instructionsFor(
           this.projects.get(snapshot.run.projectId)?.language ?? null,
           {
-            "zh-CN": [
-              "你是小说生产 harness 的 steer 仲裁器，只分类影响范围，不创作正文。",
-              "立即影响仅用于作者明确要求停止或改变正在生成的内容；涉及既有正文或正典要提高风险。",
-              "输出必须选择唯一分类和最早安全生效边界。",
+            "pt-BR": [
+              "Você é o árbitro de steer do harness de produção; classifique só o alcance do impacto e nunca escreva prosa.",
+              "Impacto imediato só quando o autor pede explicitamente para parar ou mudar o que está sendo gerado; qualquer toque em prosa ou cânone já existentes sobe o risco.",
+              "A saída escolhe exatamente uma classificação e o limite seguro mais cedo em que ela vale.",
             ],
             en: [
               "You are the steer arbitrator of the novel production harness; classify impact scope only and never write prose.",
@@ -801,7 +804,7 @@ export class AutomationWorkerSuite {
         messages: [
           {
             role: "user",
-            content: `运行状态：${session?.status ?? "无会话"}\n作者 steer：${steer.content}`,
+            content: `Estado da execução: ${session?.status ?? "sem sessão"}\nSteer do autor: ${steer.content}`,
           },
         ],
         reasoningEffort: "low",
@@ -904,7 +907,7 @@ export class AutomationWorkerSuite {
         {
           id: "review-task",
           kind: "task",
-          label: "复盘范围与全书方向",
+          label: "Alcance da retrospectiva e direção do livro",
           authority: "locked",
           priority: 100,
           required: true,
@@ -941,12 +944,12 @@ export class AutomationWorkerSuite {
         instructions: instructionsFor(
           this.projects.get(snapshot.run.projectId)?.language ?? null,
           {
-            "zh-CN": [
-              `你是长篇小说${scopeType === "arc" ? "故事弧" : "卷"}复盘编辑。`,
-              "基于章节摘要评估承诺兑现、因果、人物弧、节奏和连续性。建议服务于下一滚动窗口，不改写已提交事实。",
-              "这是当前已写部分的阶段复盘，不意味着故事弧、卷或全书已经结束。区分已兑现、仍在发展和需要后续处理的承诺；不要仅因本次运行结束而要求结局或回收所有伏笔。仅依据所给摘要判断，明确证据不足之处。",
-              "对照长期故事线的阶段目标、作者进展记录与未兑现承诺，指出有摘要支持的变化和下一阶段建议。作者记录本身不是正文证据，计划中的 nextDevelopment 尚未发生；调整仅作为 compassAdjustments 建议，不自动修改故事线。",
-              "lineProposals 是供作者逐项接受或拒绝的建议。lineIndex 是 compass.longLines 的零基索引，每条线最多一项；仅引用本次实际提供的 chapterId 作为 evidenceChapterIds。progress 概括有摘要支持的进展，openPromises 保留尚未兑现的承诺，nextDevelopment 仅为后续方向。不要仅因阶段结束建议 resolved；无有效证据则返回空数组。",
+            "pt-BR": [
+              `Você é o editor de recap de ${scopeType === "arc" ? "arco" : "volume"} de um romance.`,
+              "A partir dos resumos de capítulo, avalie cumprimento de promessas, causalidade, arcos de personagem, ritmo e continuidade. As sugestões servem à próxima janela rolante e nunca reescrevem fatos já registrados.",
+              "Isto recapita o que já foi escrito, não pressupõe o fim do arco, do volume ou do livro. Distinga promessas cumpridas, em curso e a tratar depois; não peça desfecho nem colha todas as sementes só porque esta execução acabou. Julgue só pelos resumos dados e deixe claro o que falta de evidência.",
+              "Compare objetivos de estágio das linhas longas, notas de andamento do autor e promessas em aberto com os resumos. Aponte mudanças com apoio no resumo e sugestões para o estágio seguinte. A nota do autor não é evidência de prosa, e nextDevelopment planejado ainda não aconteceu; devolva ajustes só como compassAdjustments, sem alterar as linhas automaticamente.",
+              "lineProposals são sugestões para o autor aceitar ou recusar uma a uma. lineIndex é o índice zero-based de compass.longLines; no máximo uma por linha. evidenceChapterIds só cita chapterId realmente fornecidos. progress resume o andamento com apoio no resumo, openPromises guarda o que ainda não cumpriu, nextDevelopment é só direção futura. Nunca sugira resolved só porque o estágio acabou. Sem evidência válida, devolva array vazio.",
             ],
             en: [
               `You are the retrospective editor of a long-form novel ${scopeType === "arc" ? "story arc" : "volume"}.`,

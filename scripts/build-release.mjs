@@ -93,7 +93,6 @@ const copy = (relative) => {
 const commonFiles = [
   "LICENSE",
   "README.md",
-  "README.zh.md",
   "CONTRIBUTING.md",
   "CODE_OF_CONDUCT.md",
   "SECURITY.md",
@@ -105,8 +104,6 @@ const commonFiles = [
   "apps/server/package.json",
   "apps/web/dist",
   "apps/web/package.json",
-  "apps/bridge/package.json",
-  "apps/relay/package.json",
   "assets",
   "docs/README.md",
   "docs/user-guide.md",
@@ -114,7 +111,7 @@ const commonFiles = [
   "docs/configuration.md",
   "docs/data-and-backup.md",
   "docs/docker.md",
-  "docs/deploy-cloud.md",
+  "docs/adr",
   "docs/third-party-licenses.csv",
 ];
 const launcherFiles = windowsTarget

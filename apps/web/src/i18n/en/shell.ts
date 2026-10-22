@@ -1,6 +1,6 @@
-import type { shell as shellZh } from "../zh/shell";
+import type { shell as shellPt } from "../pt-BR/shell";
 
-export const shell: typeof shellZh = {
+export const shell: typeof shellPt = {
   nav: {
     shelf: "Shelf",
     shelfBlurb: "Catalog, search, and create books",
@@ -51,7 +51,7 @@ export const shell: typeof shellZh = {
     toLight: "Switch to daylight",
   },
   language: {
-    switch: "Switch interface language (中文)",
+    switch: "Switch interface language (Português)",
   },
   palette: {
     button: "Command palette (⌘K)",

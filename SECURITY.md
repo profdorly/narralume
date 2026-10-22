@@ -1,17 +1,17 @@
-# 安全策略
+# Política de segurança
 
-## 支持范围
+## Escopo
 
-在首个稳定版本发布前，只修复默认分支和最新 GitHub Release。旧的开发快照不提供安全更新。
+Antes da primeira versão estável, correções valem para a branch padrão e o GitHub Release mais recente.
 
-## 私密报告
+## Relato privado
 
-请使用 GitHub 仓库 Security 页面的 **Report a vulnerability** 私密报告入口。不要为密钥泄漏、认证绕过、远程访问或数据破坏问题创建公开 Issue。
+Use **Report a vulnerability** na página Security do repositório. Não abra Issue público para vazamento de chave, bypass de autenticação, acesso remoto ou destruição de dados.
 
-报告请包含受影响版本、复现步骤、实际与预期影响，以及可行的缓解建议。维护者会在 7 天内确认收到，并在完成修复和发布后协调披露。
+Inclua versão afetada, passos de reprodução, impacto e mitigação possível. Os mantenedores confirmam o recebimento em até 7 dias.
 
-若凭据已经进入 Git、日志或公开产物，应立即在对应服务轮换；删除文件本身不能让旧凭据失效。
+Se uma credencial entrou em Git, log ou artefato público, rodeie-a no serviço correspondente; apagar o arquivo não invalida a chave antiga.
 
-## 安全边界
+## Fronteiras
 
-默认本地 Server 只监听回环地址。远程监听要求生产模式、显式允许远程访问、高熵认证令牌，以及边缘 TLS/访问控制。浏览器 OPFS、数据库、完整备份和 `.env.local` 都可能包含私人作品或模型凭据，用户应自行加密和限制访问。
+O Server local escuta só em loopback por padrão. Escuta remota exige modo produção, permissão explícita, token de alta entropia e TLS na borda. OPFS, SQLite, backups completos e `.env.local` podem conter manuscritos e chaves — trate-os como segredo.

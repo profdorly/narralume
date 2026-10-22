@@ -17,8 +17,8 @@ const OVERVIEW = {
     id: "p-1-tides",
     title: "潮汐灯塔",
     subtitle: null,
-    premise: "港口每年都会遗忘一个人。",
-    language: "zh-CN",
+    premise: "O porto esquece uma pessoa por ano.",
+    language: "pt-BR",
     phase: "writing",
     archivedAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
@@ -87,7 +87,7 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     })),
   });
-  window.localStorage.clear();setLocale("zh-CN");
+  window.localStorage.clear();setLocale("pt-BR");
 });
 
 afterEach(() => {
@@ -95,7 +95,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("项目概览", () => {
+describe("Visão geral do projeto", () => {
   it("渲染刊头、当前章节与下一步入口", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -106,21 +106,21 @@ describe("项目概览", () => {
     renderOverview();
 
     await screen.findByRole("heading", { name: "潮汐灯塔" });
-    expect(screen.getByText("港口每年都会遗忘一个人。")).toBeInTheDocument();
-    expect(screen.getByText("OVERLOOK · 02")).toBeInTheDocument();
+    expect(screen.getByText("O porto esquece uma pessoa por ano.")).toBeInTheDocument();
+    expect(screen.getByText("VISÃO · 02")).toBeInTheDocument();
     expect(
-      screen.getByText("1 已定稿 · 共 2 章节 · 12345 字"),
+      screen.getByText("1 registrados · 2 capítulos · 12345 caracteres"),
     ).toBeInTheDocument();
 
-    expect(screen.getByText("当前章节")).toBeInTheDocument();
+    expect(screen.getByText("Capítulo atual")).toBeInTheDocument();
     expect(screen.getByText("第二章 回声邮局")).toBeInTheDocument();
 
     expect(
-      screen.getByRole("link", { name: "在写作台续写此章" }),
+      screen.getByRole("link", { name: "Continuar este capítulo na mesa de escrita" }),
     ).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-2");
-    expect(screen.getByRole("link", { name: "续写本章" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "整理故事" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "AI 快速创作" })).toBeInTheDocument();
+    expect(screen.getByText("Continuar a escrever")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Organizar a história" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Criação rápida com IA" })).toBeInTheDocument();
   });
 
   it("全部章节定稿时提示走交付", async () => {
@@ -139,7 +139,7 @@ describe("项目概览", () => {
     );
     renderOverview();
 
-    await screen.findByText("所有章节已定稿；下一步：检查并交付。");
+    await screen.findByText("Todos os capítulos estão registrados; próximo passo: conferir e entregar.");
   });
 
   it("定稿后有审稿待办时说明真实下一步，并直达对应正文", async () => {
@@ -164,12 +164,12 @@ describe("项目概览", () => {
     );
     renderOverview();
 
-    await screen.findByText("章节正文已定稿；下一步：处理审稿与修订。");
-    expect(screen.getByRole("link", { name: "审稿问题 · 3" })).toHaveAttribute(
+    await screen.findByText("Há capítulos registrados; próximo passo: tratar revisão e reescritas.");
+    expect(screen.getByRole("link", { name: "Pontos de revisão · 3" })).toHaveAttribute(
       "href",
       "/projects/p-1-tides/studio?focus=review&document=document-under-review",
     );
-    expect(screen.getByRole("link", { name: "处理审稿与修订" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Tratar revisão e reescritas" })).toHaveAttribute(
       "href",
       "/projects/p-1-tides/studio?focus=review&document=document-under-review",
     );
@@ -205,17 +205,17 @@ describe("项目概览", () => {
     );
     renderOverview();
 
-    await screen.findByText("活动任务 · 单章任务");
+    await screen.findByText("Tarefa ativa · Tarefa de um capítulo");
     expect(screen.getByText("第二章 回声邮局")).toBeInTheDocument();
-    expect(screen.getByText("正文候选等待采纳")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /取消/ })).toBeInTheDocument();
-    expect(screen.getByText("等待你处理")).toBeInTheDocument();
-    const restore = screen.getByRole("link", { name: "回到任务现场" });
+    expect(screen.getByText("Manuscrito candidato aguardando adoção")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Cancelar/ })).toBeInTheDocument();
+    expect(screen.getByText("Esperando você")).toBeInTheDocument();
+    const restore = screen.getByRole("link", { name: "Voltar à tarefa" });
     expect(restore).toHaveAttribute(
       "href",
       "/projects/p-1-tides/studio?run=run-abc&document=d-1",
     );
-    expect(restore).toHaveTextContent("处理候选与裁定");
+    expect(restore).toHaveTextContent("Tratar candidatos e decisões");
   });
 
   it("活动任务的暂停动作是真实按钮，并调用统一任务动作接口", async () => {
@@ -241,7 +241,7 @@ describe("项目概览", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderOverview();
 
-    fireEvent.click(await screen.findByRole("button", { name: "暂停" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Pausar" }));
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url) === "/api/runs/run-live/actions")).toBe(true));
     const call = fetchMock.mock.calls.find(([url]) => String(url) === "/api/runs/run-live/actions");
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({ action: "pause", projectId: "p-1-tides" });
@@ -267,9 +267,9 @@ describe("项目概览", () => {
     }));
     renderOverview();
 
-    await screen.findByText("活动任务 · AI 引导建书");
-    expect(screen.getByText("等待自动重试")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "回到任务现场" })).toHaveAttribute(
+    await screen.findByText("Tarefa ativa · Fundação guiada por IA");
+    expect(screen.getByText("Aguardando nova tentativa automática")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à tarefa" })).toHaveAttribute(
       "href",
       "/projects/p-1-tides/autopilot?foundation=run-foundation",
     );
@@ -282,8 +282,8 @@ describe("项目概览", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderOverview("/missing");
 
-    expect(screen.getByRole("heading", { name: "项目概览" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Visão geral do projeto" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -314,8 +314,8 @@ describe("项目概览", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderOverview();
 
-    await vi.waitFor(() => expect(screen.queryByText("活动任务 · 单章任务")).not.toBeNull());
-    fireEvent.click(screen.getByRole("button", { name: /取消/ }));
+    await vi.waitFor(() => expect(screen.queryByText("Tarefa ativa · Tarefa de um capítulo")).not.toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: /Cancelar/ }));
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
 
     /* 3 秒轮询后活动任务从 A 换成 B：确认框必须随任务 A 一起消失 */

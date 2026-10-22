@@ -40,7 +40,7 @@ function renderPanel(spread: "intent" | "outline") {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
 });
 
 afterEach(() => {
@@ -147,14 +147,14 @@ describe("Canon 候选桌", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPanel("intent");
 
-    await screen.findByText("AI 正在整理这一页的候选");
+    await screen.findByText("A IA está preparando candidatos para esta página");
     expect(
-      screen.getByText("本次响应超时，系统正在等待自动重试；可以离开此页。"),
+      screen.getByText("Esta resposta esgotou o tempo; o sistema espera uma tentativa automática. Você pode sair desta página."),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "生成候选修改" }),
+      screen.queryByRole("button", { name: "Gerar mudanças candidatas" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("候选没有生成")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nenhum candidato gerado")).not.toBeInTheDocument();
   });
 
   it("失败后重试同一指示时复用 requestId，修改指示后换新键", async () => {
@@ -179,21 +179,21 @@ describe("Canon 候选桌", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderPanel("intent");
 
-    const input = await screen.findByLabelText("Canon 修改指示");
+    const input = await screen.findByLabelText("Instrução de edição do cânone");
     fireEvent.change(input, { target: { value: "强化结局代价" } });
-    fireEvent.click(screen.getByRole("button", { name: "生成候选修改" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gerar mudanças candidatas" }));
     await waitFor(() => expect(requestBodies).toHaveLength(1));
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "生成候选修改" }),
+        screen.getByRole("button", { name: "Gerar mudanças candidatas" }),
       ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "生成候选修改" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gerar mudanças candidatas" }));
     await waitFor(() => expect(requestBodies).toHaveLength(2));
     expect(requestBodies[1]?.requestId).toBe(requestBodies[0]?.requestId);
 
     fireEvent.change(input, { target: { value: "强化结局的记忆代价" } });
-    fireEvent.click(screen.getByRole("button", { name: "生成候选修改" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gerar mudanças candidatas" }));
     await waitFor(() => expect(requestBodies).toHaveLength(3));
     expect(requestBodies[2]?.requestId).not.toBe(requestBodies[0]?.requestId);
   });
@@ -240,11 +240,11 @@ describe("Canon 候选桌", () => {
     const view = renderPanel("intent");
 
     /* intent 页：输入指示，同时存在进行中的 intent Run */
-    fireEvent.change(screen.getByLabelText("Canon 修改指示"), {
+    fireEvent.change(screen.getByLabelText("Instrução de edição do cânone"), {
       target: { value: "写给意图页的指示" },
     });
-    expect(screen.getByLabelText("Canon 修改指示")).toHaveValue("写给意图页的指示");
-    await screen.findByText("AI 正在整理这一页的候选");
+    expect(screen.getByLabelText("Instrução de edição do cânone")).toHaveValue("写给意图页的指示");
+    await screen.findByText("A IA está preparando candidatos para esta página");
 
     /* 切到 outline 页：输入框与 Run 提示都不应从 intent 页串过来 */
     view.rerender(
@@ -254,8 +254,8 @@ describe("Canon 候选桌", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    await screen.findByLabelText("Canon 修改指示");
-    expect(screen.getByLabelText("Canon 修改指示")).toHaveValue("");
-    expect(screen.queryByText("AI 正在整理这一页的候选")).not.toBeInTheDocument();
+    await screen.findByLabelText("Instrução de edição do cânone");
+    expect(screen.getByLabelText("Instrução de edição do cânone")).toHaveValue("");
+    expect(screen.queryByText("A IA está preparando candidatos para esta página")).not.toBeInTheDocument();
   });
 });

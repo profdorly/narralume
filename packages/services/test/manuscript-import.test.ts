@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DOCX_TITLE_PAGE_STYLE,
   docxDocumentText,
   HEADING_MAX_CHARACTERS,
   htmlToText,
@@ -528,6 +529,21 @@ describe("DOCX heading styles", () => {
     expect(text).toContain("\n## Na praia\n");
     expect(text).not.toContain("# Era uma vez.");
     expect(text).not.toContain("# A maré subia.");
+  });
+
+  it("skips exported title-page paragraphs so they are not re-imported as chapters", () => {
+    const text = docxDocumentText(
+      document(
+        paragraph("O Farol", `<w:pStyle w:val="${DOCX_TITLE_PAGE_STYLE}"/>`),
+        paragraph("Title page", `<w:pStyle w:val="${DOCX_TITLE_PAGE_STYLE}"/>`),
+        paragraph("Um Começo", '<w:outlineLvl w:val="1"/>'),
+        paragraph("A primeira página."),
+      ),
+      null,
+    );
+    expect(text).not.toMatch(/O Farol|Title page/u);
+    expect(text).toContain("\n## Um Começo\n");
+    expect(text).toContain("A primeira página.");
   });
 
   it("falls back to English style ids and honors paragraph outline levels", () => {

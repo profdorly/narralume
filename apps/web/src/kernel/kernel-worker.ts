@@ -17,8 +17,6 @@ import {
 } from "@narralume/persistence/browser";
 import {
   SqliteAutomationRepository,
-  SqliteAssignmentRepository,
-  SqliteModelRepository,
   SqliteRunStreamRepository,
   SqliteRunRepository,
   SqliteProjectRepository,
@@ -46,7 +44,6 @@ import {
   registerStoryRoutes,
   registerStudioRoutes,
   registerTemplateRoutes,
-  seedDemoRelayProvider,
   seedEnvironmentModelConfig,
   seedHarnessTemplates,
   type RouteMethod,
@@ -62,8 +59,6 @@ import {
 } from "@narralume/narrative";
 import { HarnessSupervisor } from "@narralume/harness";
 
-import { createRelayFetch } from "./relay-fetch";
-import { exceedsTrialRelayAutopilotLimit } from "../lib/trial-policy";
 
 interface KernelRequest {
   type: "request";
@@ -80,9 +75,6 @@ type KernelInbound = KernelRequest;
 const post = (message: unknown, transfer?: Transferable[]) =>
   transfer ? self.postMessage(message, transfer) : self.postMessage(message);
 
-/* 在线体验站（VITE_TRIAL_MODE）构建期开关（M5）。 */
-const trialMode = import.meta.env.VITE_TRIAL_MODE === "1";
-
 const noopLog = {
   warn: (): void => {},
 };
@@ -96,19 +88,8 @@ async function boot(): Promise<void> {
     projects.purgeExpired(new Date().toISOString());
   purgeExpiredProjects();
   setInterval(purgeExpiredProjects, 60 * 60 * 1000);
-  // 浏览器内核没有进程环境变量；模型配置完全来自用户显式录入。
   seedEnvironmentModelConfig(database, {});
   seedHarnessTemplates(database);
-  // M4 demo 中继 provider：credentialRef=relay:demo（哑 key，D5），
-  // 真实 key 只在中继环境变量。中继地址经构建期注入，未配置则跳过。
-  const relayUrl = import.meta.env.VITE_DEMO_RELAY_URL as string | undefined;
-  const relayModel = import.meta.env.VITE_DEMO_RELAY_MODEL as string | undefined;
-  if (relayUrl && relayModel)
-    seedDemoRelayProvider(database, { relayBaseUrl: relayUrl, model: relayModel });
-  const relayOrigin = relayUrl ? new URL(relayUrl).origin : null;
-  const credentialedModelFetch = relayOrigin
-    ? createRelayFetch(relayOrigin)
-    : undefined;
 
   const events = new ServerEventHub();
   events.add((frame) => post({ type: "sse", frame }));
@@ -130,7 +111,6 @@ async function boot(): Promise<void> {
         "model.event",
       );
     },
-    credentialedModelFetch,
   );
 
   const workers = {
@@ -296,28 +276,6 @@ async function boot(): Promise<void> {
     runCoordinator: coordinator,
     enableBackgroundWorker: true,
     environment: {},
-    ...(trialMode
-      ? {
-          beforeCreateAutopilotSession: (input: {
-            targetChapters: number;
-          }) => {
-          const assignment = new SqliteAssignmentRepository(database).get("writing");
-          const model = assignment
-            ? new SqliteModelRepository(database).get(assignment.modelId)
-            : null;
-          if (
-            exceedsTrialRelayAutopilotLimit(model?.providerId, input.targetChapters)
-          ) {
-            throw {
-              code: "trial.autopilot_chapter_limit",
-              statusCode: 403,
-              message:
-                "The built-in trial model writes at most 3 chapters per run; add your own model channel in Settings to continue.",
-            };
-          }
-          },
-        }
-      : {}),
   });
   registerAssistantRoutes(table, database, {
     runCoordinator: coordinator,

@@ -1,3 +1,6 @@
+import type { AuthContext } from "./auth-context.js";
+import { LOCAL_OPERATOR } from "./auth-context.js";
+
 /**
  * 运行时无关的路由注册接口：同一份 register*Routes 代码在 Fastify
  * （HTTP）与浏览器内核（Worker RPC）双注册。HTTP 契约是唯一 API 面。
@@ -22,7 +25,11 @@ export interface RouteRequest {
   readonly headers: Readonly<Record<string, string>>;
   /** 结构化日志（内核侧可为 no-op）。 */
   readonly log: { warn(payload: unknown, message?: string): void };
+  /** Identidade do operador. Hoje é sempre o operador local; SaaS preenche tenantId. */
+  readonly auth: AuthContext;
 }
+
+export { LOCAL_OPERATOR };
 
 export interface RouteResponse {
   readonly status: number;

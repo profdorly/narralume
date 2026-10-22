@@ -267,7 +267,7 @@ describe("cocreate manual speaker guards (CR-85)", () => {
       error: { code: "model.structured_output" },
     });
     expect(modelState.issues.join("\n")).toContain(
-      `speakerPersonaId: 本轮必须为 ${selectedId}`,
+      `speakerPersonaId: esta rodada deve ser ${selectedId}`,
     );
 
     const detail = await app.inject({

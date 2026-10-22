@@ -140,6 +140,7 @@ export function registerAutomationRoutes(
         subtitle: input.subtitle ?? null,
         premise: input.premise ?? input.braindump.slice(0, 2_000),
         language: input.language,
+        form: input.form,
         now,
       });
       const createdRun = createFoundationRun({

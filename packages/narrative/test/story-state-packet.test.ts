@@ -384,8 +384,8 @@ describe("StoryStatePacketBuilder", () => {
       .join("\n");
     expect(chapter2Text).toContain("harbor");
     expect(chapter2Text).not.toContain("mountain");
-    expect(chapter2Text).toContain("→ Rival：distrusts");
-    expect(chapter2Text).not.toContain("→ Rival：trusts");
+    expect(chapter2Text).toContain("→ Rival: distrusts");
+    expect(chapter2Text).not.toContain("→ Rival: trusts");
     expect(chapter2Text).not.toContain("missing king");
 
     const chapter3Text = builder
@@ -399,8 +399,8 @@ describe("StoryStatePacketBuilder", () => {
       .join("\n");
     expect(chapter3Text).not.toContain("harbor");
     expect(chapter3Text).toContain("mountain");
-    expect(chapter3Text).not.toContain("→ Rival：distrusts");
-    expect(chapter3Text).toContain("→ Rival：trusts");
+    expect(chapter3Text).not.toContain("→ Rival: distrusts");
+    expect(chapter3Text).toContain("→ Rival: trusts");
     expect(chapter3Text).toContain("missing king");
   });
 

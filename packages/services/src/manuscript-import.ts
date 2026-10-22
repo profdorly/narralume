@@ -9,6 +9,8 @@ export interface ManuscriptSection {
 /** 关键词标题行（pt / es / en 与强调包裹形式）的长度上限（按码点）；超过即视为正文段落。
  *  既有的“第 N 章”与“Chapter + 数字”形式不受此限。 */
 export const HEADING_MAX_CHARACTERS = 80;
+/** Paragraph style written on the exported title page so re-import can skip it. */
+export const DOCX_TITLE_PAGE_STYLE = "NarraLumeTitlePage";
 
 // 标题捕获用贪婪的 (\S.*)$ 再去尾部空白：惰性的 (\S.*?)\s*$ 在长空白串上是平方级。
 const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*)$/u;
@@ -688,6 +690,7 @@ const DOCX_PPR: ElementPattern = {
 };
 /** 标题段落在属性位置留下的内部标记。XML 名称不能以 # 开头，合法文档里不会出现。 */
 const DOCX_HEADING_MARK = /^<#([1-3])>$/u;
+const DOCX_TITLE_PAGE_MARK = "<#t>";
 
 function docxTagText(tag: string): string {
   // 先按首字符分流，绝大多数标签（w:r、w:t、w:rPr…）不必逐个正则比较。
@@ -716,12 +719,15 @@ export function docxDocumentText(
     replaceElements(documentXml, DOCX_PPR_CHANGE, () => ""),
     DOCX_PPR,
     ({ body }) => {
+      if (xmlValue(body, "w:pStyle") === DOCX_TITLE_PAGE_STYLE)
+        return DOCX_TITLE_PAGE_MARK;
       const level = paragraphHeadingLevel(body, styles);
       return level === null ? "" : `<#${level}>`;
     },
   );
   const parts: string[] = [];
   let heading: { level: number; index: number } | null = null;
+  let skippingTitlePage = false;
   const closeHeading = () => {
     if (!heading) return;
     const content = parts.splice(heading.index).join("");
@@ -735,16 +741,27 @@ export function docxDocumentText(
   };
   forEachMarkupToken(
     marked,
-    (value) => parts.push(value),
+    (value) => {
+      if (!skippingTitlePage) parts.push(value);
+    },
     (tag) => {
+      if (tag === DOCX_TITLE_PAGE_MARK) {
+        closeHeading();
+        skippingTitlePage = true;
+        return;
+      }
       const mark = tag[1] === "#" ? DOCX_HEADING_MARK.exec(tag) : null;
       if (mark) {
         closeHeading();
         heading = { level: Number(mark[1]), index: parts.length };
       } else if (tag.length === 6 && /^<\/w:p>$/iu.test(tag)) {
+        if (skippingTitlePage) {
+          skippingTitlePage = false;
+          return;
+        }
         closeHeading();
         parts.push("\n\n");
-      } else {
+      } else if (!skippingTitlePage) {
         const value = docxTagText(tag);
         if (value) parts.push(value);
       }

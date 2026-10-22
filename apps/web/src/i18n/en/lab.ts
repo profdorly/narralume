@@ -1,10 +1,10 @@
-import type { lab as labZh } from "../zh/lab";
+import type { lab as labPt } from "../pt-BR/lab";
 
-export const lab: typeof labZh = {
+export const lab: typeof labPt = {
   title: "Narrative Lab",
   meta: "Semantic search · Plot predictions · Impact preview · Story memory",
   missing: {
-    seal: "演",
+    seal: "L",
     description:
       "Select a project to simulate plot directions, story memory, and the potential impact of setting changes here.",
   },

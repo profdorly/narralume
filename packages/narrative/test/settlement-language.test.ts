@@ -166,10 +166,10 @@ describe("chapter settlement output language", () => {
       hint: "Manuscript language (detected): Portuguese. Write the natural-language fields in this language; if the text itself is clearly in another language, follow the text.",
     },
     {
-      language: "zh-CN",
+      language: "pt-BR",
       invariant:
-        "语言不变量：所有自然语言字段（summary、stateDelta 的 key/before/after、事实的 predicate 与文本 value、时间线事件的 title/description、关系的 relation/change、伏笔的 title）必须使用与 <manuscript> 正文相同的语言书写",
-      hint: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+        "Invariante de idioma: escreva todo campo em linguagem natural (summary, stateDelta key/before/after, predicate e value textual do fato, title/description de evento, relation/change, title de semente) no mesmo idioma do texto em <manuscript>",
+      hint: "Idioma do manuscrito (detectado): português. Escreva os campos em linguagem natural nesse idioma; se o texto estiver claramente em outra língua, siga o texto.",
     },
   ])(
     "tells a $language settlement to keep a Portuguese chapter's language",
@@ -179,7 +179,7 @@ describe("chapter settlement output language", () => {
       expect(request.instructions).toContain(
         language === "en"
           ? "reuse the exact predicate an existing fact of the same subject already uses"
-          : "同一主体已有事实用过的 predicate 原样复用",
+          : "reutilize o predicate exato de um fato já existente do mesmo sujeito",
       );
       // The hint sits right before the manuscript it describes.
       expect(request.content).toContain(`${hint}\n<manuscript>`);
@@ -188,12 +188,12 @@ describe("chapter settlement output language", () => {
 
   it("adds the Chinese hint to a Chinese chapter of a Chinese work", async () => {
     const request = await settle(
-      "zh-CN",
+      "pt-BR",
       "雾从海面推上石阶，林昼把手按在冰冷的门上，听见灯塔深处传来第三下钟声。\n\n灯灭的一刻，父亲忽然问她为何对着空椅子说话。",
     );
-    expect(request.instructions).toContain("语言不变量");
+    expect(request.instructions).toContain("Invariante de idioma");
     expect(request.content).toContain(
-      "原稿语言（自动检测）：中文。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
+      "Idioma do manuscrito (detectado): chinês. Escreva os campos em linguagem natural nesse idioma; se o texto estiver claramente em outra língua, siga o texto.",
     );
   });
 

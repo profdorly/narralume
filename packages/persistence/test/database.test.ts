@@ -7,6 +7,7 @@ import { NodeNarrativeDatabase } from "../src/node.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { MigrationError, SqliteProjectRepository } from "../src/index.js";
+import { insertLegacyProject } from "./insert-legacy-project.js";
 import { migration001 } from "../src/migrations/001-foundation.js";
 import { migration002 } from "../src/migrations/002-story-kernel.js";
 import { migration003 } from "../src/migrations/003-harness.js";
@@ -78,8 +79,8 @@ function database(): NodeNarrativeDatabase {
 describe("NodeNarrativeDatabase", () => {
   it("applies the B1 migrations idempotently and enforces checksums", () => {
     const db = database();
-    expect(db.currentMigration()).toBe(47);
-    expect(db.migrate()).toBe(47);
+    expect(db.currentMigration()).toBe(48);
+    expect(db.migrate()).toBe(48);
     expect(
       db.raw
         .prepare("SELECT checksum FROM schema_migrations WHERE version = 23")
@@ -266,7 +267,7 @@ describe("NodeNarrativeDatabase", () => {
       premise: "旧正文检索段应由下一版迁移清理。",
       now: "2026-08-12T00:00:00.000Z",
     });
-    new SqliteProjectRepository(db).insert(project);
+    insertLegacyProject(db, project);
     db.raw
       .prepare(
         `INSERT INTO text_segments(
@@ -284,7 +285,7 @@ describe("NodeNarrativeDatabase", () => {
         project.createdAt,
       );
 
-    expect(db.migrate()).toBe(47);
+    expect(db.migrate()).toBe(48);
     expect(
       db.raw
         .prepare(
@@ -302,7 +303,7 @@ describe("NodeNarrativeDatabase", () => {
       .prepare("UPDATE schema_migrations SET checksum = ? WHERE version = 23")
       .run(MUTATED_MIGRATION_023_CHECKSUM);
 
-    expect(db.migrate()).toBe(47);
+    expect(db.migrate()).toBe(48);
     expect(
       db.raw
         .prepare("SELECT checksum FROM schema_migrations WHERE version = 23")

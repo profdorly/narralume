@@ -16,8 +16,8 @@ const PROJECTS = [
     id: "p-1-tides",
     title: "潮汐灯塔",
     subtitle: null,
-    premise: "港口每年都会遗忘一个人。",
-    language: "zh-CN",
+    premise: "O porto esquece uma pessoa por ano.",
+    language: "pt-BR",
     phase: "writing",
     archivedAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
@@ -32,7 +32,7 @@ const PROJECTS = [
     title: "山中回信",
     subtitle: null,
     premise: null,
-    language: "zh-CN",
+    language: "pt-BR",
     phase: "idea",
     archivedAt: null,
     createdAt: "2026-07-01T10:00:00.000Z",
@@ -93,7 +93,7 @@ function renderShelf(entry = "/shelf") {
 
 beforeEach(() => {
   /* 字典 zh 保留原文，测试固定中文环境（jsdom 默认 navigator.language 为 en-US）。 */
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   /* motion 的 useReducedMotion 依赖 matchMedia，jsdom 没有，统一桩掉。
      matches 置 true：reduced-motion 下 Lenis 不启、动效静态，最稳。 */
   Object.defineProperty(window, "matchMedia", {
@@ -118,14 +118,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("藏书室", () => {
+describe("A Estante", () => {
   it("打开作品后进入项目概览", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
     const openProject = await screen.findByRole(
       "button",
-      { name: "打开《潮汐灯塔》" },
+      { name: "Abrir “潮汐灯塔”" },
       { timeout: 5_000 },
     );
     fireEvent.click(openProject);
@@ -138,14 +138,14 @@ describe("藏书室", () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
-    const trigger = await screen.findByRole("button", { name: "《潮汐灯塔》的更多操作" });
+    const trigger = await screen.findByRole("button", { name: "Mais ações para “潮汐灯塔”" });
     fireEvent.click(trigger);
-    const first = screen.getByRole("menuitem", { name: "AI 快速创作" });
+    const first = screen.getByRole("menuitem", { name: "Escrita rápida com IA" });
     await waitFor(() => expect(first).toHaveFocus());
     fireEvent.keyDown(first, { key: "ArrowDown" });
-    expect(screen.getByRole("menuitem", { name: "编辑书籍与封面" })).toHaveFocus();
+    expect(screen.getByRole("menuitem", { name: "Editar livro e capa" })).toHaveFocus();
     fireEvent.keyDown(screen.getByRole("menu"), { key: "End" });
-    expect(screen.getByRole("menuitem", { name: "移入回收站" })).toHaveFocus();
+    expect(screen.getByRole("menuitem", { name: "Mover para a lixeira" })).toHaveFocus();
     fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
@@ -171,7 +171,7 @@ describe("藏书室", () => {
     expect(
       await screen.findByRole(
         "button",
-        { name: "打开《第 101 本作品》" },
+        { name: "Abrir “第 101 本作品”" },
         { timeout: 5_000 },
       ),
     ).toBeInTheDocument();
@@ -184,15 +184,15 @@ describe("藏书室", () => {
 
     await screen.findAllByText("潮汐灯塔");
     expect(screen.getAllByText("山中回信").length).toBeGreaterThan(0);
-    expect(screen.getByRole("img", { name: "《潮汐灯塔》默认封面" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "《山中回信》自定义封面" })).toHaveAttribute(
+    expect(screen.getByRole("img", { name: "Capa padrão de “潮汐灯塔”" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Capa personalizada de “山中回信”" })).toHaveAttribute(
       "src",
       "/api/projects/p-2-mountain/cover?v=2026-08-09T11%3A00%3A00.000Z",
     );
-    expect(screen.getByText("12 章")).toBeInTheDocument();
-    expect(screen.getByText("24860 字")).toBeInTheDocument();
+    expect(screen.getByText("12 capítulos")).toBeInTheDocument();
+    expect(screen.getByText("24860 caracteres")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "打开《潮汐灯塔》" }));
+    fireEvent.click(screen.getByRole("button", { name: "Abrir “潮汐灯塔”" }));
 
     await screen.findByText("已入馆：项目概览");
   });
@@ -210,17 +210,17 @@ describe("藏书室", () => {
 
     await screen.findAllByText("山中回信");
     fireEvent.click(
-      screen.getByRole("button", { name: "《山中回信》的更多操作" }),
+      screen.getByRole("button", { name: "Mais ações para “山中回信”" }),
     );
-    fireEvent.click(screen.getByRole("menuitem", { name: "编辑书籍与封面" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Editar livro e capa" }));
     expect(
-      await screen.findByRole("dialog", { name: "编辑书籍与封面" }),
+      await screen.findByRole("dialog", { name: "Editar livro e capa" }),
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("副题"), {
+    fireEvent.change(screen.getByLabelText("Subtítulo"), {
       target: { value: "雾岭来信" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "保存书籍" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar livro" }));
 
     // 仅改资料时不上传封面：PUT 不携带 cover 字段（CR-83 的原子提交仍成立）。
     await waitFor(() => {
@@ -243,17 +243,17 @@ describe("藏书室", () => {
     renderShelf();
 
     await screen.findAllByText("潮汐灯塔");
-    fireEvent.change(screen.getByLabelText("检索书目"), {
+    fireEvent.change(screen.getByLabelText("Buscar livros"), {
       target: { value: "山中" },
     });
 
     expect(screen.queryAllByText("潮汐灯塔").length).toBe(0);
     expect(screen.getAllByText("山中回信").length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByLabelText("检索书目"), {
+    fireEvent.change(screen.getByLabelText("Buscar livros"), {
       target: { value: "不存在的书" },
     });
-    expect(screen.getByText("没有相符的书目")).toBeInTheDocument();
+    expect(screen.getByText("Nenhum livro correspondente")).toBeInTheDocument();
   });
 
   it("可切换到列表与书脊视图，并记住用户选择", async () => {
@@ -261,17 +261,17 @@ describe("藏书室", () => {
     renderShelf();
 
     await screen.findAllByText("潮汐灯塔");
-    fireEvent.click(screen.getByRole("button", { name: "列表" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lista" }));
 
     expect(screen.getByText("NO.01")).toBeInTheDocument();
-    expect(screen.getByText("写作")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "列表" })).toHaveAttribute(
+    expect(screen.getByText("Escrita")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lista" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(window.localStorage.getItem("shelf:view")).toBe("list");
 
-    fireEvent.click(screen.getByRole("button", { name: "封面" }));
+    fireEvent.click(screen.getByRole("button", { name: "Capas" }));
     expect(screen.queryByText("NO.01")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("shelf:view")).toBe("covers");
   });
@@ -304,16 +304,16 @@ describe("藏书室", () => {
     renderShelf();
 
     await screen.findAllByText("潮汐灯塔");
-    fireEvent.click(screen.getByRole("button", { name: "《潮汐灯塔》的更多操作" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "移入回收站" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mais ações para “潮汐灯塔”" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mover para a lixeira" }));
 
-    expect(await screen.findByRole("dialog", { name: "移入回收站" })).toHaveTextContent(
-      "保留 30 天",
+    expect(await screen.findByRole("dialog", { name: "Mover para a lixeira" })).toHaveTextContent(
+      "30 dias",
     );
-    fireEvent.change(screen.getByLabelText("书名确认"), {
+    fireEvent.change(screen.getByLabelText("Confirmar o título do livro"), {
       target: { value: archivedProject.title },
     });
-    fireEvent.click(screen.getByRole("button", { name: "移入回收站" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mover para a lixeira" }));
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
@@ -326,11 +326,11 @@ describe("藏书室", () => {
       });
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "回收站" }));
-    expect(await screen.findByRole("dialog", { name: "回收站" })).toHaveTextContent(
-      "恢复后仍保持归档状态",
+    fireEvent.click(screen.getByRole("button", { name: "Lixeira" }));
+    expect(await screen.findByRole("dialog", { name: "Lixeira" })).toHaveTextContent(
+      "permanecem arquivados",
     );
-    fireEvent.click(await screen.findByRole("button", { name: "恢复" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Restaurar" }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
@@ -342,10 +342,10 @@ describe("藏书室", () => {
       });
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "永久删除" }));
-    const purgeButton = screen.getAllByRole("button", { name: "永久删除" }).at(-1);
+    fireEvent.click(screen.getByRole("button", { name: "Excluir em definitivo" }));
+    const purgeButton = screen.getAllByRole("button", { name: "Excluir em definitivo" }).at(-1);
     expect(purgeButton).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("永久删除书名确认"), {
+    fireEvent.change(screen.getByLabelText("Confirmar o título do livro para exclusão permanente"), {
       target: { value: archivedProject.title },
     });
     fireEvent.click(purgeButton!);
@@ -377,7 +377,7 @@ describe("藏书室", () => {
           title: body.title,
           subtitle: null,
           premise: body.premise,
-          language: "zh-CN",
+          language: "pt-BR",
           phase: "idea",
           archivedAt: null,
           createdAt: "2026-08-12T10:00:00.000Z",
@@ -391,20 +391,20 @@ describe("藏书室", () => {
     renderShelf();
 
     await screen.findAllByText("潮汐灯塔");
-    fireEvent.click(screen.getByRole("button", { name: /空白建书/ }));
-    const dialog = await screen.findByRole("dialog", { name: "空白建书" });
+    fireEvent.click(screen.getByRole("button", { name: /Livro em branco/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Livro em branco" });
     expect(dialog).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("书名"), {
+    fireEvent.change(screen.getByLabelText("Título"), {
       target: { value: "雾中青山" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "创建并入藏" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar e colocar na estante" }));
 
     await waitFor(() => expect(createBodies).toHaveLength(1));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "创建并入藏" })).toBeEnabled(),
+      expect(screen.getByRole("button", { name: "Criar e colocar na estante" })).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "创建并入藏" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar e colocar na estante" }));
 
     await screen.findByText("已入馆：项目概览");
     const createCall = fetchMock.mock.calls.find(
@@ -416,7 +416,8 @@ describe("藏书室", () => {
     expect(createBodies[0]).toEqual({
       title: "雾中青山",
       premise: null,
-      language: "zh-CN",
+      language: "pt-BR",
+      form: "novel",
       requestId: expect.any(String),
     });
     expect(createBodies[1]?.requestId).toBe(createBodies[0]?.requestId);
@@ -437,25 +438,25 @@ describe("藏书室", () => {
     renderShelf();
 
     await screen.findAllByText("潮汐灯塔");
-    fireEvent.click(screen.getByRole("button", { name: /AI 引导建书/ }));
-    fireEvent.change(screen.getByLabelText("书名"), {
+    fireEvent.click(screen.getByRole("button", { name: /Livro com a IA/ }));
+    fireEvent.change(screen.getByLabelText("Título"), {
       target: { value: "雾中青山" },
     });
-    fireEvent.change(screen.getByLabelText("命题与脑暴"), {
+    fireEvent.change(screen.getByLabelText("Premissa e ideias"), {
       target: { value: "山城每晚会遗忘一个名字。" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "创建并生成候选" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar e gerar candidatos" }));
 
     await waitFor(() => expect(createBodies).toHaveLength(1));
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "创建并生成候选" }),
+        screen.getByRole("button", { name: "Criar e gerar candidatos" }),
       ).toBeEnabled(),
     );
-    fireEvent.change(screen.getByLabelText("命题与脑暴"), {
+    fireEvent.change(screen.getByLabelText("Premissa e ideias"), {
       target: { value: "山城每晚会遗忘一条街。" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "创建并生成候选" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar e gerar candidatos" }));
 
     await waitFor(() => expect(createBodies).toHaveLength(2));
     expect(createBodies[1]?.requestId).not.toBe(createBodies[0]?.requestId);

@@ -179,15 +179,15 @@ describe("DeliveryWorkerSuite", () => {
 
   it.each([
     {
-      language: "zh-CN",
-      invariant: "必须使用与原文正文相同的语言书写",
-      synthesisInvariant: "保持与输入分析相同的原文语言",
-      synthesisMessage: "保持输入分析的语言",
-      scaffold: ["目标作品：《Long Import》", "分段 1/3", "正文：\n"],
+      language: "pt-BR",
+      invariant: "mesmo idioma do texto original",
+      synthesisInvariant: "mantenha o idioma das análises de entrada",
+      synthesisMessage: "idioma das análises de entrada",
+      scaffold: ["Obra-alvo: «Long Import»", "Segmento 1/3", "Texto:\n"],
       foreign: "Target work:",
       foreignSynthesis: "Keep the language of the input analyses",
-      intentTitle: "作者意图候选",
-      arcTitle: "Rita · 角色弧",
+      intentTitle: "Candidato de intenção do autor",
+      arcTitle: "Rita · Arco de personagem",
     },
     {
       language: "en",
@@ -297,7 +297,7 @@ describe("DeliveryWorkerSuite", () => {
         .map((candidate) => candidate.title);
       expect(titles).toEqual(expect.arrayContaining([intentTitle, arcTitle]));
       // 占位正文（AAAA…）检测不出语言，不加检测行。
-      expect(chunk.content).not.toMatch(/detected|自动检测/u);
+      expect(chunk.content).not.toMatch(/detected|detectado|自动检测/u);
     },
   );
 
@@ -308,9 +308,9 @@ describe("DeliveryWorkerSuite", () => {
       invariant: "in the same language as the source manuscript text",
     },
     {
-      language: "zh-CN",
-      line: "原稿语言（自动检测）：葡萄牙语。自然语言字段用该语言书写；正文明显是另一种语言时以正文为准。",
-      invariant: "必须使用与原文正文相同的语言书写",
+      language: "pt-BR",
+      line: "Idioma do manuscrito (detectado): português. Escreva os campos em linguagem natural nesse idioma; se o texto estiver claramente em outra língua, siga o texto.",
+      invariant: "mesmo idioma do texto original",
     },
   ])(
     "adds the detected manuscript language to $language chunk messages and keeps the invariant",
@@ -488,7 +488,7 @@ describe("DeliveryWorkerSuite", () => {
       expect(recorder.calls("import-analysis-synthesis-2")).toHaveLength(2);
       const retried = recorder.calls("import-analysis-chunk-1").at(-1)!;
       expect(retried.content).toContain(
-        switchLanguage ? "Manuscript text:" : "正文：",
+        switchLanguage ? "Manuscript text:" : "Texto:",
       );
       expect(importPipeline()).toMatchObject({
         reusedArtifacts: switchLanguage ? 0 : 4,

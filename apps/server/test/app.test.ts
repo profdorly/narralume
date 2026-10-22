@@ -55,7 +55,7 @@ describe("server API", () => {
     expect(response.json()).toMatchObject({
       status: "ok",
       service: "narralume",
-      database: { status: "ready", migration: 47 },
+      database: { status: "ready", migration: 48 },
     });
   });
 
@@ -251,25 +251,25 @@ describe("server API", () => {
       (template) => template.key === "prompt.chapter-draft",
     )!;
     const draftInvariants = JSON.parse(draft.systemInvariants) as {
-      "zh-CN": string;
+      "pt-BR": string;
       en: string;
     };
-    expect(draftInvariants["zh-CN"]).toContain("锁定正典");
+    expect(draftInvariants["pt-BR"]).toContain("cânone travado");
     expect(draftInvariants.en).toContain("locked canon wins");
     const draftDefault = JSON.parse(draft.effectiveContent) as {
-      "zh-CN": string;
+      "pt-BR": string;
       en: string;
     };
-    expect(draftDefault["zh-CN"]).toContain("先对抗你的本能");
+    expect(draftDefault["pt-BR"]).toContain("lute contra o instinto");
     expect(draftDefault.en).toContain("Fight your instincts");
     const scenePlan = templates.find(
       (template) => template.key === "prompt.scene-plan",
     )!;
     const scenePlanDefault = JSON.parse(scenePlan.effectiveContent) as {
-      "zh-CN": string;
+      "pt-BR": string;
       en: string;
     };
-    expect(scenePlanDefault["zh-CN"]).toContain("情绪目标");
+    expect(scenePlanDefault["pt-BR"]).toContain("alvo emocional");
     expect(scenePlanDefault.en).toContain("emotional goal");
     const updated = await app.inject({
       method: "PUT",

@@ -4,7 +4,7 @@ import { setLocale } from "../src/i18n";
 import { taskHref } from "../src/lib/task-ledger";
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
 });
 
 describe("任务现场链接", () => {

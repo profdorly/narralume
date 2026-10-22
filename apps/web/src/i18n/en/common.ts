@@ -1,6 +1,6 @@
-import type { common as commonZh } from "../zh/common";
+import type { common as commonPt } from "../pt-BR/common";
 
-export const common: typeof commonZh = {
+export const common: typeof commonPt = {
   action: {
     confirm: "Confirm",
     cancel: "Cancel",

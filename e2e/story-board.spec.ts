@@ -5,7 +5,7 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
   request,
 }, testInfo) => {
   const projectResponse = await request.post("/api/projects", {
-    data: { requestId: crypto.randomUUID(), title: "看清整部故事" },
+    data: { requestId: crypto.randomUUID(), title: "Ver a história inteira" },
   });
   expect(projectResponse.ok()).toBe(true);
   const project = (await projectResponse.json()) as { id: string };
@@ -61,21 +61,28 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
   };
   await createClue("信件的来历");
   await page.goto(`/projects/${project.id}/bible?spread=outline&view=board`);
-  const board = page.getByRole("region", { name: "看清整部故事", exact: true });
+  const board = page.getByRole("region", {
+    name: "Ver a história inteira",
+    exact: true,
+  });
   await expect(
     board.getByRole("heading", { name: "第一章 · 退潮后的信" }),
   ).toBeVisible();
   await expect(board.getByText("第一卷 · 旧港 / 回声与失踪者")).toHaveCount(2);
   await board
-    .getByRole("button", { name: "后移「第一章 · 退潮后的信」" })
+    .getByRole("button", { name: "Mover “第一章 · 退潮后的信” para depois" })
     .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "保存结构调整" })
+    .getByRole("button", { name: "Salvar mudança de estrutura" })
     .click();
-  await expect(board.getByRole("status")).toHaveText("章节顺序已保存。");
+  await expect(board.getByRole("status")).toHaveText(
+    "Ordem dos capítulos salva.",
+  );
   await expect(
-    board.getByRole("complementary", { name: "需要调整的伏笔窗口" }),
+    board.getByRole("complementary", {
+      name: "Janelas de antecipação a ajustar",
+    }),
   ).toBeVisible();
   await expect(board.locator("article h3").first()).toHaveText(
     "第二章 · 沉默的证人",
@@ -84,52 +91,76 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
   await expect(board.locator("article h3").first()).toHaveText(
     "第二章 · 沉默的证人",
   );
-  await board.getByLabel("章节状态").selectOption("committed");
-  await expect(board.getByText("没有符合筛选条件的章节。")).toBeVisible();
-  await board.getByLabel("章节状态").selectOption("all");
-  await board.getByLabel("视角人物").selectOption("unknown");
+  await board.getByLabel("Estado do capítulo").selectOption("committed");
   await expect(
-    board.getByRole("button", { name: "前移「第一章 · 退潮后的信」" }),
+    board.getByText("Nenhum capítulo corresponde a estes filtros."),
+  ).toBeVisible();
+  await board.getByLabel("Estado do capítulo").selectOption("all");
+  await board.getByLabel("Personagem de POV").selectOption("unknown");
+  await expect(
+    board.getByRole("button", {
+      name: "Mover “第一章 · 退潮后的信” para antes",
+    }),
   ).toBeDisabled();
-  await board.getByLabel("视角人物").selectOption("all");
+  await board.getByLabel("Personagem de POV").selectOption("all");
   await board
-    .getByRole("button", { name: "前移「第一章 · 退潮后的信」" })
+    .getByRole("button", { name: "Mover “第一章 · 退潮后的信” para antes" })
     .click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "保存结构调整" })
+    .getByRole("button", { name: "Salvar mudança de estrutura" })
     .click();
   await expect(board.locator("article h3").first()).toHaveText(
     "第一章 · 退潮后的信",
   );
   await expect(
-    board.getByRole("complementary", { name: "需要调整的伏笔窗口" }),
+    board.getByRole("complementary", {
+      name: "Janelas de antecipação a ajustar",
+    }),
   ).toHaveCount(0);
   await board
-    .getByRole("button", { name: "移动「第一章 · 退潮后的信」到其他位置" })
+    .getByRole("button", {
+      name: "Mover “第一章 · 退潮后的信” para outro lugar",
+    })
     .click();
-  const dialog = page.getByRole("alertdialog", { name: "查看结构调整影响" });
-  await dialog.getByLabel("目标卷或故事弧").selectOption(nextArc.id);
-  await dialog.getByRole("button", { name: "重新预览影响" }).click();
+  const dialog = page.getByRole("alertdialog", {
+    name: "Revisar mudança de estrutura",
+  });
+  await dialog.getByLabel("Volume ou arco de destino").selectOption(nextArc.id);
+  await dialog
+    .getByRole("button", { name: "Atualizar prévia de impacto" })
+    .click();
   await expect(
-    dialog.getByText("兑现窗口的起点晚于终点，保存后需调整对应伏笔窗口。"),
+    dialog.getByText(
+      "A janela de pagamento começa depois de terminar. Ajuste esta janela de antecipação depois de salvar.",
+    ),
   ).toBeVisible();
-  await expect(dialog.getByText("暂无受影响的进行中任务。")).toBeVisible();
+  await expect(
+    dialog.getByText("Nenhuma tarefa ativa é afetada."),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("structure-preview.png"),
     fullPage: true,
   });
   // A new promise added after preview must be reviewed before the move saves.
   await createClue("后来补充的承诺");
-  await dialog.getByRole("button", { name: "保存结构调整" }).click();
+  await dialog
+    .getByRole("button", { name: "Salvar mudança de estrutura" })
+    .click();
   await expect(
-    dialog.getByText("大纲或相关任务、伏笔已变化，请重新预览影响后保存。"),
+    dialog.getByText(
+      "A estrutura, as tarefas relacionadas ou as antecipações mudaram. Atualize a prévia de impacto antes de salvar.",
+    ),
   ).toBeVisible();
-  await dialog.getByRole("button", { name: "重新预览影响" }).click();
+  await dialog
+    .getByRole("button", { name: "Atualizar prévia de impacto" })
+    .click();
   await expect(
     dialog.getByText("后来补充的承诺", { exact: true }),
   ).toBeVisible();
-  await dialog.getByRole("button", { name: "保存结构调整" }).click();
+  await dialog
+    .getByRole("button", { name: "Salvar mudança de estrutura" })
+    .click();
   await expect(dialog).toHaveCount(0);
   await expect(
     board.getByText("第二卷 · 新城 / 新城线索", { exact: true }),
@@ -139,9 +170,13 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
     board.getByText("第二卷 · 新城 / 新城线索", { exact: true }),
   ).toBeVisible();
   await expect(
-    board.getByRole("complementary", { name: "需要调整的伏笔窗口" }),
+    board.getByRole("complementary", {
+      name: "Janelas de antecipação a ajustar",
+    }),
   ).toBeVisible();
-  await expect(board.getByRole("link", { name: "进入写作" })).toHaveCount(2);
+  await expect(
+    board.getByRole("link", { name: "Abrir na mesa de escrita" }),
+  ).toHaveCount(2);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
   );
@@ -158,7 +193,7 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
         exact: true,
       }),
     })
-    .getByRole("link", { name: "进入写作" })
+    .getByRole("link", { name: "Abrir na mesa de escrita" })
     .click();
   await expect(page).toHaveURL(new RegExp(`/studio\\?outline=${first.id}`));
 });

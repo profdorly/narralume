@@ -1,6 +1,6 @@
-import type { labels as labelsZh } from "../zh/labels";
+import type { labels as labelsPt } from "../pt-BR/labels";
 
-export const labels: typeof labelsZh = {
+export const labels: typeof labelsPt = {
   runStatus: {
     pending: "Awaiting the spark",
     running: "Writing",

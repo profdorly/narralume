@@ -69,15 +69,15 @@ describe("selectAnchorableTimeline", () => {
     ]);
     // backstory (passed), later and around (offered in chapter 3).
     expect(selection.omitted).toBe(3);
-    expect(unanchoredTimelineBlock(selection, [], "zh-CN")).toBe(
+    expect(unanchoredTimelineBlock(selection, [], "pt-BR")).toBe(
       [
-        "导入证据落在本章的事件：",
+        "Eventos cuja evidência de importação cita este capítulo:",
         "- [timeline:here] #5 here",
-        "未能定位到章节的事件：",
+        "Eventos sem capítulo:",
         "- [timeline:partly-placed] #4 partly-placed",
         "- [timeline:no-evidence] #6 no-evidence",
         "- [timeline:author-plan] #7 author-plan",
-        "（另有 3 个未锚定事件未列出：它们的导入证据落在其他章节，或超出列表上限。）",
+        "(outros 3 eventos sem âncora não foram listados: a evidência de importação cita outros capítulos, ou a lista está cheia.)",
       ].join("\n"),
     );
   });

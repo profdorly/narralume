@@ -102,7 +102,7 @@ function renderRuns(entry = "/projects/p-1/runs") {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -125,7 +125,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("运行中心", () => {
+describe("Central de execuções", () => {
   it("电影期号目录 + 期主档按 ISSUE NO. 组合", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -138,13 +138,13 @@ describe("运行中心", () => {
     await screen.findByText("ISSUE NO. 202608");
     expect(screen.getByText(/ISSUE NO\. 202608/)).toBeInTheDocument();
     // 左栏期号索引
-    expect(screen.getByRole("button", { name: /2026-08 月刊/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Edição 2026-08/ })).toBeInTheDocument();
     // 行项
     expect(screen.getAllByText(/chapter-production/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/完成|执行中/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Concluído|Em andamento/).length).toBeGreaterThan(0);
     expect(screen.getByText(/run-2/)).toBeInTheDocument();
     expect(screen.getByText(/run-1/)).toBeInTheDocument();
-    expect(screen.getAllByText(/模型调用 3 次/)).toHaveLength(2);
+    expect(screen.getAllByText(/3 chamadas de modelo/)).toHaveLength(2);
     expect(screen.queryByText(/3\/8 调/)).not.toBeInTheDocument();
   });
 
@@ -158,8 +158,8 @@ describe("运行中心", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns("/projects/p-1/runs?run=run-1");
 
-    expect(await screen.findByText("流程 2/2")).toBeInTheDocument();
-    expect(screen.getAllByText("模型调用 3 次").length).toBeGreaterThan(0);
+    expect(await screen.findByText("Passos 2/2")).toBeInTheDocument();
+    expect(screen.getAllByText("3 chamadas de modelo").length).toBeGreaterThan(0);
     expect(screen.queryByText("步骤 2")).not.toBeInTheDocument();
   });
 
@@ -183,7 +183,7 @@ describe("运行中心", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns("/projects/p-1/runs?run=run-retry");
 
-    expect(await screen.findByText(/等待重试 1/)).toBeInTheDocument();
+    expect(await screen.findByText(/Aguardando nova tentativa 1/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "推进一步" })).not.toBeInTheDocument();
   });
 
@@ -208,11 +208,11 @@ describe("运行中心", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns("/projects/p-1/runs?run=run-owned");
 
-    expect(await screen.findByRole("link", { name: "返回快速创作任务" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "Voltar à tarefa de criação rápida" })).toHaveAttribute(
       "href",
       "/projects/p-1/autopilot?session=session-1",
     );
-    expect(screen.queryByRole("button", { name: "重试本章" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tentar de novo este capítulo" })).not.toBeInTheDocument();
   });
 
   it("运行列表正在轮询问于运行中（轮询1.25s），且 body 不带 policy/profile", async () => {
@@ -245,8 +245,8 @@ describe("运行中心", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns("/missing");
 
-    expect(screen.getByRole("heading", { name: "运行中心" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Central de execuções" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -336,4 +336,3 @@ On mobile, navigation folds into a top button and workspaces become a single-col
 - [Configuration](configuration.md): provider protocols, environment variables, Docker, and Bridge/Relay.
 - [Data, privacy, and backup](data-and-backup.md): storage locations, project bundles, project snapshots, and full-library recovery.
 - [Docker Compose](docker.md): self-hosted running, updating, stopping, and backup.
-- [Cloudflare deployment](deploy-cloud.md): deployment boundaries for the public Web, Relay, and Bridge.

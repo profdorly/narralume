@@ -1,6 +1,6 @@
 import { randomUuid } from "@narralume/domain";
 
-import type { Project, ProjectPhase } from "@narralume/domain";
+import type { Project, ProjectForm, ProjectPhase } from "@narralume/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 
@@ -10,6 +10,7 @@ interface ProjectRow {
   subtitle: string | null;
   premise: string | null;
   language: string;
+  form: ProjectForm;
   phase: ProjectPhase;
   archived_at: string | null;
   deleted_at: string | null;
@@ -27,8 +28,8 @@ export class SqliteProjectRepository {
       .prepare(
         `
         INSERT INTO projects(
-          id, title, subtitle, premise, language, phase, archived_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, title, subtitle, premise, language, form, phase, archived_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       )
       .run(
@@ -37,6 +38,7 @@ export class SqliteProjectRepository {
         project.subtitle,
         project.premise,
         project.language,
+        project.form,
         project.phase,
         project.archivedAt,
         project.createdAt,
@@ -82,7 +84,7 @@ export class SqliteProjectRepository {
       .prepare(
         `
         UPDATE projects SET
-          title = ?, subtitle = ?, premise = ?, language = ?, phase = ?,
+          title = ?, subtitle = ?, premise = ?, language = ?, form = ?, phase = ?,
           archived_at = ?, updated_at = ?
         WHERE id = ? AND deleted_at IS NULL
       `,
@@ -92,6 +94,7 @@ export class SqliteProjectRepository {
         project.subtitle,
         project.premise,
         project.language,
+        project.form,
         project.phase,
         project.archivedAt,
         project.updatedAt,
@@ -203,6 +206,7 @@ function mapProject(row: ProjectRow): Project {
     subtitle: row.subtitle,
     premise: row.premise,
     language: row.language,
+    form: row.form ?? "novel",
     phase: row.phase,
     archivedAt: row.archived_at,
     createdAt: row.created_at,

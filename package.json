@@ -2,7 +2,7 @@
   "name": "narralume",
   "version": "0.2.0",
   "private": true,
-  "description": "NarraLume (叙灯) is a local-first, recoverable AI long-form fiction studio.",
+  "description": "NarraLume is a local-first AI writing studio for stories, from short fiction to novels.",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "npm@11.16.0",
@@ -16,13 +16,9 @@
   ],
   "scripts": {
     "build": "tsc -b --pretty false && npm run bundle -w @narralume/web",
-    "dev:bridge": "npm run dev -w @narralume/bridge",
-    "deploy:relay": "npm run deploy -w @narralume/relay",
-    "deploy:web": "node scripts/deploy-web.mjs",
     "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev -w @narralume/server\" \"npm run dev -w @narralume/web\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "install:bridge-task": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-bridge-task.ps1",
     "release:build": "node scripts/build-release.mjs",
     "lint": "eslint . --max-warnings=0",
     "licenses:check": "node scripts/check-licenses.mjs --check",
@@ -34,8 +30,6 @@
     "test:evidence": "tsx scripts/evidence-protocol-eval.ts",
     "test:coverage": "vitest run --coverage",
     "test:real": "tsx scripts/llm-real-smoke.ts",
-    "test:real:bridge": "tsx scripts/bridge-real-smoke.ts",
-    "test:real:bridge-public": "tsx scripts/bridge-public-real-smoke.ts",
     "test:real:capabilities": "tsx scripts/llm-real-smoke.ts",
     "test:real:chapter": "tsx scripts/chapter-real-smoke.ts",
     "test:real:autopilot": "tsx scripts/autopilot-real-smoke.ts",
@@ -44,7 +38,6 @@
     "test:real:matrix": "npm run test:real:capabilities && npm run test:real:chapter && npm run test:real:autopilot && npm run test:real:studio && npm run test:real:delivery",
     "test:release:recovery": "vitest run apps/server/test/lifecycle-api.test.ts apps/server/test/backup-restore-r8.test.ts apps/server/test/run-partial-recovery.test.ts packages/persistence/test/orphan-interruption.test.ts",
     "seed:example": "tsx scripts/seed-example.ts",
-    "start:bridge": "npm run start -w @narralume/bridge",
     "typecheck": "tsc -b --pretty false && tsc -p scripts/tsconfig.json --noEmit --pretty false",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:evidence && npm run licenses:check && npm run build",
     "verify:ci": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:evidence && npm run licenses:check",
@@ -63,7 +56,6 @@
     "tsx": "^4.23.11",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
-    "vitest": "^4.1.10",
-    "wrangler": "^4.123.0"
+    "vitest": "^4.1.10"
   }
 }

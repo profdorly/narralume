@@ -1,14 +1,17 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
-const narrativeSource = fileURLToPath(
-  new URL("./packages/narrative/src/index.ts", import.meta.url),
-);
+const pkgSource = (name: string, file = "index.ts") =>
+  fileURLToPath(new URL(`./packages/${name}/src/${file}`, import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@narralume/narrative": narrativeSource,
+      "@narralume/narrative": pkgSource("narrative"),
+      "@narralume/services": pkgSource("services"),
+      "@narralume/persistence/node": pkgSource("persistence", "node.ts"),
+      "@narralume/persistence/browser": pkgSource("persistence", "browser.ts"),
+      "@narralume/persistence": pkgSource("persistence"),
     },
   },
   test: {

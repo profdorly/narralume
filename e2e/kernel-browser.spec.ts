@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("本地内核 UI 主链：建项目 → 大纲 → 写作 → 版本持久 → 运行中心", async ({
+test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 → 运行中心", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -27,30 +27,36 @@ test("本地内核 UI 主链：建项目 → 大纲 → 写作 → 版本持久 
 
   await page.goto("/");
   await expect(page.locator(".status-pill__label").first()).toHaveText(
-    "内核在线",
+    "Núcleo online",
     { timeout: KERNEL_READY_TIMEOUT },
   );
 
   // 空白建书（无模型也可用的纯项目创建）。
-  await page.getByRole("button", { name: /空白建书/ }).click();
-  await page.getByLabel("书名").fill(title);
-  await page.getByLabel(/卷首语/).fill("失灯的守塔人必须在退潮前找回一封信。");
-  await page.getByRole("button", { name: "创建并入藏" }).click();
+  await page.getByRole("button", { name: /Livro em branco/ }).click();
+  await page.getByLabel("Título").fill(title);
+  await page
+    .getByLabel(/Premissa/)
+    .fill("失灯的守塔人必须在退潮前找回一封信。");
+  await page
+    .getByRole("button", { name: "Criar e colocar na estante" })
+    .click();
   await expect(page).toHaveURL(/\/projects\/[^/]+\/overview$/);
   const projectId = new URL(page.url()).pathname.split("/")[2];
   expect(projectId).toBeTruthy();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
 
   // 大纲：创建章节节点。
-  await page.getByRole("link", { name: "前往故事" }).click();
-  await page.getByRole("button", { name: "查看大纲" }).click();
-  await page.getByLabel("类型").selectOption({ label: "章节" });
-  await page.getByLabel("标题").fill(chapterTitle);
-  await page.getByLabel("摘要").fill("林昇回港当夜，灯塔突然熄灭。");
-  await page.getByRole("button", { name: "保存" }).click();
-  await expect(page.getByRole("status")).toContainText("已写入服务端");
-  await page.getByLabel("编辑对象").selectOption({ label: chapterTitle });
-  await page.getByRole("link", { name: "去写作台写本章" }).click();
+  await page.getByRole("link", { name: "Ir para História" }).click();
+  await page.getByRole("button", { name: "Ver Estrutura" }).click();
+  await page.getByLabel("Tipo").selectOption({ label: "Capítulo" });
+  await page.getByLabel("Título").fill(chapterTitle);
+  await page.getByLabel("Resumo").fill("林昇回港当夜，灯塔突然熄灭。");
+  await page.getByRole("button", { name: "Salvar" }).click();
+  await expect(page.getByRole("status")).toContainText("Salvo no servidor");
+  await page.getByLabel("Alvo da edição").selectOption({ label: chapterTitle });
+  await page
+    .getByRole("link", { name: "Escrever este capítulo na mesa de escrita" })
+    .click();
   await expect(page).toHaveURL(
     new RegExp(`/projects/${projectId}/studio\\?outline=`),
   );
@@ -58,31 +64,36 @@ test("本地内核 UI 主链：建项目 → 大纲 → 写作 → 版本持久 
   expect(chapterId).toBeTruthy();
 
   // 写作台：创建文档 + 手写正文并保存版本（手动创作永远可用）。
-  await page.getByRole("button", { name: "创建" }).click();
-  const editor = page.getByLabel("Markdown 正文编辑器");
+  await page.getByRole("button", { name: "Criar" }).click();
+  const editor = page.getByLabel("Editor do corpo em Markdown");
   await expect(editor).toBeVisible();
   await editor.fill(body);
-  await page.getByRole("button", { name: "保存新版本" }).click();
-  await expect(page.getByRole("status")).toContainText(/已保存|版本/);
+  await page.getByRole("button", { name: "Salvar nova versão" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    /Versão registrada|versões/,
+  );
 
   // 重启持久性：reload 后内核从 OPFS 重开，章节文档与正文仍在。
   await page.reload();
   await expect(page.locator(".status-pill__label").first()).toHaveText(
-    "内核在线",
+    "Núcleo online",
     { timeout: KERNEL_READY_TIMEOUT },
   );
   await expect(editor).toBeVisible();
-  await expect(editor).toHaveValue(/灯塔突然熄灭/);
+  await expect(editor).toContainText(/灯塔突然熄灭/);
 
   // The same chapter-state route also runs in the browser's local database.
   await page.goto(
     `/projects/${projectId}/bible?spread=outline&view=state&chapter=${encodeURIComponent(chapterId)}`,
   );
-  const stateView = page.getByRole("region", { name: "章节状态", exact: true });
-  await expect(stateView.getByLabel("查看到哪一章")).toHaveValue(chapterId);
+  const stateView = page.getByRole("region", {
+    name: "Estado do capítulo",
+    exact: true,
+  });
+  await expect(stateView.getByLabel("Até o capítulo")).toHaveValue(chapterId);
   await expect(
     stateView.getByText(
-      "截至本章尚未登记相关认知，不能据此判断人物或读者不知道。",
+      "Não há conhecimento pertinente registrado até este capítulo. Isso não estabelece que o personagem ou o leitor desconheça o fato.",
     ),
   ).toBeVisible();
 
@@ -90,79 +101,92 @@ test("本地内核 UI 主链：建项目 → 大纲 → 写作 → 版本持久 
   // correction history after reopening the OPFS database.
   await page.goto(`/projects/${projectId}/bible?spread=timeline`);
   const timelineEditor = page.getByRole("region", {
-    name: "时间线编辑",
+    name: "Editar Linha do tempo",
     exact: true,
   });
   await timelineEditor
-    .getByLabel("标题", { exact: true })
+    .getByLabel("Título", { exact: true })
     .fill("内核中的失灯事件");
-  await timelineEditor.getByLabel("开始", { exact: true }).fill("第一夜");
+  await timelineEditor.getByLabel("Início", { exact: true }).fill("第一夜");
   await timelineEditor
-    .getByRole("button", { name: "保存", exact: true })
+    .getByRole("button", { name: "Salvar", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("已写入");
+  await expect(page.getByRole("status")).toContainText("Salvo no servidor");
   await page.goto(
     `/projects/${projectId}/bible?spread=outline&view=state&chapter=${encodeURIComponent(chapterId)}`,
   );
-  await page.getByRole("button", { name: "人工登记与更正" }).click();
+  await page
+    .getByRole("button", { name: "Registrar e corrigir conhecimento" })
+    .click();
   const knowledgeEditor = page.getByRole("region", {
-    name: "作者维护认知记录",
+    name: "Manutenção do conhecimento da obra",
     exact: true,
   });
   await knowledgeEditor
-    .getByRole("button", { name: "登记认知变化", exact: true })
+    .getByRole("button", {
+      name: "Registrar mudança de conhecimento",
+      exact: true,
+    })
     .click();
   const registration = knowledgeEditor.getByRole("form", {
-    name: "登记认知变化",
+    name: "Registrar mudança de conhecimento",
     exact: true,
   });
   await registration
-    .getByLabel("认知命题")
-    .selectOption({ label: "内核中的失灯事件 · 未关联节点" });
-  await registration.getByLabel("认知状态").selectOption("suspected");
-  await registration.getByRole("button", { name: "保存认知登记" }).click();
+    .getByLabel("Afirmação conhecida")
+    .selectOption({ label: "内核中的失灯事件 · Sem nó vinculado" });
+  await registration.getByLabel("Estado de crença").selectOption("suspected");
+  await registration
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
   await expect(knowledgeEditor.getByRole("status")).toContainText(
-    "认知记录已保存",
+    "Conhecimento salvo",
   );
   await knowledgeEditor
     .getByRole("article")
-    .getByRole("button", { name: "更正登记", exact: true })
+    .getByRole("button", { name: "Corrigir registro", exact: true })
     .click();
   const correction = knowledgeEditor.getByRole("form", {
-    name: "更正登记",
+    name: "Corrigir registro",
     exact: true,
   });
-  await correction.getByLabel("认知状态").selectOption("known");
-  await correction.getByLabel("更正或撤销原因").fill("正文中已明确点出事件");
-  await correction.getByRole("button", { name: "保存认知登记" }).click();
+  await correction.getByLabel("Estado de crença").selectOption("known");
+  await correction
+    .getByLabel("Motivo da correção ou da retirada")
+    .fill("正文中已明确点出事件");
+  await correction
+    .getByRole("button", { name: "Salvar registro de conhecimento" })
+    .click();
   await expect(knowledgeEditor.getByRole("status")).toContainText(
-    "认知记录已保存",
+    "Conhecimento salvo",
   );
   await page.reload();
   const knowledge = stateView.getByRole("region", {
-    name: "认知记录",
+    name: "Registros de conhecimento",
     exact: true,
   });
-  await expect(knowledge.getByText("已知", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "人工登记与更正" }).click();
+  await expect(knowledge.getByText("Soube", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Registrar e corrigir conhecimento" })
+    .click();
   await expect(knowledgeEditor.getByText("正文中已明确点出事件")).toBeVisible();
   await knowledgeEditor
     .getByRole("article")
-    .filter({ hasText: "有效登记" })
-    .getByRole("button", { name: "撤销登记", exact: true })
+    .filter({ hasText: "Registro válido" })
+    .getByRole("button", { name: "Retirar registro", exact: true })
     .click();
   const withdrawal = knowledgeEditor.getByRole("form", {
-    name: "撤销登记",
+    name: "Retirar registro",
     exact: true,
   });
   await withdrawal
-    .getByLabel("更正或撤销原因")
+    .getByLabel("Motivo da correção ou da retirada")
     .fill("认知主体有误，撤销后重登");
   await withdrawal
-    .getByRole("button", { name: "撤销登记", exact: true })
+    .getByRole("button", { name: "Retirar registro", exact: true })
     .click();
   await expect(knowledgeEditor.getByRole("status")).toContainText(
-    "认知记录已保存",
+    "Conhecimento salvo",
   );
   await page.reload();
   await expect(knowledge.getByRole("article")).toHaveCount(0);
@@ -174,8 +198,10 @@ test("本地内核 UI 主链：建项目 → 大纲 → 写作 → 版本持久 
   // 下载我的库（D6）：local 驱动从内核导出完整 SQLite bytes。
   const download = page.waitForEvent("download");
   await page.goto("/settings");
-  await expect(page.getByRole("button", { name: /下载我的库/ })).toBeVisible();
-  await page.getByRole("button", { name: /下载我的库/ }).click();
+  await expect(
+    page.getByRole("button", { name: /Baixar minha biblioteca/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Baixar minha biblioteca/ }).click();
   const library = await download;
   expect(library.suggestedFilename()).toMatch(/\.sqlite$/);
 });

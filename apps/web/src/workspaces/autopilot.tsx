@@ -31,8 +31,6 @@ import {
   getStoryCompass,
   getAutopilotSession,
   getAutopilotSessions,
-  listAssignments,
-  listModels,
   resolveAutopilotFailure,
   resolveFoundationCandidate,
   resolveFoundationCandidateSet,
@@ -59,17 +57,12 @@ import {
 import { useProjectId } from "../lib/project-route";
 import { projectWorkspacePath } from "../lib/project-route";
 import { rememberTask } from "../lib/task-ledger";
-import {
-  DEMO_RELAY_PROVIDER_ID,
-  TRIAL_RELAY_AUTOPILOT_CHAPTER_LIMIT,
-} from "../lib/trial-policy";
 
 /* 后台会自行推进、需要轮询收敛的会话状态；慢启动的 pending 也在其列。
    paused / awaiting_user / failed 由用户动作驱动，动作完成后已 invalidate。 */
 const SESSION_PROGRESSING_STATUSES = ["pending", "planning", "running"];
 /* 进行中的建书 Run：候选可能在 Run 推进期间才写入，候选列表要跟着轮询。 */
 const FOUNDATION_RUN_ACTIVE_STATUSES = ["pending", "running", "failed_recoverable"];
-const trialMode = import.meta.env.VITE_TRIAL_MODE === "1";
 
 export function AutopilotWorkspace() {
   const { t } = useI18n();
@@ -122,26 +115,6 @@ export function AutopilotWorkspace() {
         ? 2_500
         : false,
   });
-  const assignmentsQuery = useQuery({
-    queryKey: ["assignments"],
-    queryFn: ({ signal }) => listAssignments(signal),
-    enabled: trialMode,
-  });
-  const modelsQuery = useQuery({
-    queryKey: ["models"],
-    queryFn: ({ signal }) => listModels(undefined, signal),
-    enabled: trialMode,
-  });
-  const writingAssignment = assignmentsQuery.data?.find(
-    (assignment) => assignment.role === "writing",
-  );
-  const writingModel = modelsQuery.data?.find(
-    (model) => model.id === writingAssignment?.modelId,
-  );
-  const usesTrialRelay =
-    trialMode &&
-    (!writingModel || writingModel.providerId === DEMO_RELAY_PROVIDER_ID);
-
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const foundationRun = useMemo(() => {
     const runs = (foundationRunsQuery.data ?? [])
@@ -293,7 +266,7 @@ export function AutopilotWorkspace() {
   return (
     <div className="autopilot">
       <PageBand
-        index="QUICK · Q1"
+        index="CRIAÇÃO · Q1"
         title={t("autopilot.page.title")}
         meta={
           <span className="mono">
@@ -338,7 +311,7 @@ export function AutopilotWorkspace() {
               onSelect={() => selectSession(activeSession.id)}
             />
           ) : (
-            <StartSessionForm key={`session-${createSessionMutation.data?.id ?? "new"}`} projectId={projectId} compass={compassQuery.data ?? null} pending={createSessionMutation.isPending} error={createSessionMutation.error} maxChapters={usesTrialRelay ? TRIAL_RELAY_AUTOPILOT_CHAPTER_LIMIT : AUTOMATION_LIMITS.targetChapters} usesTrialRelay={usesTrialRelay} onSubmit={(input) => createSessionMutation.mutate(input)} />
+            <StartSessionForm key={`session-${createSessionMutation.data?.id ?? "new"}`} projectId={projectId} compass={compassQuery.data ?? null} pending={createSessionMutation.isPending} error={createSessionMutation.error} maxChapters={AUTOMATION_LIMITS.targetChapters} onSubmit={(input) => createSessionMutation.mutate(input)} />
           )}
         </div>
         <Link className="autopilot__setup-link" to={`${projectWorkspacePath(projectId, "bible")}?spread=outline&view=lines`}>{t("bible.lines.manage")}</Link>
@@ -429,7 +402,7 @@ function CompassForm({ compass, pending, error, onSubmit }: { compass: StoryComp
   return <form className="autopilot__setup-card" onSubmit={(event) => { event.preventDefault(); onSubmit({ corePromise, endingDirection: endingDirection || null, longLines: compass?.longLines ?? [], themeQuestions: themeQuestions.split("\n").map((v) => v.trim()).filter(Boolean), target: { chapters, wordsPerChapter: words, volumes }, constraints: constraints.split("\n").map((v) => v.trim()).filter(Boolean) }); }}><header><p className="mono">STEP 2</p><h2>{t("autopilot.compass.stepTitle")}</h2></header><label>{t("autopilot.compass.corePromise")}<textarea required value={corePromise} onChange={(event) => setCorePromise(event.target.value)} /></label><label>{t("autopilot.compass.endingDirection")}<textarea value={endingDirection ?? ""} onChange={(event) => setEndingDirection(event.target.value)} /></label><label>{t("autopilot.compass.themeQuestions")}<textarea value={themeQuestions} onChange={(event) => setThemeQuestions(event.target.value)} /></label><label>{t("autopilot.compass.constraints")}<textarea value={constraints} onChange={(event) => setConstraints(event.target.value)} /></label><div className="autopilot__setup-grid"><label>{t("autopilot.compass.targetChapters")}<NumberField min={1} max={AUTOMATION_LIMITS.targetChapters} value={chapters} onChange={setChapters} /></label><label>{t("autopilot.compass.wordsPerChapter")}<NumberField min={1} value={words} onChange={setWords} /></label><label>{t("autopilot.compass.volumes")}<NumberField min={1} max={AUTOMATION_LIMITS.volumes} value={volumes} onChange={setVolumes} /></label></div><button type="submit" className="btn btn--primary" disabled={pending || !corePromise.trim()}>{pending ? t("common.state.saving") : compass ? t("autopilot.compass.submitUpdate") : t("autopilot.compass.submitCreate")}</button>{error ? <ErrorNote error={error} title={t("autopilot.compass.saveErrorTitle")} /> : null}</form>;
 }
 
-function StartSessionForm({ projectId, compass, pending, error, maxChapters, usesTrialRelay, onSubmit }: { projectId: string; compass: StoryCompass | null; pending: boolean; error: unknown; maxChapters: number; usesTrialRelay: boolean; onSubmit: (input: Parameters<typeof createAutopilotSession>[1]) => void }) {
+function StartSessionForm({ projectId, compass, pending, error, maxChapters, onSubmit }: { projectId: string; compass: StoryCompass | null; pending: boolean; error: unknown; maxChapters: number; onSubmit: (input: Parameters<typeof createAutopilotSession>[1]) => void }) {
   const [approvalMode, setApprovalMode] = useState<"continuous" | "per_chapter">("continuous");
   const [planningMode, setPlanningMode] = useState<"auto" | "confirm">("auto");
   const [targetChapters, setTarget] = useState(() => Math.min(rememberedTarget(projectId) ?? compass?.target.chapters ?? 3, maxChapters));
@@ -447,7 +420,7 @@ function StartSessionForm({ projectId, compass, pending, error, maxChapters, use
     }
   }, [compass, maxChapters, projectId]);
   const effectiveTargetChapters = Math.min(targetChapters, maxChapters);
-  return <form className="autopilot__setup-card" onSubmit={(event) => { event.preventDefault(); const input = { approvalMode, planningMode, origin: { surface: "autopilot" as const }, targetChapters: effectiveTargetChapters, windowSize, maxRevisionCycles, chapterPolicy: { qualityPreset } }; rememberTarget(projectId, effectiveTargetChapters); onSubmit({ ...input, requestId: requestIdFor(requestRef, JSON.stringify(input)) }); }}><header><p className="mono">STEP 3</p><h2>{t("autopilot.sessionStart.stepTitle")}</h2></header><p className="autopilot__setup-hint">{t("autopilot.sessionStart.hint")}</p>{usesTrialRelay ? <p className="autopilot__setup-hint">{t("autopilot.sessionStart.trialHint", { count: TRIAL_RELAY_AUTOPILOT_CHAPTER_LIMIT })}</p> : null}<label>{t("autopilot.sessionStart.approvalMode")}<select value={approvalMode} onChange={(event) => setApprovalMode(event.target.value as typeof approvalMode)}><option value="continuous">{t("autopilot.sessionStart.approvalContinuous")}</option><option value="per_chapter">{t("autopilot.sessionStart.approvalPerChapter")}</option></select></label><label>{t("autopilot.sessionStart.targetChapters")}<NumberField min={1} max={maxChapters} value={effectiveTargetChapters} onChange={(value) => { targetEditedRef.current = true; setTarget(value); }} /></label><details className="autopilot__advanced"><summary>{t("autopilot.sessionStart.advanced")}</summary><label>{t("autopilot.sessionStart.planningMode")}<select value={planningMode} onChange={(event) => setPlanningMode(event.target.value as typeof planningMode)}><option value="auto">{t("autopilot.sessionStart.planningAuto")}</option><option value="confirm">{t("autopilot.sessionStart.planningConfirm")}</option></select></label><div className="autopilot__setup-grid"><label>{t("autopilot.sessionStart.windowSize")}<NumberField min={1} max={AUTOMATION_LIMITS.planningWindow} value={windowSize} onChange={setWindow} /></label><label>{t("autopilot.sessionStart.maxRevisionCycles")}<NumberField min={0} max={AUTOMATION_LIMITS.revisionCycles} value={maxRevisionCycles} onChange={setCycles} /></label></div><label>{t("autopilot.sessionStart.qualityPreset")}<select value={qualityPreset} onChange={(event) => setPreset(event.target.value as typeof qualityPreset)}><option value="fast">{t("autopilot.sessionStart.qualityFast")}</option><option value="standard">{t("autopilot.sessionStart.qualityStandard")}</option><option value="deep">{t("autopilot.sessionStart.qualityDeep")}</option></select></label></details><button type="submit" className="btn btn--primary" disabled={pending || !compass}>{pending ? t("autopilot.sessionStart.submitPending") : t("autopilot.sessionStart.submit")}</button>{!compass ? <p className="autopilot__setup-hint">{t("autopilot.sessionStart.needCompassHint")}</p> : null}{error ? <ErrorNote error={error} title={t("autopilot.sessionStart.errorTitle")} /> : null}</form>;
+  return <form className="autopilot__setup-card" onSubmit={(event) => { event.preventDefault(); const input = { approvalMode, planningMode, origin: { surface: "autopilot" as const }, targetChapters: effectiveTargetChapters, windowSize, maxRevisionCycles, chapterPolicy: { qualityPreset } }; rememberTarget(projectId, effectiveTargetChapters); onSubmit({ ...input, requestId: requestIdFor(requestRef, JSON.stringify(input)) }); }}><header><p className="mono">STEP 3</p><h2>{t("autopilot.sessionStart.stepTitle")}</h2></header><p className="autopilot__setup-hint">{t("autopilot.sessionStart.hint")}</p><label>{t("autopilot.sessionStart.approvalMode")}<select value={approvalMode} onChange={(event) => setApprovalMode(event.target.value as typeof approvalMode)}><option value="continuous">{t("autopilot.sessionStart.approvalContinuous")}</option><option value="per_chapter">{t("autopilot.sessionStart.approvalPerChapter")}</option></select></label><label>{t("autopilot.sessionStart.targetChapters")}<NumberField min={1} max={maxChapters} value={effectiveTargetChapters} onChange={(value) => { targetEditedRef.current = true; setTarget(value); }} /></label><details className="autopilot__advanced"><summary>{t("autopilot.sessionStart.advanced")}</summary><label>{t("autopilot.sessionStart.planningMode")}<select value={planningMode} onChange={(event) => setPlanningMode(event.target.value as typeof planningMode)}><option value="auto">{t("autopilot.sessionStart.planningAuto")}</option><option value="confirm">{t("autopilot.sessionStart.planningConfirm")}</option></select></label><div className="autopilot__setup-grid"><label>{t("autopilot.sessionStart.windowSize")}<NumberField min={1} max={AUTOMATION_LIMITS.planningWindow} value={windowSize} onChange={setWindow} /></label><label>{t("autopilot.sessionStart.maxRevisionCycles")}<NumberField min={0} max={AUTOMATION_LIMITS.revisionCycles} value={maxRevisionCycles} onChange={setCycles} /></label></div><label>{t("autopilot.sessionStart.qualityPreset")}<select value={qualityPreset} onChange={(event) => setPreset(event.target.value as typeof qualityPreset)}><option value="fast">{t("autopilot.sessionStart.qualityFast")}</option><option value="standard">{t("autopilot.sessionStart.qualityStandard")}</option><option value="deep">{t("autopilot.sessionStart.qualityDeep")}</option></select></label></details><button type="submit" className="btn btn--primary" disabled={pending || !compass}>{pending ? t("autopilot.sessionStart.submitPending") : t("autopilot.sessionStart.submit")}</button>{!compass ? <p className="autopilot__setup-hint">{t("autopilot.sessionStart.needCompassHint")}</p> : null}{error ? <ErrorNote error={error} title={t("autopilot.sessionStart.errorTitle")} /> : null}</form>;
 }
 
 /* 每个项目记忆「这次写几章」的上次取值；只存导航线索级别的轻量偏好。 */

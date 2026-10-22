@@ -11,6 +11,7 @@ import {
   SqliteRunRepository,
   SqliteRunStreamRepository,
 } from "../src/index.js";
+import { insertLegacyProject } from "./insert-legacy-project.js";
 import { migration001 } from "../src/migrations/001-foundation.js";
 import { migration002 } from "../src/migrations/002-story-kernel.js";
 import { migration003 } from "../src/migrations/003-harness.js";
@@ -195,7 +196,8 @@ describe("migration 015 (llm-call-interruption)", () => {
         migration014,
       ]);
       expect(legacy.currentMigration()).toBe(14);
-      new SqliteProjectRepository(legacy).insert(
+      insertLegacyProject(
+        legacy,
         createProject({ id: "p1", title: "潮汐灯塔", now }),
       );
       legacy.raw
@@ -259,7 +261,7 @@ describe("migration 015 (llm-call-interruption)", () => {
         .run(now);
 
       legacy.migrate();
-      expect(legacy.currentMigration()).toBe(47);
+      expect(legacy.currentMigration()).toBe(48);
 
       const tool = legacy.raw
         .prepare("SELECT llm_call_id FROM tool_calls WHERE id = 't1'")

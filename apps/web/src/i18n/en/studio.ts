@@ -1,6 +1,6 @@
-import type { studio as studioZh } from "../zh/studio";
+import type { studio as studioPt } from "../pt-BR/studio";
 
-export const studio: typeof studioZh = {
+export const studio: typeof studioPt = {
   header: {
     title: "Writing Desk",
     modeSwitchAria: "Writing mode",
@@ -8,7 +8,7 @@ export const studio: typeof studioZh = {
     cocreate: "Co-create sandbox",
   },
   required: {
-    seal: "稿",
+    seal: "E",
     title: "Writing",
     description:
       "Pick a work, then write prose here, review and revise it, and manage candidate drafts and version history.",

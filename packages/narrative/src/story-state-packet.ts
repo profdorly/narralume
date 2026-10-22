@@ -165,7 +165,7 @@ export class StoryStatePacketBuilder {
       sources.push({
         id: "story-state:relationships",
         kind: "canon",
-        label: "当前人物关系",
+        label: "Relações atuais das personagens",
         content: relationships
           .map((event) => relationshipLine(event, entityById))
           .join("\n"),
@@ -183,7 +183,7 @@ export class StoryStatePacketBuilder {
       sources.push({
         id: "story-state:timeline",
         kind: "canon",
-        label: "已发生时间线",
+        label: "Linha do tempo já ocorrida",
         content: timeline
           .map((event) => timelineLine(event, entityById))
           .join("\n"),
@@ -203,8 +203,8 @@ export class StoryStatePacketBuilder {
         kind: "canon",
         label:
           request.audience === "character"
-            ? "当前角色明确知道或相信的内容"
-            : "人物与读者认知状态",
+            ? "O que a personagem atual sabe ou acredita"
+            : "Conhecimento das personagens e do leitor",
         content: knowledge
           .map((item) => knowledgeLine(item, entityById))
           .filter(Boolean)
@@ -223,7 +223,7 @@ export class StoryStatePacketBuilder {
       sources.push({
         id: `story-state:foreshadows:${tier.id}`,
         kind: "canon",
-        label: `${tier.label}（作者侧，不得直接泄露）`,
+        label: `${tier.label} (lado da autoria; não revelar)`,
         content: tier.items.map(foreshadowLine).join("\n"),
         summary: tier.items.slice(0, 12).map(foreshadowLine).join("\n"),
         authority: "locked",
@@ -348,21 +348,21 @@ function tierForeshadows(
   return [
     {
       id: "commitment",
-      label: "下一章承诺",
+      label: "Compromissos do próximo capítulo",
       items: order(commitments),
       priority: 96,
       required: true,
     },
     {
       id: "active",
-      label: "当前阶段活跃线索",
+      label: "Pistas ativas nesta etapa",
       items: order(active),
       priority: 89,
       required: false,
     },
     {
       id: "latent",
-      label: "长期潜在线索",
+      label: "Pistas latentes de longo prazo",
       items: order(latent),
       priority: 70,
       required: false,
@@ -532,7 +532,7 @@ function relationshipLine(
   event: RelationshipEvent,
   entities: ReadonlyMap<string, CanonEntity>,
 ): string {
-  return `- [relationship:${event.id}] ${entityName(event.fromEntityId, entities)} → ${entityName(event.toEntityId, entities)}：${event.relation}${event.intensity === null ? "" : `（强度 ${event.intensity}）`}${Object.keys(event.state).length === 0 ? "" : `；状态 ${JSON.stringify(event.state)}`}`;
+  return `- [relationship:${event.id}] ${entityName(event.fromEntityId, entities)} → ${entityName(event.toEntityId, entities)}: ${event.relation}${event.intensity === null ? "" : ` (intensidade ${event.intensity})`}${Object.keys(event.state).length === 0 ? "" : `; estado ${JSON.stringify(event.state)}`}`;
 }
 
 function timelineLine(
@@ -541,8 +541,8 @@ function timelineLine(
 ): string {
   const participants = event.participants
     .map((id) => entityName(id, entities))
-    .join("、");
-  return `- [timeline:${event.id}] #${event.sequence} ${event.title}${event.storyTimeStart ? `｜${event.storyTimeStart}` : ""}${participants ? `｜参与者：${participants}` : ""}${event.description ? `｜${event.description}` : ""}`;
+    .join(", ");
+  return `- [timeline:${event.id}] #${event.sequence} ${event.title}${event.storyTimeStart ? ` | ${event.storyTimeStart}` : ""}${participants ? ` | participantes: ${participants}` : ""}${event.description ? ` | ${event.description}` : ""}`;
 }
 
 function knowledgeLine(
@@ -551,20 +551,20 @@ function knowledgeLine(
 ): string {
   const knower =
     record.knowerType === "reader"
-      ? "读者"
+      ? "leitor"
       : entityName(record.knowerEntityId!, entities);
   const prefix = `- [knowledge:${record.id}] [${record.belief}] ${knower} [node:${record.learnedAtNodeId}]`;
   if (fact) {
     const object = fact.objectEntityId
       ? entityName(fact.objectEntityId, entities)
       : JSON.stringify(fact.value);
-    return `${prefix} [fact:${fact.id}]：${entityName(fact.subjectId, entities)} ${fact.predicate} ${object}`;
+    return `${prefix} [fact:${fact.id}]: ${entityName(fact.subjectId, entities)} ${fact.predicate} ${object}`;
   }
-  return event ? `${prefix} [timeline:${event.id}] 事件：${event.title}` : "";
+  return event ? `${prefix} [timeline:${event.id}] evento: ${event.title}` : "";
 }
 
 function foreshadowLine(item: Foreshadow): string {
-  return `- [foreshadow:${item.id}｜${item.status}｜重要度 ${item.importance}] ${item.title}：${item.description}`;
+  return `- [foreshadow:${item.id}|${item.status}|importância ${item.importance}] ${item.title}: ${item.description}`;
 }
 
 function entityName(

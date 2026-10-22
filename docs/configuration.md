@@ -101,9 +101,7 @@ RELAY_MODEL=replace-me
 WEB_ORIGIN=https://app.example.com
 ```
 
-Relay 还需要通过 `wrangler secret put` 写入 `BRIDGE_ACCESS_CLIENT_ID`、`BRIDGE_ACCESS_CLIENT_SECRET`、`BRIDGE_SHARED_SECRET`、`TURNSTILE_SECRET_KEY` 和 `SESSION_SIGNING_KEY`。不要把这些值放进 `wrangler.toml`、命令行参数、截图或 Issue。
-
-`api.example.com`、`app.example.com` 和 `replace-me` 仅为占位符。部署命令、Cloudflare Secret 写入和 smoke 检查见[通用 Cloudflare 指南](deploy-cloud.md)。
+`api.example.com`、`app.example.com` 和 `replace-me` 仅为占位符。
 
 ## 常见配置故障
 

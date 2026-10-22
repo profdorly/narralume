@@ -20,7 +20,7 @@ import {
 import { createDocument, type NarrativeRunStep } from "@narralume/domain";
 import {
   buildDocumentReviewRecipe,
-  compileChapterRecipeTemplate,
+  compileFormAwareChapterRecipe,
 } from "@narralume/harness";
 import {
   SqliteAssignmentRepository,
@@ -169,11 +169,12 @@ export function registerRunRoutes(
           "Chapter production recipe template not found",
           500,
         );
-      const recipe = compileChapterRecipeTemplate(
+      const recipe = compileFormAwareChapterRecipe(
         runId,
         template.effectiveContent,
         input.maxRevisionCycles,
         template.version,
+        projects.get(projectId)?.form,
       );
       const policy = withRuntimeModelPolicy(
         {
@@ -488,11 +489,12 @@ export function registerRunRoutes(
           "Chapter production recipe template not found",
           500,
         );
-      const recipe = compileChapterRecipeTemplate(
+      const recipe = compileFormAwareChapterRecipe(
         retryRunId,
         template.effectiveContent,
         source.policy["maxRevisionCycles"] === 0 ? 0 : 2,
         template.version,
+        projects.get(input.projectId)?.form,
       );
       const sourceOrigin = isRecord(source.policy.origin)
         ? source.policy.origin

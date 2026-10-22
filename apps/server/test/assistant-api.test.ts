@@ -485,7 +485,7 @@ describe("project assistant API", () => {
       id: chapterId,
       kind: "chapter",
       chapterNumber: 1,
-      displayLabel: "第1章",
+      displayLabel: "Capítulo 1",
     });
     expect(chapter).not.toHaveProperty("path");
   });

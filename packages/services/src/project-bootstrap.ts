@@ -2,6 +2,7 @@ import {
   createOutlineNode,
   createProject,
   type Project,
+  type ProjectForm,
 } from "@narralume/domain";
 import {
   SqliteProjectRepository,
@@ -16,6 +17,7 @@ export interface ProjectBootstrapInput {
   subtitle: string | null;
   premise: string | null;
   language: string;
+  form?: ProjectForm;
   now: string;
 }
 
@@ -30,6 +32,7 @@ export function bootstrapProject(
     now: input.now,
     title: input.title,
     language: input.language,
+    ...(input.form ? { form: input.form } : {}),
     subtitle: input.subtitle,
     premise: input.premise,
   });

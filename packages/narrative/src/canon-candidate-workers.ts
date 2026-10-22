@@ -53,11 +53,12 @@ interface CanonContextArtifact extends Readonly<Record<string, unknown>> {
   manuscriptLanguage: DetectedManuscriptLanguage;
 }
 
-/** 故事圣经候选的文字跟随作品正文的语言，而非指令语言：作品语言只有 zh-CN / en，
- *  导入的其他语言（如葡语）原稿也必须得到同语言的候选。 */
+/** Story-bible candidate text follows the work's prose, not the instruction
+ *  language: project.language is only pt-BR / en, but an imported manuscript
+ *  in another language must still receive candidates in that language. */
 const CANON_LANGUAGE_INVARIANT = {
-  "zh-CN":
-    "语言不变量：summary、每项的 title、rationale、impact，以及 afterJson 中的所有文字字段（名称、别名、描述、摘要、目标、冲突、谓词与值、关系、事件标题等）必须使用作品正文（recentManuscript 与章节摘要）的语言书写，即使它不同于本指令的语言；作品还没有正文时沿用故事圣经已有内容的语言。人物、地点等专有名词保留原文写法，不得翻译。字段名、枚举值与 ID 保持结构定义不变。",
+  "pt-BR":
+    "Invariante de idioma: summary, o title, rationale e impact de cada item, e todos os campos de texto em afterJson (nomes, aliases, descrições, resumos, objetivos, conflitos, predicados e valores, relações, títulos de eventos e assim por diante) devem ser escritos no idioma da prosa da obra (recentManuscript e os resumos de capítulo), mesmo que difira do idioma destas instruções; quando a obra ainda não tem prosa, siga o idioma do conteúdo já existente na Bíblia da História. Nomes próprios de personagens, lugares e afins permanecem exatamente como no original, sem traduzir. Nomes de campos, valores de enum e IDs permanecem como definidos pelo esquema.",
   en: "Language invariant: write summary, every item's title, rationale, and impact, and every text field inside afterJson (names, aliases, descriptions, summaries, goals, conflicts, predicates and values, relations, event titles, and so on) in the language of the work's prose (recentManuscript and the chapter summaries), even when it differs from the language of these instructions; when the work has no prose yet, follow the language of the existing Story Bible content. Keep character, place, and other proper names exactly as written in the source, never translated. Field names, enum values, and IDs stay as defined by the schema.",
 } as const;
 
@@ -243,15 +244,15 @@ export class CanonCandidateWorkerSuite {
       "canon-revision",
       {
         instructions: instructionsFor(language, {
-          "zh-CN": [
-            "你是长篇小说的故事圣经编辑。只根据提供的作品材料，为指定 Canon Spread 生成少量、可逐项裁定的候选修改。",
-            "不要直接改写数据库，不要声称候选已经生效。每项必须说明理由和影响；没有必要的改动不要凑数。",
-            "create 的 targetId 必须为 null；update 必须使用 currentSpread 中真实存在的 id。作者意图只能 update 且 targetId 固定为 intent。",
-            "只有 facts 可以 withdraw，此时 afterJson 为 null；其他 create/update 的 afterJson 必须是一个 JSON 对象序列化后的字符串。",
-            `afterJson 只能使用这些字段：${candidateAfterInstructions(context.spread)}。update 只放要改的字段，create 提供完整必填字段。`,
-            "引用实体、大纲、因果或依赖时只能使用 supportingIndex 中给出的真实 ID。不得生成数据库 ID。",
-            "不要修改锁定策略本身；如果建议触及锁定内容，仍作为候选说明，系统会要求作者二次确认。",
-            CANON_LANGUAGE_INVARIANT["zh-CN"],
+          "pt-BR": [
+            "Você é o editor da Bíblia da História de um romance de longo fôlego. Trabalhando só com o material da obra, gere poucas alterações candidatas, julgáveis uma a uma, para o Canon Spread indicado.",
+            "Nunca reescreva o banco diretamente e nunca afirme que os candidatos já vigoram. Cada item deve expor o raciocínio e o impacto; não preencha com mudanças desnecessárias.",
+            "O targetId de create deve ser null; update deve usar ids que de fato existem em currentSpread. A intenção do autor só admite update, com targetId fixo em intent.",
+            "Só facts podem sofrer withdraw, com afterJson null nesse caso; todo outro create/update deve trazer afterJson como string de um objeto JSON serializado.",
+            `afterJson aceita só estes campos: ${candidateAfterInstructions(context.spread)}. update leva só os campos alterados; create fornece todos os campos obrigatórios.`,
+            "Ao citar entidades, nós de outline, causas ou dependências, use só IDs reais dados em supportingIndex. Nunca invente IDs de banco.",
+            "Não altere as políticas de trava em si; se a sugestão toca conteúdo travado, descreva-a mesmo assim como candidata e o sistema pedirá confirmação extra ao autor.",
+            CANON_LANGUAGE_INVARIANT["pt-BR"],
           ],
           en: [
             "You are the story bible editor of a long-form novel. Working only from the provided project material, generate a small number of individually adjudicable change candidates for the given Canon Spread.",
@@ -529,7 +530,11 @@ function boundedChapterSummaries(
 
 function clipText(value: string, limit: number): string {
   if (value.length <= limit) return value;
-  return `${value.slice(0, Math.floor(limit * 0.7))}\n\n[中间内容已省略]\n\n${value.slice(-Math.ceil(limit * 0.3))}`;
+  const marker = "\n\n[trecho intermediário omitido]\n\n";
+  const available = Math.max(0, limit - marker.length);
+  const head = Math.floor(available * 0.7);
+  const tail = available - head;
+  return `${value.slice(0, head)}${marker}${value.slice(-tail)}`;
 }
 
 function zeroUsage(): RunBudgetUsage {

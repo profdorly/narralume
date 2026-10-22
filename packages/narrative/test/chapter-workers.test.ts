@@ -298,8 +298,8 @@ describe("ChapterWorkerSuite", () => {
         .map((entry) => entry.label),
     ).toEqual(
       expect.arrayContaining([
-        "启用风格 · 冷雾短句",
-        "写作 Skill · 场景证据链",
+        "Estilo ativo · 冷雾短句",
+        "Skill de escrita · 场景证据链",
       ]),
     );
     const persistedEvidence = database.raw
@@ -327,11 +327,9 @@ describe("ChapterWorkerSuite", () => {
       ([, , purpose]) => purpose === "chapter-settlement",
     )?.[3];
     expect(settlementRequest?.instructions).toContain(
-      "不要额外填写布尔值或字符串 true 表示事实成立",
+      "Não ponha true para dizer que o fato vale",
     );
-    expect(settlementRequest?.instructions).toContain(
-      "同时需要实体和文本时拆成两条事实",
-    );
+    expect(settlementRequest?.instructions).toContain("parta em dois fatos");
   });
 
   it("uses one compass length reference for scene planning and draft continuation only", async () => {
@@ -403,13 +401,13 @@ describe("ChapterWorkerSuite", () => {
     const draftPrompt = draftRequest?.messages[0]?.content ?? "";
     const reviewPrompt = reviewRequest?.messages[0]?.content ?? "";
 
-    expect(scenePrompt).toContain("参考篇幅约为 3200 字");
-    expect(scenePrompt).toContain("scenes[].targetCharacters 合计大致围绕");
-    expect(draftPrompt).toContain("参考篇幅约为 3200 字");
+    expect(scenePrompt).toContain("cerca de 3200 caracteres");
+    expect(scenePrompt).toContain("scenes[].targetCharacters gire em torno");
+    expect(draftPrompt).toContain("cerca de 3200 caracteres");
     expect(draftPrompt).toContain(
-      `现有开头已有 ${[...continuationPrefix].length} 字`,
+      `O começo já escrito tem ${[...continuationPrefix].length} caracteres`,
     );
-    expect(draftPrompt).toContain("不是要求再新增 3200 字");
+    expect(draftPrompt).toContain("não um pedido de mais 3200 caracteres");
     expect(scenePrompt).not.toContain("5200");
     expect(draftPrompt).not.toContain("5200");
     expect(reviewPrompt).not.toContain("chapter-writing-reference");
@@ -835,11 +833,15 @@ describe("ChapterWorkerSuite", () => {
       ([, , purpose]) => purpose === "chapter-revision",
     )?.[3];
     expect(revisionRequest?.instructions).toContain("<writing-craft>");
-    expect(revisionRequest?.instructions).toContain("先对抗你的本能");
+    expect(revisionRequest?.instructions).toContain(
+      "lute contra o instinto do modelo",
+    );
     expect(
-      revisionRequest!.instructions.indexOf("先对抗你的本能"),
+      revisionRequest!.instructions.indexOf("lute contra o instinto do modelo"),
     ).toBeLessThan(
-      revisionRequest!.instructions.indexOf("不要为了润色而全篇换风格"),
+      revisionRequest!.instructions.indexOf(
+        "Não troque o estilo do texto inteiro a pretexto de polir",
+      ),
     );
     expect(
       database.raw
@@ -1043,7 +1045,7 @@ describe("ChapterWorkerSuite", () => {
     expect(draftReceipt?.entries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          label: "紧邻上一章最新正文 · 雾港失灯",
+          label: "Prosa mais recente do capítulo anterior · 雾港失灯",
           status: "included",
           provenanceId: previousVersion.id,
         }),

@@ -112,7 +112,7 @@ function OverviewBoard({ overview }: { overview: ProjectOverview }) {
         <h1 className="overview__masthead-title">{overview.project.title}</h1>
         <p className="overview__masthead-premise">{overview.project.premise ?? t("overview.masthead.emptyPremise")}</p>
         <div className="overview__masthead-row mono">
-          <span className="overview__masthead-index">OVERLOOK · 02</span>
+          <span className="overview__masthead-index">VISÃO · 02</span>
           <span className="overview__masthead-phase">{projectPhaseLabel(overview.project.phase)}</span>
           <span className="overview__masthead-progress">{t("overview.masthead.progress", { committed: progress.committedChapters, total: progress.totalChapters, words: progress.wordCount })}</span>
           <span className="overview__masthead-writingat">

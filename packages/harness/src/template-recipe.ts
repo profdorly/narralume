@@ -116,6 +116,24 @@ export function compileChapterRecipeTemplate(
   };
 }
 
+/** Contos usam a mesma cadeia com zero ciclos de revisão. */
+export function compileFormAwareChapterRecipe(
+  runId: string,
+  content: string,
+  requestedRevisionCycles: number,
+  templateVersion: number,
+  form: string | null | undefined,
+): ChapterRecipe {
+  const short = form === "short-story";
+  const recipe = compileChapterRecipeTemplate(
+    runId,
+    content,
+    short ? 0 : requestedRevisionCycles,
+    templateVersion,
+  );
+  return short ? { ...recipe, name: "short-story" } : recipe;
+}
+
 export function compileCoCreateRecipeTemplate(
   runId: string,
   content: string,

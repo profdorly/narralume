@@ -98,7 +98,7 @@ function renderLab(entry = "/projects/p-1/lab") {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -121,7 +121,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("长篇推演", () => {
+describe("Simulação de longo fôlego", () => {
   it("语义检索可提交问题并展示原文；剧情预测和故事记忆有卡", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -135,24 +135,24 @@ describe("长篇推演", () => {
     renderLab();
 
     // 检索投
-    fireEvent.change(screen.getByLabelText("检索问题"), {
+    fireEvent.change(screen.getByLabelText("Pergunta de busca"), {
       target: { value: "姐姐什么时候消失" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "检索" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await screen.findByText(/第一章 灯下潮痕/);
     expect(screen.getByText(/score 82%/)).toBeInTheDocument();
 
     // 预测单
     await screen.findByText(/姐姐的失踪与旧邮局/);
-    expect(screen.getByText("剧情预测")).toBeInTheDocument();
-    expect(screen.getByText("+3 章后")).toBeInTheDocument();
+    expect(screen.getByText("Previsões de enredo")).toBeInTheDocument();
+    expect(screen.getByText("+3 capítulos à frente")).toBeInTheDocument();
     expect(screen.getByText(/基于第三章灯下潮痕的缝隙/)).toBeInTheDocument();
 
     // 故事记忆
     await screen.findByText("EPISODIC");
     expect(screen.getByText(/第三章stamp、preface的按需印/)).toBeInTheDocument();
-    expect(screen.getByLabelText("视野章数")).toHaveAttribute("max", "20");
-    expect(screen.getByLabelText("候选数量")).toHaveAttribute("max", "5");
+    expect(screen.getByLabelText("Capítulos à frente")).toHaveAttribute("max", "20");
+    expect(screen.getByLabelText("Quantidade de candidatos")).toHaveAttribute("max", "5");
   });
 
   it("记忆查询失败时显示故障，不伪装成空仓", async () => {
@@ -170,8 +170,8 @@ describe("长篇推演", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderLab();
 
-    expect(await screen.findByText("记忆内容暂时无法加载")).toBeInTheDocument();
-    expect(screen.queryByText("还没有记忆进仓")).not.toBeInTheDocument();
+    expect(await screen.findByText("Não foi possível carregar as memórias agora")).toBeInTheDocument();
+    expect(screen.queryByText("Ainda não há memórias guardadas")).not.toBeInTheDocument();
   });
 
   it("采纳预测调 PUT /predictions/:id；body 与决策一致，不含 profileId", async () => {
@@ -192,10 +192,10 @@ describe("长篇推演", () => {
     renderLab();
 
     await screen.findByText(/姐姐的失踪与旧邮局/);
-    const adoptButtons = await screen.findAllByRole("button", { name: "采纳" });
+    const adoptButtons = await screen.findAllByRole("button", { name: "Adotar" });
     fireEvent.click(adoptButtons[0]!);
 
-    await screen.findByText(/已采纳 ·/);
+    await screen.findByText(/Adotada ·/);
     const call = fetchMock.mock.calls.find(
       ([u, init]) =>
         String(u).includes("/api/projects/p-1/predictions/pp-1") &&
@@ -220,9 +220,9 @@ describe("长篇推演", () => {
     renderLab();
 
     await screen.findByText(/姐姐的失踪与旧邮局/);
-    expect(screen.getByText("已失效")).toBeInTheDocument();
+    expect(screen.getByText("Desatualizada")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "采纳" }),
+      screen.queryByRole("button", { name: "Adotar" }),
     ).not.toBeInTheDocument();
   });
 
@@ -233,8 +233,8 @@ describe("长篇推演", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderLab("/missing");
 
-    expect(screen.getByRole("heading", { name: "长篇推演" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Laboratório narrativo" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

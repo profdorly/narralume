@@ -6,12 +6,20 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
   await page.goto(
     "/projects/state-fixture/bible?spread=outline&view=state&chapter=state-c2",
   );
-  const view = page.getByRole("region", { name: "章节状态", exact: true });
+  const view = page.getByRole("region", {
+    name: "Estado do capítulo",
+    exact: true,
+  });
   const knowledge = () =>
-    view.getByRole("region", { name: "认知记录", exact: true });
+    view.getByRole("region", {
+      name: "Registros de conhecimento",
+      exact: true,
+    });
   await expect(knowledge().getByRole("article")).toHaveCount(4);
   const clue = view.getByRole("article", { name: "两份证词的矛盾" });
-  await expect(clue.getByText("当前计划状态： 已回收")).toBeVisible();
+  await expect(
+    clue.getByText("Status atual do plano: Resolvida"),
+  ).toBeVisible();
   await expect(
     clue.getByRole("link", { name: "第1章 · 旧证词" }),
   ).toBeVisible();
@@ -25,22 +33,32 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
     path: testInfo.outputPath("chapter-state-author.png"),
     fullPage: true,
   });
-  await view.getByRole("link", { name: "维护伏笔", exact: true }).click();
+  await view
+    .getByRole("link", { name: "Gerenciar antecipações", exact: true })
+    .click();
   await expect(page).toHaveURL(
     /spread=foreshadows&view=state&chapter=state-c2/,
   );
-  await page.getByRole("button", { name: "查看大纲", exact: true }).click();
-  await expect(view.getByLabel("查看到哪一章")).toHaveValue("state-c2");
+  await page
+    .getByRole("button", { name: "Ver Estrutura", exact: true })
+    .click();
+  await expect(view.getByLabel("Até o capítulo")).toHaveValue("state-c2");
 
-  await view.getByLabel("认知视角").selectOption("character:state-hero");
+  await view
+    .getByLabel("Perspectiva do conhecimento")
+    .selectOption("character:state-hero");
   await expect(knowledge().getByRole("article")).toHaveCount(2);
-  await expect(knowledge().getByText("误信", { exact: true })).toBeVisible();
-  await expect(knowledge().getByText("怀疑", { exact: true })).toBeVisible();
+  await expect(
+    knowledge().getByText("Crença falsa", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    knowledge().getByText("Suspeita", { exact: true }),
+  ).toBeVisible();
   await expect(knowledge().getByText("林澈 · 灯塔控制者 · 议会")).toBeVisible();
   await expect(view.getByText("守灯人", { exact: false })).toHaveCount(0);
   await expect(clue).toHaveCount(0);
   const relationships = view.getByRole("region", {
-    name: "登记关系",
+    name: "Relações registradas",
     exact: true,
   });
   await expect(relationships.getByRole("article")).toHaveCount(1);
@@ -57,11 +75,15 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
   await evidence.click();
   await expect(page).toHaveURL(/studio\?outline=state-c2$/);
   await page.goBack();
-  await expect(view.getByLabel("认知视角")).toHaveValue("character:state-hero");
+  await expect(view.getByLabel("Perspectiva do conhecimento")).toHaveValue(
+    "character:state-hero",
+  );
 
-  await view.getByLabel("查看到哪一章").selectOption("state-c12");
-  await expect(knowledge().getByText("已知", { exact: true })).toHaveCount(2);
-  await expect(knowledge().getByText("误信", { exact: true })).toHaveCount(0);
+  await view.getByLabel("Até o capítulo").selectOption("state-c12");
+  await expect(knowledge().getByText("Soube", { exact: true })).toHaveCount(2);
+  await expect(
+    knowledge().getByText("Crença falsa", { exact: true }),
+  ).toHaveCount(0);
   await expect(
     knowledge().getByText("林澈 · 灯塔控制者 · 守灯人"),
   ).toBeVisible();
@@ -69,22 +91,32 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
     relationships.getByText("交换证据后结盟", { exact: false }),
   ).toBeVisible();
   await page.reload();
-  await expect(view.getByLabel("查看到哪一章")).toHaveValue("state-c12");
-  await expect(view.getByLabel("认知视角")).toHaveValue("character:state-hero");
-  await expect(knowledge().getByText("已知", { exact: true })).toHaveCount(2);
-  await view.getByLabel("查看到哪一章").selectOption("state-c2");
-  await view.getByLabel("认知视角").selectOption("reader");
+  await expect(view.getByLabel("Até o capítulo")).toHaveValue("state-c12");
+  await expect(view.getByLabel("Perspectiva do conhecimento")).toHaveValue(
+    "character:state-hero",
+  );
+  await expect(knowledge().getByText("Soube", { exact: true })).toHaveCount(2);
+  await view.getByLabel("Até o capítulo").selectOption("state-c2");
+  await view.getByLabel("Perspectiva do conhecimento").selectOption("reader");
   await expect(knowledge().getByRole("article")).toHaveCount(1);
-  await expect(knowledge().getByText("相信", { exact: true })).toBeVisible();
-  await view.getByLabel("认知视角").selectOption("character:state-outsider");
+  await expect(
+    knowledge().getByText("Acredita", { exact: true }),
+  ).toBeVisible();
+  await view
+    .getByLabel("Perspectiva do conhecimento")
+    .selectOption("character:state-outsider");
   await expect(
     knowledge().getByText(
-      "截至本章尚未登记相关认知，不能据此判断人物或读者不知道。",
+      "Não há conhecimento pertinente registrado até este capítulo. Isso não estabelece que o personagem ou o leitor desconheça o fato.",
     ),
   ).toBeVisible();
 
-  await view.getByLabel("认知视角").selectOption("character:state-hero");
-  await expect(knowledge().getByText("误信", { exact: true })).toBeVisible();
+  await view
+    .getByLabel("Perspectiva do conhecimento")
+    .selectOption("character:state-hero");
+  await expect(
+    knowledge().getByText("Crença falsa", { exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("chapter-state-character.png"),
     fullPage: true,
@@ -124,29 +156,33 @@ test("章节状态空作品入口与看板直达", async ({ page, request }) => 
   const project = (await response.json()) as { id: string };
   await page.goto(`/projects/${project.id}/bible?spread=outline&view=state`);
   await expect(
-    page.getByText("先添加章节，再按章节查看故事状态。"),
+    page.getByText(
+      "Adicione um capítulo para inspecionar o estado da história capítulo a capítulo.",
+    ),
   ).toBeVisible();
   await page.goto("/projects/state-fixture/bible?spread=outline&view=board");
   await page
-    .getByRole("link", { name: "查看本章状态", exact: true })
+    .getByRole("link", { name: "Ver estado do capítulo", exact: true })
     .nth(1)
     .click();
-  await expect(page.getByLabel("查看到哪一章")).toHaveValue("state-c2");
+  await expect(page.getByLabel("Até o capítulo")).toHaveValue("state-c2");
   await expect(
     page
-      .getByRole("region", { name: "认知记录", exact: true })
+      .getByRole("region", { name: "Registros de conhecimento", exact: true })
       .getByRole("article"),
   ).toHaveCount(4);
   await page.goto(
     "/projects/state-fixture/bible?spread=outline&view=state&chapter=missing",
   );
   await expect(
-    page.getByText("所选章节不存在或已废弃，请重新选择。"),
+    page.getByText(
+      "O capítulo selecionado está ausente ou abandonado. Selecione outro capítulo.",
+    ),
   ).toBeVisible();
-  await page.getByLabel("查看到哪一章").selectOption("state-c1");
+  await page.getByLabel("Até o capítulo").selectOption("state-c1");
   await expect(
     page
-      .getByRole("region", { name: "认知记录", exact: true })
+      .getByRole("region", { name: "Registros de conhecimento", exact: true })
       .getByRole("article"),
   ).toHaveCount(1);
 });

@@ -38,11 +38,11 @@ test("规划的新设定经作者采纳后才创建章节", async ({
   const { projectId, sessionId, runId } = await start(request);
   await page.goto(`/projects/${projectId}/autopilot?session=${sessionId}`);
   const panel = page.getByRole("region", {
-    name: "后续规划的新设定",
+    name: "Novos elementos da história no plano",
     exact: true,
   });
   const continueButton = panel.getByRole("button", {
-    name: "按已采纳设定继续规划",
+    name: "Continuar com os elementos adotados",
     exact: true,
   });
   await expect(
@@ -52,7 +52,7 @@ test("规划的新设定经作者采纳后才创建章节", async ({
     panel.getByText("带来外港视角并质疑调查者动机", { exact: true }),
   ).toBeVisible();
   await expect(continueButton).toBeDisabled();
-  await expect(panel.getByText("人物", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Personagem", { exact: true })).toBeVisible();
   if (testInfo.project.name === "mobile-375")
     expect(
       await page
@@ -65,13 +65,13 @@ test("规划的新设定经作者采纳后才创建章节", async ({
     fullPage: true,
   });
   await panel
-    .getByRole("button", { name: "采纳此项", exact: true })
+    .getByRole("button", { name: "Adotar este item", exact: true })
     .first()
     .click();
-  await expect(panel.getByText("已采纳", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Aplicado", { exact: true })).toHaveCount(1);
   await expect(continueButton).toBeDisabled();
   await page.reload();
-  await expect(panel.getByText("已采纳", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Aplicado", { exact: true })).toHaveCount(1);
   await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
   await page.reload();
   const englishPanel = page.getByRole("region", {
@@ -128,21 +128,24 @@ test("拒绝新设定后保留裁定并提供重新规划", async ({
   const { projectId, sessionId } = await start(request);
   await page.goto(`/projects/${projectId}/autopilot?session=${sessionId}`);
   const panel = page.getByRole("region", {
-    name: "后续规划的新设定",
+    name: "Novos elementos da história no plano",
     exact: true,
   });
   await panel
-    .getByRole("button", { name: "拒绝", exact: true })
+    .getByRole("button", { name: "Recusar", exact: true })
     .first()
     .click();
   await expect(panel.getByRole("status")).toHaveText(
-    "有候选被拒绝，请重新规划。已采纳的设定会保留，拒绝记录会带入下一轮。",
+    "Um candidato foi recusado. Replaneje para continuar. As entradas adotadas permanecem, e o próximo plano recebe o registro da recusa.",
   );
   await expect(
-    panel.getByRole("button", { name: "按已采纳设定继续规划", exact: true }),
+    panel.getByRole("button", {
+      name: "Continuar com os elementos adotados",
+      exact: true,
+    }),
   ).toBeDisabled();
   await page.reload();
-  await expect(panel.getByText("已拒绝", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Recusado", { exact: true })).toHaveCount(1);
   await panel.scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("planning-entities-rejected.png"),
@@ -153,7 +156,7 @@ test("拒绝新设定后保留裁定并提供重新规划", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "重新规划", exact: true }).click();
+  await page.getByRole("button", { name: "Replanejar", exact: true }).click();
   await expect(panel).toHaveCount(0);
   const bible = await (
     await request.get(`/api/projects/${projectId}/story-bible`)

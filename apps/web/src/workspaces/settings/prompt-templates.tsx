@@ -29,7 +29,7 @@ const EXPOSED_PROMPT_KEYS: readonly string[] = [
 ];
 
 interface BilingualDraft {
-  "zh-CN": string;
+  "pt-BR": string;
   en: string;
 }
 
@@ -90,19 +90,19 @@ function parseBilingual(template: HarnessTemplate): BilingualDraft {
   try {
     const parsed = JSON.parse(trimmed) as Record<string, unknown>;
     if (
-      typeof parsed["zh-CN"] === "string" &&
+      typeof parsed["pt-BR"] === "string" &&
       typeof parsed.en === "string"
     ) {
-      return { "zh-CN": parsed["zh-CN"], en: parsed.en };
+      return { "pt-BR": parsed["pt-BR"], en: parsed.en };
     }
   } catch {
     /* 纯文本内容按中文处理 */
   }
-  return { "zh-CN": trimmed, en: "" };
+  return { "pt-BR": trimmed, en: "" };
 }
 
 function serializeBilingual(draft: BilingualDraft): string {
-  return JSON.stringify({ "zh-CN": draft["zh-CN"], en: draft.en }, null, 2);
+  return JSON.stringify({ "pt-BR": draft["pt-BR"], en: draft.en }, null, 2);
 }
 
 export function PromptTemplatesSection() {
@@ -158,7 +158,7 @@ function PromptTemplateCard({ template }: { template: HarnessTemplate }) {
   const [draft, setDraft] = useState<BilingualDraft>(initial);
 
   const dirty =
-    draft["zh-CN"] !== initial["zh-CN"] || draft.en !== initial.en;
+    draft["pt-BR"] !== initial["pt-BR"] || draft.en !== initial.en;
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -198,15 +198,15 @@ function PromptTemplateCard({ template }: { template: HarnessTemplate }) {
           {invariantText(template, locale)}
         </p>
         <label className="settings__prompt-field">
-          {t("settings.prompts.zhLabel")}
+          {t("settings.prompts.ptLabel")}
           <textarea
-            value={draft["zh-CN"]}
+            value={draft["pt-BR"]}
             rows={12}
             spellCheck={false}
             onChange={(event) =>
               setDraft((current) => ({
                 ...current,
-                "zh-CN": event.target.value,
+                "pt-BR": event.target.value,
               }))
             }
           />

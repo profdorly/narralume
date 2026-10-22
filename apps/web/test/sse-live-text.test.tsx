@@ -33,7 +33,7 @@ function Probe({ clearSignal }: { clearSignal: string | null }) {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
 });
 
 afterEach(() => {

@@ -1,14 +1,14 @@
 import type { ProjectLanguage } from "@narralume/contracts";
 
-/** AI 指令与产出跟随作品语言（project.language），与界面语言无关。
- *  未知值回落中文，覆盖存量数据与缺省路径。 */
+/** AI instructions and output follow project.language, not the UI locale.
+ *  Unknown values fall back to Brazilian Portuguese. */
 export function promptLanguageOf(
   language: string | null | undefined,
 ): ProjectLanguage {
-  return language === "en" ? "en" : "zh-CN";
+  return language === "en" ? "en" : "pt-BR";
 }
 
-/** 按项目语言取双语指令表并拼接为 system instructions。 */
+/** Pick a bilingual instruction table and join as system instructions. */
 export function instructionsFor(
   language: string | null | undefined,
   table: Record<ProjectLanguage, readonly string[]>,
@@ -16,7 +16,8 @@ export function instructionsFor(
   return table[promptLanguageOf(language)].join("\n");
 }
 
-/** 解析模板生效内容：双语 JSON（{"zh-CN": "...", "en": "..."}）；纯文本视为中文。 */
+/** Parse template content: bilingual JSON `{"pt-BR": "...", "en": "..."}`;
+ *  plain text is treated as Portuguese. */
 export function editableInstructionOf(
   content: string,
   language: ProjectLanguage,
@@ -25,15 +26,15 @@ export function editableInstructionOf(
   if (!trimmed) return null;
   try {
     const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    const text = parsed[language];
+    const text =
+      parsed[language] ?? (language === "pt-BR" ? parsed["pt-BR"] : undefined);
     return typeof text === "string" && text.trim() ? text.trim() : null;
   } catch {
     return language === "en" ? null : trimmed;
   }
 }
 
-/** 作品写作法：chapter-draft 写作层的生效内容（override ?? 官方默认）。
- *  重写产出正文的步骤（修订、选区编辑、共创场景化）共用，使写作法成为作品属性而非步骤属性。 */
+/** Work craft layer: effective chapter-draft instructions (override ?? official default). */
 export function workCraftLayer(options: {
   language: ProjectLanguage;
   templateContent: string | null;
@@ -47,8 +48,9 @@ export function workCraftLayer(options: {
   return (authored ?? fallback[language]).trim();
 }
 
-/** 替换式指令组装：模板生效内容整体替换默认写作层；可选 craft 为作品写作法，
- *  追加在步骤指令之后；结构不变量始终由代码追加，不受模板内容影响。 */
+/** Replace-style instruction assembly: template content replaces the default
+ *  craft layer; optional craft is the work writing method; invariants always
+ *  come from code. */
 export function authoredInstructions(options: {
   language: ProjectLanguage;
   templateContent: string | null;

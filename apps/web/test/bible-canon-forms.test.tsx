@@ -77,7 +77,7 @@ const FACT_LOCKED = {
 const OUTLINE = [
   {
     id: "book-1", projectId: "p-1", parentId: null, kind: "book", path: "/book-1", depth: 0, ordinal: 0,
-    title: "全书", summary: null, goal: null, conflict: null, outcome: null, povEntityId: null, storyTime: null,
+    title: "Livro", summary: null, goal: null, conflict: null, outcome: null, povEntityId: null, storyTime: null,
     status: "planned", metadata: {}, createdAt: "2026-08-01T10:00:00.000Z", updatedAt: "2026-08-01T10:00:00.000Z",
   },
   {
@@ -102,8 +102,8 @@ const BIBLE = {
     id: "p-1",
     title: "潮汐灯塔",
     subtitle: null,
-    premise: "港口每年都会遗忘一个人。",
-    language: "zh-CN",
+    premise: "O porto esquece uma pessoa por ano.",
+    language: "pt-BR",
     phase: "writing",
     archivedAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
@@ -175,13 +175,13 @@ function optionValues(combobox: HTMLElement) {
 
 // 编辑面板里还有上下文预览表单的“保存”，板块表单的在 DOM 中排第一。
 function clickSave() {
-  const button = screen.getAllByRole("button", { name: "保存" })[0];
+  const button = screen.getAllByRole("button", { name: "Salvar" })[0];
   expect(button).toBeDefined();
   fireEvent.click(button as HTMLElement);
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -206,13 +206,13 @@ afterEach(() => {
 it("实体表单的类型/状态选项与契约枚举一致（CR-17）", async () => {
   renderBible("/projects/p-1/bible?spread=entities", []);
 
-  const typeSelect = await screen.findByRole("combobox", { name: "类型" });
+  const typeSelect = await screen.findByRole("combobox", { name: "Tipo" });
   expect(optionValues(typeSelect)).toEqual([...CanonEntityTypeSchema.options]);
 
-  fireEvent.change(screen.getByRole("combobox", { name: "编辑对象" }), {
+  fireEvent.change(screen.getByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "e-shenyan" },
   });
-  const statusSelect = await screen.findByRole("combobox", { name: "状态" });
+  const statusSelect = await screen.findByRole("combobox", { name: "Status" });
   expect(optionValues(statusSelect)).toEqual(["active", "retired"]);
 });
 
@@ -220,10 +220,10 @@ it("新建/更新实体只提交契约内的枚举值（CR-17）", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=entities", requests);
 
-  fireEvent.change(await screen.findByRole("combobox", { name: "类型" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Tipo" }), {
     target: { value: "item" },
   });
-  fireEvent.change(screen.getByRole("textbox", { name: "名称" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Nome" }), {
     target: { value: "空白信" },
   });
   clickSave();
@@ -238,10 +238,10 @@ it("新建/更新实体只提交契约内的枚举值（CR-17）", async () => {
     ).toBe(true),
   );
 
-  fireEvent.change(screen.getByRole("combobox", { name: "编辑对象" }), {
+  fireEvent.change(screen.getByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "e-shenyan" },
   });
-  fireEvent.change(await screen.findByRole("combobox", { name: "状态" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Status" }), {
     target: { value: "retired" },
   });
   clickSave();
@@ -261,13 +261,13 @@ it("新建事实默认提交文本值，objectEntityId 置 null（CR-18）", asy
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
-  expect(await screen.findByRole("combobox", { name: "宾语" })).toHaveValue(
+  expect(await screen.findByRole("combobox", { name: "Objeto" })).toHaveValue(
     "value",
   );
-  fireEvent.change(screen.getByRole("textbox", { name: "谓词" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Predicado" }), {
     target: { value: "职业" },
   });
-  fireEvent.change(screen.getByRole("textbox", { name: "值" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Valor" }), {
     target: { value: "纸张修复师" },
   });
   clickSave();
@@ -289,16 +289,16 @@ it("新建事实可选择实体作为宾语，value 不随请求提交（CR-18�
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
-  fireEvent.change(await screen.findByRole("combobox", { name: "宾语" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Objeto" }), {
     target: { value: "entity" },
   });
-  fireEvent.change(screen.getByRole("combobox", { name: "宾语实体" }), {
+  fireEvent.change(screen.getByRole("combobox", { name: "Entidade objeto" }), {
     target: { value: "e-post-office" },
   });
-  fireEvent.change(screen.getByRole("textbox", { name: "谓词" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Predicado" }), {
     target: { value: "常去" },
   });
-  expect(screen.queryByRole("textbox", { name: "值" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: "Valor" })).not.toBeInTheDocument();
   clickSave();
 
   await waitFor(() => expect(requests).toHaveLength(1));
@@ -314,14 +314,14 @@ it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18�
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
-  fireEvent.change(await screen.findByRole("combobox", { name: "编辑对象" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "f-entity" },
   });
   // 既有实体宾语事实进入实体模式，不再被迫填写文本值。
-  expect(await screen.findByRole("combobox", { name: "宾语" })).toHaveValue(
+  expect(await screen.findByRole("combobox", { name: "Objeto" })).toHaveValue(
     "entity",
   );
-  expect(screen.getByRole("combobox", { name: "宾语实体" })).toHaveValue(
+  expect(screen.getByRole("combobox", { name: "Entidade objeto" })).toHaveValue(
     "e-post-office",
   );
 
@@ -335,10 +335,10 @@ it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18�
   expect("value" in (requests[0]?.body ?? {})).toBe(false);
 
   // 切换为文本值后，objectEntityId 置 null、提交新文本。
-  fireEvent.change(screen.getByRole("combobox", { name: "宾语" }), {
+  fireEvent.change(screen.getByRole("combobox", { name: "Objeto" }), {
     target: { value: "value" },
   });
-  fireEvent.change(screen.getByRole("textbox", { name: "值" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Valor" }), {
     target: { value: "灯塔看守人" },
   });
   clickSave();
@@ -352,9 +352,9 @@ it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18�
 it("新建大纲时只允许领域树规定的父子层级（CR-20）", async () => {
   renderBible("/projects/p-1/bible?spread=outline", [], { ...BIBLE, outline: [...OUTLINE] });
 
-  const parent = await screen.findByRole("combobox", { name: "父节点" });
+  const parent = await screen.findByRole("combobox", { name: "Nó pai" });
   expect(optionValues(parent)).toEqual(["book-1", "volume-1", "chapter-1"]);
-  expect(optionValues(screen.getByRole("combobox", { name: "类型" }))).toEqual([
+  expect(optionValues(screen.getByRole("combobox", { name: "Tipo" }))).toEqual([
     "volume",
     "arc",
     "chapter",
@@ -362,35 +362,35 @@ it("新建大纲时只允许领域树规定的父子层级（CR-20）", async ()
 
   fireEvent.change(parent, { target: { value: "chapter-1" } });
   await waitFor(() =>
-    expect(optionValues(screen.getByRole("combobox", { name: "类型" }))).toEqual([
+    expect(optionValues(screen.getByRole("combobox", { name: "Tipo" }))).toEqual([
       "scene",
       "beat",
     ]),
   );
-  expect(screen.getByText("章节下可建：场景、节拍")).toBeInTheDocument();
+  expect(screen.getByText("Permitido sob Capítulo: Cena, Beat")).toBeInTheDocument();
 });
 
 it("修改或撤回锁定事实前要求用户明确确认（CR-19）", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests, { ...BIBLE, facts: [FACT_ENTITY, FACT_LOCKED] });
 
-  fireEvent.change(await screen.findByRole("combobox", { name: "编辑对象" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "f-locked" },
   });
   clickSave();
-  expect(await screen.findByRole("alertdialog", { name: "修改锁定事实" })).toBeInTheDocument();
+  expect(await screen.findByRole("alertdialog", { name: "Modificar fato travado" })).toBeInTheDocument();
   expect(requests).toHaveLength(0);
-  fireEvent.click(screen.getByRole("button", { name: "确认修改" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar modificação" }));
   await waitFor(() => expect(requests).toHaveLength(1));
   expect(requests[0]?.body.confirmLockedRevision).toBe(true);
 
-  fireEvent.change(screen.getByRole("textbox", { name: "撤回原因" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Motivo da retirada" }), {
     target: { value: "设定已废弃" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "撤回事实" }));
-  expect(await screen.findByRole("alertdialog", { name: "撤回锁定事实" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Retirar fato" }));
+  expect(await screen.findByRole("alertdialog", { name: "Retirar fato travado" })).toBeInTheDocument();
   expect(requests).toHaveLength(1);
-  fireEvent.click(screen.getByRole("button", { name: "确认撤回" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar retirada" }));
   await waitFor(() => expect(requests).toHaveLength(2));
   expect(requests[1]?.body).toMatchObject({
     reason: "设定已废弃",

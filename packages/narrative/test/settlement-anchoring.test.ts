@@ -288,22 +288,22 @@ describe("settlement timeline anchoring", () => {
 
     const issues = captured.issues.join("\n");
     expect(issues).toContain(
-      "timelineCandidates.0.anchorEventId: 事件 anchored-letter 已锚定到章节",
+      "timelineCandidates.0.anchorEventId: o evento anchored-letter já está ancorado a um capítulo e não pode ser ancorado de novo (se este capítulo só o menciona, cite-o em causeEventIds; evento novo usa null)",
     );
     // Voided events are no longer current, so they are unknown here.
     expect(issues).toContain(
-      "timelineCandidates.1.anchorEventId: 未知时间线事件 ID voided-storm",
+      "timelineCandidates.1.anchorEventId: ID de evento da linha do tempo desconhecido voided-storm (só eventos listados no contexto ainda sem âncora de capítulo; evento novo usa null)",
     );
     expect(issues).toContain(
-      "timelineCandidates.2.anchorEventId: 未知时间线事件 ID no-such-event",
+      "timelineCandidates.2.anchorEventId: ID de evento da linha do tempo desconhecido no-such-event (só eventos listados no contexto ainda sem âncora de capítulo; evento novo usa null)",
     );
     expect(issues).toContain(
-      "timelineCandidates.3.title: 锚定已有事件时 title 必须原样照抄该事件的标题「Helena chega a Vila do Sal」",
+      "timelineCandidates.3.title: ao ancorar um evento existente, title deve copiar exatamente o título “Helena chega a Vila do Sal”",
     );
     expect(issues).toContain("timelineCandidates.3.description:");
     expect(issues).toContain("timelineCandidates.3.participantIds:");
     expect(issues).toContain(
-      "timelineCandidates.5.anchorEventId: 同一个事件 imported-lighthouse 只能锚定一次",
+      "timelineCandidates.5.anchorEventId: o mesmo evento imported-lighthouse só pode ser ancorado uma vez",
     );
     expect(issues).not.toContain("timelineCandidates.4.");
 
@@ -369,7 +369,7 @@ describe("settlement timeline anchoring", () => {
     expect(captured.content).not.toContain("<settlement-note>");
     expect(captured.instructions).not.toContain("Anchoring rules");
     expect(captured.issues).toEqual([
-      "timelineCandidates.0.anchorEventId: 只有「从正文补全故事圣经」的逐章结算可以锚定已有事件；本次结算的 anchorEventId 必须为 null（新建事件）",
+      "timelineCandidates.0.anchorEventId: só o acerto capítulo a capítulo de “completar a Bíblia da história a partir do manuscrito” pode ancorar eventos existentes; neste acerto, anchorEventId deve ser null (evento novo)",
     ]);
     expect(
       state.listTimeline("p1").find((event) => event.id === "imported-arrival")

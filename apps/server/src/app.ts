@@ -287,7 +287,7 @@ export async function buildApp(
     reply.header(
       "content-security-policy",
       servesWeb
-        ? "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https: http:; worker-src 'self' blob:; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+        ? "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https: http:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
         : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
     );
     reply.header(

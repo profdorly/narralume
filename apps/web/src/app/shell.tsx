@@ -28,7 +28,7 @@ import {
   subscribeAssistantContext,
   type AssistantContextPatch,
 } from "./assistant-page-context";
-import { ProjectAssistant } from "./project-assistant";
+import { ProjectAssistant } from "./assistant";
 import { useTheme } from "./theme";
 import {
   ADVANCED_WORKSPACES,
@@ -176,7 +176,7 @@ export function RepositoryLink() {
 
 function LanguageToggle() {
   const { locale, setLocale, t } = useI18n();
-  const next = locale === "zh-CN" ? "en" : "zh-CN";
+  const next = locale === "pt-BR" ? "en" : "pt-BR";
   return (
     <IconButton
       icon={Languages}
@@ -320,8 +320,8 @@ function ShellFrame() {
             label={t("shell.seal.current", { seal: current.seal })}
           />
           <div className="rail__brand-text mono" aria-hidden="true">
-            <span>叙灯</span>
-            <span className="rail__brand-en">NarraLume</span>
+            <span>NarraLume</span>
+            <span className="rail__brand-en">escrita</span>
           </div>
         </div>
         <nav className="rail__nav" aria-label={t("shell.nav.aria")}>
@@ -331,11 +331,19 @@ function ShellFrame() {
           <p className="rail__group-label">{t("shell.groups.quick")}</p>
           {QUICK_WORKSPACES.map((item) => NaviLink(item, projectId, current, currentPath))}
         </div>
-        <div className="rail__tools-nav" aria-label={t("shell.groups.advanced")}>
-          <p className="rail__group-label">{t("shell.groups.advanced")}</p>
-          {ADVANCED_WORKSPACES.map((item) => NaviLink(item, projectId, current, currentPath))}
-        </div>
+        <details className="rail__tools-nav" aria-label={t("shell.groups.advanced")}>
+          <summary className="rail__group-label">{t("shell.groups.advanced")}</summary>
+          {ADVANCED_WORKSPACES.filter((item) => item.id !== "supply").map((item) =>
+            NaviLink(item, projectId, current, currentPath),
+          )}
+        </details>
         <div className="rail__tools">
+          {NaviLink(
+            ADVANCED_WORKSPACES.find((item) => item.id === "supply")!,
+            projectId,
+            current,
+            currentPath,
+          )}
           <StatusPill />
           <div className="rail__tools-row">
             <RepositoryLink />

@@ -51,10 +51,10 @@ describe("可选静态托管（NARRATIVE_STATIC_DIR）", () => {
     expect(index.statusCode).toBe(200);
     expect(index.body).toContain("灯");
     expect(index.headers["content-security-policy"]).toContain(
-      "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
+      "script-src 'self' 'wasm-unsafe-eval'",
     );
     expect(index.headers["content-security-policy"]).toContain(
-      "frame-src https://challenges.cloudflare.com",
+      "frame-ancestors 'none'",
     );
     const asset = await app.inject({ method: "GET", url: "/assets/app.js" });
     expect(asset.statusCode).toBe(200);

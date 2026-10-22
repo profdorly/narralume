@@ -9,8 +9,10 @@ export interface RunStepSeed {
   maxAttempts: number;
 }
 
+export type ChapterRecipeName = "chapter-production" | "short-story";
+
 export interface ChapterRecipe {
-  name: "chapter-production";
+  name: ChapterRecipeName;
   version: number;
   maxRevisionCycles: number;
   steps: readonly RunStepSeed[];
@@ -75,6 +77,11 @@ export function buildChapterRecipe(
     maxRevisionCycles: boundedCycles,
     steps,
   };
+}
+
+/** Conto / texto curto: um único ciclo de revisão (sem voltas de rewrite). */
+export function buildShortStoryRecipe(runId: string): ChapterRecipe {
+  return { ...buildChapterRecipe(runId, 0), name: "short-story" };
 }
 
 export function buildRequestedRevisionRecipe(

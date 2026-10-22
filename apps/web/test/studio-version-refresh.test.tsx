@@ -8,6 +8,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { setLocale } from "../src/i18n";
 import { StudioWorkspace } from "../src/workspaces/studio";
+import { manuscriptMarkdown } from "./manuscript-helpers";
 
 /* CR-24：正式版本变化后，编辑器必须随新的 currentVersion 重新装载正文。 */
 
@@ -68,7 +69,7 @@ function json(value: unknown, status = 200) {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -133,18 +134,16 @@ it("恢复历史版本后编辑器正文随新 currentVersion 重新装载（CR-
     </QueryClientProvider>,
   );
 
-  const editor = await screen.findByLabelText<HTMLTextAreaElement>(
-    "Markdown 正文编辑器",
-  );
-  await waitFor(() => expect(editor.value).toBe("VERSION-TWO"));
-  expect(screen.getByText("草稿已同步")).toBeInTheDocument();
+  const editor = await screen.findByLabelText("Editor do corpo em Markdown");
+  await waitFor(() => expect(manuscriptMarkdown(editor)).toBe("VERSION-TWO"));
+  expect(screen.getByText("Rascunho sincronizado")).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("tab", { name: /版本/ }));
-  fireEvent.click(screen.getByRole("button", { name: /恢复/ }));
-  fireEvent.click(screen.getByRole("button", { name: "恢复为新版本" }));
+  fireEvent.click(screen.getByRole("tab", { name: /Versões/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Restaurar/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Restaurar como nova versão" }));
 
-  await waitFor(() => expect(editor.value).toBe("VERSION-ONE"));
+  await waitFor(() => expect(manuscriptMarkdown(editor)).toBe("VERSION-ONE"));
   await waitFor(() =>
-    expect(screen.getByText("草稿已同步")).toBeInTheDocument(),
+    expect(screen.getByText("Rascunho sincronizado")).toBeInTheDocument(),
   );
 });

@@ -24,8 +24,8 @@ const BIBLE = {
     id: "p-1-tides",
     title: "潮汐灯塔",
     subtitle: null,
-    premise: "港口每年都会遗忘一个人。",
-    language: "zh-CN",
+    premise: "O porto esquece uma pessoa por ano.",
+    language: "pt-BR",
     phase: "writing",
     archivedAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
@@ -210,7 +210,7 @@ function renderBible(entry = "/projects/p-1-tides/bible") {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -233,7 +233,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("故事圣经", () => {
+describe("Bíblia da história", () => {
   it("全书看板沿用章节顺序，支持筛选并跳转伏笔证据", async () => {
     const bible = { ...structuredClone(BIBLE), foreshadows: BIBLE.foreshadows.map((clue) => ({ ...clue,
       targetFromNodeId: "n-ch-1", targetToNodeId: "n-ch-1", evidenceNodeIds: ["n-ch-1"],
@@ -243,20 +243,20 @@ describe("故事圣经", () => {
       return json([]);
     }));
     renderBible("/projects/p-1-tides/bible?spread=outline&view=board");
-    await screen.findByRole("heading", { name: "看清整部故事" });
-    expect(screen.getByText("共 1 章 · 已定稿 1 章")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "进入写作" })).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-1");
-    fireEvent.click(screen.getByText("相关伏笔 1 条"));
+    await screen.findByRole("heading", { name: "Ver a história inteira" });
+    expect(screen.getByText("1 capítulos · 1 registrados")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Abrir na mesa de escrita" })).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-1");
+    fireEvent.click(screen.getByText("1 preparações relacionadas"));
     expect(screen.getByRole("link", { name: "第一章 灯下潮痕" })).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-1");
-    fireEvent.change(screen.getByRole("combobox", { name: "章节状态" }), { target: { value: "planned" } });
-    expect(screen.getByText("没有符合筛选条件的章节。")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "进入写作" })).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "章节状态" }), { target: { value: "all" } });
-    fireEvent.change(screen.getByRole("combobox", { name: "视角人物" }), { target: { value: "unknown" } });
-    expect(screen.getByRole("link", { name: "进入写作" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Status do capítulo" }), { target: { value: "planned" } });
+    expect(screen.getByText("Nenhum capítulo corresponde a estes filtros.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Abrir na mesa de escrita" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Status do capítulo" }), { target: { value: "all" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Personagem de POV" }), { target: { value: "unknown" } });
+    expect(screen.getByRole("link", { name: "Abrir na mesa de escrita" })).toBeInTheDocument();
   });
 
-  it("每次只摊开一个 Canon Spread，并在同一纸幅编辑", async () => {
+  it("Editar 每次只摊开一个 Canon Spread，并在同一纸幅", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1-tides/story-bible") return json(BIBLE);
@@ -275,45 +275,47 @@ describe("故事圣经", () => {
     await screen.findAllByText("每一次取回记忆，都要付出可见且不可逆的代价。");
     expect(screen.getAllByText("潮汐灯塔").length).toBeGreaterThan(0);
     const intentSpread = screen.getByRole("article", {
-      name: "意图阅读与编辑",
+      name: "Leitura e edição de Intenção",
     });
-    expect(within(intentSpread).getByRole("heading", { name: "作者意图" })).toBeInTheDocument();
-    expect(within(intentSpread).getByRole("heading", { name: "编辑此页" })).toBeInTheDocument();
-    expect(screen.queryByText("大纲纲目")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "查看意图" })).toHaveAttribute(
+    expect(within(intentSpread).getByRole("heading", { name: "Intenção da autoria" })).toBeInTheDocument();
+    expect(within(intentSpread).getByRole("heading", { name: "Editar esta página" })).toBeInTheDocument();
+    expect(
+      within(intentSpread).queryByRole("heading", { name: "Estrutura" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver Intenção" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "查看大纲" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Ver Estrutura" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "查看大纲" }));
-    expect(screen.getByRole("article", { name: "大纲阅读与编辑" })).toBeInTheDocument();
-    expect(screen.getByText("大纲纲目")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver Estrutura" }));
+    expect(screen.getByRole("article", { name: "Leitura e edição de Estrutura" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Estrutura" })).toBeInTheDocument();
     expect(screen.getAllByText("第一章 灯下潮痕").length).toBeGreaterThan(0);
     expect(
       screen.queryByText("每一次取回记忆，都要付出可见且不可逆的代价。"),
     ).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "编辑对象" }), { target: { value: "n-ch-1" } });
-    expect(await screen.findByRole("link", { name: /去写作台写本章/ })).toHaveAttribute(
+    fireEvent.change(screen.getByRole("combobox", { name: "Alvo da edição" }), { target: { value: "n-ch-1" } });
+    expect(await screen.findByRole("link", { name: /Escrever este capítulo na mesa de escrita/ })).toHaveAttribute(
       "href",
       "/projects/p-1-tides/studio?outline=n-ch-1",
     );
-    expect(screen.queryByRole("button", { name: /生成本章/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Gerar este capítulo/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "查看实体" }));
-    expect(screen.getByText("实体册")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver Entidades" }));
+    expect(screen.getByRole("heading", { name: "Entidades" })).toBeInTheDocument();
     expect(screen.getAllByText(/纸张修复师/).length).toBeGreaterThan(0);
-    expect(screen.queryByText("大纲纲目")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Estrutura" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "查看关系" }));
-    expect(screen.getByText("关系谱")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver Relações" }));
+    expect(screen.getByRole("heading", { name: "Relações" })).toBeInTheDocument();
     expect(screen.getByText("沈砚 · 常客 · 回声邮局")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "查看伏笔" }));
-    expect(screen.getByText("伏笔谱")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver Antecipações" }));
+    expect(screen.getByRole("heading", { name: "Antecipações" })).toBeInTheDocument();
     expect(screen.getAllByText("空白信与消失的记忆").length).toBeGreaterThan(0);
   });
 
@@ -324,8 +326,8 @@ describe("故事圣经", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderBible("/missing");
 
-    expect(screen.getByRole("heading", { name: "故事" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "História" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -333,7 +335,7 @@ describe("故事圣经", () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(
         new Response(
-          JSON.stringify({ error: { code: "route.not_found", message: "接口不存在" } }),
+          JSON.stringify({ error: { code: "route.not_found", message: "Rota não encontrada" } }),
           { status: 404, headers: { "content-type": "application/json" } },
         ),
       ),
@@ -341,10 +343,10 @@ describe("故事圣经", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderBible();
 
-    await screen.findByText("接口不存在");
+    await screen.findByText("Rota não encontrada");
     // 反断言：不渲染板块
-    expect(screen.queryByText("作者意图")).not.toBeInTheDocument();
-    expect(screen.queryByText("大纲纲目")).not.toBeInTheDocument();
+    expect(screen.queryByText("Intenção da autoria")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Estrutura" })).not.toBeInTheDocument();
   });
 
   it("在当前分页面内展示候选差异，并对锁定内容进行二次确认", async () => {
@@ -423,13 +425,13 @@ describe("故事圣经", () => {
       await screen.findByRole("heading", { name: "收紧创作承诺" }),
     ).toBeInTheDocument();
     expect(screen.getByText("每封信都留下可见且不可逆的记忆代价。")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "采纳此项" }));
+    fireEvent.click(screen.getByRole("button", { name: "Adotar este item" }));
     expect(decisionBodies).toHaveLength(0);
     expect(
-      screen.getByText("这项会改变锁定内容。再次点击确认，或选择拒绝。"),
+      screen.getByText("Este item muda conteúdo travado. Clique de novo para confirmar, ou escolha recusar."),
     ).toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole("button", { name: "确认修改锁定内容" }),
+      screen.getByRole("button", { name: "Confirmar mudança de conteúdo travado" }),
     );
     await waitFor(() =>
       expect(decisionBodies).toEqual([

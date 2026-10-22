@@ -1,6 +1,6 @@
-import type { runs as runsZh } from "../zh/runs";
+import type { runs as runsPt } from "../pt-BR/runs";
 
-export const runs: typeof runsZh = {
+export const runs: typeof runsPt = {
   title: "Run Center",
   volumeMeta: "{runs} runs / {issues} issues",
   issueArchiveLabel: "Issue archive",
@@ -66,7 +66,7 @@ export const runs: typeof runsZh = {
       "Partial is fewer than {count} characters; it can only be discarded or regenerated.",
   },
   missing: {
-    seal: "行",
+    seal: "X",
     description:
       "Select a project to review each AI run's process, results, model usage, and failure reasons here.",
   },

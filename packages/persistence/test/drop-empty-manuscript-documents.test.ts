@@ -13,7 +13,7 @@ describe("migration 036 (drop-empty-manuscript-documents)", () => {
     const now = "2026-08-16T00:00:00.000Z";
     const insertProject = database.raw.prepare(
       `INSERT INTO projects(id, title, subtitle, premise, language, phase, archived_at, created_at, updated_at)
-       VALUES ('p-1', '样本', NULL, NULL, 'zh-CN', 'idea', NULL, ?, ?)`,
+       VALUES ('p-1', '样本', NULL, NULL, 'pt-BR', 'idea', NULL, ?, ?)`,
     );
     insertProject.run(now, now);
     const insertDocument = database.raw.prepare(

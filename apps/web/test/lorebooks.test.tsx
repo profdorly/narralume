@@ -73,7 +73,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-beforeEach(() => setLocale("zh-CN"));
+beforeEach(() => setLocale("pt-BR"));
 
 describe("世界书编辑器", () => {
   it("保存房间绑定并创建关键词条目", async () => {
@@ -129,11 +129,11 @@ describe("世界书编辑器", () => {
       </QueryClientProvider>,
     );
 
-    fireEvent.change(screen.getByLabelText("编辑对象"), {
+    fireEvent.change(screen.getByLabelText("Editando"), {
       target: { value: "book-1" },
     });
     const roomBinding = await screen.findByLabelText(
-      "绑定到当前故事房：潮汐房",
+      "Vincular a esta sala da história: 潮汐房",
     );
     fireEvent.click(roomBinding);
     await waitFor(() => {
@@ -148,17 +148,17 @@ describe("世界书编辑器", () => {
       });
     });
 
-    fireEvent.click(screen.getByText("添加世界信息"));
-    fireEvent.change(screen.getByLabelText("标题"), {
+    fireEvent.click(screen.getByText("Adicionar informação do mundo"));
+    fireEvent.change(screen.getByLabelText("Título"), {
       target: { value: "盐钟" },
     });
-    fireEvent.change(screen.getByLabelText("内容"), {
+    fireEvent.change(screen.getByLabelText("Conteúdo"), {
       target: { value: "盐钟只在退潮时走动。" },
     });
-    fireEvent.change(screen.getByLabelText("触发关键词"), {
+    fireEvent.change(screen.getByLabelText("Palavras-chave de disparo"), {
       target: { value: "盐钟\n退潮" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "创建条目" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar entrada" }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>

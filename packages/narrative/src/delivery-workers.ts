@@ -515,26 +515,27 @@ export class DeliveryWorkerSuite {
 
 /** 拆书提示词（分段分析与合并）的版本，参与缓存产物的输入摘要。
  *  修改这两类提示词的指令或消息格式时递增，使旧提示词产出的缓存分析不再被复用。 */
-const IMPORT_ANALYSIS_PROMPT_VERSION = "import-analysis-prompt-3";
+const IMPORT_ANALYSIS_PROMPT_VERSION = "import-analysis-prompt-4";
 
-/** 拆书候选的产出语言跟随原文，而非指令语言：作品语言只有 zh-CN / en，
- *  其他语言（如葡语）的原稿也必须得到同语言的候选。 */
+/** Candidate language follows the source manuscript, not the instruction
+ *  language: project.language is only pt-BR / en, but a manuscript in another
+ *  language must still receive candidates in that language. */
 const IMPORT_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
-  "zh-CN":
-    "语言不变量：所有自然语言字段（title、synopsis、themes、audience、tone、boundaries、实体描述、关系、时间线、伏笔、角色弧、场景、风格档案与 Skill 的文字）必须使用与原文正文相同的语言书写，即使它不同于本指令的语言；人物、地点等专有名词保留原文写法，不得翻译。字段名与枚举值保持结构定义不变。",
+  "pt-BR":
+    "Invariante de idioma: todos os campos em linguagem natural (title, synopsis, themes, audience, tone, boundaries, descrições de entidades, relações, linha do tempo, pistas, arcos de personagem, cenas, perfil de estilo e textos de Skill) devem ser escritos no mesmo idioma do texto original do manuscrito, mesmo que difira do idioma destas instruções; nomes próprios de personagens, lugares e afins permanecem exatamente como no original, sem traduzir. Nomes de campos e valores de enum permanecem como definidos pelo esquema.",
   en: "Language invariant: write every natural-language field (title, synopsis, themes, audience, tone, boundaries, entity descriptions, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and Skill texts) in the same language as the source manuscript text, even when it differs from the language of these instructions; keep character, place, and other proper names exactly as written in the source, never translated. Field names and enum values stay as defined by the schema.",
 };
 
 /** 合并步骤看不到原稿，只能沿用输入分析的语言；指令与用户消息都明确要求这一点。 */
 const IMPORT_SYNTHESIS_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
-  "zh-CN":
-    "语言不变量：保持输入分析的语言。合并结果的所有自然语言字段保持与输入分析相同的原文语言，不得翻译成本指令的语言；专有名词保留原文写法。字段名与枚举值保持结构定义不变。",
+  "pt-BR":
+    "Invariante de idioma: mantenha o idioma das análises de entrada. Todos os campos em linguagem natural do resultado mesclado permanecem no mesmo idioma do manuscrito original das análises de entrada; nunca traduza para o idioma destas instruções; nomes próprios permanecem exatamente como no original. Nomes de campos e valores de enum permanecem como definidos pelo esquema.",
   en: "Language invariant: Keep the language of the input analyses. Keep every natural-language field of the merged result in the same source-manuscript language as the input analyses; never translate it into the language of these instructions, and keep proper names exactly as written. Field names and enum values stay as defined by the schema.",
 };
 
 const IMPORT_SYNTHESIS_MESSAGE_LEAD: Record<ProjectLanguage, string> = {
-  "zh-CN":
-    "保持输入分析的语言：合并结果沿用 <accumulated> 与 <next> 中自然语言字段已经使用的语言，不要翻译。",
+  "pt-BR":
+    "Mantenha o idioma das análises de entrada: o resultado mesclado segue o idioma já usado pelos campos em linguagem natural de <accumulated> e <next>; não traduza.",
   en: "Keep the language of the input analyses: write the merged result in the language already used by the natural-language fields of <accumulated> and <next>; do not translate.",
 };
 
@@ -542,7 +543,10 @@ const IMPORT_STAGE_LABELS: Record<
   ProjectLanguage,
   { intent: string; characterArc: string }
 > = {
-  "zh-CN": { intent: "作者意图候选", characterArc: "角色弧" },
+  "pt-BR": {
+    intent: "Candidato de intenção do autor",
+    characterArc: "Arco de personagem",
+  },
   en: { intent: "Author intent candidate", characterArc: "Character arc" },
 };
 
@@ -572,13 +576,13 @@ function importAnalysisMessage(input: {
           "Deconstruct the synopsis, themes, audience, tone boundaries, entities, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and 1-4 general-purpose writing Skills.",
         ]
       : [
-          `目标作品：《${input.projectTitle}》`,
-          input.premise ? `已有命题：${input.premise}` : "",
-          `导入文件：${input.filename}`,
+          `Obra-alvo: «${input.projectTitle}»`,
+          input.premise ? `Premissa já existente: ${input.premise}` : "",
+          `Arquivo importado: ${input.filename}`,
           hint,
-          `分段 ${input.segment}/${input.segments}`,
-          `正文：\n${input.text}`,
-          "请拆解概要、主题、受众、语气边界、实体、关系、时间线、伏笔、角色弧、场景、风格档案与 1-4 条通用写作 Skill。",
+          `Segmento ${input.segment}/${input.segments}`,
+          `Texto:\n${input.text}`,
+          "Desmonte sinopse, temas, público, limites de tom, entidades, relações, linha do tempo, pistas, arcos de personagem, cenas, perfil de estilo e 1-4 Skills de escrita de uso geral.",
         ];
   return lines.filter(Boolean).join("\n\n");
 }
@@ -596,13 +600,13 @@ function importAnalysisRequest(input: {
 }) {
   return {
     instructions: instructionsFor(input.language, {
-      "zh-CN": [
-        "你是长篇小说拆书编辑。只分析给定文本，不续写、不补齐、不模仿原句。",
-        "输出是待作者裁定的候选，不是正典。实体必须有文本依据；不确定时宁缺毋滥。",
-        "风格规则要可操作且与题材事实分离；examples 只能摘取很短的原文片段。",
-        "Writing Skill 是可开关的流程指令，不能包含具体人物、世界事实或要求复制原文。",
-        "分开提取关系、时间线、伏笔、角色弧和场景；每一项必须用 evidenceParagraphs 给出本分段中带 [P#] 标签的一个或多个原文段号。",
-        IMPORT_LANGUAGE_INVARIANT["zh-CN"],
+      "pt-BR": [
+        "Você é o editor de desmontagem de um romance de longo fôlego. Analise só o texto dado; não continue a história, não preencha lacunas e não imite as frases originais.",
+        "A saída é um conjunto de candidatos à espera do julgamento do autor, não cânone. Entidades precisam de evidência textual; na dúvida, prefira omitir a incluir.",
+        "Regras de estilo devem ser acionáveis e separadas dos fatos de gênero; examples só podem citar trechos muito curtos do original.",
+        "Uma Writing Skill é uma instrução de processo ligável e desligável: não pode conter personagens concretos, fatos de mundo nem exigência de copiar o original.",
+        "Extraia relações, linha do tempo, pistas, arcos de personagem e cenas em separado; cada item deve citar um ou mais parágrafos originais deste segmento com etiqueta [P#] em evidenceParagraphs.",
+        IMPORT_LANGUAGE_INVARIANT["pt-BR"],
       ],
       en: [
         "You are the deconstruction editor of a long-form novel. Analyze only the given text; do not continue it, fill gaps, or imitate its sentences.",
@@ -632,12 +636,12 @@ function importSynthesisRequest(
 ) {
   return {
     instructions: instructionsFor(language, {
-      "zh-CN": [
-        "你是长篇拆书结果的合并编辑。合并两份分段分析，去重但不得丢弃后段独有信息。",
-        "证据 evidenceParagraphs 必须原样保留自输入分析，不得改写、合并段号或创造段号。",
-        "时间线按全书因果顺序重新编号；同名实体谨慎合并，无法确认时分别保留。",
-        "输出仍是同一份完整 ImportAnalysis JSON。",
-        IMPORT_SYNTHESIS_LANGUAGE_INVARIANT["zh-CN"],
+      "pt-BR": [
+        "Você é o editor de mescla dos resultados de desmontagem de um romance longo. Una duas análises de segmento, deduplicando sem descartar informação exclusiva do segmento posterior.",
+        "As evidências evidenceParagraphs devem ser preservadas tal como vieram das análises de entrada; nunca reescreva, una ou invente números de parágrafo.",
+        "Renumere a linha do tempo pela ordem causal do livro inteiro; una entidades de mesmo nome com cautela e, na dúvida, mantenha-as separadas.",
+        "A saída continua sendo o mesmo ImportAnalysis JSON completo.",
+        IMPORT_SYNTHESIS_LANGUAGE_INVARIANT["pt-BR"],
       ],
       en: [
         "You are the merge editor for long-form deconstruction results. Merge two segment analyses, deduplicating without dropping information unique to the later segment.",
@@ -846,12 +850,12 @@ function styleExtractionRequest(input: {
 }) {
   return {
     instructions: instructionsFor(input.language, {
-      "zh-CN": [
-        "你是文风分析师。从给定样文中提炼一份可执行的风格档案，供作者审核后启用。",
-        "rules 写可操作的笔法规则（句子节奏、叙述习惯、对话密度、情绪如何外化），不写题材与情节事实。",
-        "negativeRules 写样文里明确没有、照着写容易走味的倾向。",
-        "examples 只摘取样文中最能代表语感的短片段，每条尽量短。",
-        "name 起一个点明语感的短名，不用人名或书名。",
+      "pt-BR": [
+        "Você é um analista de estilo em prosa. Destile a amostra dada num perfil de estilo acionável, para o autor revisar e ativar.",
+        "rules enunciam regras de ofício acionáveis (ritmo da frase, hábitos de narração, densidade de diálogo, como a emoção se exterioriza), nunca fatos de gênero ou de enredo.",
+        "negativeRules enunciam tendências claramente ausentes da amostra que desviariam a voz se fossem adotadas.",
+        "examples citam só trechos curtos que melhor representam a voz.",
+        "name é um rótulo curto que descreve a voz, nunca o nome de uma pessoa ou de um livro.",
       ],
       en: [
         "You are a prose style analyst. Distill the given writing sample into an actionable style profile for the author to review and enable.",
@@ -864,11 +868,18 @@ function styleExtractionRequest(input: {
     messages: [
       {
         role: "user" as const,
-        content: [
-          `目标作品：《${input.projectTitle}》`,
-          `样文：\n${input.text}`,
-          "请提炼风格档案（name、description、rules、negativeRules、examples）。",
-        ].join("\n\n"),
+        content:
+          promptLanguageOf(input.language) === "en"
+            ? [
+                `Target work: "${input.projectTitle}"`,
+                `Writing sample:\n${input.text}`,
+                "Distill a style profile (name, description, rules, negativeRules, examples).",
+              ].join("\n\n")
+            : [
+                `Obra-alvo: «${input.projectTitle}»`,
+                `Amostra:\n${input.text}`,
+                "Destile um perfil de estilo (name, description, rules, negativeRules, examples).",
+              ].join("\n\n"),
       },
     ],
     reasoningEffort: "medium" as const,

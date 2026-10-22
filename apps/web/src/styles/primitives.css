@@ -1,0 +1,90 @@
+/* Shared layout primitives on top of tokens.css. Workspace CSS should
+   reuse these instead of inventing a new card/stack per surface. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+}
+
+.stack--tight {
+  gap: var(--space-2, 0.5rem);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.panel {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+
+.empty-hero {
+  max-width: 36rem;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+.empty-hero h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.empty-hero p {
+  color: var(--ink-soft);
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.choice-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  padding: 1.25rem;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.choice-card:hover,
+.choice-card:focus-visible {
+  border-color: var(--vera-hairline);
+  outline: none;
+}
+
+.choice-card strong {
+  font-size: 1.05rem;
+}
+
+.save-state {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+.editor-focus .shell,
+.editor-focus .rail {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+}

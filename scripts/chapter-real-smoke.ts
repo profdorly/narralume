@@ -138,9 +138,9 @@ try {
     new SqliteProjectRepository(database).insert(
       createProject({
         id: projectId,
-        title: `真实协议试写 · ${protocol}`,
+        title: `Prova real de protocolo · ${protocol}`,
         premise:
-          "守夜人发现，每当废弃车站的钟走慢一分钟，就会有人提前忘记明天。",
+          "O guarda-noturno percebe: cada minuto atrasado no relógio da estação abandonada faz alguém esquecer o amanhã.",
         now,
       }),
     );
@@ -152,7 +152,7 @@ try {
         parent: null,
         kind: "book",
         ordinal: 0,
-        title: "迟钟站",
+        title: "Estação do relógio atrasado",
         now,
       }),
     );
@@ -163,23 +163,29 @@ try {
         parent: root,
         kind: "chapter",
         ordinal: 0,
-        title: "慢下的一分钟",
-        summary: "守夜人苏砚第一次目睹站钟逆走，并发现旅客忘记了明日的约定。",
-        goal: "用可见行动建立钟与遗忘的因果规则",
-        conflict: "唯一的旅客坚持车站从来没有钟",
-        outcome: "苏砚留下可复验的记号，决定继续调查",
+        title: "O minuto que atrasa",
+        summary:
+          "O guarda-noturno vê o relógio da estação andar para trás e percebe que a passageira esqueceu o combinado de amanhã.",
+        goal: "Estabelecer, com ação visível, a regra causal entre o relógio e o esquecimento",
+        conflict: "A única passageira insiste que a estação nunca teve relógio",
+        outcome:
+          "Ele deixa uma marca verificável e decide continuar a investigação",
         now,
       }),
     );
     story.upsertAuthorIntent({
       projectId,
-      promise: "超自然规则必须可观察、有代价且前后一致。",
-      themes: ["记忆", "时间", "责任"],
-      audience: "成年类型小说读者",
-      tone: "克制、具体、带微弱悬疑",
-      boundaries: ["不使用模型自述", "不以总结段解释主题"],
+      promise:
+        "A regra sobrenatural precisa ser observável, ter custo e ser coerente.",
+      themes: ["memória", "tempo", "responsabilidade"],
+      audience: "leitores adultos de ficção de gênero",
+      tone: "contido, concreto, com suspense baixo",
+      boundaries: [
+        "sem metadiscurso do modelo",
+        "não explicar o tema num parágrafo-resumo",
+      ],
       endingDirection: null,
-      currentFocus: "建立第一条可验证规则",
+      currentFocus: "estabelecer a primeira regra verificável",
       lockedFields: ["promise", "boundaries"],
       updatedAt: now,
     });

@@ -30,8 +30,8 @@ function buildBible(entity: typeof BASE_ENTITY) {
       id: "p-1",
       title: "潮汐灯塔",
       subtitle: null,
-      premise: "港口每年都会遗忘一个人。",
-      language: "zh-CN",
+      premise: "O porto esquece uma pessoa por ano.",
+      language: "pt-BR",
       phase: "writing",
       archivedAt: null,
       createdAt: "2026-08-01T10:00:00.000Z",
@@ -58,7 +58,7 @@ function json(value: unknown, status = 200) {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -103,17 +103,17 @@ it("实体在别处更新后，已打开的编辑表单重置为最新内容（C
     </QueryClientProvider>,
   );
 
-  fireEvent.change(await screen.findByRole("combobox", { name: "编辑对象" }), {
+  fireEvent.change(await screen.findByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "e-shenyan" },
   });
   await waitFor(() =>
-    expect(screen.getByRole("textbox", { name: "名称" })).toHaveValue("沈砚"),
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("沈砚"),
   );
   // 用户开始编辑但尚未保存。
-  fireEvent.change(screen.getByRole("textbox", { name: "名称" }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Nome" }), {
     target: { value: "沈砚（未保存草稿）" },
   });
-  expect(screen.getByRole("textbox", { name: "名称" })).toHaveValue(
+  expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue(
     "沈砚（未保存草稿）",
   );
 
@@ -127,10 +127,10 @@ it("实体在别处更新后，已打开的编辑表单重置为最新内容（C
   await client.invalidateQueries({ queryKey: ["project", "p-1", "bible"] });
 
   await waitFor(() =>
-    expect(screen.getByRole("textbox", { name: "名称" })).toHaveValue("沈砚"),
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("沈砚"),
   );
   await waitFor(() =>
-    expect(screen.getByRole("textbox", { name: "描述" })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: "Descrição" })).toHaveValue(
       "AI 候选刚采纳的描述。",
     ),
   );

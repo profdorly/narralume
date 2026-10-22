@@ -1,5 +1,5 @@
-import type { storyState as storyStateZh } from "../zh/story-state";
-export const storyState: typeof storyStateZh = {
+import type { storyState as storyStatePt } from "../pt-BR/story-state";
+export const storyState: typeof storyStatePt = {
   title: "Chapter state",
   hint: "Inspect records through the end of this chapter, including its scenes, in manuscript order. These records help you check the story; they are not a line-by-line verification of the prose.",
   chapter: "Through chapter",

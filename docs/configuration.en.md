@@ -103,9 +103,7 @@ RELAY_MODEL=replace-me
 WEB_ORIGIN=https://app.example.com
 ```
 
-The Relay also needs `BRIDGE_ACCESS_CLIENT_ID`, `BRIDGE_ACCESS_CLIENT_SECRET`, `BRIDGE_SHARED_SECRET`, `TURNSTILE_SECRET_KEY`, and `SESSION_SIGNING_KEY`, written with `wrangler secret put`. Keep these values out of `wrangler.toml`, command-line arguments, screenshots, and Issues.
-
-`api.example.com`, `app.example.com`, and `replace-me` are placeholders. For deployment commands, Cloudflare secret setup, and smoke checks, see the [Cloudflare deployment guide](deploy-cloud.en.md).
+`api.example.com`, `app.example.com`, and `replace-me` are placeholders.
 
 ## Common configuration failures
 

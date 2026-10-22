@@ -1847,6 +1847,58 @@
   }
 }
 
+.manuscript-editor {
+  flex: 1;
+  min-height: 44vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.manuscript-editor .ProseMirror,
+.manuscript-editor__content {
+  flex: 1;
+  min-height: 44vh;
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  line-height: 1.95;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1rem;
+  outline: none;
+}
+
+.manuscript-editor .ProseMirror:focus,
+.manuscript-editor__content:focus {
+  border-color: var(--vera-hairline);
+  box-shadow: inset 0 1px 0 var(--vera-soft);
+}
+
+.manuscript-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--ink-faint);
+  font-style: italic;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.manuscript-editor__proposal,
+mark[data-ai-proposal] {
+  background: color-mix(in srgb, var(--vera-soft) 70%, transparent);
+  border-bottom: 1px dashed var(--vera-hairline);
+}
+
+.manuscript-editor--focus .ProseMirror,
+.manuscript-editor__content--focus {
+  max-width: 42rem;
+  margin: 0 auto;
+  min-height: 70vh;
+  font-size: 1.12rem;
+}
+
 @media (max-width: 480px) {
   .cocreate__room {
     padding: 0.8rem;

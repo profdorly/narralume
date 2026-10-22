@@ -183,7 +183,7 @@ const FOUNDATION_SET = {
 };
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -220,10 +220,10 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    const record = await screen.findByRole("button", { name: /2\/6 章 · 连续创作/ });
-    expect(record).toHaveTextContent("08/10");
-    expect(record).toHaveTextContent("任务 session-");
-    expect(record).toHaveTextContent("当前章节 n-ch-3");
+    const record = await screen.findByRole("button", { name: /2\/6 capítulos · Contínuo/ });
+    expect(record).toHaveTextContent("10/08");
+    expect(record).toHaveTextContent("Tarefa session-");
+    expect(record).toHaveTextContent("Capítulo atual n-ch-3");
   });
 
   it("表单使用共享资源边界，但不限制每章参考字数", async () => {
@@ -237,12 +237,12 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    expect(await screen.findByLabelText("目标章数")).toHaveAttribute("max", "500");
-    expect(screen.getByLabelText("卷数")).toHaveAttribute("max", "20");
-    expect(screen.getByLabelText("每章参考字数")).not.toHaveAttribute("max");
-    expect(screen.getByLabelText("这次写几章")).toHaveAttribute("max", "500");
-    fireEvent.click(screen.getByText("高级选项"));
-    expect(screen.getByLabelText("向前规划章数")).toHaveAttribute("max", "20");
+    expect(await screen.findByLabelText("Capítulos-alvo")).toHaveAttribute("max", "500");
+    expect(screen.getByLabelText("Volumes")).toHaveAttribute("max", "20");
+    expect(screen.getByLabelText("Palavras de referência por capítulo")).not.toHaveAttribute("max");
+    expect(screen.getByLabelText("Capítulos desta vez")).toHaveAttribute("max", "500");
+    fireEvent.click(screen.getByText("Opções avançadas"));
+    expect(screen.getByLabelText("Capítulos planejados à frente")).toHaveAttribute("max", "20");
   });
 
   it("快速创作参数变化后使用新的 requestId", async () => {
@@ -274,21 +274,21 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     const startButton = await screen.findByRole("button", {
-      name: "开始 AI 快速创作",
+      name: "Começar criação rápida com IA",
     });
     fireEvent.submit(startButton.closest("form")!);
     await waitFor(() => expect(requestBodies).toHaveLength(1));
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "开始 AI 快速创作" }),
+        screen.getByRole("button", { name: "Começar criação rápida com IA" }),
       ).toBeEnabled(),
     );
-    fireEvent.change(screen.getByLabelText("这次写几章"), {
+    fireEvent.change(screen.getByLabelText("Capítulos desta vez"), {
       target: { value: "4" },
     });
     fireEvent.submit(
       screen
-        .getByRole("button", { name: "开始 AI 快速创作" })
+        .getByRole("button", { name: "Começar criação rápida com IA" })
         .closest("form")!,
     );
 
@@ -321,8 +321,8 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    expect(screen.getByLabelText("这次写几章")).toHaveValue(3);
-    await waitFor(() => expect(screen.getByLabelText("这次写几章")).toHaveValue(12));
+    expect(screen.getByLabelText("Capítulos desta vez")).toHaveValue(3);
+    await waitFor(() => expect(screen.getByLabelText("Capítulos desta vez")).toHaveValue(12));
   });
 
   it("指南针异步到达时不覆盖作者已经修改的目标章数", async () => {
@@ -350,9 +350,9 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    const target = screen.getByLabelText("这次写几章");
+    const target = screen.getByLabelText("Capítulos desta vez");
     fireEvent.change(target, { target: { value: "5" } });
-    await waitFor(() => expect(screen.getByRole("button", { name: "开始 AI 快速创作" })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Começar criação rápida com IA" })).toBeEnabled());
     expect(target).toHaveValue(5);
   });
 
@@ -382,9 +382,9 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     const first = renderAutopilot();
 
-    const startButton = await screen.findByRole("button", { name: "开始 AI 快速创作" });
-    await waitFor(() => expect(screen.getByLabelText("这次写几章")).toHaveValue(12));
-    fireEvent.change(screen.getByLabelText("这次写几章"), { target: { value: "5" } });
+    const startButton = await screen.findByRole("button", { name: "Começar criação rápida com IA" });
+    await waitFor(() => expect(screen.getByLabelText("Capítulos desta vez")).toHaveValue(12));
+    fireEvent.change(screen.getByLabelText("Capítulos desta vez"), { target: { value: "5" } });
     fireEvent.submit(startButton.closest("form")!);
     await waitFor(() =>
       expect(window.localStorage.getItem("narralume:autopilot-target:p-1")).toBe("5"),
@@ -392,7 +392,7 @@ describe("自动驾驶", () => {
     first.unmount();
     renderAutopilot();
 
-    expect(await screen.findByLabelText("这次写几章")).toHaveValue(5);
+    expect(await screen.findByLabelText("Capítulos desta vez")).toHaveValue(5);
   });
 
   it("数字输入清空时不被 0 占位，失焦后回到有效值", async () => {
@@ -418,7 +418,7 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    const input = await screen.findByLabelText("目标章数");
+    const input = await screen.findByLabelText("Capítulos-alvo");
     expect(input).toHaveValue(12);
     fireEvent.change(input, { target: { value: "" } });
     expect(input).toHaveValue(null);
@@ -441,7 +441,7 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    await screen.findByText(/计划创作 6 章/);
+    await screen.findByText(/Planejando 6 capítulos/);
     expect(screen.queryByRole("button", { name: "继续处理" })).not.toBeInTheDocument();
   });
 
@@ -458,15 +458,15 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    await screen.findByText(/计划创作 6 章/);
-    expect(screen.getByText("创作记录")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /应用到后续创作/ })).toBeInTheDocument();
-    expect(screen.getByRole("article", { name: "连续创作进度" })).toBeInTheDocument();
-    expect(screen.getAllByText(/后续章节规划|本章写作|正在进行/).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("新创作指示")).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "当前快速创作" })).toHaveTextContent("AI 正在连续创作");
-    expect(screen.queryByRole("button", { name: "开始 AI 快速创作" })).not.toBeInTheDocument();
-    expect(screen.queryByText("暂停原因")).not.toBeInTheDocument();
+    await screen.findByText(/Planejando 6 capítulos/);
+    expect(screen.getByText("Registros de criação")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Aplicar aos próximos capítulos/ })).toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "Progresso da criação em série" })).toBeInTheDocument();
+    expect(screen.getAllByText(/Plano dos próximos capítulos|Este capítulo|Em andamento/).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Nova instrução")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Criação rápida atual" })).toHaveTextContent("A IA está escrevendo em sequência");
+    expect(screen.queryByRole("button", { name: "Começar criação rápida com IA" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Motivo da pausa")).not.toBeInTheDocument();
   });
 
   it("汇总连续创作已完成章节的最终审稿状态", async () => {
@@ -502,7 +502,7 @@ describe("自动驾驶", () => {
         documentId: "document-pass",
         documentTitle: "第一章",
         verdict: "pass",
-        summary: "通过",
+        summary: "Aprovado",
         scores: {},
         reviewedContent: "正文一",
         reviewedContentHash: "hash-pass",
@@ -540,11 +540,11 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    const summary = await screen.findByLabelText("本次创作质量汇总");
-    expect(summary).toHaveTextContent("1 已通过");
-    expect(summary).toHaveTextContent("1 待复看");
-    expect(summary).toHaveTextContent("0 已阻断");
-    expect(summary).not.toHaveTextContent("未形成报告");
+    const summary = await screen.findByLabelText("Resumo de qualidade desta criação");
+    expect(summary).toHaveTextContent("1 aprovados");
+    expect(summary).toHaveTextContent("1 a revisar");
+    expect(summary).toHaveTextContent("0 bloqueados");
+    expect(summary).not.toHaveTextContent("sem relatório");
   });
 
   it("分类任务取消后把创作指示显示为未应用", async () => {
@@ -581,8 +581,8 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     await screen.findByText("下一章改成雨夜追逐。");
-    fireEvent.click(screen.getByText("历史创作指示"));
-    expect(screen.getByText("未应用")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Instruções anteriores"));
+    expect(screen.getByText("Não aplicada")).toBeInTheDocument();
     expect(
       screen.getByText(/影响范围判断已取消，这条创作指示未应用/),
     ).toBeInTheDocument();
@@ -627,18 +627,18 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     expect(
-      await screen.findByRole("button", { name: "重试当前章节" }),
+      await screen.findByRole("button", { name: "Tentar de novo o capítulo atual" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "跳过本章" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "重新规划" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pular este capítulo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Replanejar" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "终止并结算" }),
+      screen.getByRole("button", { name: "Parar e acertar" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "继续处理" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText("模型调用中断，请修复默认模型后选择恢复方式"),
+      screen.getByText("A chamada do modelo quebrou; corrija o modelo padrão e escolha como retomar"),
     ).toBeInTheDocument();
   });
 
@@ -669,7 +669,7 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "确认本章正文" }),
+      await screen.findByRole("button", { name: "Confirmar este capítulo" }),
     );
     await waitFor(() =>
       expect(
@@ -757,16 +757,16 @@ describe("自动驾驶", () => {
 
     expect(
       await screen.findByRole("region", {
-        name: "审稿发现需要你决定的问题",
+        name: "A revisão encontrou decisões que só você pode tomar",
       }),
     ).toHaveTextContent("失踪者身份与已确认设定冲突。");
     expect(screen.getByText(/改回既有身份，或明确采用新方向/)).toBeInTheDocument();
     expect(screen.queryByText("semantic_review_blocked")).not.toBeInTheDocument();
     fireEvent.click(
-      screen.getByRole("button", { name: "保留当前正文并继续" }),
+      screen.getByRole("button", { name: "Manter este manuscrito e continuar" }),
     );
     const dialog = screen.getByRole("alertdialog", {
-      name: "确认保留被阻断的正文",
+      name: "Manter o manuscrito bloqueado?",
     });
     fireEvent.click(
       dialog.querySelector<HTMLButtonElement>(".btn--primary")!,
@@ -817,12 +817,12 @@ describe("自动驾驶", () => {
 
     // 舵令推进后服务端返回即可；火 steer 接口
     // 必须等 session detail 加载齐，才能选定 selectedSessionId
-    await screen.findByText(/计划创作 6 章/);
+    await screen.findByText(/Planejando 6 capítulos/);
     await new Promise((resolve) => setTimeout(resolve, 50));
-    fireEvent.change(screen.getByLabelText("新创作指示"), {
+    fireEvent.change(screen.getByLabelText("Nova instrução"), {
       target: { value: "三位合信少于百字" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /应用到后续创作/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Aplicar aos próximos capítulos/ }));
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     const call = fetchMock.mock.calls.find(
@@ -860,9 +860,9 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot("/projects/p-1/autopilot?session=session-older");
 
-    await screen.findByText(/计划创作 3 章/);
-    expect(screen.getByRole("button", { name: "回到正在进行的创作" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "开始 AI 快速创作" })).not.toBeInTheDocument();
+    await screen.findByText(/Planejando 3 capítulos/);
+    expect(screen.getByRole("button", { name: "Voltar à criação em andamento" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Começar criação rápida com IA" })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalledWith(
       "/api/autopilot/sessions/session-1",
       expect.anything(),
@@ -902,9 +902,9 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot("/projects/p-1/autopilot?foundation=run-foundation");
 
-    expect(await screen.findByText("本次响应超时，等待自动重试")).toBeInTheDocument();
-    expect(screen.getByLabelText("故事想法")).toHaveValue("灯灯在异世界旅行");
-    expect(screen.getByRole("button", { name: "当前任务尚未结束" })).toBeDisabled();
+    expect(await screen.findByText("A resposta esgotou o tempo; aguardando tentativa automática")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ideia da história")).toHaveValue("灯灯在异世界旅行");
+    expect(screen.getByRole("button", { name: "A tarefa atual ainda está em andamento" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: "重新尝试" })).not.toBeInTheDocument();
   });
 
@@ -915,8 +915,8 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot("/missing");
 
-    expect(screen.getByRole("heading", { name: "AI 快速创作" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toHaveAttribute("href", "/shelf");
+    expect(screen.getByRole("heading", { name: "Criação rápida com IA" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toHaveAttribute("href", "/shelf");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -941,19 +941,19 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     await vi.waitFor(() => {
-      expect(screen.queryByText("等待开始")).not.toBeNull();
+      expect(screen.queryByText("Aguardando início")).not.toBeNull();
       expect(readIndex).toBe(1);
     });
 
     /* pending 首读后仍轮询：1.4s 后读到 running */
     await vi.advanceTimersByTimeAsync(1_500);
     await vi.waitFor(() => expect(readIndex).toBe(2));
-    await vi.waitFor(() => expect(screen.queryByText(/计划创作 6 章/)).not.toBeNull());
+    await vi.waitFor(() => expect(screen.queryByText(/Planejando 6 capítulos/)).not.toBeNull());
 
     /* running 继续轮询；读到 completed（终态）后停止 */
     await vi.advanceTimersByTimeAsync(1_500);
     await vi.waitFor(() => expect(readIndex).toBe(3));
-    await vi.waitFor(() => expect(screen.queryByText("已完成")).not.toBeNull());
+    await vi.waitFor(() => expect(screen.queryByText("Concluído")).not.toBeNull());
     await vi.advanceTimersByTimeAsync(6_000);
     expect(readIndex).toBe(3);
   });
@@ -977,7 +977,7 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     await vi.waitFor(() => {
-      expect(screen.queryByText("AI 正在整理创作方向")).not.toBeNull();
+      expect(screen.queryByText("A IA está organizando a direção da história")).not.toBeNull();
       expect(candidatesFetchCount).toBe(1);
     });
 
@@ -1008,8 +1008,8 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    await vi.waitFor(() => expect(screen.queryByText("创作方向读取失败")).not.toBeNull());
-    expect(screen.queryByRole("button", { name: /确认创作方向|更新创作方向/ })).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.queryByText("Não foi possível carregar a direção da história")).not.toBeNull());
+    expect(screen.queryByRole("button", { name: /Confirmar 创作方向|更新创作方向/ })).not.toBeInTheDocument();
   });
 
   it("新书尚无指南针时展示正常的创作方向表单", async () => {
@@ -1017,7 +1017,7 @@ describe("自动驾驶", () => {
       const url = String(input);
       const setup = setupResponse(url);
       if (url === "/api/projects/p-1/compass") {
-        return json({ error: { code: "story_compass.not_found", message: "尚未建立故事指南针" } }, 404);
+        return json({ error: { code: "story_compass.not_found", message: "Ainda não foi estabelecida uma bússola da história" } }, 404);
       }
       if (setup) return setup;
       if (url === "/api/projects/p-1/autopilot/sessions") return json([]);
@@ -1026,8 +1026,8 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    expect(await screen.findByRole("button", { name: "确认创作方向" })).toBeInTheDocument();
-    expect(screen.queryByText("创作方向读取失败")).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Confirmar direção da história" })).toBeInTheDocument();
+    expect(screen.queryByText("Não foi possível carregar a direção da história")).not.toBeInTheDocument();
   });
 
   it("切换到终态创作记录后隐藏舵令，返回活动记录时草稿已清空", async () => {
@@ -1044,18 +1044,18 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    await vi.waitFor(() => expect(screen.queryByText(/计划创作 6 章/)).not.toBeNull());
-    const steerBox = screen.getByLabelText("新创作指示");
+    await vi.waitFor(() => expect(screen.queryByText(/Planejando 6 capítulos/)).not.toBeNull());
+    const steerBox = screen.getByLabelText("Nova instrução");
     fireEvent.change(steerBox, { target: { value: "写给会话一的指示" } });
     expect(steerBox).toHaveValue("写给会话一的指示");
 
-    fireEvent.click(screen.getByRole("button", { name: /已完成 3\/3 章/ }));
-    await vi.waitFor(() => expect(screen.queryByText(/计划创作 3 章/)).not.toBeNull());
-    expect(screen.queryByLabelText("新创作指示")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /3\/3 capítulos concluídos/ }));
+    await vi.waitFor(() => expect(screen.queryByText(/Planejando 3 capítulos/)).not.toBeNull());
+    expect(screen.queryByLabelText("Nova instrução")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /6 章/ }));
-    await vi.waitFor(() => expect(screen.queryByText(/计划创作 6 章/)).not.toBeNull());
-    expect(screen.getByLabelText("新创作指示")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: /2\/6 capítulos/ }));
+    await vi.waitFor(() => expect(screen.queryByText(/Planejando 6 capítulos/)).not.toBeNull());
+    expect(screen.getByLabelText("Nova instrução")).toHaveValue("");
   });
 
   it("高影响创作指示显示采纳重排和拒绝继续动作", async () => {
@@ -1101,14 +1101,14 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot("/projects/p-1/autopilot?session=session-1");
 
-    expect(await screen.findByText("待裁定的创作指示")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "采纳并重排" }));
+    expect(await screen.findByText("Instruções aguardando decisão")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Adotar e reagendar" }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/autopilot/sessions/session-1/steers/steer-canon/decisions",
         expect.objectContaining({ method: "POST", body: JSON.stringify({ action: "apply" }) }),
       ),
     );
-    expect(screen.getByRole("button", { name: "不采用，继续创作" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Recusar e continuar escrevendo" })).toBeInTheDocument();
   });
 });

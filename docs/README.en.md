@@ -15,10 +15,10 @@ This index serves users, self-hosting operators, and contributors. Product decis
 
 ## Self-hosting and deployment
 
-| Document                                    | Who it is for                                                                                                          |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| [Docker Compose](docker.en.md)              | Running a self-hosted instance on your own PC or server.                                                               |
-| [Cloudflare deployment](deploy-cloud.en.md) | Deploying Web, Relay, and a local Bridge when maintaining a public hosted demo; ordinary users usually do not need it. |
+| Document                                                          | Who it is for                                            |
+| ----------------------------------------------------------------- | -------------------------------------------------------- |
+| [Docker Compose](docker.en.md)                                    | Running a self-hosted instance on your own PC or server. |
+| [ADR 001 — local-first](adr/001-local-first-e-fronteiras-saas.md) | Persistence boundaries and future SaaS.                  |
 
 ## Joining the project
 

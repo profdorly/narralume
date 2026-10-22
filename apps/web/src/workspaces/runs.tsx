@@ -85,7 +85,7 @@ export function RunsWorkspace() {
   const selectRun = (runId: string) => setSearchParams({ run: runId }, { replace: false });
 
   return <div className="runs">
-    <PageBand index="LEDGER · L1" title={t("runs.title")} meta={<span className="mono">{t("runs.volumeMeta", { runs: runsQuery.data?.length ?? 0, issues: grouped.length })}</span>} />
+    <PageBand index="EXECUÇÕES · L1" title={t("runs.title")} meta={<span className="mono">{t("runs.volumeMeta", { runs: runsQuery.data?.length ?? 0, issues: grouped.length })}</span>} />
     <div className="runs__layout">
       <aside className="runs__volumes" aria-label={t("runs.issueArchiveLabel")}><header className="runs__volumes-head"><p className="runs__volumes-title">{t("runs.catalog.title")}</p><span className="runs__volumes-count">{t("runs.catalog.count", { count: grouped.length })}</span></header><div className="runs__volumes-list">
         {grouped.length === 0 ? <p className="runs__empty-guide">{t("runs.emptyGuide")}</p> : grouped.map(([issue, list]) => <button key={issue} type="button" className="runs__volume" data-active={issue === selectedIssue} onClick={() => setSelectedIssue(issue)}><span className="runs__volume-no mono">ISSUE NO. {issue.replace("-", "")}</span><span className="runs__volume-title">{t("runs.issueTitle", { issue, count: list.length })}</span><span className="runs__volume-sub">{list[0]!.createdAt.slice(0, 16)}</span></button>)}

@@ -21,55 +21,62 @@ interface AssistantToolDescriptorSeed {
 const ASSISTANT_TOOL_COPY: readonly AssistantToolDescriptorSeed[] = [
   {
     name: "story.inspect",
-    label: "查看故事状态",
-    description: "只读查看作者意图、大纲、人物、正典、时间线和伏笔。",
+    label: "Ver estado da história",
+    description:
+      "Consulta somente leitura da intenção da autoria, estrutura, personagens, cânone, linha do tempo e antecipações.",
   },
   {
     name: "review.inspect",
-    label: "查看审稿状态",
-    description: "只读查看最近的审稿报告、未处理问题和裁定记录。",
+    label: "Ver estado da revisão",
+    description:
+      "Consulta somente leitura dos relatórios de revisão recentes, problemas em aberto e decisões.",
   },
   {
     name: "foundation.start",
-    label: "整理故事方向",
-    description: "复用现有建书候选任务；结果仍需作者逐项采纳。",
+    label: "Organizar a direção da história",
+    description:
+      "Reutiliza a tarefa de fundação existente; cada candidato ainda precisa da sua aceitação.",
   },
   {
     name: "chapter.start",
-    label: "开始单章写作",
-    description: "为明确的章节大纲启动现有单章生产任务。",
+    label: "Começar a escrita de um capítulo",
+    description: "Inicia a produção de um capítulo já definido na estrutura.",
   },
   {
     name: "autopilot.start",
-    label: "开始 AI 快速创作",
-    description: "启动现有连续或逐章确认的快速创作会话。",
+    label: "Começar criação rápida com IA",
+    description:
+      "Inicia uma sessão de criação contínua ou capítulo a capítulo.",
   },
   {
     name: "outline.plan.start",
-    label: "规划后续章节",
+    label: "Planejar os próximos capítulos",
     description:
-      "只为后续章节生成或补齐大纲节点；任务到大纲完成即结束，不会继续写正文。",
+      "Gera ou completa nós da estrutura para os capítulos seguintes; a tarefa termina quando o plano está pronto, sem escrever prosa.",
   },
   {
     name: "canon.candidate.start",
-    label: "生成 Canon 候选修改",
-    description: "为指定故事板块生成结构化候选修改；采纳仍由作者逐项裁定。",
+    label: "Gerar alterações candidatas do cânone",
+    description:
+      "Gera alterações estruturadas para um bloco da história; a aceitação continua sendo item a item.",
   },
   {
     name: "selection.edit.start",
-    label: "修改选中文本",
-    description: "对当前稿件的明确选区生成修改候选；采纳仍由作者确认。",
+    label: "Editar o texto selecionado",
+    description:
+      "Gera um candidato de edição para a seleção atual; a aceitação continua sendo sua.",
   },
   {
     name: "long_goal.start",
-    label: "启动复合创作任务",
+    label: "Iniciar tarefa composta de criação",
     description:
-      "作者最终目标是正文时，串联整理故事方向、补齐章节大纲与连续创作指定章节数。",
+      "Quando o objetivo final é prosa, encadeia direção da história, estrutura dos capítulos e criação contínua pelo número pedido.",
   },
   {
     name: "task.control",
-    label: "控制当前任务",
-    description: "控制已经存在的 Run / 快速创作会话，并处理可恢复的章节失败。",
+    label: "Controlar a tarefa atual",
+    description:
+      "Controla um run ou sessão de criação rápida já existente e trata falhas de capítulo recuperáveis.",
   },
 ];
 

@@ -12,6 +12,7 @@ import {
   type Migration,
 } from "../src/index.js";
 import { NodeNarrativeDatabase } from "../src/node.js";
+import { insertLegacyProject } from "./insert-legacy-project.js";
 
 const now = "2026-09-01T00:00:00.000Z";
 const later = "2026-09-01T00:05:00.000Z";
@@ -52,7 +53,8 @@ describe("migration 047 (foreshadow-source)", () => {
     databases.push(database);
     expect(legacyMigrations).toHaveLength(46);
     expect(database.migrate(legacyMigrations)).toBe(46);
-    new SqliteProjectRepository(database).insert(
+    insertLegacyProject(
+      database,
       createProject({ id: "p1", title: "Vila do Sal", now }),
     );
     database.raw
@@ -63,8 +65,8 @@ describe("migration 047 (foreshadow-source)", () => {
       )
       .run(now, now);
 
-    expect(database.migrate()).toBe(47);
-    expect(database.migrate()).toBe(47);
+    expect(database.migrate()).toBe(48);
+    expect(database.migrate()).toBe(48);
 
     const state = repositories(database);
     expect(state.listForeshadows("p1")).toEqual([

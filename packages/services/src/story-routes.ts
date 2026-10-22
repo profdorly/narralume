@@ -201,6 +201,7 @@ export function registerStoryRoutes(
       const requestHash = hashRequest({
         title: input.title,
         language: input.language,
+        form: input.form,
         subtitle: input.subtitle ?? null,
         premise: input.premise ?? null,
       });
@@ -222,6 +223,7 @@ export function registerStoryRoutes(
         rootOutlineNodeId: randomUuid(),
         title: input.title,
         language: input.language,
+        form: input.form,
         subtitle: input.subtitle ?? null,
         premise: input.premise ?? null,
         now,
@@ -279,6 +281,7 @@ export function registerStoryRoutes(
           subtitle: input.subtitle,
           premise: input.premise,
           ...(input.language === undefined ? {} : { language: input.language }),
+          ...(input.form === undefined ? {} : { form: input.form }),
           archivedAt: input.archived ? (latest.archivedAt ?? updatedAt) : null,
           updatedAt,
         });

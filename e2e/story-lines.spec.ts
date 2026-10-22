@@ -53,27 +53,47 @@ test("长期故事线维护阶段记录并保护并发修改", async ({
   ).toBe(true);
 
   await page.goto(`/projects/${projectId}/bible?spread=outline&view=lines`);
-  const lines = page.getByRole("region", { name: "长期故事线", exact: true });
+  const lines = page.getByRole("region", {
+    name: "Linhas longas da história",
+    exact: true,
+  });
   await expect(
-    lines.getByText("还没有长期故事线，可从一条希望持续发展的承诺开始。"),
+    lines.getByText(
+      "Ainda não há linhas longas da história. Comece por uma promessa que você queira desenvolver ao longo do tempo.",
+    ),
   ).toBeVisible();
-  await lines.getByRole("button", { name: "新增故事线", exact: true }).click();
-  let form = lines.getByRole("form", { name: "新增故事线", exact: true });
-  await form.getByLabel("故事线名称").fill("失踪者的名字");
-  await form.getByLabel("全程承诺").fill("逐步揭示遗忘规则与人的选择");
-  await form.getByLabel("故事线状态").selectOption("developing");
-  await form.getByLabel("当前关联阶段").selectOption(arc.id);
-  await form.getByLabel("阶段目标").fill("找到另一名见证者");
-  await form.getByLabel("作者进展记录").fill("已确认旧信件上的笔迹");
-  await form.getByLabel("尚未兑现的承诺").fill("信件的收件人\n灯塔关闭的代价");
-  await form.getByLabel("下一步变化").fill("让调查触及港口之外，保留远期问题");
+  await lines
+    .getByRole("button", { name: "Adicionar linha da história", exact: true })
+    .click();
+  let form = lines.getByRole("form", {
+    name: "Adicionar linha da história",
+    exact: true,
+  });
+  await form.getByLabel("Nome da linha da história").fill("失踪者的名字");
+  await form.getByLabel("Promessa geral").fill("逐步揭示遗忘规则与人的选择");
+  await form
+    .getByLabel("Status da linha da história")
+    .selectOption("developing");
+  await form.getByLabel("Etapa atual").selectOption(arc.id);
+  await form.getByLabel("Objetivo da etapa").fill("找到另一名见证者");
+  await form
+    .getByLabel("Nota de progresso da autoria")
+    .fill("已确认旧信件上的笔迹");
+  await form
+    .getByLabel("Promessas em aberto")
+    .fill("信件的收件人\n灯塔关闭的代价");
+  await form
+    .getByLabel("Próximo desdobramento")
+    .fill("让调查触及港口之外，保留远期问题");
   await expect(
     form.getByRole("checkbox", { name: "第二章 · 尚未发生的会面" }),
   ).toHaveCount(0);
   await form.getByRole("checkbox", { name: "第一章 · 旧信件" }).check();
-  await form.getByRole("button", { name: "保存故事线", exact: true }).click();
+  await form
+    .getByRole("button", { name: "Salvar linha da história", exact: true })
+    .click();
   await expect(lines.getByRole("status")).toHaveText(
-    "故事线已保存，将供后续规划参考。",
+    "Linha da história salva para o planejamento seguinte.",
   );
   await page.reload();
   const card = lines.getByRole("article", {
@@ -89,14 +109,19 @@ test("长期故事线维护阶段记录并保护并发修改", async ({
     `/projects/${projectId}/studio?outline=${chapter.id}`,
   );
   await expect(
-    lines.getByText("连续创作完成一个窗口后，阶段复盘会出现在这里。"),
+    lines.getByText(
+      "As revisões de etapa aparecem aqui depois que a escrita contínua conclui uma janela.",
+    ),
   ).toBeVisible();
 
   await card
-    .getByRole("button", { name: "编辑故事线「失踪者的名字」" })
+    .getByRole("button", { name: "Editar linha da história “失踪者的名字”" })
     .click();
-  form = lines.getByRole("form", { name: "编辑故事线", exact: true });
-  await form.getByLabel("下一步变化").fill("这次编辑尚未保存的方向");
+  form = lines.getByRole("form", {
+    name: "Editar linha da história",
+    exact: true,
+  });
+  await form.getByLabel("Próximo desdobramento").fill("这次编辑尚未保存的方向");
   const current = (await (await request.get(url)).json()) as StoryCompassDto;
   const { projectId: _id, updatedAt: _time, version, ...fields } = current;
   void _id;
@@ -112,30 +137,41 @@ test("长期故事线维护阶段记录并保护并发修改", async ({
       })
     ).ok(),
   ).toBe(true);
-  await form.getByRole("button", { name: "保存故事线", exact: true }).click();
+  await form
+    .getByRole("button", { name: "Salvar linha da história", exact: true })
+    .click();
   await expect(
-    form.getByText("故事指南针已被其他流程更新，请刷新后再保存"),
+    form.getByText(
+      "A bússola da história foi atualizada por outro processo; atualize e salve de novo",
+    ),
   ).toBeVisible();
-  await expect(form.getByLabel("下一步变化")).toHaveValue(
+  await expect(form.getByLabel("Próximo desdobramento")).toHaveValue(
     "这次编辑尚未保存的方向",
   );
   expect(
     ((await (await request.get(url)).json()) as StoryCompassDto).longLines[0]!
       .development!.nextDevelopment,
   ).toBe("让调查触及港口之外，保留远期问题");
-  await form.getByRole("button", { name: "放弃本次修改，重新载入" }).click();
+  await form
+    .getByRole("button", { name: "Descartar alterações e recarregar" })
+    .click();
   await expect(form).toHaveCount(0);
   await expect(
     lines.getByText("另一窗口更新的全书承诺", { exact: false }),
   ).toBeVisible();
   await card
-    .getByRole("button", { name: "编辑故事线「失踪者的名字」" })
+    .getByRole("button", { name: "Editar linha da história “失踪者的名字”" })
     .click();
-  form = lines.getByRole("form", { name: "编辑故事线", exact: true });
+  form = lines.getByRole("form", {
+    name: "Editar linha da história",
+    exact: true,
+  });
   await form
-    .getByLabel("下一步变化")
+    .getByLabel("Próximo desdobramento")
     .fill("保持作者最新方向，并展开新的调查阻力");
-  await form.getByRole("button", { name: "保存故事线", exact: true }).click();
+  await form
+    .getByRole("button", { name: "Salvar linha da história", exact: true })
+    .click();
   await expect(
     card.getByText("保持作者最新方向，并展开新的调查阻力"),
   ).toBeVisible();
@@ -152,11 +188,11 @@ test("长期故事线维护阶段记录并保护并发修改", async ({
     ),
   ).toBe(true);
   await card
-    .getByRole("button", { name: "移除故事线「失踪者的名字」" })
+    .getByRole("button", { name: "Remover linha da história “失踪者的名字”" })
     .click();
   await page
-    .getByRole("alertdialog", { name: "移除长期故事线" })
-    .getByRole("button", { name: "移除故事线", exact: true })
+    .getByRole("alertdialog", { name: "Remover linha longa da história" })
+    .getByRole("button", { name: "Remover linha da história", exact: true })
     .click();
   await expect(card).toHaveCount(0);
   const after = (await (await request.get(url)).json()) as StoryCompassDto;

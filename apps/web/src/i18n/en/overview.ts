@@ -1,8 +1,8 @@
-import type { overview as overviewZh } from "../zh/overview";
+import type { overview as overviewPt } from "../pt-BR/overview";
 
-export const overview: typeof overviewZh = {
+export const overview: typeof overviewPt = {
   requiredState: {
-    seal: "览",
+    seal: "V",
     title: "Project overview",
     description:
       "Select a work to see writing progress, running tasks, and the next step here.",

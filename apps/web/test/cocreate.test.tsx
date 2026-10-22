@@ -281,7 +281,7 @@ function renderCoCreate(
   );
 }
 
-beforeEach(() => setLocale("zh-CN"));
+beforeEach(() => setLocale("pt-BR"));
 
 afterEach(() => {
   cleanup();
@@ -310,10 +310,10 @@ describe("作品内角色共创沙盒", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderCoCreate();
 
-    expect(await screen.findByText("角色设定暂时无法加载")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "新建故事房" }));
+    expect(await screen.findByText("Não foi possível carregar as personas agora")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Nova sala da história" }));
     expect(
-      screen.queryByRole("button", { name: "创建故事房" }),
+      screen.queryByRole("button", { name: "Criar sala da história" }),
     ).not.toBeInTheDocument();
   });
 
@@ -326,12 +326,12 @@ describe("作品内角色共创沙盒", () => {
       "data-active",
       "true",
     );
-    fireEvent.change(screen.getByPlaceholderText(/写下一回合/), {
+    fireEvent.change(screen.getByPlaceholderText(/Escreva o próximo turno/), {
       target: { value: "未发送草稿" },
     });
     fireEvent.click(screen.getByRole("button", { name: /房间A/ }));
     await screen.findByText("第一段。");
-    expect(screen.getByPlaceholderText(/写下一回合/)).toHaveValue("");
+    expect(screen.getByPlaceholderText(/Escreva o próximo turno/)).toHaveValue("");
   });
 
   it("暂停房间只允许阅读与重新激活", async () => {
@@ -347,19 +347,19 @@ describe("作品内角色共创沙盒", () => {
     stubFetch([paused.session], { "s-paused": paused });
     renderCoCreate();
 
-    await screen.findByText(/已暂停 · 分支/);
-    expect(screen.getByRole("button", { name: "进行中" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "已暂停" })).toBeDisabled();
-    expect(screen.getByPlaceholderText(/写下一回合/)).toBeDisabled();
+    await screen.findByText(/Pausada · .*ramifica/);
+    expect(screen.getByRole("button", { name: "Ativa" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Pausada" })).toBeDisabled();
+    expect(screen.getByPlaceholderText(/Escreva o próximo turno/)).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: /发送并生成回复/ }),
+      screen.getByRole("button", { name: /Enviar e gerar resposta/ }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: /再生成回应/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Gerar outra resposta/ })).toBeDisabled();
     expect(
-      screen.getAllByRole("button", { name: /回退到此/ }).at(-1),
+      screen.getAllByRole("button", { name: /Reverter até aqui/ }).at(-1),
     ).toBeDisabled();
     expect(screen.getByRole("checkbox", { name: "旁白" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "采纳范围" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Adotar trecho" })).toBeDisabled();
   });
 
   it("从场景进入时预填目标与名称，最小表单默认自然接话", async () => {
@@ -379,10 +379,10 @@ describe("作品内角色共创沙盒", () => {
       targetTitle: "雨夜来客",
     });
 
-    expect(await screen.findByLabelText("房间名")).toHaveValue("雨夜来客");
+    expect(await screen.findByLabelText("Nome da sala")).toHaveValue("雨夜来客");
     expect(screen.getByText("雨夜来客")).toBeInTheDocument();
-    expect(screen.queryByLabelText("发言策略")).not.toBeInTheDocument();
-    const submit = screen.getByRole("button", { name: "创建故事房" });
+    expect(screen.queryByLabelText("Política de falantes")).not.toBeInTheDocument();
+    const submit = screen.getByRole("button", { name: "Criar sala da história" });
     expect(submit).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox", { name: "旁白" }));
     expect(submit).toBeEnabled();
@@ -430,8 +430,8 @@ describe("作品内角色共创沙盒", () => {
     renderCoCreate();
 
     fireEvent.click(await screen.findByRole("checkbox", { name: "阿灯" }));
-    fireEvent.click(screen.getByRole("button", { name: "将阿灯前移" }));
-    fireEvent.click(screen.getByRole("button", { name: "保存角色安排" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mover 阿灯 para cima" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar o arranjo do elenco" }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
@@ -464,7 +464,7 @@ describe("作品内角色共创沙盒", () => {
     expect(
       await screen.findByRole("checkbox", { name: "角色9" }),
     ).toBeDisabled();
-    expect(screen.getByText("已启用 8/8 位 AI 角色")).toBeInTheDocument();
+    expect(screen.getByText("8/8 personagens de IA ativados")).toBeInTheDocument();
   });
 
   it("AI 回合用左右按钮切换回应版本，作者回合不显示再生成", async () => {
@@ -491,14 +491,14 @@ describe("作品内角色共创沙盒", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderCoCreate();
 
-    const userCard = (await screen.findByText("#0 · 作者")).closest("article")!;
+    const userCard = (await screen.findByText("#0 · Autoria")).closest("article")!;
     const assistantCard = screen.getByText("#1 · 旁白").closest("article")!;
     expect(
-      within(userCard).queryByRole("button", { name: "再生成回应" }),
+      within(userCard).queryByRole("button", { name: "Gerar outra resposta" }),
     ).not.toBeInTheDocument();
     expect(within(assistantCard).getByText("1 / 2")).toBeInTheDocument();
     fireEvent.click(
-      within(assistantCard).getByRole("button", { name: "下一个回应版本" }),
+      within(assistantCard).getByRole("button", { name: "Próxima versão de resposta" }),
     );
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
@@ -537,10 +537,10 @@ describe("作品内角色共创沙盒", () => {
     stubFetch([detail.session], { "s-lore": detail });
     renderCoCreate("s-lore");
 
-    const summary = await screen.findByText("本回合使用了 1 条世界信息");
+    const summary = await screen.findByText("Usou 1 entradas de lore neste turno");
     fireEvent.click(summary);
     expect(screen.getByText("煤油灯规则")).toBeVisible();
-    expect(screen.getByText("命中：煤油灯")).toBeVisible();
+    expect(screen.getByText("Correspondências: 煤油灯")).toBeVisible();
   });
 
   it("消息上可直接建分支，并使用当前房间版本", async () => {
@@ -559,7 +559,7 @@ describe("作品内角色共创沙盒", () => {
     renderCoCreate();
 
     const card = (await screen.findByText("#1 · 旁白")).closest("article")!;
-    fireEvent.click(within(card).getByRole("button", { name: "从这里分支" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Ramificar daqui" }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
@@ -568,7 +568,7 @@ describe("作品内角色共创沙盒", () => {
       );
       expect(JSON.parse(String(call?.[1]?.body))).toEqual({
         fromTurnId: "t-a-1",
-        name: "从第 1 回合分支",
+        name: "Ramificar a partir do turno 1",
         expectedVersion: 1,
       });
     });
@@ -603,12 +603,12 @@ describe("作品内角色共创沙盒", () => {
     renderCoCreate();
 
     const card = (await screen.findByText("#1 · 我")).closest("article")!;
-    fireEvent.click(within(card).getByRole("button", { name: "换一种说法" }));
-    fireEvent.change(within(card).getByLabelText("新的说法"), {
+    fireEvent.click(within(card).getByRole("button", { name: "Dizer de outro jeito" }));
+    fireEvent.change(within(card).getByLabelText("Nova formulação"), {
       target: { value: "我是来赴约的。" },
     });
     fireEvent.click(
-      within(card).getByRole("button", { name: "建立改写分支" }),
+      within(card).getByRole("button", { name: "Criar ramificação de reescrita" }),
     );
 
     await waitFor(() => {
@@ -663,15 +663,15 @@ describe("作品内角色共创沙盒", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "选择第 0 回合作为场景范围",
+        name: "Selecionar o turno 0 para o trecho da cena",
       }),
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "选择第 2 回合作为场景范围" }),
+      screen.getByRole("button", { name: "Selecionar o turno 2 para o trecho da cena" }),
     );
-    expect(screen.getByText("已选择第 0–2 回合")).toBeInTheDocument();
-    expect(screen.getByLabelText("场景标题")).toHaveValue("雨夜来客");
-    fireEvent.click(screen.getByRole("button", { name: "采纳范围" }));
+    expect(screen.getByText("Turnos 0–2 selecionados")).toBeInTheDocument();
+    expect(screen.getByLabelText("Título da cena")).toHaveValue("雨夜来客");
+    fireEvent.click(screen.getByRole("button", { name: "Adotar trecho" }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>
@@ -713,10 +713,10 @@ describe("作品内角色共创沙盒", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderCoCreate();
 
-    fireEvent.change(await screen.findByPlaceholderText(/写下一回合/), {
+    fireEvent.change(await screen.findByPlaceholderText(/Escreva o próximo turno/), {
       target: { value: "继续。" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /发送并生成回复/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Enviar e gerar resposta/ }));
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
         ([url, init]) =>

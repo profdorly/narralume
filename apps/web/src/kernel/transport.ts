@@ -11,7 +11,6 @@
 export type DriverMode = "server" | "local" | "pending";
 
 const DRIVER_KEY = "narralume:driver";
-const trialMode = import.meta.env.VITE_TRIAL_MODE === "1";
 
 let mode: DriverMode = "pending";
 let probe: Promise<DriverMode> | null = null;
@@ -37,13 +36,6 @@ function setMode(next: DriverMode): void {
 /** 探测：显式覆盖优先，否则 fetch /api/health（1.5s 超时）判定。 */
 export function resolveDriverMode(): Promise<DriverMode> {
   probe ??= (async () => {
-    // Workers Static Assets 的 SPA fallback 会让不存在的 /api/health 也返回
-    // index.html 200，不能用它推断存在 Node API。体验构建的架构固定为
-    // 浏览器本地内核，因此在任何持久化覆盖与网络探测之前直接选 local。
-    if (trialMode) {
-      setMode("local");
-      return "local";
-    }
     const override = readOverride();
     if (override === "local" || override === "server") {
       setMode(override);

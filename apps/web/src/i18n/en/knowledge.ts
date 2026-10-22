@@ -1,4 +1,4 @@
-import type { knowledge as zh } from "../zh/knowledge";
+import type { knowledge as zh } from "../pt-BR/knowledge";
 export const knowledge: typeof zh = {
   manage: "Register and correct knowledge",
   title: "Author knowledge maintenance",

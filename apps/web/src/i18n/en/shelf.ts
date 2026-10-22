@@ -1,6 +1,6 @@
-import type { shelf as shelfZh } from "../zh/shelf";
+import type { shelf as shelfPt } from "../pt-BR/shelf";
 
-export const shelf: typeof shelfZh = {
+export const shelf: typeof shelfPt = {
   title: "The Stacks",
   ghost: "STACKS",
   trialNote:
@@ -19,8 +19,12 @@ export const shelf: typeof shelfZh = {
   },
   empty: {
     title: "Not a single book on the shelf",
-    sub: "Start from a blank page, or hand an old manuscript to the AI to unpack and shelve.",
+    sub: "Do you have an idea, or an existing manuscript?",
     cta: "Create a book",
+    ideaTitle: "Just an idea",
+    ideaBody: "AI helps turn a premise into a short story or a novel.",
+    manuscriptTitle: "I already have a manuscript",
+    manuscriptBody: "Import Markdown, DOCX, HTML or EPUB and keep working here.",
   },
   noMatch: {
     title: "No matching books",
@@ -53,6 +57,10 @@ export const shelf: typeof shelfZh = {
   },
   create: {
     languageLabel: "Writing language (controls AI prose and replies)",
+    formLabel: "Form",
+    formNovel: "Novel",
+    formNovella: "Novella",
+    formShort: "Short story",
     ariaLabel: "Create book",
     blank: "Blank book",
     ai: "AI-guided book",

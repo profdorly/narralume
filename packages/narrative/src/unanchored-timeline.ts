@@ -115,7 +115,7 @@ export function unanchoredTimelineBlock(
       participants
         ? en
           ? `participants: ${participants}`
-          : `参与者：${participants}`
+          : `participantes: ${participants}`
         : "",
       description,
     ]
@@ -127,22 +127,22 @@ export function unanchoredTimelineBlock(
     lines.push(
       en
         ? "Events whose import evidence cites this chapter:"
-        : "导入证据落在本章的事件：",
+        : "Eventos cuja evidência de importação cita este capítulo:",
       ...anchorable.chapter.map(line),
     );
   }
   if (anchorable.unplaced.length > 0) {
     lines.push(
-      en ? "Events not placed in a chapter:" : "未能定位到章节的事件：",
+      en ? "Events not placed in a chapter:" : "Eventos sem capítulo:",
       ...anchorable.unplaced.map(line),
     );
   }
-  if (lines.length === 0) lines.push(en ? "(none)" : "（无）");
+  if (lines.length === 0) lines.push(en ? "(none)" : "(nenhum)");
   if (anchorable.omitted > 0) {
     lines.push(
       en
         ? `(${anchorable.omitted} other unanchored events are not listed: their import evidence cites other chapters, or the list is full.)`
-        : `（另有 ${anchorable.omitted} 个未锚定事件未列出：它们的导入证据落在其他章节，或超出列表上限。）`,
+        : `(outros ${anchorable.omitted} eventos sem âncora não foram listados: a evidência de importação cita outros capítulos, ou a lista está cheia.)`,
     );
   }
   return lines.join("\n");

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
 });
 
 class FakeWorker {

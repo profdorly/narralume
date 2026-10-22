@@ -327,7 +327,7 @@ describe("story kernel API", () => {
     const insert = database.raw.prepare(
       `INSERT INTO projects(
          id, title, subtitle, premise, language, phase, archived_at, created_at, updated_at
-       ) VALUES (?, ?, NULL, NULL, 'zh-CN', 'idea', NULL, ?, ?)`,
+       ) VALUES (?, ?, NULL, NULL, 'pt-BR', 'idea', NULL, ?, ?)`,
     );
     database.transaction(() => {
       for (let index = 0; index < 101; index += 1) {

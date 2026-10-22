@@ -102,21 +102,22 @@ describe("project language drives AI instruction language", () => {
     expect(captured.instructions).not.toMatch(/[\u4e00-\u9fff]/);
   });
 
-  it("keeps Chinese system instructions for the zh-CN default", async () => {
+  it("uses Portuguese system instructions for the pt-BR default", async () => {
     const captured = { instructions: null as string | null };
     const { app } = await setup(capturingModel(captured));
     const created = await app.inject({
       method: "POST",
       url: "/api/projects",
-      payload: { requestId: "create-zh", title: "潮汐灯塔" },
+      payload: { requestId: "create-pt", title: "Farol da Maré" },
     });
     expect(created.statusCode, created.body).toBe(201);
     const projectId = (created.json() as { id: string }).id;
-    expect((created.json() as { language: string }).language).toBe("zh-CN");
+    expect((created.json() as { language: string }).language).toBe("pt-BR");
 
     await runFoundationOnce(app, projectId);
 
-    expect(captured.instructions).toContain("你是长篇小说总策划");
+    expect(captured.instructions).toContain("planejador-chefe");
+    expect(captured.instructions).not.toMatch(/[\u4e00-\u9fff]/);
   });
 
   it("persists a language change through the project update route", async () => {

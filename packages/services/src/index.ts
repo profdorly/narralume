@@ -127,7 +127,6 @@ export * from "./agent-skill-registry.js";
 export * from "./agent-skill-import.js";
 export * from "./connection-tester.js";
 export * from "./model-config.js";
-export * from "./demo-relay-seed.js";
 export * from "./provider-defaults.js";
 export * from "./delivery-service.js";
 export * from "./task-classification.js";
@@ -150,3 +149,8 @@ export * from "./studio-routes.js";
 export * from "./template-routes.js";
 export { mapRouteError, type ApiErrorPayload } from "./route-error-mapper.js";
 export { RouteTable } from "./route-dispatch.js";
+export {
+  LOCAL_OPERATOR,
+  projectScopeKey,
+  type AuthContext,
+} from "./auth-context.js";

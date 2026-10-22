@@ -1,8 +1,8 @@
-import type { bible as bibleZh } from "../zh/bible";
+import type { bible as biblePt } from "../pt-BR/bible";
 import { storyState } from "./story-state";
 import { knowledge } from "./knowledge";
 
-export const bible: typeof bibleZh = {
+export const bible: typeof biblePt = {
   lineProposals: {
     title: "Story line progress proposals", hint: "Stage reviews propose changes from committed manuscript summaries. Only accepted items update story lines; next developments remain plans.",
     empty: "No progress proposals yet. Review them here after a continuous-writing stage review.", stale: "Story lines or evidence changed. Pending proposals cannot be applied. Reject them or wait for a new stage review.",
@@ -53,7 +53,7 @@ export const bible: typeof bibleZh = {
     "{outline} nodes · {entities} entities · {facts} facts · {foreshadows} foreshadows",
   loadError: "Story settings cannot be loaded right now",
   missing: {
-    seal: "典",
+    seal: "H",
     title: "Story",
     description:
       "Select a project to organize its creative intent, characters, outline, and long-lived story facts here.",

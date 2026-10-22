@@ -8,13 +8,16 @@ test("故事线建议逐项裁定、证据跳转、刷新保留与过期保护",
   const url = `/projects/${projectId}/bible?spread=outline&view=lines`;
   await page.goto(url);
   const panel = page.getByRole("region", {
-    name: "故事线进展建议",
+    name: "Propostas de progresso das linhas da história",
     exact: true,
   });
-  await expect(panel.getByRole("button", { name: "采纳进展建议" })).toHaveCount(
-    3,
-  );
-  await panel.getByText("复盘时的证据摘要", { exact: true }).first().click();
+  await expect(
+    panel.getByRole("button", { name: "Aceitar proposta de progresso" }),
+  ).toHaveCount(3);
+  await panel
+    .getByText("Resumos de evidência no momento da revisão", { exact: true })
+    .first()
+    .click();
   await expect(
     panel
       .getByText("见证者交出了旧信，潮声之谜仍未解决。", { exact: true })
@@ -23,17 +26,20 @@ test("故事线建议逐项裁定、证据跳转、刷新保留与过期保护",
   await panel.getByRole("link", { name: "旧信的去向" }).first().click();
   await expect(page).toHaveURL(new RegExp(`outline=${projectId}-chapter`));
   await page.goto(url);
-  await panel.getByRole("button", { name: "采纳进展建议" }).first().click();
+  await panel
+    .getByRole("button", { name: "Aceitar proposta de progresso" })
+    .first()
+    .click();
   await expect(
-    panel.getByText("已采纳并更新故事线", { exact: true }),
+    panel.getByText("Aceita e linha da história atualizada", { exact: true }),
   ).toBeVisible();
-  await panel.getByRole("button", { name: "拒绝此建议" }).first().click();
+  await panel.getByRole("button", { name: "Recusar proposta" }).first().click();
   await expect(
-    panel.getByText("已拒绝，故事线未修改", { exact: true }),
+    panel.getByText("Recusada; a linha da história permanece", { exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    panel.getByText("已采纳并更新故事线", { exact: true }),
+    panel.getByText("Aceita e linha da história atualizada", { exact: true }),
   ).toBeVisible();
   const compassUrl = `/api/projects/${projectId}/compass`;
   const {
@@ -55,16 +61,23 @@ test("故事线建议逐项裁定、证据跳转、刷新保留与过期保护",
       })
     ).ok(),
   ).toBe(true);
-  await panel.getByRole("button", { name: "采纳进展建议" }).click();
+  await panel
+    .getByRole("button", { name: "Aceitar proposta de progresso" })
+    .click();
   await expect(
-    panel.getByText("故事线或正文证据已变化，请核对新的阶段复盘建议。", {
-      exact: true,
-    }),
+    panel.getByText(
+      "As linhas da história ou as evidências do manuscrito mudaram. Revise uma proposta nova de etapa.",
+      {
+        exact: true,
+      },
+    ),
   ).toBeVisible();
   await expect(
-    panel.getByRole("button", { name: "采纳进展建议" }),
+    panel.getByRole("button", { name: "Aceitar proposta de progresso" }),
   ).toBeDisabled();
-  await expect(panel.getByRole("button", { name: "拒绝此建议" })).toBeEnabled();
+  await expect(
+    panel.getByRole("button", { name: "Recusar proposta" }),
+  ).toBeEnabled();
   await expect(page.locator("body")).toHaveJSProperty(
     "scrollWidth",
     testInfo.project.use.viewport!.width,

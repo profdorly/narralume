@@ -372,7 +372,7 @@ describe("evidence-backed story line proposals", () => {
     expect(captured).toContain("compassVersion");
     expect(captured).toContain("已取得旧信");
     expect(captured).toContain('\\"action\\":\\"reject\\"');
-    expect(captured).toContain("不得当成作者方向");
+    expect(captured).toContain("nenhum dos dois é rumo");
   });
   it("stages without applying, applies siblings atomically, replays decisions and rejects opposite decisions", async () => {
     const t = await proposalSetup();

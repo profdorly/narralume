@@ -48,7 +48,7 @@ afterEach(async () => {
 });
 
 describe("automation API", () => {
-  it.each(["zh-CN", "en"] as const)(
+  it.each(["pt-BR", "en"] as const)(
     "uses author stage records in %s planning and rejects a compass changed during generation",
     async (language) => {
       const requests: Array<{
@@ -172,7 +172,7 @@ describe("automation API", () => {
       expect(requests[0]!.instructions).toContain(
         language === "en"
           ? "unsupported progress notes are not established events"
-          : "不把计划目标或缺少证据的进展记录变成已经发生的事实",
+          : "metas planejadas e progresso sem evidência não são eventos ocorridos",
       );
       const freshRun = createPlan();
       expect(await finishRun(app, projectId, freshRun)).toBe("completed");
@@ -721,7 +721,9 @@ describe("automation API", () => {
     ).toHaveLength(3);
     expect(detail.reviews).toHaveLength(6);
     expect(planningInputs[1]).toContain("下一弧提高主动选择代价");
-    expect(planningInputs[0]).toContain("不表示故事弧、卷或全书必须结束");
+    expect(planningInputs[0]).toContain(
+      "não o fim de um arco, volume ou livro",
+    );
     const outline = new SqliteStoryRepository(database).listOutline(projectId);
     expect(outline.filter((node) => node.kind === "volume")).toHaveLength(2);
     const arcs = outline.filter((node) => node.kind === "arc");
@@ -1756,10 +1758,10 @@ describe("automation API", () => {
       messages: { content: string }[];
     };
     expect(request.instructions).toContain(
-      "规划规模只属于故事指南针的 compass.target，不属于作者意图",
+      "Escala de planejamento pertence só a compass.target, não à intenção do autor",
     );
     expect(request.messages[0]!.content).toContain(
-      "规划规模（仅写入故事指南针 compass.target）",
+      "Escala de planejamento (escrever só em compass.target da bússola)",
     );
     const artifact = new SqliteRunRepository(database)
       .getSnapshot(runId)

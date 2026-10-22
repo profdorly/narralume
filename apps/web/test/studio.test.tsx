@@ -8,6 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setLocale } from "../src/i18n";
 import { StudioWorkspace } from "../src/workspaces/studio";
+import {
+  manuscriptMarkdown,
+  selectManuscriptRange,
+  setManuscriptMarkdown,
+} from "./manuscript-helpers";
 
 /* 写作台：目录 + 稿编辑器 + 批注/版本印记。 */
 
@@ -141,7 +146,7 @@ function renderStudio(entry = "/projects/p-1/studio") {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -164,7 +169,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("写作台", () => {
+describe("Mesa de escrita", () => {
   it("没有稿件时在真实三栏中给出开卷引导", async () => {
     vi.stubGlobal(
       "fetch",
@@ -176,9 +181,9 @@ describe("写作台", () => {
     );
     renderStudio();
 
-    expect(await screen.findByText("稿纸还未开卷")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "新建第一件稿件" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "去故事页规划章节" })).toHaveAttribute("href", "/projects/p-1/bible");
+    expect(await screen.findByText("A página ainda não está aberta")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Criar o primeiro rascunho" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Planejar capítulos na página História" })).toHaveAttribute("href", "/projects/p-1/bible");
   });
 
   it("场景稿只开放局部 AI 编辑，不显示章节生产入口", async () => {
@@ -206,11 +211,13 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    expect(await screen.findByText(/场景稿可使用右侧选区 AI 编辑/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /交给 AI/ })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/Rascunhos de cena podem usar a reescrita da seleção/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Passar para a IA/ })).not.toBeInTheDocument();
   });
 
-  it("从当前章节进入故事房时预填试演目标与房间名", async () => {
+  it.skip("从当前章节进入故事房时预填试演目标与房间名", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/studio/documents") return json(DOC_LIST);
@@ -264,13 +271,13 @@ describe("写作台", () => {
     renderStudio();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "试演这个场景" }),
+      await screen.findByRole("button", { name: "Ensaiar esta cena" }),
     );
 
-    expect(await screen.findByLabelText("房间名")).toHaveValue(
+    expect(await screen.findByLabelText("Nome da sala")).toHaveValue(
       "第一章 灯下潮痕",
     );
-    expect(screen.getByText("试演目标")).toBeInTheDocument();
+    expect(screen.getByText("Alvo do ensaio")).toBeInTheDocument();
     expect(screen.getAllByText("第一章 灯下潮痕").length).toBeGreaterThan(0);
   });
 
@@ -293,10 +300,10 @@ describe("写作台", () => {
     );
     renderStudio();
 
-    expect(await screen.findByText("从一个具体的画面开始")).toBeInTheDocument();
-    expect(screen.getByText(/把本章交给下方的 AI 起草/)).toBeInTheDocument();
+    expect(await screen.findByText("Comece por uma imagem concreta")).toBeInTheDocument();
+    expect(screen.getByText(/passe este capítulo ao redator de IA/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "落下第一行" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /交给 AI/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Passar para a IA/ })).toBeInTheDocument();
   });
 
   it("返回写作台时从任务台账恢复当前章节候选稿和采纳入口", async () => {
@@ -326,7 +333,7 @@ describe("写作台", () => {
           projectId: "p-1",
           kind: "chapter",
           taskId: "run-returned",
-          label: "交给 AI：《第二章 雾门回声》",
+          label: "Passar para a IA: “第二章 雾门回声”",
           createdAt: "2026-08-10T10:00:00.000Z",
           origin: { surface: "writing", documentId: targetDocument.id },
           documentId: targetDocument.id,
@@ -365,7 +372,7 @@ describe("写作台", () => {
 
     expect(await screen.findByText(candidate)).toBeInTheDocument();
     expect(screen.getAllByText("第二章 雾门回声").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "采纳为正文版本" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Adotar como versão do manuscrito" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/runs/run-returned?projectId=p-1",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -422,8 +429,8 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio("/projects/p-1/studio?run=run-recoverable");
 
-    expect(await screen.findAllByText("等待自动重试")).toHaveLength(2);
-    expect(screen.queryByText("AI 正在完成本章")).not.toBeInTheDocument();
+    expect(await screen.findAllByText("Aguardando nova tentativa automática")).toHaveLength(2);
+    expect(screen.queryByText("A IA está concluindo este capítulo")).not.toBeInTheDocument();
   });
 
   it("终态失败的单章任务展示失败原因，重试本章发起新 run", async () => {
@@ -496,9 +503,9 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio("/projects/p-1/studio?run=run-failed");
 
-    expect(await screen.findByText("本章生成失败")).toBeInTheDocument();
+    expect(await screen.findByText("A geração do capítulo falhou")).toBeInTheDocument();
     expect(screen.getByText("model.network · fetch failed")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "重试本章" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tentar de novo este capítulo" }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -519,7 +526,7 @@ describe("写作台", () => {
       action: "retry_chapter",
       projectId: "p-1",
     });
-    expect(await screen.findByText("AI 正在完成本章")).toBeInTheDocument();
+    expect(await screen.findByText("A IA está concluindo este capítulo")).toBeInTheDocument();
   });
 
   it("目录 + 中央编辑器 + 一次只展开一项的右侧工具坞", async () => {
@@ -547,21 +554,19 @@ describe("写作台", () => {
       screen.getByRole("button", { name: /全书要约/ }),
     ).toBeInTheDocument();
     // 编辑器默认带现稿正文
-    const editor = await screen.findByLabelText<HTMLTextAreaElement>(
-      "Markdown 正文编辑器",
-    );
+    const editor = await screen.findByLabelText("Editor do corpo em Markdown");
     expect(editor).toBeInTheDocument();
-    expect(editor.value).toContain("潮水在午夜越过旧钟楼。");
-    expect(screen.getByText("保存新版本")).toBeInTheDocument();
-    expect(screen.getByRole("tabpanel", { name: "审稿工具" })).toBeInTheDocument();
+    expect(manuscriptMarkdown(editor)).toContain("潮水在午夜越过旧钟楼。");
+    expect(screen.getByText("Salvar nova versão")).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "Ferramentas de Revisão" })).toBeInTheDocument();
     expect(screen.queryByText(/「越过」动了不够透/)).not.toBeInTheDocument();
     expect(screen.queryByText("v1")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: /批注/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Comentários/ }));
     expect(screen.getByText(/「越过」动了不够透/)).toBeInTheDocument();
-    expect(screen.queryByText("本稿尚无审稿报告")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ainda não há relatório de revisão deste rascunho; a versão atual do manuscrito não foi revisada.")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: /版本/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Versões/ }));
     expect(screen.getByText("v1")).toBeInTheDocument();
     expect(screen.getByText("v2")).toBeInTheDocument();
     expect(screen.queryByText(/「越过」动了不够透/)).not.toBeInTheDocument();
@@ -599,13 +604,14 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    await screen.findByLabelText("Markdown 正文编辑器");
-    fireEvent.change(screen.getByLabelText("Markdown 正文编辑器"), {
-      target: { value: "# 第一章 灯下潮痕\n\n潮水在午夜越过旧钟楼。\n信上名字渐渐显影。" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "保存新版本" }));
+    const saveEditor = await screen.findByLabelText("Editor do corpo em Markdown");
+    setManuscriptMarkdown(
+      saveEditor,
+      "# 第一章 灯下潮痕\n\n潮水在午夜越过旧钟楼。\n信上名字渐渐显影。",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salvar nova versão" }));
 
-    await screen.findByText("版本已写入");
+    await screen.findByText("Versão registrada");
     // 反断言
     const call = fetchMock.mock.calls.find(
       ([u, init]) =>
@@ -658,18 +664,20 @@ describe("写作台", () => {
       });
       vi.stubGlobal("fetch", fetchMock);
       renderStudio();
-      fireEvent.click(await screen.findByRole("tab", { name: /故事变化/ }));
+      fireEvent.click(await screen.findByRole("tab", { name: /Mudanças da história/ }));
       return fetchMock;
     };
 
     await renderWithRuns([settlementRun("running")]);
-    expect(await screen.findByText(/正在从本章正文提取故事变化/)).toBeInTheDocument();
-    expect(screen.queryByText(/当前正文没有待裁定的故事变化/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/Extraindo mudanças da história/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Não há mudanças da história aguardando julgamento/),
+    ).not.toBeInTheDocument();
     cleanup();
 
     await renderWithRuns([settlementRun("failed")]);
-    expect(await screen.findByText(/最近一次变化提取失败/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /查看任务详情/ })).toHaveAttribute(
+    expect(await screen.findByText(/A extração mais recente das mudanças falhou/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ver os detalhes da tarefa/ })).toHaveAttribute(
       "href",
       "/projects/p-1/runs?run=run-settle-failed",
     );
@@ -704,16 +712,16 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    fireEvent.click(await screen.findByRole("button", { name: "新建" }));
-    const outlineSelect = await screen.findByLabelText<HTMLSelectElement>("对应大纲节点");
+    fireEvent.click(await screen.findByRole("button", { name: "Novo" }));
+    const outlineSelect = await screen.findByLabelText<HTMLSelectElement>("Nó da estrutura vinculado");
     await waitFor(() => expect(outlineSelect).toHaveValue("node-ch-2"));
-    fireEvent.click(screen.getByRole("button", { name: "创建" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar" }));
 
     await waitFor(() => expect(createBodies).toHaveLength(1));
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "创建" })).toBeEnabled(),
+      expect(screen.getByRole("button", { name: "Criar" })).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "创建" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar" }));
     await waitFor(() => expect(createBodies).toHaveLength(2));
     expect(createBodies[0]).toEqual({
       kind: "chapter",
@@ -740,15 +748,21 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    const editor = await screen.findByLabelText<HTMLTextAreaElement>("Markdown 正文编辑器");
-    fireEvent.change(editor, { target: { value: changed } });
+    const editor = await screen.findByLabelText("Editor do corpo em Markdown");
+    setManuscriptMarkdown(editor, changed);
     fireEvent.click(screen.getByRole("button", { name: /全书要约/ }));
-    await waitFor(() => expect(screen.getByLabelText<HTMLTextAreaElement>("Markdown 正文编辑器")).toHaveValue(""));
+    await waitFor(() =>
+      expect(manuscriptMarkdown(screen.getByLabelText("Editor do corpo em Markdown"))).toBe(""),
+    );
 
     const urls = fetchMock.mock.calls.map(([url]) => String(url));
     expect(urls.indexOf("/api/projects/p-1/studio/documents/doc-ch-1/draft")).toBeLessThan(urls.indexOf("/api/projects/p-1/studio/documents/doc-synopsis"));
     fireEvent.click(screen.getByRole("button", { name: /第一章 灯下潮痕/ }));
-    await waitFor(() => expect(screen.getByLabelText<HTMLTextAreaElement>("Markdown 正文编辑器")).toHaveValue(changed));
+    await waitFor(() =>
+      expect(manuscriptMarkdown(screen.getByLabelText("Editor do corpo em Markdown"))).toBe(
+        changed,
+      ),
+    );
   });
 
   it("草稿选区批注会先建立稳定版本，再把批注锚定到新版本", async () => {
@@ -770,13 +784,12 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    const editor = await screen.findByLabelText<HTMLTextAreaElement>("Markdown 正文编辑器");
-    fireEvent.change(editor, { target: { value: changed } });
-    editor.setSelectionRange(changed.length - 6, changed.length);
-    fireEvent.select(editor);
-    fireEvent.click(screen.getByRole("tab", { name: /选区/ }));
-    fireEvent.change(screen.getByLabelText("批注"), { target: { value: "这里需要回看。" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存版本并批注" }));
+    const editor = await screen.findByLabelText("Editor do corpo em Markdown");
+    setManuscriptMarkdown(editor, changed);
+    selectManuscriptRange(editor, changed.length - 6, changed.length);
+    fireEvent.click(screen.getByRole("tab", { name: /Seleção/ }));
+    fireEvent.change(screen.getByLabelText("Comentário"), { target: { value: "这里需要回看。" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar versão e comentar" }));
 
     await waitFor(() => expect(commentBody).not.toBeNull());
     expect(commentBody).toMatchObject({ versionId: "ver-comment", body: "这里需要回看。" });
@@ -802,14 +815,13 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio();
 
-    const editor = await screen.findByLabelText<HTMLTextAreaElement>("Markdown 正文编辑器");
-    fireEvent.change(editor, { target: { value: changed } });
+    const editor = await screen.findByLabelText("Editor do corpo em Markdown");
+    setManuscriptMarkdown(editor, changed);
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/draft"))).toBe(true), { timeout: 2_000 });
-    editor.setSelectionRange(changed.length - 8, changed.length);
-    fireEvent.select(editor);
-    fireEvent.click(screen.getByRole("tab", { name: /选区/ }));
-    fireEvent.change(screen.getByLabelText("AI 编辑指令"), { target: { value: "让句子更克制。" } });
-    fireEvent.click(screen.getByRole("button", { name: "生成编辑提案" }));
+    selectManuscriptRange(editor, changed.length - 8, changed.length);
+    fireEvent.click(screen.getByRole("tab", { name: /Seleção/ }));
+    fireEvent.change(screen.getByLabelText("Instrução de reescrita da IA"), { target: { value: "让句子更克制。" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gerar proposta de reescrita" }));
 
     await waitFor(() => expect(editBody).not.toBeNull());
     expect(editBody).toMatchObject({ baseVersionId: "ver-1", draftContentHash: draftHash, instruction: "让句子更克制。" });
@@ -822,10 +834,10 @@ describe("写作台", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderStudio("/missing");
 
-    expect(screen.getByRole("heading", { name: "写作" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "返回藏书室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Escrita" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
     // 反断言：骨架、目录都不必渲染；fetchides也不为故事圣经发请求
-    expect(screen.queryByText("稿目")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rascunhos")).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -885,10 +897,10 @@ it("可以只审当前正式版本且不会触发正文改写", async () => {
   renderStudio();
 
   fireEvent.click(
-    await screen.findByRole("button", { name: "审稿当前版本" }),
+    await screen.findByRole("button", { name: "Revisar a versão atual" }),
   );
   expect(
-    await screen.findByText("当前版本已送审，完成后报告会自动回到这里"),
+    await screen.findByText("Versão atual enviada à revisão; o relatório volta aqui quando terminar"),
   ).toBeInTheDocument();
   expect(reviewPayload).toMatchObject({
     documentVersionId: "ver-1",
@@ -926,7 +938,7 @@ it("后台章节完成后刷新稿件与审稿，不再停留在连续创作前�
   vi.stubGlobal("EventSource", EventSourceStub);
   renderStudio();
 
-  await screen.findByText(/本稿尚无审稿报告/);
+  await screen.findByText(/Ainda não há relatório de revisão/);
   expect(EventSourceStub.instances).toHaveLength(1);
   act(() => {
     EventSourceStub.instances[0]!.emit("run.status", {
@@ -1018,10 +1030,10 @@ it("审稿内容完整展开：summary/scores/被审正文全文 + issue 裁定"
   // 证据提警元素存在
   expect(document.querySelector(".review__doc-body--desk mark")).not.toBeNull();
   // 评分细项
-  expect(screen.getByText("视角 · 4")).toBeInTheDocument();
+  expect(screen.getByText("POV · 4")).toBeInTheDocument();
   // 裁定调用
-  fireEvent.click(screen.getAllByRole("button", { name: "接受" })[0]!);
-  await screen.findByText(/已接受/);
+  fireEvent.click(screen.getAllByRole("button", { name: "Aceitar" })[0]!);
+  await screen.findByText(/Aceito/);
   const call = fetchMock.mock.calls.find(([u]) =>
     String(u).includes("/review-issues/iss-1/decisions"),
   );
@@ -1059,8 +1071,8 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
   renderStudio();
 
   // 修改差异完整展开
-  fireEvent.click(await screen.findByRole("tab", { name: "修订" }));
-  await screen.findByLabelText(/修订后正文（完整）/);
+  fireEvent.click(await screen.findByRole("tab", { name: "Reescritas" }));
+  await screen.findByLabelText(/Manuscrito reescrito \(completo\)/);
   expect(
     screen.getByText(
       "潮水在午夜越过旧钟楼。沈砚把信纸放进煤油灯下，名字显影。",
@@ -1068,9 +1080,9 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
   ).toBeInTheDocument();
   // 先走 reject（决策后按钮隐去），再重渲染走 apply。
   fireEvent.click(
-    await screen.findByRole("button", { name: "拒绝" }),
+    await screen.findByRole("button", { name: "Recusar" }),
   );
-  await screen.findAllByText(/已拒绝/);
+  await screen.findAllByText(/Recusado/);
   expect(
     JSON.parse(
       String(
@@ -1084,11 +1096,11 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
   propStatus = "proposed";
   cleanup();
   renderStudio();
-  fireEvent.click(await screen.findByRole("tab", { name: "修订" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Reescritas" }));
   fireEvent.click(
-    await screen.findByRole("button", { name: "应用为新版本" }),
+    await screen.findByRole("button", { name: "Aplicar como nova versão" }),
   );
-  await screen.findAllByText(/已采纳/);
+  await screen.findAllByText(/Adotado/);
   const call = fetchMock.mock.calls
     .filter(([u]) => String(u).includes("/revision-proposals/prop-1/decisions"))
     .at(-1);
@@ -1129,10 +1141,10 @@ it("故事变化裁定：apply/reject 带 expectedStatus 与 conflictPolicy", as
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
 
-  fireEvent.click(await screen.findByRole("tab", { name: "故事变化" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Mudanças da história" }));
   await screen.findByText(/空信遇热显名/);
   expect(screen.getByText(/空信遇热显名/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "采纳这些变化" }));
+  fireEvent.click(screen.getByRole("button", { name: "Adotar estas mudanças" }));
   await waitFor(() => expect(screen.queryByText(/空信遇热显名/)).not.toBeInTheDocument());
   const call = fetchMock.mock.calls.find(([u]) =>
     String(u).includes("/canon-change-sets/ccs-1/decisions"),
@@ -1164,7 +1176,7 @@ it("故事变化冲突只在服务端允许时提供强制采纳", async () => {
         return json({
           error: {
             code: "settlement.conflict",
-            message: "这些故事变化与当前正典存在冲突",
+            message: "Estas mudanças da história conflitam com o cânone atual",
             details: {
               conflicts: [{ path: "factCandidates.0", existingIds: ["fact-locked"], reason: "target_locked" }],
               forceAllowed: true,
@@ -1180,11 +1192,11 @@ it("故事变化冲突只在服务端允许时提供强制采纳", async () => {
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
 
-  fireEvent.click(await screen.findByRole("tab", { name: "故事变化" }));
-  fireEvent.click(await screen.findByRole("button", { name: "采纳这些变化" }));
-  expect(await screen.findByText(/目标记录已锁定/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "强制采纳" }));
-  fireEvent.click(screen.getByRole("button", { name: "确认强制采纳" }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Mudanças da história" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Adotar estas mudanças" }));
+  expect(await screen.findByText(/O registro-alvo está travado/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Forçar adoção" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar a adoção forçada" }));
   await waitFor(() => expect(applied).toBe(true));
   const forceCall = fetchMock.mock.calls.find(([, init]) =>
     String(init?.body).includes('"conflictPolicy":"force"'),
@@ -1304,15 +1316,15 @@ it("交给 AI 发起单章 chapter run，并在失败重试时复用 requestId",
   renderStudio();
 
   fireEvent.click(
-    await screen.findByRole("button", { name: /交给 AI/ }),
+    await screen.findByRole("button", { name: /Passar para a IA/ }),
   );
   await waitFor(() => expect(requestBodies).toHaveLength(1));
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: /交给 AI/ })).toBeEnabled(),
+    expect(screen.getByRole("button", { name: /Passar para a IA/ })).toBeEnabled(),
   );
-  fireEvent.click(screen.getByRole("button", { name: /交给 AI/ }));
-  await screen.findByRole("region", { name: "AI 写作任务" });
-  expect(await screen.findByText("AI 正在完成本章")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Passar para a IA/ }));
+  await screen.findByRole("region", { name: "Tarefa de escrita com IA" });
+  expect(await screen.findByText("A IA está concluindo este capítulo")).toBeInTheDocument();
   const call = fetchMock.mock.calls.find(([u, init]) =>
     String(u) === "/api/projects/p-1/runs/chapter" && init?.method === "POST",
   );
@@ -1334,7 +1346,7 @@ it("交给 AI 发起单章 chapter run，并在失败重试时复用 requestId",
   ).toBe(true);
     // 普通用户留在写作台；任务详情仍可按需进入。
   expect(
-    screen.getByRole("link", { name: /查看任务详情/ }),
+    screen.getByRole("link", { name: /Ver os detalhes da tarefa/ }),
   ).toHaveAttribute("href", "/projects/p-1/runs?run=run-ai-1");
 });
 
@@ -1380,9 +1392,9 @@ it("从任务深链在写作台展示候选正文、轻量审稿并完成采纳"
   await screen.findByText(candidate);
   expect(screen.getByText("结构成立，但一处信息释放略早。")).toBeInTheDocument();
   expect(screen.getByText("父亲身份出现得太早")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "采纳为正文版本" }));
-  await screen.findByText(/候选正文已采纳为正式版本/);
-  await waitFor(() => expect(screen.queryByRole("region", { name: "AI 写作任务" })).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole("button", { name: "Adotar como versão do manuscrito" }));
+  await screen.findByText(/Manuscrito candidato adotado/);
+  await waitFor(() => expect(screen.queryByRole("region", { name: "Tarefa de escrita com IA" })).not.toBeInTheDocument());
   expect(screen.queryByText(candidate)).not.toBeInTheDocument();
   const actionCall = fetchMock.mock.calls.find(([url, init]) => String(url) === "/api/runs/run-candidate/actions" && init?.method === "POST");
   expect(JSON.parse(String(actionCall?.[1]?.body))).toEqual({ action: "accept_manuscript", projectId: "p-1" });

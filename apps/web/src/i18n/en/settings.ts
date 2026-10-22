@@ -1,7 +1,8 @@
-import type { settings as settingsZh } from "../zh/settings";
+import type { settings as settingsPt } from "../pt-BR/settings";
 
-export const settings: typeof settingsZh = {
+export const settings: typeof settingsPt = {
   uiLanguage: {
+    eyebrow: "LANGUAGE",
     label: "Interface language",
     hint: "Switches the UI display language only; project content and model prompts are unaffected.",
   },
@@ -20,6 +21,7 @@ export const settings: typeof settingsZh = {
     recordDeleted: "Record deleted.",
   },
   generation: {
+    eyebrow: "GENERATION",
     label: "Default generation model and role inheritance",
     hint: "Pick one default generation model and writing, planning, and review all share it; the embedding model is configured separately.",
     loadError: "Default model configuration cannot be loaded right now",
@@ -66,6 +68,9 @@ export const settings: typeof settingsZh = {
     disabled: "Disabled",
   },
   channels: {
+    eyebrow: "CHANNELS",
+    providerEyebrow: "CHANNEL",
+    modelEyebrow: "Model",
     label: "Provider and model management",
     summaryHint: "Add providers, configure keys, probe connections, or maintain model specs",
     counts: "{providers} providers · {models} models",
@@ -217,7 +222,7 @@ export const settings: typeof settingsZh = {
     modified: "Modified",
     officialDefault: "Official default",
     invariantLabel: "These structural rules are always appended by the system:",
-    zhLabel: "Chinese instructions (used by zh-CN works)",
+    ptLabel: "Portuguese instructions (used by pt-BR works)",
     enLabel: "English instructions (used by en works)",
     saveAction: "Save changes",
     saveErrorTitle: "Save not completed",

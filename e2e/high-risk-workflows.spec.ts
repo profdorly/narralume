@@ -20,8 +20,10 @@ test("项目助手调度完成后，备份恢复保留完整协作历史", async
   const backupLabel = `协作全量恢复-${Date.now()}`;
 
   await page.goto(`/projects/${projectId}/overview`);
-  await page.getByRole("button", { name: "打开项目协作" }).click();
-  const composer = page.getByLabel("给项目助手的消息");
+  await page
+    .getByRole("button", { name: "Abrir colaboração no projeto" })
+    .click();
+  const composer = page.getByLabel("Mensagem para o assistente do projeto");
   await composer.fill(userMessage);
   const acceptedResponse = page.waitForResponse(
     (response) =>
@@ -30,28 +32,38 @@ test("项目助手调度完成后，备份恢复保留完整协作历史", async
         new URL(response.url()).pathname,
       ),
   );
-  await page.getByRole("button", { name: "发送消息" }).click();
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
   const accepted = (await (await acceptedResponse).json()) as { runId: string };
   await advanceRunToTerminal(page, projectId, accepted.runId, "completed");
   await expect(page.getByText(assistantReply, { exact: true })).toBeVisible({
     timeout: 12_000,
   });
-  await expect(page.getByRole("button", { name: "确认执行" })).toBeVisible();
-  await page.getByRole("button", { name: "关闭项目协作" }).click();
+  await expect(
+    page.getByRole("button", { name: "Confirmar e executar" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Fechar colaboração no projeto" })
+    .click();
 
   await page.goto(`/projects/${projectId}/delivery`);
-  await page.getByLabel("备份标签").fill(backupLabel);
-  await page.getByRole("button", { name: "创建内容快照" }).click();
+  await page.getByLabel("Rótulo do backup").fill(backupLabel);
+  await page
+    .getByRole("button", { name: "Criar instantâneo do conteúdo" })
+    .click();
   const backupRow = page.locator(".delivery__backup-row", {
     hasText: backupLabel,
   });
   await expect(backupRow).toBeVisible();
-  await backupRow.getByRole("button", { name: "恢复内容副本" }).click();
-  await page
-    .getByRole("alertdialog", { name: "恢复创作内容快照" })
-    .getByRole("button", { name: "恢复内容副本" })
+  await backupRow
+    .getByRole("button", { name: "Restaurar cópia do conteúdo" })
     .click();
-  const restoredLink = page.getByRole("link", { name: "打开恢复副本" });
+  await page
+    .getByRole("alertdialog", { name: "Restaurar instantâneo do conteúdo" })
+    .getByRole("button", { name: "Restaurar cópia do conteúdo" })
+    .click();
+  const restoredLink = page.getByRole("link", {
+    name: "Abrir a cópia restaurada",
+  });
   await expect(restoredLink).toBeVisible();
   await restoredLink.click();
   const restoredProjectId = new URL(page.url()).pathname.split("/")[2]!;
@@ -73,10 +85,14 @@ test("项目助手调度完成后，备份恢复保留完整协作历史", async
     expect.objectContaining({ status: "proposed" }),
   );
 
-  await page.getByRole("button", { name: "打开项目协作" }).click();
+  await page
+    .getByRole("button", { name: "Abrir colaboração no projeto" })
+    .click();
   await expect(page.getByText(userMessage, { exact: true })).toBeVisible();
   await expect(page.getByText(assistantReply, { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "确认执行" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Confirmar e executar" }),
+  ).toBeVisible();
 });
 
 test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page }, testInfo) => {
@@ -87,7 +103,9 @@ test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page },
   const projectId = await createProject(page, `Canon候选-${Date.now()}`);
 
   await page.goto(`/projects/${projectId}/bible?spread=intent`);
-  await page.getByLabel("Canon 修改指示").fill("收紧第一次熄灯的记忆代价。 ");
+  await page
+    .getByLabel("Instrução de edição do cânone")
+    .fill("收紧第一次熄灯的记忆代价。 ");
   const startedResponse = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
@@ -95,20 +113,20 @@ test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page },
         `/api/projects/${projectId}/canon-spreads/intent/candidates`,
       ),
   );
-  await page.getByRole("button", { name: "生成候选修改" }).click();
+  await page.getByRole("button", { name: "Gerar mudanças candidatas" }).click();
   const started = (await (await startedResponse).json()) as { runId: string };
   await advanceRunToTerminal(page, projectId, started.runId, "completed");
 
   await expect(page.getByText("收紧失灯代价", { exact: true })).toBeVisible({
     timeout: 12_000,
   });
-  await page.getByRole("button", { name: "采纳此项" }).click();
+  await page.getByRole("button", { name: "Adotar este item" }).click();
   await expect(
     page.getByText("每次灯塔熄灭，都有人失去一段不能复原的记忆。", {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText("已采纳", { exact: true })).toBeVisible();
+  await expect(page.getByText("Aplicado", { exact: true })).toBeVisible();
 });
 
 test("快速创作致命失败会停靠，并可从 UI 重试为新任务", async ({
@@ -154,7 +172,9 @@ test("快速创作致命失败会停靠，并可从 UI 重试为新任务", asyn
   expect(detail.session.status).toBe("awaiting_user");
 
   await page.goto(`/projects/${projectId}/autopilot?session=${created.id}`);
-  await expect(page.getByText("这次创作中断了，请选择下一步：")).toBeVisible();
+  await expect(
+    page.getByText("Esta criação foi interrompida. Escolha o próximo passo:"),
+  ).toBeVisible();
   const retriedResponse = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
@@ -162,7 +182,9 @@ test("快速创作致命失败会停靠，并可从 UI 重试为新任务", asyn
         `/api/autopilot/sessions/${created.id}/resolutions`,
       ),
   );
-  await page.getByRole("button", { name: "重试当前章节" }).click();
+  await page
+    .getByRole("button", { name: "Tentar de novo o capítulo atual" })
+    .click();
   const retried = (await (await retriedResponse).json()) as AutopilotDetail;
   expect(retried.session.status).toBe("running");
 
@@ -179,7 +201,7 @@ test("快速创作致命失败会停靠，并可从 UI 重试为新任务", asyn
   expect(detail.session.currentRunId).not.toBe(failedRunId);
   await page.reload();
   await expect(
-    page.getByText("正在规划", { exact: true }).first(),
+    page.getByText("Planejando", { exact: true }).first(),
   ).toBeVisible();
 });
 

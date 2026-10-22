@@ -32,7 +32,7 @@ function renderImportManager() {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
 });
 
 afterEach(() => {
@@ -41,7 +41,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("导入管理", () => {
+describe("Gerenciador de importação", () => {
   it.each(["applied", "discarded"])(
     "%s 批次只允许刷新，不能再修改候选或重新执行",
     async (status) => {
@@ -92,12 +92,12 @@ describe("导入管理", () => {
 
       await screen.findByText("旧稿.md");
       expect(screen.getByRole("checkbox")).toBeDisabled();
-      expect(screen.getByRole("button", { name: "AI 分析" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: /应用 1 项/ })).toBeDisabled();
-      expect(screen.getByRole("button", { name: "丢弃批次" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Analisar com IA" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /Aplicar 1 itens/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Descartar lote" })).toBeDisabled();
       await vi.waitFor(() =>
         expect(
-          screen.getByRole("button", { name: "从服务端刷新" }),
+          screen.getByRole("button", { name: "Atualizar a partir do servidor" }),
         ).toBeEnabled(),
       );
     },

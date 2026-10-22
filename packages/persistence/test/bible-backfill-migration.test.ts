@@ -15,6 +15,7 @@ import {
   SqliteStoryRepository,
   type Migration,
 } from "../src/index.js";
+import { insertLegacyProject } from "./insert-legacy-project.js";
 import { NodeNarrativeDatabase } from "../src/node.js";
 
 const now = "2026-09-01T00:00:00.000Z";
@@ -52,8 +53,8 @@ describe("migration 046 (bible-backfill)", () => {
     expect(database.migrate(legacyMigrations)).toBe(45);
     seedBook(database);
 
-    expect(database.migrate()).toBe(47);
-    expect(database.migrate()).toBe(47);
+    expect(database.migrate()).toBe(48);
+    expect(database.migrate()).toBe(48);
 
     const documents = new SqliteDocumentRepository(database);
     expect(documents.get("p1", "doc-1")).toMatchObject({
@@ -241,8 +242,10 @@ function setup() {
 }
 
 function seedBook(database: NodeNarrativeDatabase): void {
-  const projects = new SqliteProjectRepository(database);
-  projects.insert(createProject({ id: "p1", title: "雾港", now }));
+  insertLegacyProject(
+    database,
+    createProject({ id: "p1", title: "雾港", now }),
+  );
   const story = new SqliteStoryRepository(database);
   const book = story.insertOutlineNode(
     createOutlineNode({

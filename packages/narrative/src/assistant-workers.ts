@@ -24,7 +24,7 @@ import {
   type NarrativeDatabase,
 } from "@narralume/persistence";
 
-import { instructionsFor } from "./prompt-language.js";
+import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 import type { NarrativeModelClient } from "./model-client.js";
 import {
   ASSISTANT_REPLY_CONTRACT,
@@ -196,7 +196,10 @@ export class AssistantWorkerSuite {
           ...(chapterNumber
             ? {
                 chapterNumber,
-                displayLabel: `第${chapterNumber}章`,
+                displayLabel:
+                  promptLanguageOf(project.language) === "en"
+                    ? `Chapter ${chapterNumber}`
+                    : `Capítulo ${chapterNumber}`,
               }
             : {}),
           title: node.title,
@@ -370,15 +373,15 @@ export class AssistantWorkerSuite {
         instructions: instructionsFor(
           this.projects.get(snapshot.run.projectId)?.language ?? null,
           {
-            "zh-CN": [
-              "你是长篇小说项目里的协作助手。用简明、自然的中文回答作者，并以提供的作品数据为唯一事实来源。",
-              "明确区分已存在的事实、你的建议和尚未执行的操作；不得声称未发生的任务已经完成。",
-              "你每次最多提出一个工具调用，而且只能从 allowedTools 中选择；工具名与参数必须严格匹配，不能虚构工具、参数、章节 ID、文档 ID 或任务 ID。",
-              "章节序号一律以 outline 中的 chapterNumber 和 displayLabel 为准，从第 1 章开始；id 与 parentId 只是不可解读的内部标识，绝不能从其中推断章节序号。",
-              "工具按 access 分级：read 只读直接回答（材料已在上下文中，toolCall 设为 null 即可）；auto 是候选生成或任务控制，用户明确要求时会直接执行，不会再追加确认；confirm 会先进入待确认卡片，由作者决定执行与否。正文采纳、Canon 采纳和永久删除不在工具面内，永远由作者在对应界面确认。",
-              "先识别作者的最终目标，而不是只处理眼前缺失的前置条件。作者要求写作或创作正文、但尚无章节大纲时，必须使用 long_goal.start 串联补大纲与正文写作；已有故事方向时 braindump 传 null。只有作者明确只要大纲或规划、不要求正文时，才能使用 outline.plan.start。绝不能启动纯规划任务后声称还会自动继续写作。",
-              "story.inspect / review.inspect 的材料已经包含在上下文中；能直接回答时将 toolCall 设为 null。只有用户明确要求执行动作时才提出工具调用；讨论、询问或征求意见时不要提出。",
-              "回复中不要输出 JSON、代码围栏或内部实现细节。",
+            "pt-BR": [
+              "Você é o assistente colaborativo de um projeto de romance de longo fôlego. Responda ao autor em português brasileiro claro e natural, tratando os dados da obra como única fonte de fatos.",
+              "Separe com clareza os fatos já existentes, as suas sugestões e as operações ainda não executadas; nunca afirme que uma tarefa aconteceu se não aconteceu.",
+              "Proponha no máximo uma chamada de ferramenta por resposta, escolhida apenas em allowedTools; nomes e argumentos das ferramentas devem coincidir exatamente — nunca invente ferramentas, argumentos, IDs de capítulo, IDs de documento ou IDs de tarefa.",
+              "A numeração dos capítulos segue sempre chapterNumber e displayLabel no outline, a partir de 1; id e parentId são identificadores internos opacos — nunca infira o número do capítulo a partir deles.",
+              "As ferramentas se organizam por access: read responde direto com o material já no contexto (toolCall fica null); auto cobre geração de candidatos ou controle de tarefa e executa na hora quando o pedido é explícito, sem confirmação extra; confirm abre primeiro um cartão pendente para o autor decidir. Adoção de prosa, adoção de cânone e exclusão permanente ficam fora da superfície de ferramentas — o autor sempre confirma isso nas telas dedicadas.",
+              "Identifique o objetivo final do autor, em vez de tratar só as pré-condições que faltam. Quando pedem escrita ou prosa e ainda não há outline de capítulos, use long_goal.start para encadear o outline e a prosa; passe braindump como null quando a direção da história já existir. Use outline.plan.start somente quando pedirem outline ou planejamento, sem prosa. Nunca inicie uma tarefa só de planejamento e depois afirme que a escrita continuará sozinha.",
+              "O material de story.inspect / review.inspect já está no contexto; deixe toolCall em null quando puder responder direto. Proponha chamada de ferramenta só quando pedirem uma ação explícita — não em discussão, pergunta ou pedido de opinião.",
+              "Nas respostas, não emita JSON, cercas de código nem detalhes internos de implementação.",
             ],
             en: [
               "You are the collaborative assistant of a long-form novel project. Answer the author concisely and naturally in English, treating the provided work data as the single source of truth.",
@@ -489,13 +492,17 @@ function validateToolCall(
   if (!call) return [];
   const issues: string[] = [];
   if (!context.allowedTools.some((tool) => tool.name === call.name)) {
-    issues.push(`toolCall.name: ${call.name} 不在服务器允许清单中`);
+    issues.push(
+      `toolCall.name: ${call.name} não está na lista permitida pelo servidor`,
+    );
   }
   if (
     call.name === "chapter.start" &&
     !context.chapterIds.includes(call.arguments.targetOutlineNodeId)
   ) {
-    issues.push("toolCall.arguments.targetOutlineNodeId: 不是当前作品的章节");
+    issues.push(
+      "toolCall.arguments.targetOutlineNodeId: não é um capítulo desta obra",
+    );
   }
   if (
     call.name === "selection.edit.start" &&
@@ -503,7 +510,7 @@ function validateToolCall(
       call.arguments.selectionEnd <= call.arguments.selectionStart)
   ) {
     issues.push(
-      "toolCall.arguments.documentId/selection: 不是当前作品的有效选区",
+      "toolCall.arguments.documentId/selection: não é uma seleção válida desta obra",
     );
   }
   if (
@@ -512,7 +519,9 @@ function validateToolCall(
       `${call.arguments.sourceType}:${call.arguments.sourceId}:${call.arguments.action}`,
     )
   ) {
-    issues.push("toolCall.arguments.sourceId: 不是当前作品的可控制任务");
+    issues.push(
+      "toolCall.arguments.sourceId: não é uma tarefa controlável desta obra",
+    );
   }
   return issues;
 }
@@ -638,9 +647,11 @@ function stringArray(value: unknown): string[] {
 
 function clipText(value: string, limit: number): string {
   if (value.length <= limit) return value;
-  const head = Math.floor(limit * 0.68);
-  const tail = limit - head;
-  return `${value.slice(0, head)}\n\n[中间内容已省略]\n\n${value.slice(-tail)}`;
+  const marker = "\n\n[trecho intermediário omitido]\n\n";
+  const available = Math.max(0, limit - marker.length);
+  const head = Math.floor(available * 0.68);
+  const tail = available - head;
+  return `${value.slice(0, head)}${marker}${value.slice(-tail)}`;
 }
 
 function isTerminalSessionStatus(status: string): boolean {

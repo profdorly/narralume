@@ -1,10 +1,18 @@
 # Changelog
 
-本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)；公开版本采用语义化版本号。
+O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e versionamento semântico.
 
 ## [Unreleased]
 
 ### Added
+
+- Idioma primário pt-BR (interface e prompts). Inglês permanece secundário; zh-CN foi removido (migração 048).
+- Campo `form` no projeto (`short-story` | `novella` | `novel`) e receita de conto com um ciclo de revisão.
+- Onboarding na estante: ideia vs manuscrito.
+- Editor de prosa TipTap no estúdio; navegação avançada (Runs/Lab) recolhida; Cocreate fora da v1.
+- ADR 001 (local-first e fronteiras SaaS). Removidos Bridge, Relay, Cloudflare e Turnstile.
+
+### Added (histórico)
 
 - 故事圣经面板新增“生成完整故事圣经”：默认全部自动生成，按章节顺序读完整本书、无需逐章点击，完成后自动发起作者意图、实体和大纲的 AI 建议（在各板块审阅）；完成清单中每章可“重新阅读”，对照当前故事圣经补缺漏、纠正错误（请求字段 `rereadSettled`）。导入后的入口改名为“用 AI 生成故事圣经”。
 - 导入时 Markdown 标题的章名去掉整体包裹的强调符号和重复的标题标记（如 `# **Chapter 4**` 的章名为 “Chapter 4”），正文不变。

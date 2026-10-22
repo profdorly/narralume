@@ -14,7 +14,7 @@ import { shelf } from "./shelf";
 import { shell } from "./shell";
 import { studio } from "./studio";
 
-import type { Messages } from "../zh";
+import type { Messages } from "../pt-BR";
 
 export const enMessages: Messages = {
   assistant,

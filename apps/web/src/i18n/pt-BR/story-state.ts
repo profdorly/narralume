@@ -1,0 +1,63 @@
+export const storyState = {
+  title: "Estado do capítulo",
+  hint: "Inspecione os registros até o fim deste capítulo, incluindo suas cenas, na ordem do manuscrito. Esses registros ajudam a conferir a história; não são uma verificação linha a linha da prosa.",
+  chapter: "Até o capítulo",
+  audience: "Perspectiva do conhecimento",
+  author: "Visão da autoria",
+  reader: "Leitor",
+  character: "Personagem · {name}",
+  retired: "Aposentado",
+  position: "Até o fim de “{title}”",
+  noChapters: "Adicione um capítulo para inspecionar o estado da história capítulo a capítulo.",
+  unavailableChapter: "Capítulo selecionado indisponível",
+  unavailableCharacter: "Personagem selecionado indisponível",
+  loadError: "Não foi possível carregar o estado do capítulo",
+  openChapterState: "Ver estado do capítulo",
+  knowledge: "Registros de conhecimento",
+  knowledgeOf: "Conhecimento de {name}",
+  knowledgeHint:
+    "Cada afirmação mostra a última crença registrada até este capítulo. Um fato mudar não significa que o personagem tenha ficado sabendo da mudança. Crença, suspeita e crença falsa não estabelecem a verdade.",
+  noKnowledge:
+    "Não há conhecimento pertinente registrado até este capítulo. Isso não estabelece que o personagem ou o leitor desconheça o fato.",
+  beliefs: {
+    known: "Soube",
+    believed: "Acredita",
+    suspected: "Suspeita",
+    false_belief: "Crença falsa",
+  },
+  falseBeliefHint:
+    "Esta é uma crença equivocada desta pessoa ou deste leitor, não um fato estabelecido.",
+  learnedAt: "Registrado como aprendido em:",
+  recordedAt: "Registrado em:",
+  relationships: "Relações registradas",
+  relationshipsHint:
+    "Relações ativas registradas pela autoria, reconstruídas neste capítulo. A vista de um personagem lista relações das quais ele participa; isso não estabelece que qualquer um dos dois saiba disso.",
+  noRelationships:
+    "Nenhuma relação ativa pertinente está registrada até este capítulo.",
+  intensity: "Intensidade {value}",
+  editRelationships: "Gerenciar relações",
+  foreshadows: "Planos de antecipação e evidências",
+  foreshadowsHint:
+    "O status do plano reflete a configuração atual da autoria, não o status histórico neste capítulo. A evidência abaixo se limita aos nós até este capítulo; planos futuros não são eventos passados.",
+  noForeshadows: "Nenhuma antecipação registrada.",
+  currentPlan: "Status atual do plano:",
+  evidence: "Evidência de pistas até este capítulo:",
+  noEvidence: "Não registrado",
+  resolution: "Evidência de resolução até este capítulo:",
+  noResolution: "Não registrado",
+  editForeshadows: "Gerenciar antecipações",
+  authorPlansHidden:
+    "Os planos de antecipação aparecem só na visão da autoria e não são tratados como conhecimento do leitor ou do personagem.",
+  reference: "Ver registros acessíveis · {facts} fatos / {events} eventos",
+  referenceHint:
+    "Registros filtrados por visibilidade e pelo limite do capítulo. Registros sem nó vinculado são tratados como configuração global. O conhecimento explícito de leitor e personagem está listado acima.",
+  facts: "Fatos acessíveis",
+  noFacts: "Nenhum outro fato acessível.",
+  editFacts: "Gerenciar fatos",
+  validFrom: "Válido a partir de:",
+  events: "Eventos acessíveis",
+  noEvents: "Nenhum evento acessível.",
+  editEvents: "Gerenciar eventos",
+  noNode: "Sem nó vinculado",
+  unavailableEvidence: "Nó vinculado indisponível",
+};

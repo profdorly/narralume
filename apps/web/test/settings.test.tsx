@@ -69,7 +69,7 @@ const PROJECTS = [
     title: "潮汐灯塔",
     subtitle: null,
     premise: null,
-    language: "zh-CN",
+    language: "pt-BR",
     phase: "writing",
     archivedAt: null,
     createdAt: "2026-08-01T10:00:00.000Z",
@@ -128,7 +128,7 @@ function renderSettings() {
 }
 
 async function openChannelManagement() {
-  const title = await screen.findByText("渠道与模型管理");
+  const title = await screen.findByText("Gestão de provedores e modelos");
   const summary = title.closest("summary");
   expect(summary).not.toBeNull();
   fireEvent.click(summary!);
@@ -136,7 +136,7 @@ async function openChannelManagement() {
 }
 
 beforeEach(() => {
-  setLocale("zh-CN");
+  setLocale("pt-BR");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -160,7 +160,7 @@ afterEach(() => {
 });
 
 describe("设置（默认生成模型与岗位继承）", () => {
-  it("Provider/模型/派岗全到齐，队伍不出现反排；请求体不带 profileId / outputReserve", async () => {
+  it("Provider/Modelos/派岗全到齐，队伍不出现反排；请求体不带 profileId / outputReserve", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -178,8 +178,8 @@ describe("设置（默认生成模型与岗位继承）", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderSettings();
 
-    const defaultRole = await screen.findByRole("group", { name: "默认生成模型" });
-    const channelManagement = screen.getByText("渠道与模型管理");
+    const defaultRole = await screen.findByRole("group", { name: "Modelo padrão de geração" });
+    const channelManagement = screen.getByText("Gestão de provedores e modelos");
     expect(channelManagement.closest("details")).not.toHaveAttribute("open");
 
     expect(within(defaultRole).getByText("环境 · DeepSeek · deepseek-chat", { selector: ".supply__role-model strong" })).toBeInTheDocument();
@@ -189,23 +189,23 @@ describe("设置（默认生成模型与岗位继承）", () => {
     // 高级管理中的渠道卡
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
     // 模型条
-    const cards = await screen.findAllByRole("article", { name: /模型 deepseek-/ });
+    const cards = await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
     expect(cards.length).toBeGreaterThan(1);
     expect(screen.getByText("128k")).toBeInTheDocument();
     expect(screen.getByText("8k")).toBeInTheDocument();
-    expect(screen.getByText("规格待复核")).toBeInTheDocument();
-    expect(screen.getByText(/可以正常使用，运行时会采用保守预算/)).toBeInTheDocument();
+    expect(screen.getByText("A especificação precisa de revisão")).toBeInTheDocument();
+    expect(screen.getByText(/o modelo continua funcionando, e as execuções usam um orçamento conservador/)).toBeInTheDocument();
 
     // 岗位分配：默认生成模型已派；队伍不出现重排
-    expect(screen.getAllByText("默认生成模型").length).toBeGreaterThan(0);
-    expect(screen.getByText("已派")).toBeInTheDocument();
-    expect(screen.queryByText("重排")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Modelo padrão de geração").length).toBeGreaterThan(0);
+    expect(screen.getByText("Atribuído")).toBeInTheDocument();
+    expect(screen.queryByText("Reordenação")).not.toBeInTheDocument();
 
     // 未声明物理上限的规划模型也可成为默认生成模型；生成类模型不再按岗位互斥。
     const reasonerButton = within(defaultRole).getByRole("button", { name: /deepseek-reasoner/ });
     expect(reasonerButton).toBeEnabled();
     fireEvent.click(reasonerButton);
-    await screen.findByText("岗位分配已保存。");
+    await screen.findByText("Atribuição salva.");
     const assignmentCall = fetchMock.mock.calls.find(([url, init]) =>
       String(url) === "/api/assignments/writing" && init?.method === "PUT",
     );
@@ -255,16 +255,16 @@ describe("设置（默认生成模型与岗位继承）", () => {
     await openChannelManagement();
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
     // 等模型卡落地
-    await screen.findAllByRole("article", { name: /模型 deepseek-/ });
+    await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
 
-    const probeButtons = screen.getAllByRole("button", { name: /探测/ });
+    const probeButtons = screen.getAllByRole("button", { name: /Testar/ });
     fireEvent.click(probeButtons[0]!);
 
-    await screen.findByText("探测结果");
-    expect(screen.getByText("基础文本")).toBeInTheDocument();
-    expect(screen.getByText("流式事件")).toBeInTheDocument();
-    expect(screen.getByText("工具调用")).toBeInTheDocument();
-    expect(screen.getByText("结构输出")).toBeInTheDocument();
+    await screen.findByText("Resultados do teste");
+    expect(screen.getByText("Texto básico")).toBeInTheDocument();
+    expect(screen.getByText("Eventos em fluxo")).toBeInTheDocument();
+    expect(screen.getByText("Chamadas de ferramenta")).toBeInTheDocument();
+    expect(screen.getByText("Saída estruturada")).toBeInTheDocument();
 
     const call = fetchMock.mock.calls.find(([u]) =>
       String(u) === "/api/providers/test",
@@ -308,26 +308,26 @@ describe("设置（默认生成模型与岗位继承）", () => {
     await openChannelManagement();
     fireEvent.click(
       await screen.findByRole("button", {
-        name: "编辑模型渠道 环境 · DeepSeek",
+        name: "Editar provedor de modelo 环境 · DeepSeek",
       }),
     );
-    const providerForm = screen.getByText("编辑模型渠道").closest("form")!;
-    fireEvent.change(within(providerForm).getByLabelText("渠道名称"), {
+    const providerForm = screen.getByText("Editar provedor de modelo").closest("form")!;
+    fireEvent.change(within(providerForm).getByLabelText("Nome do provedor"), {
       target: { value: "DeepSeek 主渠道" },
     });
-    fireEvent.click(within(providerForm).getByRole("button", { name: "保存" }));
-    await screen.findByText(/模型渠道已保存/);
+    fireEvent.click(within(providerForm).getByRole("button", { name: "Salvar" }));
+    await screen.findByText(/Provedor salvo/);
 
     const modelCard = await screen.findByRole("article", {
-      name: "模型 deepseek-chat",
+      name: "Modelo deepseek-chat",
     });
-    fireEvent.click(within(modelCard).getByRole("button", { name: /编辑/ }));
-    const modelForm = screen.getByText("编辑模型").closest("form")!;
-    fireEvent.change(within(modelForm).getByLabelText("上下文上限"), {
+    fireEvent.click(within(modelCard).getByRole("button", { name: /Editar/ }));
+    const modelForm = screen.getByText("Editar modelo").closest("form")!;
+    fireEvent.change(within(modelForm).getByLabelText("Limite de contexto"), {
       target: { value: "256000" },
     });
-    fireEvent.click(within(modelForm).getByRole("button", { name: "保存" }));
-    await screen.findByText("模型规格已保存。");
+    fireEvent.click(within(modelForm).getByRole("button", { name: "Salvar" }));
+    await screen.findByText("Especificação do modelo salva.");
 
     const providerCall = fetchMock.mock.calls.find(
       ([url, init]) =>
@@ -383,7 +383,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     await openChannelManagement();
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
     // 等待模型卡真的渲染（role 按钮存在才可选）
-    await screen.findAllByRole("article", { name: /模型 deepseek-/ });
+    await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
     // 在「写作」列挑一个可指派的Model（其 arised 同时包含 modelId）
     const deepseekBtns = screen.getAllByRole("button", { name: /deepseek-chat/, });
     const assignButton = deepseekBtns.find((b) =>
@@ -393,7 +393,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     fireEvent.click(assignButton!);
 
     // 同步骤推 assigned 到设甲 produce
-    await screen.findByText("已派", undefined, { timeout: 3_000 });
+    await screen.findByText("Atribuído", undefined, { timeout: 3_000 });
     const call = fetchMock.mock.calls.find(([u]) =>
       String(u) === "/api/assignments/writing",
     );
@@ -500,7 +500,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     });
     renderSettings();
 
-    const selector = await screen.findByRole("combobox", { name: "生产资产所属项目" });
+    const selector = await screen.findByRole("combobox", { name: "Projeto dos ativos de produção" });
     expect(within(selector).getByRole("option", { name: "同名作品 · 主线版 · alpha-pr" })).toBeInTheDocument();
     expect(within(selector).getByRole("option", { name: "同名作品 · beta-pro" })).toBeInTheDocument();
   });
@@ -523,9 +523,9 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderSettings();
 
-    expect(await screen.findByText("默认模型配置暂时无法加载")).toBeInTheDocument();
-    expect(screen.queryByText("配置已失效")).not.toBeInTheDocument();
-    expect(screen.queryByRole("group", { name: "默认生成模型" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Não foi possível carregar a configuração do modelo padrão agora")).toBeInTheDocument();
+    expect(screen.queryByText("A configuração deixou de ser válida")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Modelo padrão de geração" })).not.toBeInTheDocument();
   });
 
   it("项目与生产资产查询失败时显示错误并隐藏依赖写入", async () => {
@@ -546,9 +546,9 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderSettings();
 
-    expect(await screen.findByText("项目清单暂时无法加载")).toBeInTheDocument();
-    expect(screen.queryByLabelText("生产资产所属项目")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "保存风格" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Não foi possível carregar a lista de projetos agora")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Projeto dos ativos de produção")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar estilo" })).not.toBeInTheDocument();
   });
 
   it("风格和 Writing Skill 查询失败时不显示空白创建表单", async () => {
@@ -571,11 +571,11 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderSettings();
 
-    expect(await screen.findByText("风格列表暂时无法加载")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "保存风格" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Writing Skill" }));
-    expect(await screen.findByText("Writing Skill 列表暂时无法加载")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "保存 Skill" })).not.toBeInTheDocument();
+    expect(await screen.findByText("A lista de estilos está temporariamente indisponível")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar estilo" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Habilidade de escrita" }));
+    expect(await screen.findByText("A lista de habilidades de escrita está temporariamente indisponível")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar habilidade" })).not.toBeInTheDocument();
   });
 
   it("已停用渠道下的启用模型不出现在岗位候选中", async () => {
@@ -590,13 +590,13 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     });
     renderSettings();
 
-    const defaultRole = await screen.findByRole("group", { name: "默认生成模型" });
+    const defaultRole = await screen.findByRole("group", { name: "Modelo padrão de geração" });
     await within(defaultRole).findByRole("button", { name: /deepseek-reasoner/ });
     expect(
       within(defaultRole).queryByRole("button", { name: /disabled-chat/ }),
     ).not.toBeInTheDocument();
 
-    const embeddingRole = screen.getByRole("group", { name: "嵌入模型" });
+    const embeddingRole = screen.getByRole("group", { name: "Modelo de embedding" });
     expect(
       within(embeddingRole).queryByRole("button", { name: /disabled-embedding/ }),
     ).not.toBeInTheDocument();
@@ -616,21 +616,21 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     });
     renderSettings();
 
-    const styleForm = (await screen.findByText("创建风格")).closest("form");
-    fireEvent.change(within(styleForm!).getByLabelText("名称"), {
+    const styleForm = (await screen.findByText("Criar estilo")).closest("form");
+    fireEvent.change(within(styleForm!).getByLabelText("Nome"), {
       target: { value: "项目A风格草稿" },
     });
 
-    fireEvent.change(screen.getByLabelText("生产资产所属项目"), {
+    fireEvent.change(screen.getByLabelText("Projeto dos ativos de produção"), {
       target: { value: "proj-b" },
     });
-    await screen.findByRole("link", { name: "运行中心 · 灯塔副本" });
+    await screen.findByRole("link", { name: "Central de execuções · 灯塔副本" });
 
-    const nextStyleForm = (await screen.findAllByText("创建风格")).at(-1)!.closest("form");
-    expect(within(nextStyleForm!).getByLabelText("名称")).toHaveValue("");
-    fireEvent.click(screen.getByRole("tab", { name: "Writing Skill" }));
-    const nextSkillForm = (await screen.findByText("创建 Writing Skill")).closest("form");
-    expect(within(nextSkillForm!).getByLabelText("名称")).toHaveValue("");
+    const nextStyleForm = (await screen.findAllByText("Criar estilo")).at(-1)!.closest("form");
+    expect(within(nextStyleForm!).getByLabelText("Nome")).toHaveValue("");
+    fireEvent.click(screen.getByRole("tab", { name: "Habilidade de escrita" }));
+    const nextSkillForm = (await screen.findByText("Criar habilidade de escrita")).closest("form");
+    expect(within(nextSkillForm!).getByLabelText("Nome")).toHaveValue("");
   });
 
   it("生产资产刷新到新版本时重载表单内容，避免用新令牌覆盖旧草稿", async () => {
@@ -659,24 +659,24 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     const { client } = renderSettings();
 
     fireEvent.click(await screen.findByRole("button", { name: /旧风格/ }));
-    const styleForm = screen.getByText("编辑风格").closest("form")!;
-    fireEvent.change(within(styleForm).getByLabelText("名称"), { target: { value: "本地旧风格草稿" } });
+    const styleForm = screen.getByText("Editar estilo").closest("form")!;
+    fireEvent.change(within(styleForm).getByLabelText("Nome"), { target: { value: "本地旧风格草稿" } });
 
     styles = [{ ...styles[0]!, name: "远端新风格", rules: ["远端新规则"], version: 1, updatedAt: "2026-08-01T10:01:00.000Z" }];
     await client.invalidateQueries({ queryKey: ["project", "p-1", "styles"] });
 
     await waitFor(() => {
-      expect(within(screen.getByText("编辑风格").closest("form")!).getByLabelText("名称")).toHaveValue("远端新风格");
+      expect(within(screen.getByText("Editar estilo").closest("form")!).getByLabelText("Nome")).toHaveValue("远端新风格");
     });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Writing Skill" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Habilidade de escrita" }));
     fireEvent.click(await screen.findByRole("button", { name: /旧 Skill/ }));
-    const skillForm = screen.getByText("编辑 Writing Skill").closest("form")!;
-    fireEvent.change(within(skillForm).getByLabelText("名称"), { target: { value: "本地旧 Skill 草稿" } });
+    const skillForm = screen.getByText("Editar habilidade de escrita").closest("form")!;
+    fireEvent.change(within(skillForm).getByLabelText("Nome"), { target: { value: "本地旧 Skill 草稿" } });
     skills = [{ ...skills[0]!, name: "远端新 Skill", instructions: "远端已经更新后的完整指令内容。", version: 1, updatedAt: "2026-08-01T10:01:00.000Z" }];
     await client.invalidateQueries({ queryKey: ["project", "p-1", "writing-skills"] });
     await waitFor(() => {
-      expect(within(screen.getByText("编辑 Writing Skill").closest("form")!).getByLabelText("名称")).toHaveValue("远端新 Skill");
+      expect(within(screen.getByText("Editar habilidade de escrita").closest("form")!).getByLabelText("Nome")).toHaveValue("远端新 Skill");
     });
   });
 
@@ -695,19 +695,19 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
 
     fireEvent.click(
-      screen.getByRole("button", { name: "编辑模型渠道 环境 · DeepSeek" }),
+      screen.getByRole("button", { name: "Editar provedor de modelo 环境 · DeepSeek" }),
     );
-    const draftForm = (await screen.findByText("编辑模型渠道")).closest("form");
-    expect(within(draftForm!).getByLabelText("渠道名称")).toHaveValue("环境 · DeepSeek");
-    fireEvent.change(within(draftForm!).getByLabelText("渠道名称"), {
+    const draftForm = (await screen.findByText("Editar provedor de modelo")).closest("form");
+    expect(within(draftForm!).getByLabelText("Nome do provedor")).toHaveValue("环境 · DeepSeek");
+    fireEvent.change(within(draftForm!).getByLabelText("Nome do provedor"), {
       target: { value: "未保存草稿名" },
     });
 
     fireEvent.click(
-      screen.getByRole("button", { name: "编辑模型渠道 第二渠道" }),
+      screen.getByRole("button", { name: "Editar provedor de modelo 第二渠道" }),
     );
-    const switchedForm = (await screen.findByText("编辑模型渠道")).closest("form");
-    expect(within(switchedForm!).getByLabelText("渠道名称")).toHaveValue("第二渠道");
+    const switchedForm = (await screen.findByText("Editar provedor de modelo")).closest("form");
+    expect(within(switchedForm!).getByLabelText("Nome do provedor")).toHaveValue("第二渠道");
     expect(within(switchedForm!).getByLabelText("Base URL")).toHaveValue(
       "https://api.second.example.com/v1",
     );
@@ -726,35 +726,35 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     renderSettings();
     await openChannelManagement();
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
-    await screen.findAllByRole("article", { name: /模型 deepseek-/ });
+    await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
 
     // 编辑模型 A，留下未保存草稿，再切到模型 B
     fireEvent.click(
-      within(screen.getByRole("article", { name: "模型 deepseek-chat" })).getByRole("button", { name: "编辑" }),
+      within(screen.getByRole("article", { name: "Modelo deepseek-chat" })).getByRole("button", { name: "Editar" }),
     );
-    const draftForm = (await screen.findByText("编辑模型")).closest("form");
-    expect(within(draftForm!).getByLabelText("上游模型名")).toHaveValue("deepseek-chat");
-    fireEvent.change(within(draftForm!).getByLabelText("上游模型名"), {
+    const draftForm = (await screen.findByText("Editar modelo")).closest("form");
+    expect(within(draftForm!).getByLabelText("Nome do modelo na origem")).toHaveValue("deepseek-chat");
+    fireEvent.change(within(draftForm!).getByLabelText("Nome do modelo na origem"), {
       target: { value: "草稿模型名" },
     });
     fireEvent.click(
-      within(screen.getByRole("article", { name: "模型 deepseek-reasoner" })).getByRole("button", { name: "编辑" }),
+      within(screen.getByRole("article", { name: "Modelo deepseek-reasoner" })).getByRole("button", { name: "Editar" }),
     );
-    const switchedForm = (await screen.findByText("编辑模型")).closest("form");
-    expect(within(switchedForm!).getByLabelText("上游模型名")).toHaveValue("deepseek-reasoner");
+    const switchedForm = (await screen.findByText("Editar modelo")).closest("form");
+    expect(within(switchedForm!).getByLabelText("Nome do modelo na origem")).toHaveValue("deepseek-reasoner");
 
     // 新建表单随渠道切换重置
-    fireEvent.click(within(switchedForm!).getByRole("button", { name: "取消" }));
-    const modelSection = screen.getByRole("region", { name: "模型" });
-    fireEvent.click(within(modelSection).getByRole("button", { name: /新建/ }));
-    const newForm = (await screen.findByText("新建模型")).closest("form");
-    fireEvent.change(within(newForm!).getByLabelText("上游模型名"), {
+    fireEvent.click(within(switchedForm!).getByRole("button", { name: "Cancelar" }));
+    const modelSection = screen.getByRole("region", { name: "Modelos" });
+    fireEvent.click(within(modelSection).getByRole("button", { name: /Novo/ }));
+    const newForm = (await screen.findByText("Novo modelo")).closest("form");
+    fireEvent.change(within(newForm!).getByLabelText("Nome do modelo na origem"), {
       target: { value: "draft-x" },
     });
     fireEvent.click(
       screen.getByText("第二渠道", { selector: ".supply__provider-name" }).closest("button")!,
     );
-    const resetForm = (await screen.findByText("新建模型")).closest("form");
-    expect(within(resetForm!).getByLabelText("上游模型名")).toHaveValue("");
+    const resetForm = (await screen.findByText("Novo modelo")).closest("form");
+    expect(within(resetForm!).getByLabelText("Nome do modelo na origem")).toHaveValue("");
   });
 });

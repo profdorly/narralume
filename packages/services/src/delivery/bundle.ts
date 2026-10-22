@@ -1,0 +1,1897 @@
+import { randomUuid, sha256Hex } from "@narralume/domain";
+import {
+  AUTOMATION_DEFAULTS,
+  PersonaCardProfileSchema,
+  StoryLongLineSchema,
+  CanonFactSchema,
+  KnowledgeRecordSchema,
+  KnowledgeCorrectionSchema,
+  BundleCountsSchema,
+  type BundleCounts,
+} from "@narralume/contracts";
+import { decodeBase64 as decodeBase64Bytes } from "../internal/bytes.js";
+import { encodeBase64, hashBytes } from "../internal/bytes.js";
+import {
+  createCanonEntity,
+  createDocument,
+  createOutlineNode,
+  createProject,
+  type CanonEntity,
+  type ProjectPhase,
+  type WritingSkill,
+} from "@narralume/domain";
+import { SqliteProjectCoverRepository } from "@narralume/persistence";
+import { z } from "zod";
+import type {
+  NarrativeDatabase,
+  SqliteAutomationRepository,
+  SqliteCanonRepository,
+  SqliteCreativeRepository,
+  SqliteDeliveryRepository,
+  SqliteDocumentRepository,
+  SqliteImportUploadRepository,
+  SqliteLoreRepository,
+  SqliteNarrativeStateRepository,
+  SqliteProjectRepository,
+  SqliteRetrievalRepository,
+  SqliteStoryRepository,
+} from "@narralume/persistence";
+
+export interface DeliveryContext {
+  readonly database: NarrativeDatabase;
+  readonly projects: SqliteProjectRepository;
+  readonly story: SqliteStoryRepository;
+  readonly canon: SqliteCanonRepository;
+  readonly documents: SqliteDocumentRepository;
+  readonly state: SqliteNarrativeStateRepository;
+  readonly creative: SqliteCreativeRepository;
+  readonly lore: SqliteLoreRepository;
+  readonly delivery: SqliteDeliveryRepository;
+  readonly automation: SqliteAutomationRepository;
+  readonly uploads: SqliteImportUploadRepository;
+  readonly retrieval: SqliteRetrievalRepository;
+}
+
+export const BundleSchema = z.object({
+  manifest: z.object({
+    format: z.literal("narralume"),
+    version: z.literal(6),
+    exportedAt: z.string(),
+    counts: BundleCountsSchema,
+    options: z
+      .object({
+        versionMode: z.enum(["current", "history"]),
+        includeAnnotations: z.boolean(),
+        includeRuns: z.boolean(),
+      })
+      .optional(),
+  }),
+  project: z.object({
+    title: z.string(),
+    subtitle: z.string().nullable(),
+    premise: z.string().nullable(),
+    language: z.string(),
+    phase: z.string(),
+  }),
+  intent: z.record(z.string(), z.unknown()).nullable(),
+  compass: z.record(z.string(), z.unknown()).nullable(),
+  outline: z.array(z.record(z.string(), z.unknown())),
+  entities: z.array(z.record(z.string(), z.unknown())),
+  facts: z.array(CanonFactSchema),
+  factWithdrawals: z.array(
+    z.object({
+      factId: z.string(),
+      projectId: z.string(),
+      reason: z.string(),
+      withdrawnAt: z.string(),
+    }),
+  ),
+  relationships: z.array(z.record(z.string(), z.unknown())),
+  timeline: z.array(z.record(z.string(), z.unknown())),
+  voidedTimeline: z.array(
+    z.object({ eventId: z.string(), voidedAt: z.string() }),
+  ),
+  knowledgeRecords: z.array(KnowledgeRecordSchema),
+  knowledgeCorrections: z.array(KnowledgeCorrectionSchema),
+  foreshadows: z.array(z.record(z.string(), z.unknown())),
+  documents: z.array(
+    z.object({
+      document: z.record(z.string(), z.unknown()),
+      versions: z.array(z.record(z.string(), z.unknown())),
+      draft: z.record(z.string(), z.unknown()).nullable().default(null),
+    }),
+  ),
+  personas: z.array(z.record(z.string(), z.unknown())),
+  lorebooks: z
+    .array(
+      z.object({
+        lorebook: z.record(z.string(), z.unknown()),
+        entries: z.array(z.record(z.string(), z.unknown())).default([]),
+        personaIds: z.array(z.string()).default([]),
+        sessionIds: z.array(z.string()).default([]),
+      }),
+    )
+    .default([]),
+  styles: z.array(z.record(z.string(), z.unknown())),
+  skills: z.array(z.record(z.string(), z.unknown())),
+  cover: z
+    .object({
+      mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+      dataBase64: z.string().min(1),
+      byteSize: z.number().int().positive(),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      crop: z.object({
+        x: z.number().min(0).max(1),
+        y: z.number().min(0).max(1),
+        zoom: z.number().min(1).max(3),
+      }),
+      imageHash: z.string().regex(/^[a-f0-9]{64}$/u),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+    })
+    .nullable()
+    .default(null),
+  annotations: z.array(z.record(z.string(), z.unknown())).default([]),
+  reviews: z
+    .array(
+      z.object({
+        report: z.record(z.string(), z.unknown()),
+        issues: z.array(
+          z.object({
+            issue: z.record(z.string(), z.unknown()),
+            actions: z.array(z.record(z.string(), z.unknown())).default([]),
+          }),
+        ),
+      }),
+    )
+    .default([]),
+  cocreate: z
+    .array(
+      z.object({
+        session: z.record(z.string(), z.unknown()),
+        participants: z.array(z.record(z.string(), z.unknown())).default([]),
+        branches: z.array(z.record(z.string(), z.unknown())).default([]),
+        turns: z.array(z.record(z.string(), z.unknown())).default([]),
+        swipes: z.array(z.record(z.string(), z.unknown())).default([]),
+      }),
+    )
+    .default([]),
+  assistant: z
+    .array(
+      z.object({
+        conversation: z.record(z.string(), z.unknown()),
+        messages: z.array(z.record(z.string(), z.unknown())).default([]),
+        activities: z.array(z.record(z.string(), z.unknown())).default([]),
+      }),
+    )
+    .default([]),
+  longGoals: z.array(z.record(z.string(), z.unknown())).default([]),
+  runs: z.array(z.record(z.string(), z.unknown())).default([]),
+});
+
+export type NarrativeBundle = z.infer<typeof BundleSchema>;
+export interface ProjectExportOptions {
+  versionMode: "current" | "history";
+  includeAnnotations: boolean;
+  includeRuns: boolean;
+}
+
+const DEFAULT_EXPORT_OPTIONS: ProjectExportOptions = {
+  versionMode: "history",
+  includeAnnotations: true,
+  includeRuns: false,
+};
+
+export class DeliveryServiceError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "DeliveryServiceError";
+  }
+}
+
+export function buildBundle(
+  ctx: DeliveryContext,
+  projectId: string,
+  now: string,
+  options: ProjectExportOptions = DEFAULT_EXPORT_OPTIONS,
+): NarrativeBundle {
+  const project = ctx.projects.get(projectId);
+  if (!project)
+    throw new DeliveryServiceError("project.not_found", "Project not found");
+  const intent = ctx.story.getAuthorIntent(projectId);
+  const compass = ctx.automation.getCompass(projectId);
+  const outline = ctx.story.listOutline(projectId);
+  const entities = ctx.canon.listEntities(projectId, {
+    includeRetired: true,
+  });
+  const facts = ctx.canon.listFactHistory(projectId, {
+    includeCandidates: true,
+    includeWithdrawn: true,
+  });
+  const factWithdrawals = ctx.canon.listFactWithdrawals(projectId);
+  const relationships = ctx.state.listCurrentRelationships(projectId);
+  const timeline = ctx.state.listTimeline(projectId, {
+    includeVoided: true,
+  });
+  const voidedTimeline = ctx.state.listVoidedTimeline(projectId);
+  const knowledgeRecords = ctx.state.listKnowledge(projectId, {
+    includeCorrected: true,
+  });
+  const knowledgeCorrections = ctx.state.listKnowledgeCorrections(projectId);
+  const foreshadows = ctx.state.listForeshadows(projectId);
+  const documents = ctx.documents
+    .list(projectId, undefined, true)
+    .map((document) => ({
+      document,
+      versions:
+        options.versionMode === "history"
+          ? ctx.documents.listVersions(projectId, document.id)
+          : document.currentVersionId
+            ? [
+                ctx.documents.getVersion(
+                  projectId,
+                  document.id,
+                  document.currentVersionId,
+                ),
+              ].filter(Boolean)
+            : [],
+      draft: ctx.documents.getDraft(projectId, document.id),
+    }));
+  const personas = ctx.creative.listPersonas(projectId, true);
+  const lorebooks = ctx.lore.listLorebooks(projectId).map((lorebook) => ({
+    lorebook,
+    entries: ctx.lore.listLoreEntries(lorebook.id),
+    personaIds: records(
+      ctx.database,
+      "SELECT persona_id FROM persona_lorebooks WHERE lorebook_id = ? ORDER BY persona_id",
+      lorebook.id,
+    ).map((row) => String(row.persona_id)),
+    sessionIds: records(
+      ctx.database,
+      "SELECT session_id FROM cocreate_session_lorebooks WHERE lorebook_id = ? ORDER BY session_id",
+      lorebook.id,
+    ).map((row) => String(row.session_id)),
+  }));
+  const styles = ctx.delivery.listStyleProfiles(projectId, true);
+  const skills = ctx.delivery.listWritingSkills(projectId);
+  const storedCover = new SqliteProjectCoverRepository(ctx.database).get(
+    projectId,
+  );
+  const cover = storedCover
+    ? {
+        mediaType: storedCover.mediaType,
+        dataBase64: encodeBase64(storedCover.data),
+        byteSize: storedCover.byteSize,
+        width: storedCover.width,
+        height: storedCover.height,
+        crop: storedCover.crop,
+        imageHash: hash(storedCover.data),
+        createdAt: storedCover.createdAt,
+        updatedAt: storedCover.updatedAt,
+      }
+    : null;
+  const annotations = options.includeAnnotations
+    ? records(
+        ctx.database,
+        "SELECT * FROM document_comments WHERE project_id = ? ORDER BY created_at",
+        projectId,
+      ).map((row) => ({
+        id: row.id,
+        documentId: row.document_id,
+        versionId: row.version_id,
+        startOffset: row.start_offset,
+        endOffset: row.end_offset,
+        quote: row.quote,
+        body: row.body,
+        status: row.status,
+      }))
+    : [];
+  const reviews = records(
+    ctx.database,
+    `SELECT * FROM review_reports WHERE project_id = ? ORDER BY created_at`,
+    projectId,
+  ).map((report) => ({
+    report: {
+      id: report.id,
+      runId: report.run_id,
+      stepId: report.step_id,
+      documentVersionId: report.document_version_id,
+      verdict: report.verdict,
+      summary: report.summary,
+      score: parseJsonObject(report.score_json),
+      reviewedContent: report.reviewed_content,
+      reviewedContentHash: report.reviewed_content_hash,
+    },
+    issues: records(
+      ctx.database,
+      "SELECT * FROM review_issues WHERE report_id = ? ORDER BY created_at, id",
+      report.id as string,
+    ).map((issue) => ({
+      issue: {
+        id: issue.id,
+        category: issue.category,
+        severity: issue.severity,
+        message: issue.message,
+        evidence: parseJsonObject(issue.evidence_json),
+        suggestedDirection: issue.suggested_direction,
+        status: issue.status,
+      },
+      actions: records(
+        ctx.database,
+        "SELECT * FROM review_issue_actions WHERE issue_id = ? ORDER BY created_at, id",
+        issue.id as string,
+      ).map((action) => ({
+        id: action.id,
+        action: action.action,
+        note: action.note,
+        priorStatus: action.prior_status,
+        resultingStatus: action.resulting_status,
+      })),
+    })),
+  }));
+  const cocreate = records(
+    ctx.database,
+    "SELECT * FROM cocreate_sessions WHERE project_id = ? ORDER BY created_at",
+    projectId,
+  ).map((session) => ({
+    session: {
+      id: session.id,
+      title: session.title,
+      status: session.status,
+      speakerPolicy: session.speaker_policy,
+      activeBranchId: session.active_branch_id,
+      targetOutlineNodeId: session.target_outline_node_id,
+      authorPersonaId: session.author_persona_id,
+      directorNote: session.director_note,
+      contextTurns: session.context_turns,
+    },
+    participants: records(
+      ctx.database,
+      "SELECT * FROM cocreate_participants WHERE session_id = ? ORDER BY position",
+      session.id as string,
+    ).map((participant) => ({
+      personaId: participant.persona_id,
+      position: participant.position,
+      enabled: participant.enabled === 1,
+      talkativeness: participant.talkativeness,
+    })),
+    branches: records(
+      ctx.database,
+      "SELECT * FROM story_branches WHERE session_id = ? ORDER BY created_at",
+      session.id as string,
+    ).map((branch) => ({
+      id: branch.id,
+      parentBranchId: branch.parent_branch_id,
+      forkedFromTurnId: branch.forked_from_turn_id,
+      name: branch.name,
+      status: branch.status,
+      headTurnId: branch.head_turn_id,
+    })),
+    turns: records(
+      ctx.database,
+      "SELECT * FROM story_turns WHERE session_id = ? ORDER BY created_at, id",
+      session.id as string,
+    ).map((turn) => ({
+      id: turn.id,
+      branchId: turn.branch_id,
+      parentTurnId: turn.parent_turn_id,
+      ordinal: turn.ordinal,
+      role: turn.role,
+      personaId: turn.persona_id,
+      content: turn.content,
+      status: turn.status,
+      selectedSwipeId: turn.selected_swipe_id,
+      metadata: parseJsonObject(turn.metadata_json),
+    })),
+    swipes: records(
+      ctx.database,
+      `SELECT swipe.* FROM turn_swipes swipe
+       JOIN story_turns turn ON turn.id = swipe.turn_id
+       WHERE turn.session_id = ? ORDER BY swipe.created_at, swipe.id`,
+      session.id as string,
+    ).map((swipe) => ({
+      id: swipe.id,
+      turnId: swipe.turn_id,
+      ordinal: swipe.ordinal,
+      content: swipe.content,
+      speakerPersonaId: swipe.speaker_persona_id,
+      status: swipe.status,
+      metadata: parseJsonObject(swipe.metadata_json),
+    })),
+  }));
+  const assistant = records(
+    ctx.database,
+    "SELECT * FROM assistant_conversations WHERE project_id = ? ORDER BY created_at",
+    projectId,
+  ).map((conversation) => ({
+    conversation: {
+      id: conversation.id,
+      title: conversation.title,
+      status: conversation.status,
+    },
+    messages: records(
+      ctx.database,
+      "SELECT * FROM assistant_messages WHERE conversation_id = ? ORDER BY created_at, id",
+      conversation.id as string,
+    ).map((message) => ({
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      context: message.context_json
+        ? parseJsonObject(message.context_json)
+        : null,
+    })),
+    activities: records(
+      ctx.database,
+      "SELECT * FROM assistant_activities WHERE conversation_id = ? ORDER BY created_at, id",
+      conversation.id as string,
+    ).map((activity) => ({
+      id: activity.id,
+      messageId: activity.message_id,
+      kind: activity.kind,
+      toolName: activity.tool_name,
+      status: activity.status,
+      goal: activity.goal,
+      input: parseJsonObject(activity.input_json),
+      result: activity.result_json
+        ? parseJsonObject(activity.result_json)
+        : null,
+      error: activity.error_json ? parseJsonObject(activity.error_json) : null,
+      origin: activity.origin_json
+        ? parseJsonObject(activity.origin_json)
+        : null,
+      executionMode: activity.execution_mode,
+      phaseKey: activity.phase_key,
+      artifacts: activity.artifacts_json
+        ? JSON.parse(activity.artifacts_json as string)
+        : null,
+    })),
+  }));
+  const longGoals = records(
+    ctx.database,
+    "SELECT * FROM assistant_long_goals WHERE project_id = ? ORDER BY created_at, id",
+    projectId,
+  ).map((goal) => ({
+    id: goal.id,
+    conversationId: goal.conversation_id,
+    activityId: goal.activity_id,
+    title: goal.title,
+    targetChapters: goal.target_chapters,
+    phase: goal.phase,
+    status: goal.status,
+    baselineHash: goal.baseline_hash,
+    lastError: goal.last_error_json
+      ? parseJsonObject(goal.last_error_json)
+      : null,
+  }));
+  const runs = options.includeRuns
+    ? records(
+        ctx.database,
+        "SELECT * FROM runs WHERE project_id = ? ORDER BY created_at",
+        projectId,
+      )
+    : [];
+  const counts: BundleCounts = BundleCountsSchema.parse({
+    outline: outline.length,
+    entities: entities.length,
+    facts: facts.length,
+    relationships: relationships.length,
+    timeline: timeline.length,
+    knowledgeRecords: knowledgeRecords.length,
+    knowledgeCorrections: knowledgeCorrections.length,
+    foreshadows: foreshadows.length,
+    documents: documents.length,
+    versions: documents.reduce((sum, item) => sum + item.versions.length, 0),
+    drafts: documents.filter((item) => item.draft).length,
+    personas: personas.length,
+    lorebooks: lorebooks.length,
+    loreEntries: lorebooks.reduce((sum, item) => sum + item.entries.length, 0),
+    personaLorebookBindings: lorebooks.reduce(
+      (sum, item) => sum + item.personaIds.length,
+      0,
+    ),
+    sessionLorebookBindings: lorebooks.reduce(
+      (sum, item) => sum + item.sessionIds.length,
+      0,
+    ),
+    styles: styles.length,
+    skills: skills.length,
+    annotations: annotations.length,
+    cover: cover ? 1 : 0,
+    cocreateSessions: cocreate.length,
+    storyTurns: cocreate.reduce((sum, item) => sum + item.turns.length, 0),
+    reviews: reviews.length,
+    reviewIssues: reviews.reduce((sum, item) => sum + item.issues.length, 0),
+    assistantConversations: assistant.length,
+    assistantMessages: assistant.reduce(
+      (sum, item) => sum + item.messages.length,
+      0,
+    ),
+    assistantActivities: assistant.reduce(
+      (sum, item) => sum + item.activities.length,
+      0,
+    ),
+    assistantLongGoals: longGoals.length,
+    runs: runs.length,
+  });
+  return BundleSchema.parse({
+    manifest: {
+      format: "narralume",
+      version: 6,
+      exportedAt: now,
+      counts,
+      options,
+    },
+    project: {
+      title: project.title,
+      subtitle: project.subtitle,
+      premise: project.premise,
+      language: project.language,
+      phase: project.phase,
+    },
+    intent,
+    compass,
+    outline,
+    entities,
+    facts,
+    factWithdrawals,
+    relationships,
+    timeline,
+    voidedTimeline,
+    knowledgeRecords,
+    knowledgeCorrections,
+    foreshadows,
+    documents,
+    personas,
+    lorebooks,
+    styles,
+    skills,
+    cover,
+    annotations,
+    reviews,
+    cocreate,
+    assistant,
+    longGoals,
+    runs,
+  });
+}
+
+export function restoreBundle(
+  ctx: DeliveryContext,
+  bundle: NarrativeBundle,
+  title: string,
+  now: string,
+): { projectId: string; counts: BundleCounts } {
+  const projectId = randomUuid();
+  const project = createProject({
+    id: projectId,
+    title,
+    subtitle: bundle.project.subtitle,
+    premise: bundle.project.premise,
+    language: bundle.project.language,
+    now,
+  });
+  ctx.projects.insert(project);
+  const nodeMap = new Map<string, string>();
+  const entityMap = new Map<string, string>();
+  const factMap = new Map<string, string>();
+  const knowledgeMap = new Map<string, string>();
+  const timelineMap = new Map<string, string>();
+  const foreshadowMap = new Map<string, string>();
+  const documentMap = new Map<string, string>();
+  const versionMap = new Map<string, string>();
+  const personaMap = new Map<string, string>();
+  const lorebookMap = new Map<string, string>();
+  const sessionMap = new Map<string, string>();
+  const conversationMap = new Map<string, string>();
+  const messageMap = new Map<string, string>();
+  const activityMap = new Map<string, string>();
+  const issueMap = new Map<string, string>();
+  let restoredFacts = 0;
+  let restoredRelationships = 0;
+  let restoredTimeline = 0;
+  let restoredForeshadows = 0;
+  let restoredVersions = 0;
+  let restoredDrafts = 0;
+  let restoredAnnotations = 0;
+  let restoredReviewIssues = 0;
+  let restoredCoCreateSessions = 0;
+  let restoredStoryTurns = 0;
+  let restoredLoreEntries = 0;
+  let restoredPersonaLorebookBindings = 0;
+  let restoredSessionLorebookBindings = 0;
+  let restoredMessages = 0;
+  let restoredActivities = 0;
+  let restoredLongGoals = 0;
+  let restoredCover = 0;
+  // issueMap 保留 issue 旧 ID → 新 ID 的映射，便于后续扩展（如裁定回指）。
+  const orderedOutline = [...bundle.outline].sort(
+    (a, b) => numberField(a, "depth") - numberField(b, "depth"),
+  );
+  for (const source of orderedOutline) {
+    const oldId = required(stringField(source, "id"), "outline id");
+    const oldParentId = stringField(source, "parentId");
+    const parentId = oldParentId ? nodeMap.get(oldParentId) : null;
+    const parent = parentId
+      ? ctx.story.requireOutlineNode(projectId, parentId)
+      : null;
+    const id = randomUuid();
+    nodeMap.set(oldId, id);
+    const node = createOutlineNode({
+      id,
+      projectId,
+      parent,
+      kind: outlineKind(stringField(source, "kind")),
+      ordinal: numberField(source, "ordinal"),
+      title: stringField(source, "title") ?? "Nó sem nome",
+      summary: stringField(source, "summary"),
+      goal: stringField(source, "goal"),
+      conflict: stringField(source, "conflict"),
+      outcome: stringField(source, "outcome"),
+      storyTime: stringField(source, "storyTime"),
+      metadata: objectField(source, "metadata"),
+      now,
+    });
+    ctx.story.insertOutlineNode(node);
+    const status = stringField(source, "status");
+    if (status && status !== "planned") {
+      ctx.story.updateOutlineStatus(projectId, id, outlineStatus(status), now);
+    }
+  }
+  if (!orderedOutline.length) {
+    ctx.story.insertOutlineNode(
+      createOutlineNode({
+        id: randomUuid(),
+        projectId,
+        parent: null,
+        kind: "book",
+        ordinal: 0,
+        title,
+        now,
+      }),
+    );
+  }
+  for (const source of bundle.entities) {
+    const oldId = required(stringField(source, "id"), "entity id");
+    const id = randomUuid();
+    entityMap.set(oldId, id);
+    const entity = createCanonEntity({
+      id,
+      projectId,
+      type: canonType(stringField(source, "type")),
+      name: stringField(source, "name") ?? "Entidade sem nome",
+      aliases: stringArray(source.aliases),
+      description: stringField(source, "description"),
+      attributes: objectField(source, "attributes"),
+      now,
+    });
+    ctx.canon.insertEntity(
+      stringField(source, "status") === "retired"
+        ? { ...entity, status: "retired" }
+        : entity,
+    );
+  }
+  for (const source of bundle.outline) {
+    const nodeId = nodeMap.get(stringField(source, "id") ?? "");
+    const metadata = objectField(source, "metadata");
+    if (nodeId && Array.isArray(metadata.plannedEntityIds)) {
+      ctx.story.updateOutlineDetails(
+        projectId,
+        nodeId,
+        {
+          metadata: {
+            ...metadata,
+            plannedEntityIds: stringArray(metadata.plannedEntityIds)
+              .map((id) => entityMap.get(id))
+              .filter((id): id is string => Boolean(id)),
+          },
+        },
+        now,
+      );
+    }
+    const povEntityId = entityMap.get(stringField(source, "povEntityId") ?? "");
+    if (nodeId && povEntityId) {
+      ctx.database.raw
+        .prepare(
+          "UPDATE outline_nodes SET pov_entity_id = ?, updated_at = ? WHERE project_id = ? AND id = ?",
+        )
+        .run(povEntityId, now, projectId, nodeId);
+    }
+  }
+  const mapped = (map: Map<string, string>, id: string): string => {
+    const value = map.get(id);
+    if (!value)
+      throw new DeliveryServiceError(
+        "import.bundle.reference_missing",
+        "A story-state reference is missing from the bundle",
+      );
+    return value;
+  };
+  const optionalMapped = (map: Map<string, string>, id: string | null) =>
+    id === null ? null : mapped(map, id);
+  for (const source of bundle.facts) {
+    if (factMap.has(source.id))
+      throw new DeliveryServiceError(
+        "import.bundle.invalid_schema",
+        "Duplicate fact ID in bundle",
+      );
+    const id = randomUuid();
+    factMap.set(source.id, id);
+    ctx.canon.insertFact({
+      ...source,
+      id,
+      projectId,
+      subjectId: mapped(entityMap, source.subjectId),
+      objectEntityId: optionalMapped(entityMap, source.objectEntityId),
+      knowledgeSubjectId: optionalMapped(entityMap, source.knowledgeSubjectId),
+      validFromNodeId: optionalMapped(nodeMap, source.validFromNodeId),
+      validToNodeId: optionalMapped(nodeMap, source.validToNodeId),
+      sourceType: "bundle-restore",
+      sourceId: null,
+      supersedesFactId: null,
+    });
+    restoredFacts += 1;
+  }
+  // Link history only after every fact exists; bundle order is not a dependency order.
+  for (const source of bundle.facts) {
+    if (source.supersedesFactId)
+      ctx.database.raw
+        .prepare(
+          "UPDATE canon_facts SET supersedes_fact_id = ? WHERE project_id = ? AND id = ?",
+        )
+        .run(
+          mapped(factMap, source.supersedesFactId),
+          projectId,
+          mapped(factMap, source.id),
+        );
+  }
+  for (const source of bundle.factWithdrawals)
+    ctx.canon.withdrawFact({
+      ...source,
+      projectId,
+      factId: mapped(factMap, source.factId),
+    });
+  for (const source of bundle.relationships) {
+    const fromEntityId = entityMap.get(
+      stringField(source, "fromEntityId") ?? "",
+    );
+    const toEntityId = entityMap.get(stringField(source, "toEntityId") ?? "");
+    if (!fromEntityId || !toEntityId) continue;
+    ctx.state.insertRelationship({
+      id: randomUuid(),
+      projectId,
+      fromEntityId,
+      toEntityId,
+      relation: stringField(source, "relation") ?? "relacionado",
+      intensity: typeof source.intensity === "number" ? source.intensity : null,
+      state: objectField(source, "state"),
+      outlineNodeId:
+        nodeMap.get(stringField(source, "outlineNodeId") ?? "") ?? null,
+      storyTime: stringField(source, "storyTime"),
+      sourceId: null,
+      supersedesEventId: null,
+      createdAt: now,
+    });
+    restoredRelationships += 1;
+  }
+  for (const source of bundle.timeline) {
+    const oldId = required(stringField(source, "id"), "timeline id");
+    const id = randomUuid();
+    timelineMap.set(oldId, id);
+    ctx.state.insertTimelineEvent({
+      id,
+      projectId,
+      title: stringField(source, "title") ?? "Evento sem nome",
+      description: stringField(source, "description"),
+      outlineNodeId:
+        nodeMap.get(stringField(source, "outlineNodeId") ?? "") ?? null,
+      storyTimeStart: stringField(source, "storyTimeStart"),
+      storyTimeEnd: stringField(source, "storyTimeEnd"),
+      sequence: numberField(source, "sequence"),
+      participants: stringArray(source.participants)
+        .map((id) => entityMap.get(id))
+        .filter((id): id is string => Boolean(id)),
+      causes: [],
+      visibility: timelineVisibility(stringField(source, "visibility")),
+      sourceId: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+    restoredTimeline += 1;
+  }
+  const insertCausalLink = ctx.database.raw.prepare(
+    "INSERT OR IGNORE INTO causal_links(cause_event_id, effect_event_id) VALUES (?, ?)",
+  );
+  for (const source of bundle.timeline) {
+    const effectId = timelineMap.get(stringField(source, "id") ?? "");
+    if (!effectId) continue;
+    for (const oldCauseId of stringArray(source.causes)) {
+      const causeId = timelineMap.get(oldCauseId);
+      if (causeId && causeId !== effectId)
+        insertCausalLink.run(causeId, effectId);
+    }
+  }
+  // Restore knowledge before reapplying event withdrawals. Historical records
+  // can legitimately refer to withdrawn claims, but must never lose the link.
+  // Keep the original ID tie-break order when equal-time entries are assigned
+  // new IDs. Otherwise restoring a bundle could change a character's belief.
+  const knowledgeIdPrefix = randomUuid().slice(0, 24);
+  const orderedKnowledge = [...bundle.knowledgeRecords].sort(
+    (left, right) =>
+      left.createdAt.localeCompare(right.createdAt) ||
+      left.id.localeCompare(right.id),
+  );
+  for (const [index, source] of orderedKnowledge.entries()) {
+    if (knowledgeMap.has(source.id))
+      throw new DeliveryServiceError(
+        "import.bundle.invalid_schema",
+        "Duplicate knowledge ID in bundle",
+      );
+    if (
+      Boolean(source.factId) === Boolean(source.timelineEventId) ||
+      (source.knowerType === "character") !== Boolean(source.knowerEntityId)
+    )
+      throw new DeliveryServiceError(
+        "import.bundle.invalid_schema",
+        "Invalid knowledge target in bundle",
+      );
+    const id = `${knowledgeIdPrefix}${index.toString(16).padStart(12, "0")}`;
+    knowledgeMap.set(source.id, id);
+    ctx.state.insertKnowledge({
+      ...source,
+      id,
+      projectId,
+      knowerEntityId: optionalMapped(entityMap, source.knowerEntityId),
+      factId: optionalMapped(factMap, source.factId),
+      timelineEventId: optionalMapped(timelineMap, source.timelineEventId),
+      learnedAtNodeId: mapped(nodeMap, source.learnedAtNodeId),
+    });
+  }
+  for (const source of bundle.knowledgeCorrections)
+    ctx.state.insertKnowledgeCorrection({
+      ...source,
+      projectId,
+      recordId: mapped(knowledgeMap, source.recordId),
+      replacementRecordId: optionalMapped(
+        knowledgeMap,
+        source.replacementRecordId,
+      ),
+    });
+  for (const source of bundle.voidedTimeline)
+    ctx.database.raw
+      .prepare(
+        "UPDATE timeline_events SET voided_at = ? WHERE project_id = ? AND id = ?",
+      )
+      .run(source.voidedAt, projectId, mapped(timelineMap, source.eventId));
+  for (const source of bundle.foreshadows) {
+    const oldId = required(stringField(source, "id"), "foreshadow id");
+    const id = randomUuid();
+    foreshadowMap.set(oldId, id);
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO foreshadows(
+          id, project_id, title, description, status, importance,
+          target_from_node_id, target_to_node_id, resolution_node_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        id,
+        projectId,
+        stringField(source, "title") ?? "Antecipação sem nome",
+        stringField(source, "description") ?? "",
+        foreshadowStatus(stringField(source, "status")),
+        boundedNumber(source.importance, 1, 5, 3),
+        nodeMap.get(stringField(source, "targetFromNodeId") ?? "") ?? null,
+        nodeMap.get(stringField(source, "targetToNodeId") ?? "") ?? null,
+        nodeMap.get(stringField(source, "resolutionNodeId") ?? "") ?? null,
+        now,
+        now,
+      );
+    restoredForeshadows += 1;
+  }
+  const insertForeshadowDependency = ctx.database.raw.prepare(
+    "INSERT OR IGNORE INTO foreshadow_dependencies(foreshadow_id, depends_on_id) VALUES (?, ?)",
+  );
+  const insertForeshadowEvidence = ctx.database.raw.prepare(
+    "INSERT OR IGNORE INTO foreshadow_evidence(foreshadow_id, outline_node_id, created_at) VALUES (?, ?, ?)",
+  );
+  for (const source of bundle.foreshadows) {
+    const id = foreshadowMap.get(stringField(source, "id") ?? "");
+    if (!id) continue;
+    for (const oldDependencyId of stringArray(source.dependencies)) {
+      const dependencyId = foreshadowMap.get(oldDependencyId);
+      if (dependencyId && dependencyId !== id) {
+        insertForeshadowDependency.run(id, dependencyId);
+      }
+    }
+    for (const oldNodeId of stringArray(source.evidenceNodeIds)) {
+      const nodeId = nodeMap.get(oldNodeId);
+      if (nodeId) insertForeshadowEvidence.run(id, nodeId, now);
+    }
+  }
+  for (const item of bundle.documents) {
+    const documentId = randomUuid();
+    const oldDocumentId = required(
+      stringField(item.document, "id"),
+      "document id",
+    );
+    documentMap.set(oldDocumentId, documentId);
+    const document = ctx.documents.insert(
+      createDocument({
+        id: documentId,
+        projectId,
+        kind: documentKind(stringField(item.document, "kind")),
+        title: stringField(item.document, "title") ?? "Manuscrito sem nome",
+        outlineNodeId:
+          nodeMap.get(stringField(item.document, "outlineNodeId") ?? "") ??
+          null,
+        now,
+      }),
+    );
+    const orderedVersions = [...item.versions].reverse();
+    for (const version of orderedVersions) {
+      const appended = ctx.documents.appendVersion(projectId, document.id, {
+        id: randomUuid(),
+        content: stringField(version, "content") ?? "",
+        source: `bundle:${stringField(version, "source") ?? "restore"}`,
+        now,
+      });
+      const oldVersionId = stringField(version, "id");
+      if (oldVersionId) versionMap.set(oldVersionId, appended.id);
+      restoredVersions += 1;
+    }
+    if (item.draft) {
+      const draftBaseVersionId =
+        versionMap.get(stringField(item.draft, "baseVersionId") ?? "") ?? null;
+      // 在版本追加之后写回草稿；appendVersion 会清掉过期草稿，因此草稿
+      // 恢复必须放在版本循环之后。
+      ctx.documents.upsertDraft(projectId, documentId, {
+        baseVersionId: draftBaseVersionId,
+        content: stringField(item.draft, "content") ?? "",
+        now,
+      });
+      restoredDrafts += 1;
+    }
+    if (stringField(item.document, "archivedAt")) {
+      const current = ctx.documents.get(projectId, documentId)!;
+      ctx.documents.setArchived(
+        projectId,
+        documentId,
+        true,
+        current.updatedAt,
+        now,
+      );
+    }
+  }
+  if (bundle.intent) {
+    ctx.story.upsertAuthorIntent({
+      projectId,
+      promise: stringField(bundle.intent, "promise"),
+      themes: stringArray(bundle.intent.themes),
+      audience: stringField(bundle.intent, "audience"),
+      tone: stringField(bundle.intent, "tone"),
+      boundaries: stringArray(bundle.intent.boundaries),
+      endingDirection: stringField(bundle.intent, "endingDirection"),
+      currentFocus: stringField(bundle.intent, "currentFocus"),
+      lockedFields: stringArray(bundle.intent.lockedFields),
+      updatedAt: now,
+    });
+  }
+  if (bundle.compass) {
+    const target = objectField(bundle.compass, "target");
+    const longLines = z
+      .array(StoryLongLineSchema)
+      .parse(bundle.compass.longLines)
+      .map((line) => ({
+        ...line,
+        ...(line.development
+          ? {
+              development: {
+                ...line.development,
+                scopeNodeId: line.development.scopeNodeId
+                  ? required(
+                      nodeMap.get(line.development.scopeNodeId) ?? null,
+                      "story line scope",
+                    )
+                  : null,
+                evidenceChapterIds: line.development.evidenceChapterIds.map(
+                  (id) =>
+                    required(nodeMap.get(id) ?? null, "story line evidence"),
+                ),
+              },
+            }
+          : {}),
+      }));
+    ctx.automation.upsertCompass({
+      projectId,
+      corePromise:
+        stringField(bundle.compass, "corePromise") ??
+        bundle.project.premise ??
+        "Continuar a cumprir a promessa central da obra",
+      endingDirection: stringField(bundle.compass, "endingDirection"),
+      longLines,
+      themeQuestions: stringArray(bundle.compass.themeQuestions),
+      target: {
+        chapters: boundedNumber(
+          target.chapters,
+          1,
+          10_000,
+          AUTOMATION_DEFAULTS.targetChapters,
+        ),
+        wordsPerChapter: boundedNumber(
+          target.wordsPerChapter,
+          100,
+          100_000,
+          AUTOMATION_DEFAULTS.wordsPerChapter,
+        ),
+        volumes: boundedNumber(
+          target.volumes,
+          1,
+          100,
+          AUTOMATION_DEFAULTS.volumes,
+        ),
+      },
+      constraints: stringArray(bundle.compass.constraints),
+      version: 1,
+      updatedAt: now,
+    });
+  }
+  for (const source of bundle.personas) {
+    const oldPersonaId = stringField(source, "id");
+    const personaId = randomUuid();
+    if (oldPersonaId) personaMap.set(oldPersonaId, personaId);
+    ctx.creative.insertPersona({
+      id: personaId,
+      projectId,
+      kind: personaKind(stringField(source, "kind")),
+      entityId: entityMap.get(stringField(source, "entityId") ?? "") ?? null,
+      name: stringField(source, "name") ?? "Persona sem nome",
+      description: stringField(source, "description"),
+      instructions: stringField(source, "instructions") ?? "",
+      voice: objectField(source, "voice"),
+      profile: PersonaCardProfileSchema.parse(source.profile),
+      status:
+        stringField(source, "status") === "retired" ? "retired" : "active",
+      createdAt: now,
+      updatedAt: now,
+      version: 0,
+    });
+  }
+  for (const item of bundle.lorebooks) {
+    const oldLorebookId = required(
+      stringField(item.lorebook, "id"),
+      "lorebook id",
+    );
+    const lorebookId = randomUuid();
+    lorebookMap.set(oldLorebookId, lorebookId);
+    ctx.lore.insertLorebook({
+      id: lorebookId,
+      projectId,
+      name: stringField(item.lorebook, "name") ?? "Livro de lore restaurado",
+      description: stringField(item.lorebook, "description"),
+      enabledGlobally: item.lorebook.enabledGlobally === true,
+      scanTurns: Math.trunc(boundedNumber(item.lorebook.scanTurns, 0, 200, 24)),
+      enabled: item.lorebook.enabled !== false,
+      createdAt: now,
+      updatedAt: now,
+      version: 0,
+    });
+    for (const source of item.entries) {
+      ctx.lore.insertLoreEntry({
+        id: randomUuid(),
+        lorebookId,
+        title: stringField(source, "title") ?? "Entrada de lore restaurada",
+        content: stringField(source, "content") ?? "(entrada em branco)",
+        keys: stringArray(source.keys),
+        constant: source.constant === true,
+        priority: Math.trunc(
+          boundedNumber(source.priority, -1_000_000, 1_000_000, 0),
+        ),
+        enabled: source.enabled !== false,
+        createdAt: now,
+        updatedAt: now,
+        version: 0,
+      });
+      restoredLoreEntries += 1;
+    }
+  }
+  for (const source of bundle.styles) {
+    ctx.delivery.insertStyleProfile({
+      id: randomUuid(),
+      projectId,
+      name: stringField(source, "name") ?? "Estilo restaurado",
+      description: stringField(source, "description"),
+      rules: stringArray(source.rules),
+      examples: stringArray(source.examples),
+      negativeRules: stringArray(source.negativeRules),
+      source: "bundle-restore",
+      active: source.active === true,
+      status:
+        stringField(source, "status") === "retired" ? "retired" : "active",
+      createdAt: now,
+      updatedAt: now,
+      version: 0,
+    });
+  }
+  for (const source of bundle.skills) {
+    ctx.delivery.insertWritingSkill({
+      id: randomUuid(),
+      projectId,
+      name: stringField(source, "name") ?? "Habilidade restaurada",
+      description: stringField(source, "description"),
+      instructions:
+        stringField(source, "instructions") ?? "Manter a coerência narrativa",
+      scopes: skillScopes(source.scopes),
+      priority: boundedNumber(source.priority, 0, 100, 50),
+      enabled: source.enabled !== false,
+      source: "bundle-restore",
+      createdAt: now,
+      updatedAt: now,
+      version: 0,
+    });
+  }
+  ctx.projects.update({
+    ...project,
+    phase: projectPhase(bundle.project.phase),
+    updatedAt: now,
+  });
+  if (bundle.cover) {
+    const coverBytes = decodeBase64(bundle.cover.dataBase64);
+    if (
+      coverBytes.length !== bundle.cover.byteSize ||
+      hash(coverBytes) !== bundle.cover.imageHash
+    ) {
+      throw new DeliveryServiceError(
+        "backup.cover.integrity",
+        "Cover data verification failed; the restore was not performed",
+      );
+    }
+    new SqliteProjectCoverRepository(ctx.database).upsert({
+      projectId,
+      mediaType: bundle.cover.mediaType,
+      data: new Uint8Array(coverBytes),
+      width: bundle.cover.width,
+      height: bundle.cover.height,
+      crop: bundle.cover.crop,
+      now,
+    });
+    restoredCover = 1;
+  }
+  for (const source of bundle.annotations) {
+    const documentId = documentMap.get(stringField(source, "documentId") ?? "");
+    const versionId = versionMap.get(stringField(source, "versionId") ?? "");
+    if (!documentId || !versionId) continue;
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO document_comments(
+          id, project_id, document_id, version_id, start_offset, end_offset,
+          quote, body, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        randomUuid(),
+        projectId,
+        documentId,
+        versionId,
+        numberField(source, "startOffset"),
+        Math.max(
+          numberField(source, "startOffset") + 1,
+          numberField(source, "endOffset"),
+        ),
+        stringField(source, "quote") ?? "",
+        stringField(source, "body") ?? "",
+        stringField(source, "status") === "resolved" ? "resolved" : "open",
+        now,
+        now,
+      );
+    restoredAnnotations += 1;
+  }
+  for (const item of bundle.reviews) {
+    const reportId = randomUuid();
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO review_reports(
+          id, project_id, run_id, step_id, document_version_id, verdict,
+          summary, score_json, reviewed_content, reviewed_content_hash,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        reportId,
+        projectId,
+        `bundle-restored:${stringField(item.report, "runId") ?? "unknown"}`,
+        `bundle-restored:${stringField(item.report, "stepId") ?? "unknown"}`,
+        versionMap.get(stringField(item.report, "documentVersionId") ?? "") ??
+          null,
+        ["pass", "revise", "block"].includes(
+          stringField(item.report, "verdict") ?? "",
+        )
+          ? stringField(item.report, "verdict")
+          : "revise",
+        stringField(item.report, "summary") ?? "",
+        JSON.stringify(objectField(item.report, "score")),
+        stringField(item.report, "reviewedContent"),
+        stringField(item.report, "reviewedContentHash"),
+        now,
+      );
+    for (const entry of item.issues) {
+      const issueId = randomUuid();
+      const oldIssueId = stringField(entry.issue, "id");
+      if (oldIssueId) issueMap.set(oldIssueId, issueId);
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO review_issues(
+            id, report_id, category, severity, message, evidence_json,
+            suggested_direction, status, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          issueId,
+          reportId,
+          stringField(entry.issue, "category") ?? "structure",
+          ["info", "minor", "major", "critical"].includes(
+            stringField(entry.issue, "severity") ?? "",
+          )
+            ? stringField(entry.issue, "severity")
+            : "info",
+          stringField(entry.issue, "message") ?? "",
+          JSON.stringify(entry.issue.evidence ?? {}),
+          stringField(entry.issue, "suggestedDirection"),
+          ["open", "accepted", "rejected", "resolved"].includes(
+            stringField(entry.issue, "status") ?? "",
+          )
+            ? stringField(entry.issue, "status")
+            : "open",
+          now,
+        );
+      restoredReviewIssues += 1;
+      for (const action of entry.actions) {
+        ctx.database.raw
+          .prepare(
+            `INSERT INTO review_issue_actions(
+              id, issue_id, action, note, prior_status, resulting_status,
+              created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            randomUuid(),
+            issueId,
+            ["accept", "reject", "false_positive", "intentional_keep"].includes(
+              stringField(action, "action") ?? "",
+            )
+              ? stringField(action, "action")
+              : "accept",
+            stringField(action, "note"),
+            stringField(action, "priorStatus") ?? "open",
+            stringField(action, "resultingStatus") ?? "accepted",
+            now,
+          );
+      }
+    }
+  }
+  for (const item of bundle.cocreate) {
+    const sessionId = randomUuid();
+    const oldSessionId = stringField(item.session, "id");
+    if (oldSessionId) sessionMap.set(oldSessionId, sessionId);
+    const sessionBranchMap = new Map<string, string>();
+    const turnMap = new Map<string, string>();
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO cocreate_sessions(
+          id, project_id, title, status, speaker_policy,
+          active_branch_id, target_outline_node_id, author_persona_id,
+          director_note, context_turns, created_at, updated_at, version
+        ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, 0)`,
+      )
+      .run(
+        sessionId,
+        projectId,
+        stringField(item.session, "title") ?? "Sessão de coescrita restaurada",
+        ["active", "paused", "archived"].includes(
+          stringField(item.session, "status") ?? "",
+        )
+          ? stringField(item.session, "status")
+          : "archived",
+        ["manual", "round_robin", "natural"].includes(
+          stringField(item.session, "speakerPolicy") ?? "",
+        )
+          ? stringField(item.session, "speakerPolicy")
+          : "manual",
+        nodeMap.get(stringField(item.session, "targetOutlineNodeId") ?? "") ??
+          null,
+        personaMap.get(stringField(item.session, "authorPersonaId") ?? "") ??
+          null,
+        stringField(item.session, "directorNote"),
+        Math.max(
+          4,
+          Math.min(200, numberField(item.session, "contextTurns") || 24),
+        ),
+        now,
+        now,
+      );
+    restoredCoCreateSessions += 1;
+    for (const participant of item.participants) {
+      const personaId = personaMap.get(
+        stringField(participant, "personaId") ?? "",
+      );
+      if (!personaId) continue;
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO cocreate_participants(
+            session_id, persona_id, position, enabled, talkativeness,
+            created_at
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          sessionId,
+          personaId,
+          numberField(participant, "position"),
+          participant.enabled === false ? 0 : 1,
+          boundedNumber(participant.talkativeness, 0, 1, 0.5),
+          now,
+        );
+    }
+    for (const branch of item.branches) {
+      const branchId = randomUuid();
+      const oldBranchId = stringField(branch, "id");
+      if (oldBranchId) sessionBranchMap.set(oldBranchId, branchId);
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO story_branches(
+            id, session_id, parent_branch_id, forked_from_turn_id, name,
+            status, head_turn_id, created_at, updated_at
+          ) VALUES (?, ?, NULL, NULL, ?, ?, NULL, ?, ?)`,
+        )
+        .run(
+          branchId,
+          sessionId,
+          stringField(branch, "name") ?? "Ramo",
+          stringField(branch, "status") === "archived" ? "archived" : "active",
+          now,
+          now,
+        );
+    }
+    const orderedTurns = [...item.turns].sort(
+      (a, b) => numberField(a, "ordinal") - numberField(b, "ordinal"),
+    );
+    for (const turn of orderedTurns) {
+      const branchId = sessionBranchMap.get(
+        stringField(turn, "branchId") ?? "",
+      );
+      if (!branchId) continue;
+      const turnId = randomUuid();
+      const oldTurnId = stringField(turn, "id");
+      if (oldTurnId) turnMap.set(oldTurnId, turnId);
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO story_turns(
+            id, project_id, session_id, branch_id, parent_turn_id, ordinal,
+            role, persona_id, content, status, selected_swipe_id,
+            source_run_id, metadata_json, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)`,
+        )
+        .run(
+          turnId,
+          projectId,
+          sessionId,
+          branchId,
+          turnMap.get(stringField(turn, "parentTurnId") ?? "") ?? null,
+          numberField(turn, "ordinal"),
+          ["user", "assistant", "director", "system"].includes(
+            stringField(turn, "role") ?? "",
+          )
+            ? stringField(turn, "role")
+            : "assistant",
+          personaMap.get(stringField(turn, "personaId") ?? "") ?? null,
+          stringField(turn, "content") ?? "",
+          ["active", "reverted", "adopted"].includes(
+            stringField(turn, "status") ?? "",
+          )
+            ? stringField(turn, "status")
+            : "active",
+          JSON.stringify(objectField(turn, "metadata")),
+          now,
+          now,
+        );
+      restoredStoryTurns += 1;
+      ctx.database.raw
+        .prepare(
+          "UPDATE story_branches SET head_turn_id = ?, updated_at = ? WHERE id = ?",
+        )
+        .run(turnId, now, branchId);
+    }
+    const selectedSwipeOldByTurn = new Map<string, string>();
+    for (const turn of item.turns) {
+      const selectedSwipeOldId = stringField(turn, "selectedSwipeId");
+      if (selectedSwipeOldId) {
+        selectedSwipeOldByTurn.set(
+          selectedSwipeOldId,
+          stringField(turn, "id") ?? "",
+        );
+      }
+    }
+    for (const swipe of item.swipes) {
+      const turnId = turnMap.get(stringField(swipe, "turnId") ?? "");
+      if (!turnId) continue;
+      const swipeId = randomUuid();
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO turn_swipes(
+            id, turn_id, ordinal, content, speaker_persona_id, source_run_id,
+            status, metadata_json, created_at
+          ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+        )
+        .run(
+          swipeId,
+          turnId,
+          numberField(swipe, "ordinal"),
+          stringField(swipe, "content") ?? "",
+          personaMap.get(stringField(swipe, "speakerPersonaId") ?? "") ?? null,
+          ["candidate", "selected", "rejected"].includes(
+            stringField(swipe, "status") ?? "",
+          )
+            ? stringField(swipe, "status")
+            : "candidate",
+          JSON.stringify(objectField(swipe, "metadata")),
+          now,
+        );
+      const selectingTurnOldId = selectedSwipeOldByTurn.get(
+        stringField(swipe, "id") ?? "",
+      );
+      if (selectingTurnOldId && stringField(swipe, "status") === "selected") {
+        const selectingTurnId = turnMap.get(selectingTurnOldId);
+        if (selectingTurnId) {
+          ctx.database.raw
+            .prepare(
+              "UPDATE story_turns SET selected_swipe_id = ?, updated_at = ? WHERE id = ?",
+            )
+            .run(swipeId, now, selectingTurnId);
+        }
+      }
+    }
+    for (const branch of item.branches) {
+      const branchId = sessionBranchMap.get(stringField(branch, "id") ?? "");
+      if (!branchId) continue;
+      const parentBranchId = sessionBranchMap.get(
+        stringField(branch, "parentBranchId") ?? "",
+      );
+      const forkedFromTurnId = turnMap.get(
+        stringField(branch, "forkedFromTurnId") ?? "",
+      );
+      const headTurnId = turnMap.get(stringField(branch, "headTurnId") ?? "");
+      ctx.database.raw
+        .prepare(
+          `UPDATE story_branches
+           SET parent_branch_id = ?, forked_from_turn_id = ?,
+               head_turn_id = ?, updated_at = ?
+           WHERE id = ?`,
+        )
+        .run(
+          parentBranchId ?? null,
+          forkedFromTurnId ?? null,
+          headTurnId ?? null,
+          now,
+          branchId,
+        );
+    }
+    const activeBranchOldId = stringField(item.session, "activeBranchId");
+    const activeBranchId = activeBranchOldId
+      ? sessionBranchMap.get(activeBranchOldId)
+      : null;
+    if (activeBranchId) {
+      ctx.database.raw
+        .prepare(
+          "UPDATE cocreate_sessions SET active_branch_id = ?, updated_at = ? WHERE id = ?",
+        )
+        .run(activeBranchId, now, sessionId);
+    }
+  }
+  for (const item of bundle.lorebooks) {
+    const lorebookId = lorebookMap.get(stringField(item.lorebook, "id") ?? "");
+    if (!lorebookId) continue;
+    for (const oldPersonaId of item.personaIds) {
+      const personaId = personaMap.get(oldPersonaId);
+      if (!personaId) continue;
+      ctx.database.raw
+        .prepare(
+          "INSERT INTO persona_lorebooks(persona_id, lorebook_id) VALUES (?, ?)",
+        )
+        .run(personaId, lorebookId);
+      restoredPersonaLorebookBindings += 1;
+    }
+    for (const oldSessionId of item.sessionIds) {
+      const sessionId = sessionMap.get(oldSessionId);
+      if (!sessionId) continue;
+      ctx.database.raw
+        .prepare(
+          "INSERT INTO cocreate_session_lorebooks(session_id, lorebook_id) VALUES (?, ?)",
+        )
+        .run(sessionId, lorebookId);
+      restoredSessionLorebookBindings += 1;
+    }
+  }
+  for (const item of bundle.assistant) {
+    const conversationId = randomUuid();
+    const oldConversationId = required(
+      stringField(item.conversation, "id"),
+      "conversation id",
+    );
+    conversationMap.set(oldConversationId, conversationId);
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO assistant_conversations(
+          id, project_id, title, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        conversationId,
+        projectId,
+        stringField(item.conversation, "title") ?? "Conversa do assistente",
+        stringField(item.conversation, "status") === "archived"
+          ? "archived"
+          : "active",
+        now,
+        now,
+      );
+    for (const message of item.messages) {
+      const messageId = randomUuid();
+      const oldMessageId = stringField(message, "id");
+      if (oldMessageId) messageMap.set(oldMessageId, messageId);
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO assistant_messages(
+            id, conversation_id, role, content, context_json, source_run_id,
+            reply_to_message_id, created_at
+          ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)`,
+        )
+        .run(
+          messageId,
+          conversationId,
+          ["user", "assistant", "system"].includes(
+            stringField(message, "role") ?? "",
+          )
+            ? stringField(message, "role")
+            : "assistant",
+          stringField(message, "content") ?? "(mensagem restaurada)",
+          message.context ? JSON.stringify(message.context) : null,
+          now,
+        );
+      restoredMessages += 1;
+    }
+    for (const activity of item.activities) {
+      const activityId = randomUuid();
+      const oldActivityId = stringField(activity, "id");
+      if (oldActivityId) activityMap.set(oldActivityId, activityId);
+      ctx.database.raw
+        .prepare(
+          `INSERT INTO assistant_activities(
+            id, conversation_id, message_id, kind, tool_name, status, goal,
+            input_json, result_json, error_json, source_type, source_id,
+            origin_json, execution_mode, skill_id, phase_key, artifacts_json,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, NULL, ?, ?, ?, ?)`,
+        )
+        .run(
+          activityId,
+          conversationId,
+          messageMap.get(stringField(activity, "messageId") ?? "") ?? null,
+          ["tool_proposal", "tool_execution", "long_goal"].includes(
+            stringField(activity, "kind") ?? "",
+          )
+            ? stringField(activity, "kind")
+            : "tool_execution",
+          [
+            "story.inspect",
+            "review.inspect",
+            "foundation.start",
+            "chapter.start",
+            "autopilot.start",
+            "outline.plan.start",
+            "canon.candidate.start",
+            "selection.edit.start",
+            "long_goal.start",
+            "task.control",
+          ].includes(stringField(activity, "toolName") ?? "")
+            ? stringField(activity, "toolName")
+            : "story.inspect",
+          [
+            "proposed",
+            "running",
+            "completed",
+            "failed",
+            "cancelled",
+            "rejected",
+          ].includes(stringField(activity, "status") ?? "")
+            ? stringField(activity, "status")
+            : "completed",
+          stringField(activity, "goal") ?? "Atividade restaurada",
+          JSON.stringify(objectField(activity, "input")),
+          activity.result ? JSON.stringify(activity.result) : null,
+          activity.error ? JSON.stringify(activity.error) : null,
+          activity.origin ? JSON.stringify(activity.origin) : null,
+          ["auto", "confirm"].includes(
+            stringField(activity, "executionMode") ?? "",
+          )
+            ? stringField(activity, "executionMode")
+            : null,
+          stringField(activity, "phaseKey"),
+          activity.artifacts ? JSON.stringify(activity.artifacts) : null,
+          now,
+          now,
+        );
+      restoredActivities += 1;
+    }
+  }
+  for (const goal of bundle.longGoals) {
+    const conversationId = conversationMap.get(
+      stringField(goal, "conversationId") ?? "",
+    );
+    const activityId = activityMap.get(stringField(goal, "activityId") ?? "");
+    if (!conversationId || !activityId) continue;
+    const restoredStatus = stringField(goal, "status");
+    ctx.database.raw
+      .prepare(
+        `INSERT INTO assistant_long_goals(
+          id, project_id, conversation_id, activity_id, title,
+          target_chapters, phase, status, baseline_hash, session_id,
+          foundation_run_id, outline_session_id, last_error_json,
+          created_at, updated_at, version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, 0)`,
+      )
+      .run(
+        randomUuid(),
+        projectId,
+        conversationId,
+        activityId,
+        stringField(goal, "title") ?? "Tarefa longa restaurada",
+        Math.max(1, Math.min(500, numberField(goal, "targetChapters") || 1)),
+        ["foundation", "outline", "writing", "done"].includes(
+          stringField(goal, "phase") ?? "",
+        )
+          ? stringField(goal, "phase")
+          : "done",
+        ["completed", "failed", "cancelled"].includes(restoredStatus ?? "")
+          ? restoredStatus
+          : "cancelled",
+        stringField(goal, "baselineHash") ?? "",
+        goal.lastError ? JSON.stringify(goal.lastError) : null,
+        now,
+        now,
+      );
+    restoredLongGoals += 1;
+  }
+  const counts: BundleCounts = BundleCountsSchema.parse({
+    outline: nodeMap.size,
+    entities: entityMap.size,
+    facts: restoredFacts,
+    relationships: restoredRelationships,
+    timeline: restoredTimeline,
+    knowledgeRecords: knowledgeMap.size,
+    knowledgeCorrections: bundle.knowledgeCorrections.length,
+    foreshadows: restoredForeshadows,
+    documents: documentMap.size,
+    versions: restoredVersions,
+    drafts: restoredDrafts,
+    personas: personaMap.size,
+    lorebooks: lorebookMap.size,
+    loreEntries: restoredLoreEntries,
+    personaLorebookBindings: restoredPersonaLorebookBindings,
+    sessionLorebookBindings: restoredSessionLorebookBindings,
+    styles: bundle.styles.length,
+    skills: bundle.skills.length,
+    annotations: restoredAnnotations,
+    cover: restoredCover,
+    cocreateSessions: restoredCoCreateSessions,
+    storyTurns: restoredStoryTurns,
+    reviews: bundle.reviews.length,
+    reviewIssues: restoredReviewIssues,
+    assistantConversations: conversationMap.size,
+    assistantMessages: restoredMessages,
+    assistantActivities: restoredActivities,
+    assistantLongGoals: restoredLongGoals,
+    runs: 0,
+  });
+  return { projectId, counts };
+}
+
+export function safeFilename(value: string) {
+  const withoutControls = [...value]
+    .map((character) => (character.charCodeAt(0) < 32 ? "_" : character))
+    .join("");
+  return withoutControls.replace(/[<>:"/\\|?*]/gu, "_").trim() || "novel";
+}
+
+export function hash(value: string | Uint8Array): string {
+  if (typeof value === "string") return sha256Hex(value);
+  return hashBytes(value);
+}
+
+export function decodeBase64(value: string) {
+  const compact = value.replace(/\s/gu, "");
+  if (!compact || compact.length % 4 === 1 || /[^A-Za-z0-9+/=]/u.test(compact))
+    throw new DeliveryServiceError(
+      "import.upload.base64",
+      "The uploaded chunk is not valid Base64",
+    );
+  return decodeBase64Bytes(compact);
+}
+
+export function count(
+  database: NarrativeDatabase,
+  sql: string,
+  ...params: string[]
+) {
+  const row = database.raw.prepare(sql).get(...params) as { count: number };
+  return row.count;
+}
+
+export function records(
+  database: NarrativeDatabase,
+  sql: string,
+  ...params: string[]
+) {
+  return database.raw.prepare(sql).all(...params) as unknown as Array<
+    Record<string, unknown>
+  >;
+}
+
+export function parseJsonObject(value: unknown): Record<string, unknown> {
+  if (typeof value !== "string" || !value) return {};
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+export function stringField(
+  value: Readonly<Record<string, unknown>> | undefined,
+  key: string,
+) {
+  const field = value?.[key];
+  return typeof field === "string" && field.trim() ? field : null;
+}
+
+export function numberField(
+  value: Readonly<Record<string, unknown>>,
+  key: string,
+) {
+  const field = value[key];
+  return typeof field === "number" && Number.isFinite(field) ? field : 0;
+}
+
+export function objectField(
+  value: Readonly<Record<string, unknown>>,
+  key: string,
+) {
+  const field = value[key];
+  return field && typeof field === "object" && !Array.isArray(field)
+    ? (field as Record<string, unknown>)
+    : {};
+}
+
+export function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is string =>
+          typeof item === "string" && Boolean(item.trim()),
+      )
+    : [];
+}
+
+export function boundedNumber(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(minimum, Math.min(maximum, value))
+    : fallback;
+}
+
+export function canonType(value: string | null): CanonEntity["type"] {
+  return [
+    "character",
+    "location",
+    "organization",
+    "item",
+    "rule",
+    "concept",
+  ].includes(value ?? "")
+    ? (value as CanonEntity["type"])
+    : "concept";
+}
+
+export function documentKind(value: string | null) {
+  return [
+    "manuscript",
+    "chapter",
+    "scene",
+    "outline",
+    "synopsis",
+    "note",
+    "style-sample",
+  ].includes(value ?? "")
+    ? (value as
+        | "manuscript"
+        | "chapter"
+        | "scene"
+        | "outline"
+        | "synopsis"
+        | "note"
+        | "style-sample")
+    : "manuscript";
+}
+
+export function outlineKind(value: string | null) {
+  return ["book", "volume", "arc", "chapter", "scene", "beat"].includes(
+    value ?? "",
+  )
+    ? (value as "book" | "volume" | "arc" | "chapter" | "scene" | "beat")
+    : "chapter";
+}
+
+export function outlineStatus(value: string) {
+  return ["planned", "drafting", "review", "committed", "abandoned"].includes(
+    value,
+  )
+    ? (value as "planned" | "drafting" | "review" | "committed" | "abandoned")
+    : "planned";
+}
+
+export function projectPhase(value: string): ProjectPhase {
+  return [
+    "idea",
+    "foundation",
+    "outlining",
+    "writing",
+    "revising",
+    "complete",
+  ].includes(value)
+    ? (value as ProjectPhase)
+    : "idea";
+}
+
+export function timelineVisibility(value: string | null) {
+  return ["omniscient", "reader", "author_secret"].includes(value ?? "")
+    ? (value as "omniscient" | "reader" | "author_secret")
+    : "omniscient";
+}
+
+export function foreshadowStatus(value: string | null) {
+  return ["planned", "planted", "developing", "resolved", "abandoned"].includes(
+    value ?? "",
+  )
+    ? (value as "planned" | "planted" | "developing" | "resolved" | "abandoned")
+    : "planned";
+}
+
+export function personaKind(value: string | null) {
+  return ["author", "narrator", "character"].includes(value ?? "")
+    ? (value as "author" | "narrator" | "character")
+    : "character";
+}
+
+export function skillScopes(value: unknown): WritingSkill["scopes"] {
+  const valid = new Set(["all", "chapter", "cocreate", "edit", "review"]);
+  const result = stringArray(value).filter((item) => valid.has(item));
+  return result.length ? (result as WritingSkill["scopes"]) : ["all"];
+}
+
+export function required<T>(value: T | null | undefined, label: string): T {
+  if (value === null || value === undefined) {
+    throw new DeliveryServiceError(
+      "bundle.field.missing",
+      `The project bundle is missing ${label}`,
+    );
+  }
+  return value;
+}

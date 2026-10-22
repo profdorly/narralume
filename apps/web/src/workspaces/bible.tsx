@@ -32,13 +32,13 @@ import { StoryState } from "./bible/story-state";
 export type BibleSectionId = BibleEditorSection;
 
 const SECTION_TABS: { id: BibleSectionId; en: string }[] = [
-  { id: "intent", en: "INTENT" },
-  { id: "outline", en: "OUTLINE" },
-  { id: "entities", en: "CANON" },
-  { id: "facts", en: "FACTS" },
-  { id: "relations", en: "LINKS" },
-  { id: "timeline", en: "TIMELINE" },
-  { id: "foreshadows", en: "FORESHADOW" },
+  { id: "intent", en: "INTENÇÃO" },
+  { id: "outline", en: "ESTRUTURA" },
+  { id: "entities", en: "CÂNONE" },
+  { id: "facts", en: "FATOS" },
+  { id: "relations", en: "LAÇOS" },
+  { id: "timeline", en: "TEMPO" },
+  { id: "foreshadows", en: "SEMENTES" },
 ];
 
 export function BibleWorkspace() {
@@ -115,7 +115,7 @@ export function BibleWorkspace() {
   return (
     <div className="bible">
       <PageBand
-        index="CANON · 03"
+        index="HISTÓRIA · 03"
         title={t("bible.title")}
         meta={
           bible ? (
@@ -159,7 +159,7 @@ export function BibleWorkspace() {
       ) : bible ? (
         <div className="bible__spread">
           <aside className="bible__rail" aria-label={t("bible.railLabel")}>
-            <p className="bible__rail-title">CANON SPREAD</p>
+            <p className="bible__rail-title">{t("bible.title")}</p>
             {SECTION_TABS.map((tab, index) => {
               const count = countForSection(bible, tab.id);
               const name = t(`bible.tabs.${tab.id}`);
@@ -455,7 +455,7 @@ function EntitySection({ bible }: { bible: StoryBible }) {
           § 03
         </span>
         <h2 className="bible__section-title">{t("bible.entities.title")}</h2>
-        <span className="bible__section-en">CANON ENTITIES</span>
+        <span className="bible__section-en">ENTIDADES</span>
         <span className="bible__section-sub">{t("bible.entities.count", { count: bible.entities.length })}</span>
       </header>
       <div className="bible__section-body">

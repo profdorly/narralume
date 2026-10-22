@@ -1,24 +1,24 @@
 import { useSyncExternalStore } from "react";
 
 import { enMessages } from "./en";
-import { zhMessages, type Messages } from "./zh";
+import { ptBrMessages, type Messages } from "./pt-BR";
 
 /* 轻量 i18n：双语字典 + 模块级 locale 单例，React 侧经 useSyncExternalStore 订阅。
    字典按模块分文件（zh/en 同构，TS 强制两边键形一致），调用侧以点路径取文案。 */
 
-export type Locale = "zh-CN" | "en";
+export type Locale = "pt-BR" | "en";
 
-export const LOCALES: readonly Locale[] = ["zh-CN", "en"] as const;
+export const LOCALES: readonly Locale[] = ["pt-BR", "en"] as const;
 
 export const LOCALE_LABELS: Record<Locale, string> = {
-  "zh-CN": "中文",
+  "pt-BR": "Português",
   en: "English",
 };
 
 const STORAGE_KEY = "narralume:ui-locale";
 
 const MESSAGES: Record<Locale, Messages> = {
-  "zh-CN": zhMessages,
+  "pt-BR": ptBrMessages,
   en: enMessages,
 };
 
@@ -67,17 +67,13 @@ export function translate(
 function detectInitialLocale(): Locale {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "zh-CN" || saved === "en") return saved;
+    if (saved === "pt-BR" || saved === "en") return saved;
   } catch {
     /* 私密模式下视为未存储 */
   }
-  if (
-    typeof navigator !== "undefined" &&
-    (navigator.language ?? "").toLowerCase().startsWith("zh")
-  ) {
-    return "zh-CN";
-  }
-  return "en";
+  const nav = (typeof navigator !== "undefined" ? navigator.language : "") ?? "";
+  if (nav.toLowerCase().startsWith("en")) return "en";
+  return "pt-BR";
 }
 
 let currentLocale: Locale = detectInitialLocale();

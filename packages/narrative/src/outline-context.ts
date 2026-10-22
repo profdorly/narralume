@@ -57,7 +57,7 @@ export function outlineContextSources(
     sources.push({
       id: "outline:structure",
       kind: "outline",
-      label: "全书结构与当前路径",
+      label: "Estrutura do livro e caminho atual",
       content: structural.map((node) => outlineLine(node)).join("\n"),
       summary: structural
         .map((node) => `- [${node.kind}] ${node.title}`)
@@ -72,14 +72,14 @@ export function outlineContextSources(
     sources.push({
       id: "outline:near",
       kind: "outline",
-      label: "当前章节附近的详细航线",
+      label: "Rota detalhada perto do capítulo atual",
       content: near
         .map((node) => chapterLine(node, summaryByScope.get(node.id)))
         .join("\n"),
       summary: near
         .map(
           (node) =>
-            `- ${node.title}${summaryByScope.get(node.id) ? `：${clip(summaryByScope.get(node.id)!, 160)}` : ""}`,
+            `- ${node.title}${summaryByScope.get(node.id) ? `: ${clip(summaryByScope.get(node.id)!, 160)}` : ""}`,
         )
         .join("\n"),
       authority: "confirmed",
@@ -96,13 +96,13 @@ export function outlineContextSources(
     sources.push({
       id: `outline:far:${Math.floor(index / chunkSize)}`,
       kind: "outline",
-      label: `远距章节地图 ${index + 1}-${index + chunk.length}`,
+      label: `Mapa de capítulos distantes ${index + 1}-${index + chunk.length}`,
       content: chunk
         .map((node) => chapterLine(node, summaryByScope.get(node.id), true))
         .join("\n"),
       summary: [chunk[0], chunk.at(-1)]
         .filter((node): node is OutlineNode => Boolean(node))
-        .map((node) => `- ${node.title}｜${node.status}`)
+        .map((node) => `- ${node.title} | ${node.status}`)
         .join("\n"),
       authority: "confirmed",
       priority: 64,
@@ -133,7 +133,7 @@ function isAncestorOfTarget(
 }
 
 function outlineLine(node: OutlineNode): string {
-  return `${"  ".repeat(node.depth)}- [${node.kind}｜${node.status}] [node:${node.id}] ${node.title}${node.summary ? `：${node.summary}` : ""}${node.goal ? `｜目标：${node.goal}` : ""}${node.outcome ? `｜结果：${node.outcome}` : ""}`;
+  return `${"  ".repeat(node.depth)}- [${node.kind}|${node.status}] [node:${node.id}] ${node.title}${node.summary ? `: ${node.summary}` : ""}${node.goal ? `| Objetivo: ${node.goal}` : ""}${node.outcome ? `| Desfecho: ${node.outcome}` : ""}`;
 }
 
 function chapterLine(
@@ -143,14 +143,14 @@ function chapterLine(
 ): string {
   const summary = committedSummary ?? node.summary;
   if (compact)
-    return `- [${node.status}] [node:${node.id}] ${node.title}${summary ? `：${clip(summary, 240)}` : ""}`;
+    return `- [${node.status}] [node:${node.id}] ${node.title}${summary ? `: ${clip(summary, 240)}` : ""}`;
   return [
     `- [${node.status}] [node:${node.id}] ${node.title}`,
-    summary ? `  摘要：${summary}` : "",
-    node.goal ? `  目标：${node.goal}` : "",
-    node.conflict ? `  冲突：${node.conflict}` : "",
-    node.outcome ? `  结果：${node.outcome}` : "",
-    node.storyTime ? `  故事时间：${node.storyTime}` : "",
+    summary ? `  Resumo: ${summary}` : "",
+    node.goal ? `  Objetivo: ${node.goal}` : "",
+    node.conflict ? `  Conflito: ${node.conflict}` : "",
+    node.outcome ? `  Desfecho: ${node.outcome}` : "",
+    node.storyTime ? `  Tempo da história: ${node.storyTime}` : "",
   ]
     .filter(Boolean)
     .join("\n");
