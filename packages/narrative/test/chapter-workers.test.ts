@@ -16,6 +16,7 @@ import {
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteProviderRepository,
+  SqliteRetrievalRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
 } from "@narralume/persistence";
@@ -267,6 +268,22 @@ describe("ChapterWorkerSuite", () => {
       document!.id,
     )[0];
     expect(version).toMatchObject({ content: manuscript, source: "run:run-1" });
+    // The committed prose is indexed for retrieval as passages of this version.
+    expect(
+      new SqliteRetrievalRepository(database).listSegments("p1", {
+        sourceTypes: ["document_passage"],
+        documentId: document!.id,
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        content: manuscript,
+        entityIds: ["hero"],
+        metadata: expect.objectContaining({
+          documentVersionId: version!.id,
+          runId: "run-1",
+        }),
+      }),
+    ]);
     const story = new SqliteStoryRepository(database);
     const canon = new SqliteCanonRepository(database);
     const state = new SqliteNarrativeStateRepository(database, canon, story);
@@ -1052,7 +1069,164 @@ describe("ChapterWorkerSuite", () => {
       ]),
     );
   });
+
+  it("indexes earlier chapters as passages, embeds them and retrieves them in rank order", async () => {
+    const story = new SqliteStoryRepository(database);
+    const documents = new SqliteDocumentRepository(database);
+    const root = story.requireOutlineNode("p1", "book");
+    const first = documents.insert(
+      createDocument({
+        id: "doc-1",
+        projectId: "p1",
+        kind: "chapter",
+        title: "雾港失灯",
+        outlineNodeId: chapterId,
+        now,
+      }),
+    );
+    documents.appendVersion("p1", first.id, {
+      id: "doc-1-v1",
+      content: "林昼在旧港仓库找到铜钥匙。\n\n守灯人说钥匙能打开灯塔底层。",
+      source: "manual",
+      expectedCurrentVersionId: null,
+      now,
+    });
+    const secondNode = story.insertOutlineNode(
+      createOutlineNode({
+        id: "chapter-2",
+        projectId: "p1",
+        parent: root,
+        kind: "chapter",
+        ordinal: 1,
+        title: "空椅来客",
+        now,
+      }),
+    );
+    const second = documents.insert(
+      createDocument({
+        id: "doc-2",
+        projectId: "p1",
+        kind: "chapter",
+        title: "空椅来客",
+        outlineNodeId: secondNode.id,
+        now,
+      }),
+    );
+    documents.appendVersion("p1", second.id, {
+      id: "doc-2-v1",
+      content: "父亲坐在空椅子旁，说起海上的雾。",
+      source: "manual",
+      expectedCurrentVersionId: null,
+      now,
+    });
+    const target = story.insertOutlineNode(
+      createOutlineNode({
+        id: "chapter-3",
+        projectId: "p1",
+        parent: root,
+        kind: "chapter",
+        ordinal: 2,
+        title: "灯塔底层",
+        summary: "林昼用铜钥匙打开灯塔底层。",
+        now,
+      }),
+    );
+    const embedCalls: { purpose: string; inputs: readonly string[] }[] = [];
+    const model: NarrativeModelClient = {
+      ...scriptedModel("第三章正文足够长，可以通过机械检查。", {
+        nearEvidence: true,
+      }),
+      hasEmbeddingAssignment: () => true,
+      embeddingModelName: () => "fake-embedding",
+      async embed(_run, _step, purpose, request) {
+        embedCalls.push({ purpose, inputs: request.inputs });
+        return {
+          vectors: request.inputs.map(bigramVector),
+          model: "fake-embedding",
+          modelId: "fake-embedding-id",
+          usage: {
+            inputTokens: request.inputs.length * 10,
+            outputTokens: 0,
+            calls: 1,
+            costUsd: 0,
+            wallTimeMs: 1,
+          },
+        };
+      },
+    };
+    const recipe = buildChapterRecipe("run-retrieval", 0);
+    runs.create({
+      id: "run-retrieval",
+      projectId: "p1",
+      recipe: recipe.name,
+      recipeVersion: recipe.version,
+      mode: "autopilot",
+      targetOutlineNodeId: target.id,
+      policy: { minChapterCharacters: 20, contextWindow: 8_000 },
+      steps: recipe.steps,
+      now,
+    });
+    const supervisor = new HarnessSupervisor(
+      runs,
+      new ChapterWorkerSuite(database, model, () => new Date(now)).registry(),
+      { now: () => new Date(now) },
+    );
+
+    expect(await supervisor.processNext("worker-retrieval")).toBe(true);
+
+    // Both earlier chapters were indexed and embedded before retrieval, in
+    // one batch; the query was embedded separately.
+    expect(embedCalls.map((call) => call.purpose)).toEqual([
+      "context-retrieval-index",
+      "context-retrieval-query",
+    ]);
+    expect(embedCalls[0]!.inputs).toHaveLength(2);
+    const retrieval = new SqliteRetrievalRepository(database);
+    expect(retrieval.embeddingCounts("p1")).toMatchObject({
+      segments: 2,
+      embedded: 2,
+    });
+    const draftReceipt = new SqliteContextReceiptRepository(database)
+      .list("p1", 10)
+      .find((receipt) => receipt.purpose === "chapter-draft");
+    const retrieved = draftReceipt!.entries.filter(
+      (entry) => entry.kind === "retrieval",
+    );
+    // The previous chapter is pinned in full, so only chapter 1 is retrieved.
+    expect(retrieved).toEqual([
+      expect.objectContaining({
+        label: "Trecho recuperado 1 · 雾港失灯 (trecho 1 de 1)",
+        status: "included",
+        sourceType: "document_passage",
+      }),
+    ]);
+    const compile = runs
+      .getSnapshot("run-retrieval")
+      .steps.find((step) => step.kind === "context.compile")!;
+    expect(compile.outputArtifact).toMatchObject({
+      retrievalIndex: {
+        indexedDocuments: 2,
+        embeddedPassages: 2,
+        pendingPassages: 0,
+      },
+    });
+  });
 });
+
+/** Deterministic character-bigram vector, enough to rank shared wording. */
+function bigramVector(text: string): number[] {
+  const vector = new Array<number>(64).fill(0);
+  const characters = [...text.replace(/\s+/gu, "")];
+  for (let index = 0; index + 1 < characters.length; index += 1) {
+    const bigram = `${characters[index]}${characters[index + 1]}`;
+    let hash = 0;
+    for (const character of bigram)
+      hash = (hash * 31 + character.codePointAt(0)!) % 64;
+    vector[hash]! += 1;
+  }
+  if (!vector.some((value) => value !== 0)) vector[0] = 1;
+  return vector;
+}
 
 function scriptedModel(
   manuscript: string,

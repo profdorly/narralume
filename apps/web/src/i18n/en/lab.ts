@@ -40,6 +40,29 @@ export const lab: typeof labPt = {
     empty: "No related story memory found.",
     hint: "Enter a question and related settings, text, and memories will appear here.",
   },
+  index: {
+    title: "Manuscript search index",
+    loadError: "The index cannot be loaded right now",
+    documents: "Indexed chapters",
+    documentsValue: "{indexed} of {total}",
+    passages: "Passages",
+    model: "Embedding model",
+    noModel: "None assigned",
+    vectors: "Passages with a vector from this model",
+    vectorsValue: "{embedded} of {total}",
+    hintNoModel:
+      "Without an embedding model, search uses words and named characters. Assign one in Settings so search also finds passages by meaning.",
+    hintPending:
+      "Missing vectors are created by the next AI writing or co-creation run, with the assigned embedding model.",
+    hintReady:
+      "Every passage has a vector from the assigned model; search combines words, characters, and meaning.",
+    stale:
+      "{count} chapters changed since the last indexing; the next search or AI writing run reindexes them.",
+    reindex: "Reindex now",
+    reindexing: "Reindexing…",
+    reindexed: "{indexed} chapters reindexed · {relinked} with updated character links",
+    reindexError: "Reindexing did not complete",
+  },
   predictions: {
     title: "Plot predictions",
     count: "{count} entries",

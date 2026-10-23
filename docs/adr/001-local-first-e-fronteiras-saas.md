@@ -14,7 +14,7 @@ NarraLume nasceu como estúdio local-first: SQLite no Node (`data/narralume.sqli
 2. **Identidade:** o isolamento continua sendo `project_id`. Services não assumem um único operador implícito; qualquer filtro de projeto passa por uma interface de repositório. Uma futura `AuthContext` / `tenantId` entra nessa borda, não no domínio narrativo.
 3. **API:** o contrato HTTP em `packages/services` permanece a única superfície pública, compartilhada pelo Server Fastify e pelo kernel do navegador. Não acoplar UI ao driver.
 4. **Demo público:** Bridge, Relay, Wrangler e Turnstile foram removidos. Não reintroduzir caminho de demo com chave no servidor de terceiros.
-5. **Postgres:** um driver futuro substitui `packages/persistence` por trás das mesmas interfaces. JSONB cobre colunas `*_json`; FTS vira `tsvector` / `pg_trgm`. Não portar as 48 migrações SQLite literalmente — gerar schema inicial + migrações Postgres a partir do estado atual.
+5. **Postgres:** um driver futuro substitui `packages/persistence` por trás das mesmas interfaces. JSONB cobre colunas `*_json`; FTS vira `tsvector` / `pg_trgm`. Não portar as 49 migrações SQLite literalmente — gerar schema inicial + migrações Postgres a partir do estado atual.
 
 ## Consequências
 

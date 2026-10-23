@@ -8,7 +8,7 @@ import {
   SqliteCreativeRepository,
   SqliteDocumentRepository,
   type SqliteProjectRepository,
-  SqliteRetrievalRepository,
+  SqliteManuscriptIndexer,
   SqliteRunRepository,
   SqliteStoryRepository,
   SqliteTemplateRepository,
@@ -207,7 +207,6 @@ export function acceptEditProposal(
   },
 ) {
   const documents = new SqliteDocumentRepository(database);
-  const retrieval = new SqliteRetrievalRepository(database);
   const story = new SqliteStoryRepository(database);
   const creative = new SqliteCreativeRepository(database);
   const { proposal } = input;
@@ -239,23 +238,12 @@ export function acceptEditProposal(
     },
   );
   if (document.outlineNodeId) {
-    retrieval.upsertSegment({
-      id: `document:${document.id}:current`,
+    new SqliteManuscriptIndexer(database).indexDocument({
       projectId: proposal.projectId,
-      sourceType: "document_current",
-      sourceId: document.id,
-      title: document.title,
-      content: version.content,
-      authority: "confirmed",
-      metadata: {
-        documentId: document.id,
-        documentVersionId: version.id,
-        outlineNodeId: document.outlineNodeId,
-        editProposalId: proposal.id,
-      },
-      entityIds: [],
-      createdAt: now,
-      updatedAt: now,
+      documentId: document.id,
+      versionId: version.id,
+      provenance: { editProposalId: proposal.id },
+      now,
     });
     story.updateOutlineStatus(
       proposal.projectId,

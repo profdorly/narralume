@@ -25,6 +25,7 @@ import {
   SqliteDocumentRepository,
   SqliteDeliveryRepository,
   SqliteLoreRepository,
+  SqliteManuscriptIndexer,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteRetrievalRepository,
@@ -40,6 +41,16 @@ import {
   recordEmbeddingDegradation,
 } from "./embedding-support.js";
 import { outlineContextSources } from "./outline-context.js";
+import {
+  addBudgetUsage,
+  embedPendingSegments,
+  embedPlannedPassages,
+  indexDocumentWithEmbeddings,
+} from "./retrieval-index.js";
+import {
+  RETRIEVAL_MAX_PER_DOCUMENT,
+  retrievalContextSources,
+} from "./retrieval-query.js";
 import {
   authoredInstructions,
   instructionsFor,
@@ -76,6 +87,7 @@ export class CollaborationWorkerSuite {
   private readonly documents: SqliteDocumentRepository;
   private readonly receipts: SqliteContextReceiptRepository;
   private readonly retrieval: SqliteRetrievalRepository;
+  private readonly indexer: SqliteManuscriptIndexer;
   private readonly reviews: SqliteReviewRepository;
   private readonly state: SqliteNarrativeStateRepository;
   private readonly delivery: SqliteDeliveryRepository;
@@ -96,6 +108,7 @@ export class CollaborationWorkerSuite {
     this.documents = new SqliteDocumentRepository(database);
     this.receipts = new SqliteContextReceiptRepository(database);
     this.retrieval = new SqliteRetrievalRepository(database);
+    this.indexer = new SqliteManuscriptIndexer(database);
     this.reviews = new SqliteReviewRepository(database);
     this.state = new SqliteNarrativeStateRepository(
       database,
@@ -505,6 +518,20 @@ export class CollaborationWorkerSuite {
     ]
       .filter((value): value is string => Boolean(value?.trim()))
       .join(" ");
+    const indexedAt = this.now().toISOString();
+    new SqliteManuscriptIndexer(this.database).syncProject(
+      session.projectId,
+      indexedAt,
+    );
+    const indexEmbedding = await embedPendingSegments({
+      database: this.database,
+      client: this.model,
+      run: snapshot.run,
+      step,
+      purpose: "cocreate-retrieval-index",
+      signal,
+      now: indexedAt,
+    });
     const queryEmbedding = await optionalEmbeddings(
       this.model,
       snapshot.run,
@@ -519,29 +546,31 @@ export class CollaborationWorkerSuite {
       step.id,
       queryEmbedding.degradation,
     );
-    for (const hit of this.retrieval.search(session.projectId, retrievalQuery, {
-      entityIds: [speakerPersona?.entityId].filter((value): value is string =>
-        Boolean(value),
+    sources.push(
+      ...retrievalContextSources(
+        this.retrieval.search(session.projectId, retrievalQuery, {
+          entityIds: [speakerPersona?.entityId].filter(
+            (value): value is string => Boolean(value),
+          ),
+          limit: 6,
+          maxPerDocument: RETRIEVAL_MAX_PER_DOCUMENT,
+          rerank: false,
+          ...(queryEmbedding.vectors[0]
+            ? { queryEmbedding: queryEmbedding.vectors[0] }
+            : {}),
+          ...(queryEmbedding.model
+            ? { embeddingModel: queryEmbedding.model }
+            : {}),
+        }),
+        {
+          idPrefix: "cocreate-retrieval",
+          language: project.language,
+          priorityBase: 66,
+          authority: (hit) =>
+            hit.authority === "locked" ? "locked" : "confirmed",
+        },
       ),
-      limit: 6,
-      rerank: false,
-      ...(queryEmbedding.vectors[0]
-        ? { queryEmbedding: queryEmbedding.vectors[0] }
-        : {}),
-      ...(queryEmbedding.model ? { embeddingModel: queryEmbedding.model } : {}),
-    })) {
-      sources.push({
-        id: `cocreate-retrieval:${hit.id}`,
-        kind: "retrieval",
-        label: hit.title || `${hit.sourceType}:${hit.sourceId}`,
-        content: hit.content,
-        authority: hit.authority === "locked" ? "locked" : "confirmed",
-        priority: 60 + Math.round(hit.score * 100),
-        sourceType: hit.sourceType,
-        sourceId: hit.sourceId,
-        metadata: { retrievalReasons: hit.reasons },
-      });
-    }
+    );
     const targetTurnId = policyOptionalString(
       snapshot.run.policy,
       "targetTurnId",
@@ -686,8 +715,13 @@ export class CollaborationWorkerSuite {
           modelId: queryEmbedding.modelId,
           warning: queryEmbedding.warning,
         },
+        retrievalIndex: {
+          embeddedPassages: indexEmbedding.embedded,
+          pendingPassages: indexEmbedding.remaining,
+          warning: indexEmbedding.warning,
+        },
       },
-      usage: queryEmbedding.usage,
+      usage: addBudgetUsage(indexEmbedding.usage, queryEmbedding.usage),
     };
   }
 
@@ -960,14 +994,19 @@ export class CollaborationWorkerSuite {
       };
     }
     this.requireActiveAdoptionSource(session.id, source);
-    const contentEmbedding = await optionalEmbeddings(
-      this.model,
-      snapshot.run,
+    const contentEmbedding = await embedPlannedPassages({
+      database: this.database,
+      client: this.model,
+      run: snapshot.run,
       step,
-      "cocreate-scene-index",
-      [draft.sceneContent],
+      purpose: "cocreate-scene-index",
+      passages: this.indexer.planPassages(
+        `${snapshot.run.id}:scene-document`,
+        this.adoptedSceneTitle(session.projectId, draft.sceneTitle, snapshot),
+        draft.sceneContent,
+      ),
       signal,
-    );
+    });
     const now = this.now().toISOString();
     const result = this.database.transaction(() => {
       requireActiveRunCommit(
@@ -1040,17 +1079,12 @@ export class CollaborationWorkerSuite {
         }),
       );
       const baseTitle = draft.sceneTitle;
-      const duplicateTitle = this.documents
-        .list(session.projectId, "scene")
-        .some((document) => document.title === baseTitle);
       const document = this.documents.insert(
         createDocument({
           id: `${snapshot.run.id}:scene-document`,
           projectId: session.projectId,
           kind: "scene",
-          title: duplicateTitle
-            ? `${baseTitle} · ${snapshot.run.id.slice(0, 6)}`
-            : baseTitle,
+          title: this.adoptedSceneTitle(session.projectId, baseTitle, snapshot),
           outlineNodeId: scene.id,
           now,
         }),
@@ -1085,32 +1119,17 @@ export class CollaborationWorkerSuite {
         status: "candidate",
         createdAt: now,
       });
-      const segment = this.retrieval.upsertSegment({
-        id: `document:${document.id}:current`,
-        projectId: session.projectId,
-        sourceType: "document_current",
-        sourceId: document.id,
-        title: draft.sceneTitle,
-        content: draft.sceneContent,
-        authority: "confirmed",
-        metadata: {
+      indexDocumentWithEmbeddings(
+        this.database,
+        {
+          projectId: session.projectId,
           documentId: document.id,
-          documentVersionId: version.id,
-          outlineNodeId: scene.id,
-          sessionId: session.id,
+          versionId: version.id,
+          provenance: { sessionId: session.id },
+          now,
         },
-        entityIds: [],
-        createdAt: now,
-        updatedAt: now,
-      });
-      if (contentEmbedding.vectors[0] && contentEmbedding.model) {
-        this.retrieval.upsertEmbedding({
-          segmentId: segment.id,
-          model: contentEmbedding.model,
-          embedding: contentEmbedding.vectors[0],
-          updatedAt: now,
-        });
-      }
+        contentEmbedding,
+      );
       this.state.upsertSummary({
         id: `${snapshot.run.id}:scene-summary`,
         projectId: session.projectId,
@@ -1157,6 +1176,24 @@ export class CollaborationWorkerSuite {
       output: result,
       usage: contentEmbedding.usage,
     };
+  }
+
+  /** Scene document title for an adoption; disambiguated when taken. */
+  private adoptedSceneTitle(
+    projectId: string,
+    baseTitle: string,
+    snapshot: RunSnapshot,
+  ): string {
+    const duplicateTitle = this.documents
+      .list(projectId, "scene")
+      .some(
+        (document) =>
+          document.title === baseTitle &&
+          document.id !== `${snapshot.run.id}:scene-document`,
+      );
+    return duplicateTitle
+      ? `${baseTitle} · ${snapshot.run.id.slice(0, 6)}`
+      : baseTitle;
   }
 
   private requireActiveAdoptionSource(

@@ -5,8 +5,15 @@ import {
 } from "@narralume/context";
 import type { CanonAccess } from "@narralume/domain";
 import {
+  RETRIEVAL_LIMIT,
+  RETRIEVAL_MAX_PER_DOCUMENT,
+  retrievalContextSources,
+} from "@narralume/narrative";
+import {
   SqliteCanonRepository,
   SqliteContextReceiptRepository,
+  SqliteManuscriptIndexer,
+  SqliteProjectRepository,
   SqliteRetrievalRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
@@ -30,26 +37,64 @@ export interface StoryContextPreviewInput {
   };
 }
 
+const PREVIEW_COPY = {
+  "pt-BR": {
+    task: "Tarefa desta rodada",
+    intent: "Intenção da autoria",
+    outline: "Outline relacionado",
+    promise: "Promessa central",
+    themes: "Temas",
+    audience: "Público",
+    tone: "Tom",
+    boundaries: "Limites",
+    ending: "Direção do desfecho",
+    focus: "Foco atual",
+  },
+  en: {
+    task: "Task for this turn",
+    intent: "Author intent",
+    outline: "Related outline",
+    promise: "Core promise",
+    themes: "Themes",
+    audience: "Audience",
+    tone: "Tone",
+    boundaries: "Boundaries",
+    ending: "Ending direction",
+    focus: "Current focus",
+  },
+} as const;
+
+/**
+ * The context an AI task would receive for a free-form request, compiled
+ * without a model call (lexical and entity retrieval only). Labels follow
+ * the project's writing language, like the prompts themselves.
+ */
 export class StoryContextPreviewService {
+  private readonly projects: SqliteProjectRepository;
   private readonly story: SqliteStoryRepository;
   private readonly canon: SqliteCanonRepository;
   private readonly retrieval: SqliteRetrievalRepository;
+  private readonly indexer: SqliteManuscriptIndexer;
   private readonly receipts: SqliteContextReceiptRepository;
   private readonly compiler = new ContextCompiler();
 
   constructor(database: NarrativeDatabase) {
+    this.projects = new SqliteProjectRepository(database);
     this.story = new SqliteStoryRepository(database);
     this.canon = new SqliteCanonRepository(database);
     this.retrieval = new SqliteRetrievalRepository(database);
+    this.indexer = new SqliteManuscriptIndexer(database);
     this.receipts = new SqliteContextReceiptRepository(database);
   }
 
   compile(input: StoryContextPreviewInput) {
+    const language = this.projects.get(input.projectId)?.language ?? null;
+    const copy = PREVIEW_COPY[language === "en" ? "en" : "pt-BR"];
     const sources: ContextSource[] = [
       {
         id: "task:current",
         kind: "task",
-        label: "本轮任务",
+        label: copy.task,
         content: input.task,
         authority: "locked",
         priority: 100,
@@ -61,19 +106,20 @@ export class StoryContextPreviewService {
     const intent = this.story.getAuthorIntent(input.projectId);
     if (intent) {
       const lines = [
-        intent.promise && `创作承诺：${intent.promise}`,
-        intent.themes.length && `主题：${intent.themes.join("、")}`,
-        intent.audience && `读者：${intent.audience}`,
-        intent.tone && `语气：${intent.tone}`,
-        intent.boundaries.length && `边界：${intent.boundaries.join("；")}`,
-        intent.endingDirection && `结局方向：${intent.endingDirection}`,
-        intent.currentFocus && `当前焦点：${intent.currentFocus}`,
+        intent.promise && `${copy.promise}: ${intent.promise}`,
+        intent.themes.length && `${copy.themes}: ${intent.themes.join(", ")}`,
+        intent.audience && `${copy.audience}: ${intent.audience}`,
+        intent.tone && `${copy.tone}: ${intent.tone}`,
+        intent.boundaries.length &&
+          `${copy.boundaries}: ${intent.boundaries.join("; ")}`,
+        intent.endingDirection && `${copy.ending}: ${intent.endingDirection}`,
+        intent.currentFocus && `${copy.focus}: ${intent.currentFocus}`,
       ].filter((line): line is string => Boolean(line));
       if (lines.length) {
         sources.push({
           id: "author-intent",
           kind: "author-intent",
-          label: "作者意图",
+          label: copy.intent,
           content: lines.join("\n"),
           authority: "locked",
           priority: 95,
@@ -100,13 +146,13 @@ export class StoryContextPreviewService {
       const outlineText = activeOutline
         .map(
           (node) =>
-            `${"  ".repeat(node.depth)}- [${node.kind}] ${node.title}${node.summary ? `：${node.summary}` : ""}`,
+            `${"  ".repeat(node.depth)}- [${node.kind}] ${node.title}${node.summary ? `: ${node.summary}` : ""}`,
         )
         .join("\n");
       sources.push({
         id: "outline:active",
         kind: "outline",
-        label: "相关大纲",
+        label: copy.outline,
         content: outlineText,
         authority: "confirmed",
         priority: 85,
@@ -127,26 +173,27 @@ export class StoryContextPreviewService {
       ),
     );
 
-    for (const hit of this.retrieval.search(input.projectId, input.query, {
-      entityIds: input.entityIds,
-      limit: 8,
-    })) {
-      sources.push({
-        id: `retrieval:${hit.id}`,
-        kind: "retrieval",
-        label: hit.title || `${hit.sourceType}:${hit.sourceId}`,
-        content: hit.content,
-        authority:
-          hit.authority === "locked"
-            ? "locked"
-            : hit.authority === "confirmed"
-              ? "confirmed"
-              : "reference",
-        priority: 50 + Math.round(hit.score * 100),
-        sourceType: hit.sourceType,
-        sourceId: hit.sourceId,
-      });
-    }
+    this.indexer.syncProject(input.projectId, new Date().toISOString());
+    sources.push(
+      ...retrievalContextSources(
+        this.retrieval.search(input.projectId, input.query, {
+          entityIds: input.entityIds,
+          limit: RETRIEVAL_LIMIT,
+          maxPerDocument: RETRIEVAL_MAX_PER_DOCUMENT,
+        }),
+        {
+          idPrefix: "retrieval",
+          language,
+          priorityBase: 58,
+          authority: (hit) =>
+            hit.authority === "locked"
+              ? "locked"
+              : hit.authority === "confirmed"
+                ? "confirmed"
+                : "reference",
+        },
+      ),
+    );
 
     const compiled = this.compiler.compile({
       projectId: input.projectId,

@@ -28,6 +28,8 @@
     "test:e2e": "playwright test",
     "test:golden": "vitest run packages/persistence/test/long-novel-golden.test.ts",
     "test:evidence": "tsx scripts/evidence-protocol-eval.ts",
+    "test:retrieval": "tsx scripts/retrieval-eval.ts --check",
+    "eval:retrieval:real": "tsx scripts/retrieval-eval.ts --embedder=openai",
     "test:coverage": "vitest run --coverage",
     "test:real": "tsx scripts/llm-real-smoke.ts",
     "test:real:capabilities": "tsx scripts/llm-real-smoke.ts",
@@ -39,8 +41,8 @@
     "test:release:recovery": "vitest run apps/server/test/lifecycle-api.test.ts apps/server/test/backup-restore-r8.test.ts apps/server/test/run-partial-recovery.test.ts packages/persistence/test/orphan-interruption.test.ts",
     "seed:example": "tsx scripts/seed-example.ts",
     "typecheck": "tsc -b --pretty false && tsc -p scripts/tsconfig.json --noEmit --pretty false",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:evidence && npm run licenses:check && npm run build",
-    "verify:ci": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:evidence && npm run licenses:check",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:evidence && npm run test:retrieval && npm run licenses:check && npm run build",
+    "verify:ci": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:evidence && npm run test:retrieval && npm run licenses:check",
     "verify:release": "npm run verify:ci && npm run test:e2e && npm run test:release:recovery && npm run test:real:matrix"
   },
   "devDependencies": {

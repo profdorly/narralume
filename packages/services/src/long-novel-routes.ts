@@ -7,14 +7,21 @@ import {
   NarrativeMemorySchema,
   PlotPredictionSchema,
   RetrievalHitSchema,
+  RetrievalIndexStatusSchema,
+  RetrievalReindexResultSchema,
   RetrievalSearchRequestSchema,
 } from "@narralume/contracts";
 import {
+  SqliteAssignmentRepository,
   SqliteLongNovelRepository,
+  SqliteManuscriptIndexer,
+  SqliteProjectRepository,
   SqliteRetrievalRepository,
   type NarrativeDatabase,
 } from "@narralume/persistence";
 import { z } from "zod";
+
+import { ServiceError } from "./service-error.js";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().min(1) });
 const PredictionParamsSchema = ProjectParamsSchema.extend({
@@ -29,7 +36,40 @@ export function registerLongNovelRoutes(
   database: NarrativeDatabase,
 ): void {
   const retrieval = new SqliteRetrievalRepository(database);
+  const indexer = new SqliteManuscriptIndexer(database);
   const longNovel = new SqliteLongNovelRepository(database);
+  const projects = new SqliteProjectRepository(database);
+  const assignments = new SqliteAssignmentRepository(database);
+
+  const requireProject = (projectId: string) => {
+    if (!projects.get(projectId))
+      throw new ServiceError("project.not_found", "Project not found", 404);
+  };
+  const indexStatus = (projectId: string) => {
+    const status = indexer.status(projectId);
+    const assigned = assignments.resolve("embedding");
+    const currentModel = assigned?.model.modelId ?? null;
+    return RetrievalIndexStatusSchema.parse({
+      documents: status.documents,
+      indexedDocuments: status.indexedDocuments,
+      passages: status.passages,
+      legacySegments: status.legacySegments,
+      embeddedPassages: status.embeddings.embedded,
+      embeddingModel: assigned
+        ? {
+            id: assigned.model.id,
+            modelId: assigned.model.modelId,
+            providerName: assigned.provider.name,
+          }
+        : null,
+      currentModelPassages: currentModel
+        ? (status.embeddings.models.find(
+            (entry) => entry.model === currentModel,
+          )?.segments ?? 0)
+        : 0,
+      models: status.embeddings.models,
+    });
+  };
 
   app.route(
     "POST",
@@ -37,9 +77,44 @@ export function registerLongNovelRoutes(
     async (request) => {
       const { projectId } = ProjectParamsSchema.parse(request.params);
       const input = RetrievalSearchRequestSchema.parse(request.body);
+      // Searches see edits made since the last AI run (passages and links;
+      // vectors are added by the next run that has an embedding model).
+      if (projects.get(projectId))
+        indexer.syncProject(projectId, new Date().toISOString());
       return retrieval
-        .search(projectId, input.query, input)
+        .search(projectId, input.query, {
+          entityIds: input.entityIds,
+          limit: input.limit,
+          rerank: input.rerank,
+          ...(input.maxPerDocument
+            ? { maxPerDocument: input.maxPerDocument }
+            : {}),
+        })
         .map((hit) => RetrievalHitSchema.parse(hit));
+    },
+  );
+
+  app.route(
+    "GET",
+    "/api/projects/:projectId/retrieval/index",
+    async (request) => {
+      const { projectId } = ProjectParamsSchema.parse(request.params);
+      requireProject(projectId);
+      return indexStatus(projectId);
+    },
+  );
+
+  app.route(
+    "POST",
+    "/api/projects/:projectId/retrieval/reindex",
+    async (request) => {
+      const { projectId } = ProjectParamsSchema.parse(request.params);
+      requireProject(projectId);
+      const result = indexer.syncProject(projectId, new Date().toISOString());
+      return RetrievalReindexResultSchema.parse({
+        ...result,
+        status: indexStatus(projectId),
+      });
     },
   );
 

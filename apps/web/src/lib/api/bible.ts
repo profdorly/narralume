@@ -11,6 +11,8 @@ import type {
   ModelExecutionPolicy,
   OutlineChangePreview,
   OutlineChangeRequest,
+  RetrievalIndexStatusDto,
+  RetrievalReindexResultDto,
   StoryLineProposalSetDto,
   StoryStateQuery,
   StoryStateSnapshotDto,
@@ -652,11 +654,31 @@ export async function searchProjectMemory(
     entityIds?: string[];
     limit?: number;
     rerank?: boolean;
+    maxPerDocument?: number;
   },
 ): Promise<RetrievalHit[]> {
   return requestJson(
     `/api/projects/${encodeURIComponent(projectId)}/retrieval/search`,
     jsonRequest("POST", input),
+  );
+}
+
+export async function getRetrievalIndexStatus(
+  projectId: string,
+  signal?: AbortSignal,
+): Promise<RetrievalIndexStatusDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/retrieval/index`,
+    signal ? { signal } : {},
+  );
+}
+
+export async function reindexProjectRetrieval(
+  projectId: string,
+): Promise<RetrievalReindexResultDto> {
+  return requestJson(
+    `/api/projects/${encodeURIComponent(projectId)}/retrieval/reindex`,
+    jsonRequest("POST", {}),
   );
 }
 

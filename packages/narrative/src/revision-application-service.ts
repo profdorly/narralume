@@ -1,6 +1,6 @@
 import {
   SqliteDocumentRepository,
-  SqliteRetrievalRepository,
+  SqliteManuscriptIndexer,
   SqliteReviewRepository,
   SqliteStoryRepository,
   SqliteRunRepository,
@@ -21,13 +21,13 @@ export interface RevisionApplicationResult {
 export class RevisionApplicationService {
   private readonly documents: SqliteDocumentRepository;
   private readonly reviews: SqliteReviewRepository;
-  private readonly retrieval: SqliteRetrievalRepository;
+  private readonly indexer: SqliteManuscriptIndexer;
   private readonly story: SqliteStoryRepository;
 
   constructor(private readonly database: NarrativeDatabase) {
     this.documents = new SqliteDocumentRepository(database);
     this.reviews = new SqliteReviewRepository(database);
-    this.retrieval = new SqliteRetrievalRepository(database);
+    this.indexer = new SqliteManuscriptIndexer(database);
     this.story = new SqliteStoryRepository(database);
   }
 
@@ -99,23 +99,14 @@ export class RevisionApplicationService {
         proposal.addressedIssueIds,
         now,
       );
-      this.retrieval.upsertSegment({
-        id: `document:${document.id}:current`,
+      // Re-index the accepted text right away (passages and entity links);
+      // passages whose text changed get their vectors on the next run.
+      this.indexer.indexDocument({
         projectId: input.projectId,
-        sourceType: "document_current",
-        sourceId: document.id,
-        title: document.title,
-        content: version.content,
-        authority: "confirmed",
-        metadata: {
-          documentId: document.id,
-          documentVersionId: version.id,
-          outlineNodeId: document.outlineNodeId,
-          revisionProposalId: proposal.id,
-        },
-        entityIds: [],
-        createdAt: now,
-        updatedAt: now,
+        documentId: document.id,
+        versionId: version.id,
+        provenance: { revisionProposalId: proposal.id },
+        now,
       });
       if (document.outlineNodeId) {
         this.story.updateOutlineStatus(

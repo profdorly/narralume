@@ -13,6 +13,14 @@ import {
 } from "../embedding-support.js";
 import { outlineContextSources } from "../outline-context.js";
 import { promptLanguageOf } from "../prompt-language.js";
+import { addBudgetUsage, embedPendingSegments } from "../retrieval-index.js";
+import {
+  chapterRetrievalQuery,
+  RETRIEVAL_LIMIT,
+  RETRIEVAL_MAX_PER_DOCUMENT,
+  retrievalContextSources,
+} from "../retrieval-query.js";
+import { SqliteManuscriptIndexer } from "@narralume/persistence";
 
 import {
   type ChapterWorkerDeps,
@@ -263,6 +271,7 @@ export async function compileContext(
 
   const chapterNodes = outline.filter((node) => node.kind === "chapter");
   const pinnedDocumentSourceIds = new Set<string>();
+  const pinnedDocumentIds = new Set<string>();
   const targetChapterIndex = chapterNodes.findIndex(
     (node) => node.id === target.id,
   );
@@ -282,6 +291,7 @@ export async function compileContext(
     if (!previousVersion?.content) continue;
     pinnedDocumentSourceIds.add(previousDocument!.id);
     pinnedDocumentSourceIds.add(previousVersion.id);
+    pinnedDocumentIds.add(previousDocument!.id);
     const previousSummary = deps.state.latestSummary(
       run.projectId,
       "chapter",
@@ -322,6 +332,7 @@ export async function compileContext(
   if (baseVersion?.content) {
     pinnedDocumentSourceIds.add(chapterDocument!.id);
     pinnedDocumentSourceIds.add(baseVersion.id);
+    pinnedDocumentIds.add(chapterDocument!.id);
     const existingSummary = deps.state.latestSummary(
       run.projectId,
       "chapter",
@@ -339,9 +350,38 @@ export async function compileContext(
       sourceId: baseVersion.id,
     });
   }
-  const retrievalQuery = [target.title, target.summary]
-    .filter(Boolean)
-    .join(" ");
+  const retrievalQuery = chapterRetrievalQuery({
+    title: target.title,
+    summary: target.summary,
+    goal: target.goal,
+    conflict: target.conflict,
+    outcome: target.outcome,
+    entityNames: plannedEntities.map((entity) => entity.name),
+    steerNotes,
+    previousChapterSummary: previousChapterSummary(
+      deps,
+      run.projectId,
+      chapterNodes,
+      targetChapterIndex,
+    ),
+  });
+  // Bring the passage index up to date (edits, imports and restores that
+  // did not index) and embed passages missing a vector for the assigned
+  // model, so this run's retrieval sees the whole book.
+  const indexedAt = deps.now().toISOString();
+  const indexSync = new SqliteManuscriptIndexer(deps.database).syncProject(
+    run.projectId,
+    indexedAt,
+  );
+  const indexEmbedding = await embedPendingSegments({
+    database: deps.database,
+    client: deps.model,
+    run,
+    step,
+    purpose: "context-retrieval-index",
+    signal,
+    now: indexedAt,
+  });
   const queryEmbedding = await optionalEmbeddings(
     deps.model,
     run,
@@ -358,7 +398,9 @@ export async function compileContext(
   );
   const retrievalHits = deps.retrieval.search(run.projectId, retrievalQuery, {
     entityIds: plannedEntityIds,
-    limit: 8,
+    limit: RETRIEVAL_LIMIT,
+    maxPerDocument: RETRIEVAL_MAX_PER_DOCUMENT,
+    excludeDocumentIds: [...pinnedDocumentIds],
     rerank: false,
     ...(queryEmbedding.vectors[0]
       ? {
@@ -367,31 +409,22 @@ export async function compileContext(
       : {}),
     ...(queryEmbedding.model ? { embeddingModel: queryEmbedding.model } : {}),
   });
-  for (const hit of retrievalHits) {
-    if (pinnedDocumentSourceIds.has(hit.sourceId)) continue;
-    sources.push({
-      id: `retrieval:${hit.id}`,
-      kind: "retrieval",
-      label: hit.title || `${hit.sourceType}:${hit.sourceId}`,
-      content: hit.content,
-      authority:
-        hit.authority === "locked"
-          ? "locked"
-          : hit.authority === "confirmed"
-            ? "confirmed"
-            : "reference",
-      priority: 55 + Math.round(hit.score * 100),
-      sourceType: hit.sourceType,
-      sourceId: hit.sourceId,
-      metadata: {
-        retrievalReasons: hit.reasons,
-        lexicalRank: hit.lexicalRank,
-        vectorRank: hit.vectorRank,
-        vectorScore: hit.vectorScore,
-        rerankScore: hit.rerankScore,
+  sources.push(
+    ...retrievalContextSources(
+      retrievalHits.filter((hit) => !pinnedDocumentSourceIds.has(hit.sourceId)),
+      {
+        idPrefix: "retrieval",
+        language: project.language,
+        priorityBase: 62,
+        authority: (hit) =>
+          hit.authority === "locked"
+            ? "locked"
+            : hit.authority === "confirmed"
+              ? "confirmed"
+              : "reference",
       },
-    });
-  }
+    ),
+  );
 
   const requestedContextWindow = policyNumber(
     run.policy,
@@ -532,9 +565,33 @@ export async function compileContext(
         modelId: queryEmbedding.modelId,
         warning: queryEmbedding.warning,
       },
+      retrievalIndex: {
+        indexedDocuments: indexSync.indexed,
+        relinkedDocuments: indexSync.relinked,
+        embeddedPassages: indexEmbedding.embedded,
+        pendingPassages: indexEmbedding.remaining,
+        warning: indexEmbedding.warning,
+      },
     },
-    usage: queryEmbedding.usage,
+    usage: addBudgetUsage(indexEmbedding.usage, queryEmbedding.usage),
   };
+}
+
+function previousChapterSummary(
+  deps: ChapterWorkerDeps,
+  projectId: string,
+  chapterNodes: readonly { id: string }[],
+  targetIndex: number,
+): string | null {
+  for (let index = targetIndex - 1; index >= 0; index -= 1) {
+    const summary = deps.state.latestSummary(
+      projectId,
+      "chapter",
+      chapterNodes[index]!.id,
+    )?.summary;
+    if (summary?.trim()) return summary;
+  }
+  return null;
 }
 
 function contextCopy(language: string | null | undefined) {

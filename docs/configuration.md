@@ -1,112 +1,95 @@
-# 配置
+[English](configuration.en.md)
 
-配置分成两层：产品界面中的渠道、模型和岗位派任，决定“这个项目怎样调用模型”；服务端环境变量决定“Server、数据库、备份和网络怎样运行”。先完成界面配置，再根据运行方式补充环境变量，排查会简单很多。
+# Configuração
 
-## 界面配置：从渠道到默认模型
+A configuração tem duas camadas: provedores, modelos e atribuição de papéis na interface, que decidem "como este projeto chama um modelo"; e variáveis de ambiente do Server, que decidem "como o Server, o banco de dados, os backups e a rede funcionam". Termine primeiro a configuração na interface e só depois acrescente as variáveis de ambiente do seu modo de implantação: diagnosticar problemas fica muito mais simples nessa ordem.
 
-打开“设置”，展开“渠道与模型管理”，按以下顺序操作：
+## Configuração na interface: do provedor ao modelo padrão
 
-1. **新建模型渠道**：填写渠道名称、协议、`Base URL` 和密钥。密钥字段也接受 `env:NAME`，表示从运行 Server 的环境变量读取，不把密钥写进数据库。
-2. **新建模型**：填写上游模型名、上下文上限和输出上限。这里的模型名必须是上游实际接受的值；产品内显示名只是帮助识别。
-3. **派任岗位**：在“默认生成模型”中选择刚创建的模型。写作、规划和审稿默认共用它；只有确实需要不同模型时才覆盖规划或审稿岗位。嵌入模型独立配置，用于语义检索，不参与正文生成。
-4. **先用手写链路验收**：回到书架建一部空白作品，确认故事、大纲和写作台可用，再发起一次最小 AI 编辑提案。这样可以把模型连通问题与产品数据问题分开。
+Abra Configurações, expanda "Gestão de provedores e modelos" e siga esta ordem:
 
-支持的上游协议是 OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages。不同协议的 Base URL、鉴权头和请求路径由渠道类型处理；不要把一个只支持 Anthropic 的地址登记成 OpenAI Chat 渠道。
+1. **Crie um provedor de modelo**: informe o nome, o protocolo, a `Base URL` e a chave. O campo de chave também aceita `env:NOME`, que lê o valor de uma variável de ambiente do processo do Server em vez de gravar a chave no banco.
+2. **Crie um modelo**: informe o nome do modelo no provedor, o limite de contexto e o limite de saída. O nome precisa ser exatamente o que o provedor aceita; o nome exibido no produto serve só para reconhecimento.
+3. **Atribua o papel**: escolha o modelo recém-criado em "Modelo padrão de geração". Escrita, planejamento e revisão o compartilham; substitua o papel de planejamento ou de revisão só quando realmente precisar de outro modelo. O modelo de embedding é configurado à parte, para a busca semântica, e não participa da geração de prosa (veja [Busca semântica e embeddings](#busca-semântica-e-embeddings)).
+4. **Valide primeiro o fluxo manual**: volte à estante, crie um livro em branco e confirme que história, outline e estúdio de escrita funcionam antes de enviar uma proposta mínima de edição por IA. Assim você separa problemas de conexão com o modelo de problemas nos dados do produto.
 
-### 添加模型后先探测
+Os protocolos suportados são OpenAI Chat Completions, OpenAI Responses e Anthropic Messages. A Base URL, os cabeçalhos de autenticação e os caminhos das requisições mudam por protocolo e são tratados pelo tipo de provedor; não cadastre um endpoint exclusivo da Anthropic como canal OpenAI Chat.
 
-新建模型后，以及把模型改指向另一个上游模型或 Provider、或者修改其 Provider 的 Base URL、端点或 Wire API 后，请在模型卡上点一次“探测”；这类修改会清除之前探测记录的能力标记。修改环境模型的 `NARRATIVE_*_MODEL` 或 `NARRATIVE_*_BASE_URL` 后，下次启动时同样会清除。已在进行的任务继续使用启动时的配置。探测会依次检查文本、流式、工具调用和结构化输出，并把结果保存为模型的能力标记。每个探测请求都采用章节任务的请求形状：推理强度 `low` 加 `temperature`，输出上限 1024 token，给推理模型留出作答空间。探测不发送 `top_p`：章节任务不发送它，而且有些模型不接受它与 `temperature` 同时出现。
+### Teste o modelo depois de cadastrá-lo
 
-文本阶段还会识别请求限制：有些模型（例如 OpenAI 的推理模型）不接受 `temperature`/`top_p`，有的只在章节任务所用的推理强度下不接受；把推理强度转换为 Anthropic 扩展思考的网关只接受等于 1 的 `temperature`；在 Chat Completions 上还有模型拒绝 `max_tokens`、要求改用 `max_completion_tokens`。上游错误信息指明被拒参数时，探测会调整请求，在该阶段的说明里写明调整，并用调整后的请求继续检查其余阶段。上游一旦接受调整后的请求，探测就记录 `samplingParameters: false` 或 `maxCompletionTokens: true`（后者只对 Chat Completions 渠道记录），即使随后的回复没有通过文本检查。`samplingParameters` 只用 `temperature` 测得：`true` 不代表 `top_p` 可用，`false` 会让任务同时省略 `temperature` 和 `top_p`。措辞不同的拒绝会让文本阶段失败，不记录这两个标记。探测之后新发起的任务会据此省略采样参数，或改发 `max_completion_tokens`；已经调用过模型的任务会沿用它为这类调用冻结的设置，所以探测后请重新发起任务。
+Use "Testar" no cartão do modelo depois de criá-lo e de novo depois de apontá-lo para outro modelo ou outro provedor, ou de mudar a Base URL, o endpoint ou a API do provedor: essas edições apagam as marcas gravadas por um teste anterior. Mudar `NARRATIVE_*_MODEL` ou `NARRATIVE_*_BASE_URL` de um modelo de ambiente apaga as marcas do mesmo jeito na próxima inicialização. Tarefas já em andamento continuam com a configuração com que começaram. O teste verifica texto, streaming, ferramentas e saída estruturada e grava os resultados como marcas de capacidade do modelo. Toda requisição de teste usa o formato das tarefas de capítulo: esforço de raciocínio `low` com `temperature` e limite de saída de 1024 tokens, para que modelos de raciocínio tenham espaço para responder. O teste nunca envia `top_p`: as tarefas de capítulo não o enviam, e alguns modelos o rejeitam junto com `temperature`.
 
-模型探测之前，这些标记处于未知状态，请求仍会照常携带 `temperature`、`top_p` 和 `max_tokens`。如果任务报错说模型不接受其中某个参数，先探测该模型，再重新发起任务。探测以推理强度 `low` 为准；使用其他推理强度的任务、或采样设置额外带 `top_p` 的模型，如果收到指明某个参数的拒绝、而探测曾接受该参数，报错会说明探测证据不覆盖这次请求。拒绝推理强度参数或其取值 `low` 的模型无法通过文本阶段，因为章节、导入等叙事任务同样会发送该参数。探测随后不带推理强度重发文本请求并检查其余阶段，因此流式、工具、结构化输出和请求形状标记描述的是不带推理强度的请求（例如关闭推理的助手），而不会因同一个拒绝被记为不可用。这依赖上游错误信息指明推理强度参数。措辞不同的拒绝会让文本阶段失败；流式、工具和结构化输出阶段仍会发送推理强度，并以同样的错误失败，探测因此把 `streaming`、`tools` 和 `structuredOutput` 记为 `false`，即使模型其实支持它们；请求形状标记保持不变。如果所有阶段都以同一个错误失败，请先修正 Provider 或模型配置（例如模型 ID 或网关的推理设置），再重新探测。公开体验用的 Relay 和 Bridge 只转发 `max_tokens`，因此不支持经由它们调用需要 `max_completion_tokens` 的模型。
+A etapa de texto também detecta restrições da requisição. Alguns modelos (por exemplo, os modelos de raciocínio da OpenAI) rejeitam `temperature`/`top_p`, alguns só no esforço de raciocínio enviado pelas tarefas de capítulo, gateways que convertem o esforço de raciocínio em pensamento estendido da Anthropic só aceitam `temperature` igual a 1, e, no Chat Completions, alguns modelos rejeitam `max_tokens` e exigem `max_completion_tokens`. Quando a mensagem de erro do provedor cita o parâmetro rejeitado, o teste ajusta a requisição, informa o ajuste no detalhe da etapa e testa as etapas seguintes com a requisição ajustada. Quando o provedor aceita a requisição ajustada, o teste grava `samplingParameters: false` ou `maxCompletionTokens: true` (este só para provedores Chat Completions), mesmo que a resposta depois falhe na verificação de texto. `samplingParameters` é medido só com `temperature`: `true` não diz nada sobre `top_p`, e `false` faz as tarefas omitirem tanto `temperature` quanto `top_p`. Uma rejeição com outra redação falha a etapa de texto sem gravar nenhuma das marcas. Tarefas iniciadas depois do teste omitem os parâmetros de amostragem ou enviam `max_completion_tokens`. Uma tarefa que já chamou o modelo mantém o que congelou para aquele tipo de chamada; inicie a tarefa de novo depois do teste.
 
-## 浏览器内核与本地 Server 的区别
+Enquanto o modelo não for testado essas marcas ficam desconhecidas, e as requisições continuam enviando `temperature`, `top_p` e `max_tokens`. Se uma tarefa falhar com um erro dizendo que o modelo rejeita um deles, teste o modelo e inicie a tarefa de novo. O teste mede com esforço de raciocínio `low`; se uma tarefa com outro esforço, ou um modelo cujas configurações de amostragem acrescentam `top_p`, receber uma rejeição citando um parâmetro que o teste aceitou, o erro informa que a evidência do teste não cobre aquela requisição. Um modelo que rejeita o parâmetro de esforço de raciocínio ou o valor `low` falha na etapa de texto, porque as tarefas de capítulo, de importação e as demais tarefas narrativas também o enviam. O teste então envia a requisição de texto e as etapas restantes sem esforço de raciocínio, para que as marcas de streaming, ferramentas, saída estruturada e formato da requisição descrevam requisições sem ele (como o assistente com raciocínio desligado) em vez de repetir a rejeição. Isso depende de a mensagem de erro do provedor citar o esforço de raciocínio. Uma rejeição com outra redação falha a etapa de texto, as etapas de streaming, ferramentas e saída estruturada continuam enviando o esforço de raciocínio e falham com o mesmo erro, e o teste grava `streaming`, `tools` e `structuredOutput` como `false`, mesmo que o modelo os suporte; as marcas de formato da requisição ficam como estavam. Se todas as etapas falharem com o mesmo erro, corrija a configuração do provedor ou do modelo (por exemplo, o ID do modelo ou as configurações de raciocínio do gateway) e teste de novo.
 
-| 调用方         | 密钥保存位置                                | 上游要求                                | 适用场景                     |
-| -------------- | ------------------------------------------- | --------------------------------------- | ---------------------------- |
-| 浏览器本地内核 | 当前站点 OPFS 数据库                        | 上游允许浏览器 CORS                     | 在线体验、单机浏览器本地优先 |
-| 本地 Server    | Server 环境变量或本地数据库                 | Server 能访问上游；不受浏览器 CORS 影响 | 桌面发行包、源码生产启动     |
-| Docker Server  | `.env.local`、挂载数据库或 Compose 环境变量 | 容器能访问上游                          | 本机或自托管                 |
+## Diferença entre o kernel do navegador e o Server local
 
-浏览器站点和本地 Server 是两个独立的数据驱动。把密钥配置在一个模式中不会自动出现在另一个模式里。在线体验清理站点数据前，先从设置下载完整 SQLite 库。
+| Quem chama                | Onde a chave fica guardada                          | Exigência do provedor                                          | Indicado para                                     |
+| ------------------------- | --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| Kernel local do navegador | Banco OPFS do site atual                            | O provedor permite CORS no navegador                           | Uso em uma máquina, só no navegador (local-first) |
+| Server local              | Variáveis de ambiente do Server ou o banco local    | O Server alcança o provedor; o CORS do navegador não interfere | Pacotes de release para desktop, código-fonte     |
+| Server em Docker          | `.env.local`, banco montado ou variáveis do Compose | O contêiner alcança o provedor                                 | Implantação local ou self-hosted                  |
 
-## 服务端环境变量
+O site no navegador e o Server local são dois drivers de dados independentes. Chaves configuradas em um modo não aparecem no outro. Antes de apagar os dados do site no navegador, baixe a biblioteca SQLite completa em Configurações.
 
-复制模板并仅在本机保存：
+## Variáveis de ambiente do Server
+
+Copie o modelo e mantenha-o só nesta máquina:
 
 ```bash
 cp .env.example .env.local
 ```
 
-`.env.local` 不得提交到 Git。常用变量如下：
+O `.env.local` nunca deve ir para o Git. Variáveis comuns:
 
-| 变量                                                               | 默认值/范围                  | 作用                                                       |
-| ------------------------------------------------------------------ | ---------------------------- | ---------------------------------------------------------- |
-| `NARRATIVE_LLM_BASE_URL`                                           | `https://api.example.com/v1` | 默认模型渠道的 Base URL，占位值必须替换                    |
-| `NARRATIVE_LLM_API_KEY`                                            | 空                           | 默认模型渠道密钥；也可使用协议专属变量                     |
-| `NARRATIVE_LLM_MODEL`                                              | 空                           | 默认上游模型名                                             |
-| `NARRATIVE_LLM_CONTEXT_WINDOW` / `NARRATIVE_LLM_MAX_OUTPUT_TOKENS` | 空                           | 默认模型的上下文和输出上限元数据                           |
-| `NARRATIVE_CHAT_*`                                                 | 空                           | OpenAI Chat 协议覆盖项                                     |
-| `NARRATIVE_RESPONSES_*`                                            | 空                           | OpenAI Responses 协议覆盖项                                |
-| `NARRATIVE_ANTHROPIC_*`                                            | 空                           | Anthropic Messages 协议覆盖项                              |
-| `NARRATIVE_EMBEDDING_MODEL`                                        | 空                           | 可选的 OpenAI 兼容嵌入模型；未设置时使用全文与实体信号检索 |
-| `NARRATIVE_MODEL_PRICING_JSON`                                     | 空                           | 可选的模型计价元数据，用于运行成本估算                     |
-| `NARRATIVE_DATA_DIR`                                               | `./data`                     | SQLite 数据库目录                                          |
-| `NARRATIVE_BACKUP_DIR`                                             | `./data/backups`             | 一致性备份目录，建议放到独立磁盘或同步目录                 |
-| `NARRATIVE_BACKUP_RETENTION`                                       | `10`，范围 1-100             | 自动保留的备份数量                                         |
-| `NARRATIVE_BACKUP_INTERVAL_MINUTES`                                | `360`，范围 5-43200          | 自动备份间隔                                               |
-| `NARRATIVE_BACKUP_ON_STARTUP`                                      | `false`                      | Server 启动时是否立即备份                                  |
-| `NARRATIVE_SERVER_HOST`                                            | `127.0.0.1`                  | 监听地址；远程监听需要额外安全配置                         |
-| `NARRATIVE_SERVER_PORT`                                            | `4317`                       | API/生产同源服务端口                                       |
-| `NARRATIVE_ALLOW_REMOTE`                                           | `false`                      | 是否允许非回环访问；公网前必须配置令牌和 TLS               |
-| `NARRATIVE_AUTH_TOKEN`                                             | 空                           | 远程访问令牌，至少 24 个字符                               |
-| `NARRATIVE_STATIC_DIR`                                             | 空                           | 生产模式托管 Web 静态文件的目录                            |
+| Variável                                                           | Padrão/faixa                 | Função                                                                                   |
+| ------------------------------------------------------------------ | ---------------------------- | ---------------------------------------------------------------------------------------- |
+| `NARRATIVE_LLM_BASE_URL`                                           | `https://api.example.com/v1` | Base URL do provedor padrão; o valor de exemplo precisa ser trocado                      |
+| `NARRATIVE_LLM_API_KEY`                                            | Vazio                        | Chave do provedor padrão; as variáveis específicas de protocolo também funcionam         |
+| `NARRATIVE_LLM_MODEL`                                              | Vazio                        | Nome padrão do modelo no provedor                                                        |
+| `NARRATIVE_LLM_CONTEXT_WINDOW` / `NARRATIVE_LLM_MAX_OUTPUT_TOKENS` | Vazio                        | Limites de contexto e de saída do modelo padrão                                          |
+| `NARRATIVE_CHAT_*`                                                 | Vazio                        | Substituições para o protocolo OpenAI Chat                                               |
+| `NARRATIVE_RESPONSES_*`                                            | Vazio                        | Substituições para o protocolo OpenAI Responses                                          |
+| `NARRATIVE_ANTHROPIC_*`                                            | Vazio                        | Substituições para o protocolo Anthropic Messages                                        |
+| `NARRATIVE_MODEL_PRICING_JSON`                                     | Vazio                        | Preços opcionais dos modelos, para estimar o custo das tarefas                           |
+| `NARRATIVE_DATA_DIR`                                               | `./data`                     | Pasta do banco SQLite                                                                    |
+| `NARRATIVE_BACKUP_DIR`                                             | `./data/backups`             | Pasta dos backups consistentes; prefira outro disco ou uma pasta sincronizada            |
+| `NARRATIVE_BACKUP_RETENTION`                                       | `10`, faixa 1-100            | Quantos backups automáticos são mantidos                                                 |
+| `NARRATIVE_BACKUP_INTERVAL_MINUTES`                                | `360`, faixa 5-43200         | Intervalo do backup automático                                                           |
+| `NARRATIVE_BACKUP_ON_STARTUP`                                      | `false`                      | Se o Server faz um backup assim que inicia                                               |
+| `NARRATIVE_SERVER_HOST`                                            | `127.0.0.1`                  | Endereço de escuta; escutar na rede exige configuração extra de segurança                |
+| `NARRATIVE_SERVER_PORT`                                            | `4317`                       | Porta da API e do serviço de produção na mesma origem                                    |
+| `NARRATIVE_ALLOW_REMOTE`                                           | `false`                      | Se aceita acesso fora do loopback; token e TLS são obrigatórios antes de expor o serviço |
+| `NARRATIVE_AUTH_TOKEN`                                             | Vazio                        | Token de acesso remoto, com pelo menos 24 caracteres                                     |
+| `NARRATIVE_STATIC_DIR`                                             | Vazio                        | Pasta dos arquivos estáticos da Web no modo de produção                                  |
 
-本地发行包启动器另有三个只影响启动器的变量：`NARRALUME_PORT` 修改本地监听端口，`NARRALUME_DATA_DIR` 修改数据目录，`NARRALUME_NODE_VERSION` 指定便携 Node.js 版本。它们不是 Server 的通用环境变量；Windows、macOS 和 Linux 启动器会把最终值传给 Server。普通使用通常只需要前两个。
+Os launchers de release têm mais três variáveis, que só afetam o launcher: `NARRALUME_PORT` muda a porta local, `NARRALUME_DATA_DIR` muda a pasta de dados e `NARRALUME_NODE_VERSION` escolhe a versão portátil do Node.js. Elas não são variáveis gerais do Server; os launchers de Windows, macOS e Linux repassam os valores finais ao Server. No uso normal, só as duas primeiras costumam ser necessárias.
 
-## Docker 的特殊变量
+## Variáveis específicas do Docker
 
-Compose 使用 `.env.local` 和 shell 环境：
+O Compose lê o `.env.local` e o ambiente do shell:
 
-- `NARRATIVE_AUTH_TOKEN`：默认示例值只适合本机试用；离开本机前必须替换为高熵令牌。
-- `NARRATIVE_WEB_BIND_HOST`：默认 `127.0.0.1`。改为 `0.0.0.0` 等于把 Web 端口发布到所有网卡，不应在没有 TLS、网络 ACL 和独立备份时操作。
-- `NARRATIVE_BACKUP_HOST_DIR`：宿主机独立备份目录，默认 `./data/backups`，映射到容器 `/app/backups`。
+- `NARRATIVE_AUTH_TOKEN`: o valor de exemplo só serve para testes locais; troque-o por um token de alta entropia antes de a máquina sair da sua mesa.
+- `NARRATIVE_WEB_BIND_HOST`: padrão `127.0.0.1`. Mudar para `0.0.0.0` publica a porta Web em todas as interfaces de rede; não faça isso sem TLS, controle de acesso na rede e backups independentes.
+- `NARRATIVE_BACKUP_HOST_DIR`: pasta de backup independente no host, padrão `./data/backups`, montada em `/app/backups` dentro do contêiner.
 
-Docker Server 在容器内部以 `0.0.0.0` 监听并启用远程模式，这是容器网络需要；宿主机只通过 Web/Nginx 访问，Server 端口不直接发布。
+Dentro do contêiner, o Server escuta em `0.0.0.0` com o modo remoto ligado, como a rede de contêineres exige. A partir do host, o acesso passa só pela Web/Nginx; a porta do Server não é publicada diretamente.
 
-## Bridge / Relay
+## Busca semântica e embeddings
 
-Bridge 和 Relay 是可选的通用上游代理。普通用户不需要它们：浏览器模式可以直接调用允许 CORS 的上游，本地 Server 或 Docker 可以直接在服务端调用上游。只有维护公开在线体验，并且需要让 Cloudflare Relay 访问维护者本机或私有网络里的模型服务时，才需要在本机运行 Bridge。
+Quando a IA escreve um capítulo ou responde na cocriação, o NarraLume procura no manuscrito anterior os trechos mais relacionados à tarefa e os acrescenta ao contexto do modelo, ao lado do outline, da Bíblia da História e do capítulo anterior.
 
-这条高级链路是：`浏览器 → Web → Relay → Tunnel/Access → 本机 Bridge → 上游模型`。Bridge 只负责转发，不是作品数据库、账号系统或普通用户的必需后端；部署者仍需自己定义域名、来源白名单、限流、日志和密钥注入。
+- **Índice**: cada capítulo e cena ligado ao outline é dividido em trechos de cerca de 380 tokens que nunca atravessam uma quebra de cena (`* * *`). Cada trecho é ligado aos personagens, lugares e objetos da Bíblia da História que ele cita. O índice é atualizado ao registrar uma versão, aceitar uma proposta ou importar um manuscrito, e antes de toda tarefa de IA (o que também cobre backups restaurados e bibliotecas antigas).
+- **Sinais**: a busca combina palavras (um índice de texto completo que ignora acentos e flexões comuns; texto em chinês mantém o índice por caracteres), os personagens previstos no plano do capítulo e, quando há um modelo de embedding atribuído, a semelhança entre vetores. São usados no máximo dois trechos por capítulo, e o capítulo anterior nunca é recuperado porque já está inteiro no contexto. A consulta do capítulo usa o título, o plano (resumo, objetivo, conflito, desfecho), os personagens previstos e as notas de direção; um capítulo sem plano usa o resumo do capítulo anterior. Preencha o resumo no outline para melhores resultados.
+- **Modelo de embedding**: atribua um modelo do tipo "Embedding" ao papel "Embedding" em Configurações. Ele nunca é herdado do modelo de escrita. Sem ele, a busca usa só palavras e personagens, e cada tarefa registra um evento `run.degraded`. Os vetores são criados ao registrar a prosa e, para os trechos que ainda não têm vetor (uma importação, uma edição aceita em outro lugar, uma troca de modelo), no início da próxima tarefa de escrita por IA ou de cocriação, até 512 trechos por tarefa. Só os trechos cujo texto mudou ganham vetor novo; trocar de modelo não perde a busca, só custa uma passada pelo livro.
+- **Situação**: o Laboratório narrativo mostra quantos capítulos estão indexados, quantos trechos têm vetor do modelo atribuído e um botão "Reindexar agora". A variável `NARRATIVE_EMBEDDING_MODEL` não é mais lida; o Server registra um aviso se ela ainda estiver definida.
+- **Medição**: `npm run test:retrieval` roda a avaliação offline da busca (`evals/retrieval-v1.json`: dois livros de exemplo, em português e em inglês) e falha quando a qualidade cai abaixo do piso. `npm run eval:retrieval:real` roda os mesmos casos com um modelo de embedding real compatível com a OpenAI, enviando só o texto dos exemplos, usando `NARRATIVE_EVAL_EMBEDDING_API_KEY` (ou `NARRATIVE_LLM_API_KEY`) e, se quiser, `NARRATIVE_EVAL_EMBEDDING_BASE_URL`. Acrescente `--index=chapter` para comparar com o índice anterior, de um segmento por capítulo.
 
-Bridge 需要下列变量：
+## Falhas comuns de configuração
 
-```text
-UPSTREAM_BASE_URL=https://api.example.com/v1
-UPSTREAM_API_KEY=replace-me
-UPSTREAM_MODEL=replace-me
-BRIDGE_SHARED_SECRET=replace-with-at-least-24-characters
-BRIDGE_PORT=4320
-BRIDGE_MAX_CONCURRENCY=8
-BRIDGE_UPSTREAM_TIMEOUT_MS=600000
-```
-
-Relay 的公开变量指定 Bridge 地址、模型和唯一允许的 Web Origin：
-
-```text
-UPSTREAM_BASE_URL=https://api.example.com/v1
-RELAY_MODEL=replace-me
-WEB_ORIGIN=https://app.example.com
-```
-
-`api.example.com`、`app.example.com` 和 `replace-me` 仅为占位符。
-
-## 常见配置故障
-
-- **模型列表有，但任务提示没有默认模型**：回到“默认生成模型”岗位重新派任；模型或渠道被停用也会解除派任。
-- **浏览器提示 CORS**：确认渠道地址允许当前 Web Origin；如果使用本地 Server，确认请求走 Server 而不是浏览器直连。
-- **401/403**：核对密钥来源、协议类型和上游 Base URL，不要把完整密钥粘进 Issue。
-- **远程 Server 启动失败**：`NARRATIVE_ALLOW_REMOTE=true` 时必须同时设置至少 24 字符的 `NARRATIVE_AUTH_TOKEN`，并在 TLS/反向代理层做访问控制。
-- **升级后环境变量不生效**：确认实际启动进程读取的是新目录的 `.env.local`，并重启 Server；运行中的进程不会自动重新加载环境变量。
+- **Há modelos, mas as tarefas dizem que não existe modelo padrão**: volte ao papel "Modelo padrão de geração" e atribua de novo; desativar um modelo ou provedor também remove as atribuições dele.
+- **O navegador mostra erro de CORS**: confirme que o provedor permite a origem Web atual; com o Server local, confirme que as requisições passam pelo Server e não saem direto do navegador.
+- **401/403**: confira a origem da chave, o tipo de protocolo e a Base URL do provedor, e nunca cole uma chave completa em uma Issue.
+- **O Server remoto não inicia**: com `NARRATIVE_ALLOW_REMOTE=true` também é preciso um `NARRATIVE_AUTH_TOKEN` de pelo menos 24 caracteres, além de controle de acesso na camada de TLS ou proxy reverso.
+- **Variáveis de ambiente sem efeito depois de uma atualização**: confirme que o processo iniciado lê o `.env.local` da nova pasta e reinicie o Server; um processo em execução não recarrega as variáveis de ambiente.

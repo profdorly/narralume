@@ -17,6 +17,7 @@ import {
   SqliteContextReceiptRepository,
   SqliteDocumentRepository,
   SqliteDeliveryRepository,
+  SqliteManuscriptIndexer,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteRetrievalRepository,
@@ -28,7 +29,10 @@ import {
 } from "@narralume/persistence";
 
 import type { NarrativeModelClient } from "../model-client.js";
-import { optionalEmbeddings } from "../embedding-support.js";
+import {
+  embedPlannedPassages,
+  indexDocumentWithEmbeddings,
+} from "../retrieval-index.js";
 import {
   SETTLED_OUTLINE_NODE_KEY,
   SettlementApplicationService,
@@ -74,6 +78,7 @@ export class ChapterWorkerSuite {
   private readonly state: SqliteNarrativeStateRepository;
   private readonly documents: SqliteDocumentRepository;
   private readonly retrieval: SqliteRetrievalRepository;
+  private readonly indexer: SqliteManuscriptIndexer;
   private readonly receipts: SqliteContextReceiptRepository;
   private readonly reviews: SqliteReviewRepository;
   private readonly runs: SqliteRunRepository;
@@ -99,6 +104,7 @@ export class ChapterWorkerSuite {
     );
     this.documents = new SqliteDocumentRepository(database);
     this.retrieval = new SqliteRetrievalRepository(database);
+    this.indexer = new SqliteManuscriptIndexer(database);
     this.receipts = new SqliteContextReceiptRepository(database);
     this.reviews = new SqliteReviewRepository(database);
     this.runs = new SqliteRunRepository(database);
@@ -267,14 +273,27 @@ export class ChapterWorkerSuite {
         usage: zeroUsage(),
       };
     }
-    const contentEmbedding = await optionalEmbeddings(
-      this.model,
+    const plannedDocument =
+      (stringOrNull(context.baseDocumentId)
+        ? this.documents.get(
+            run.projectId,
+            stringField(context, "baseDocumentId"),
+          )
+        : null) ??
+      this.documents.get(run.projectId, `${run.id}:chapter-document`);
+    const contentEmbedding = await embedPlannedPassages({
+      database: this.database,
+      client: this.model,
       run,
       step,
-      "chapter-index",
-      [content],
+      purpose: "chapter-index",
+      passages: this.indexer.planPassages(
+        plannedDocument?.id ?? `${run.id}:chapter-document`,
+        plannedDocument?.title ?? target.title,
+        content,
+      ),
       signal,
-    );
+    });
     const output = this.database.transaction(() => {
       requireActiveRunCommit(this.database, run.id, run.projectId, signal);
       requireCurrentChapterOutline(this.database, snapshot);
@@ -363,34 +382,18 @@ export class ChapterWorkerSuite {
       const entityIds = settlementEntityIds(boundSettlement).filter((id) =>
         Boolean(this.canon.getEntity(run.projectId, id)),
       );
-      if (versionCreated) {
-        const segment = this.retrieval.upsertSegment({
-          id: `document:${document.id}:current`,
+      const index = indexDocumentWithEmbeddings(
+        this.database,
+        {
           projectId: run.projectId,
-          sourceType: "document_current",
-          sourceId: document.id,
-          title: target.title,
-          content,
-          authority: "confirmed",
-          metadata: {
-            documentId: document.id,
-            documentVersionId: version.id,
-            outlineNodeId: target.id,
-            runId: run.id,
-          },
-          entityIds,
-          createdAt: now,
-          updatedAt: now,
-        });
-        if (contentEmbedding.vectors[0] && contentEmbedding.model) {
-          this.retrieval.upsertEmbedding({
-            segmentId: segment.id,
-            model: contentEmbedding.model,
-            embedding: contentEmbedding.vectors[0],
-            updatedAt: now,
-          });
-        }
-      }
+          documentId: document.id,
+          versionId: version.id,
+          settlementEntityIds: entityIds,
+          provenance: { runId: run.id },
+          now,
+        },
+        contentEmbedding,
+      );
       this.state.upsertSummary({
         id: `${run.id}:summary`,
         projectId: run.projectId,
@@ -449,6 +452,8 @@ export class ChapterWorkerSuite {
           model: contentEmbedding.model,
           modelId: contentEmbedding.modelId,
           warning: contentEmbedding.warning,
+          passages: index.passages,
+          embeddedPassages: index.embedded,
         },
       };
     });
@@ -487,14 +492,19 @@ export class ChapterWorkerSuite {
         usage: zeroUsage(),
       };
     }
-    const contentEmbedding = await optionalEmbeddings(
-      this.model,
+    const contentEmbedding = await embedPlannedPassages({
+      database: this.database,
+      client: this.model,
       run,
       step,
-      "chapter-index",
-      [manual.content],
+      purpose: "chapter-index",
+      passages: this.indexer.planPassages(
+        manual.document.id,
+        manual.document.title,
+        manual.content,
+      ),
       signal,
-    );
+    });
     const now = this.now().toISOString();
     const output = this.database.transaction(() => {
       requireActiveRunCommit(this.database, run.id, run.projectId, signal);
@@ -505,32 +515,24 @@ export class ChapterWorkerSuite {
       const entityIds = settlementEntityIds(boundSettlement).filter((id) =>
         Boolean(this.canon.getEntity(run.projectId, id)),
       );
-      this.retrieval.upsertSegment({
-        id: `document:${manual.document.id}:current`,
-        projectId: run.projectId,
-        sourceType: "document_current",
-        sourceId: manual.document.id,
-        title: manual.document.title,
-        content: manual.content,
-        authority: "confirmed",
-        metadata: {
-          documentId: manual.document.id,
-          documentVersionId: manual.version.id,
-          outlineNodeId: manual.outlineNode.id,
-          runId: run.id,
-        },
-        entityIds,
-        createdAt: now,
-        updatedAt: now,
-      });
-      if (contentEmbedding.vectors[0] && contentEmbedding.model) {
-        this.retrieval.upsertEmbedding({
-          segmentId: `document:${manual.document.id}:current`,
-          model: contentEmbedding.model,
-          embedding: contentEmbedding.vectors[0],
-          updatedAt: now,
-        });
-      }
+      // A newer version may have been committed while this one settled; it
+      // is indexed on its own, so only the still-current version is written.
+      const index =
+        this.documents.get(run.projectId, manual.document.id)
+          ?.currentVersionId === manual.version.id
+          ? indexDocumentWithEmbeddings(
+              this.database,
+              {
+                projectId: run.projectId,
+                documentId: manual.document.id,
+                versionId: manual.version.id,
+                settlementEntityIds: entityIds,
+                provenance: { runId: run.id },
+                now,
+              },
+              contentEmbedding,
+            )
+          : { passages: 0, embedded: 0 };
       this.state.upsertSummary({
         id: `${run.id}:summary`,
         projectId: run.projectId,
@@ -578,6 +580,8 @@ export class ChapterWorkerSuite {
           model: contentEmbedding.model,
           modelId: contentEmbedding.modelId,
           warning: contentEmbedding.warning,
+          passages: index.passages,
+          embeddedPassages: index.embedded,
         },
       };
     });

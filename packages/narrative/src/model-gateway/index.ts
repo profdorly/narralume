@@ -122,6 +122,12 @@ export interface NarrativeModelClient {
    * True when an explicit embedding assignment is configured.
    */
   hasEmbeddingAssignment?(): boolean;
+  /**
+   * Upstream model name `embed` would use for this run and purpose (the
+   * name stored with each vector), or null when no embedding model is
+   * assigned. Lets callers skip passages that already have a current vector.
+   */
+  embeddingModelName?(run: NarrativeRun, purpose: string): string | null;
   /** Model-aware context ceiling for prompt compilation. */
   effectiveContextWindow?(run: NarrativeRun, purpose: string): number;
   /** Model- and role-aware output ceiling for context reserve planning. */
@@ -281,6 +287,13 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
 
   hasEmbeddingAssignment(): boolean {
     return this.assignments.resolve("embedding") !== null;
+  }
+
+  embeddingModelName(run: NarrativeRun, purpose: string): string | null {
+    return (
+      this.resolveSnapshotAssignment(run, `${purpose}:embedding`, "embedding")
+        ?.model.modelId ?? null
+    );
   }
 
   effectiveContextWindow(run: NarrativeRun, purpose: string): number {
@@ -716,7 +729,12 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
   ): ResolvedModelAssignment | null {
     const frozen = this.assignmentSnapshots.get(run.id, purpose);
     if (!frozen) {
-      const override = this.resolvePolicyModelOverride(run);
+      // A conversation's model override picks a generation model; it never
+      // replaces the embedding model (vectors of another model are useless).
+      const override =
+        requestedRole === "embedding"
+          ? null
+          : this.resolvePolicyModelOverride(run);
       if (override) {
         return {
           requestedRole,

@@ -8,7 +8,7 @@ import {
   SqliteLoreRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
-  SqliteRetrievalRepository,
+  SqliteManuscriptIndexer,
   SqliteStoryRepository,
   type NarrativeDatabase,
 } from "@narralume/persistence";
@@ -52,7 +52,7 @@ export class DeliveryService {
   private readonly delivery: SqliteDeliveryRepository;
   private readonly automation: SqliteAutomationRepository;
   private readonly uploads: SqliteImportUploadRepository;
-  private readonly retrieval: SqliteRetrievalRepository;
+  private readonly indexer: SqliteManuscriptIndexer;
 
   constructor(private readonly database: NarrativeDatabase) {
     this.projects = new SqliteProjectRepository(database);
@@ -69,7 +69,7 @@ export class DeliveryService {
     this.delivery = new SqliteDeliveryRepository(database);
     this.automation = new SqliteAutomationRepository(database);
     this.uploads = new SqliteImportUploadRepository(database);
-    this.retrieval = new SqliteRetrievalRepository(database);
+    this.indexer = new SqliteManuscriptIndexer(database);
   }
 
   private ctx(): DeliveryContext {
@@ -85,7 +85,7 @@ export class DeliveryService {
       delivery: this.delivery,
       automation: this.automation,
       uploads: this.uploads,
-      retrieval: this.retrieval,
+      indexer: this.indexer,
     };
   }
 

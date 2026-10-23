@@ -6,6 +6,29 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Added
 
+- Busca do manuscrito por trechos: cada capítulo e cena vira trechos de ~380 tokens que não atravessam quebra de cena, ligados aos personagens, lugares e objetos que citam (migração 049 cria o índice por palavras). O índice se atualiza ao registrar versões, aceitar propostas (inclusive de revisão), importar e antes de cada tarefa de IA, que também cobre backups restaurados e bibliotecas antigas.
+- Vetores por trecho: só os trechos cujo texto mudou ganham embedding novo; trechos sem vetor do modelo atribuído (importação, troca de modelo) são preenchidos no início da próxima escrita ou cocriação, até 512 por tarefa.
+- Laboratório narrativo: painel do índice de busca (capítulos indexados, trechos, modelo de embedding, trechos com vetor) com "Reindexar agora"; rotas `GET /api/projects/:id/retrieval/index` e `POST /api/projects/:id/retrieval/reindex`.
+- Avaliação da busca (`evals/retrieval-v1.json`, `npm run test:retrieval`, incluída em `verify` e `verify:ci`) e medição com modelo real (`npm run eval:retrieval:real`).
+
+### Changed
+
+- A busca por palavras agora combina os termos da consulta (antes buscava a frase exata), ignora acentos, flexões comuns, palavras vazias e títulos de capítulo; texto em chinês continua no índice por caracteres.
+- A consulta do capítulo usa título, plano (resumo, objetivo, conflito, desfecho), personagens previstos e notas de direção, com o resumo do capítulo anterior quando o capítulo não tem plano.
+- O corte de semelhança vetorial passou a ser relativo ao melhor resultado (antes `> 0.04`, que deixava passar todo o livro); no máximo dois trechos por capítulo; o capítulo anterior, que já vai inteiro, não é recuperado de novo.
+- Os trechos recuperados entram no contexto em ordem de relevância e com rótulo de posição ("Trecho recuperado 1 · … (trecho 2 de 5)"); a prévia de contexto usa o idioma do projeto.
+- O modelo escolhido para uma conversa do assistente não substitui mais o modelo de embedding.
+
+### Removed
+
+- `NARRATIVE_EMBEDDING_MODEL` saiu do `.env.example` e da documentação; o Server registra um aviso se a variável ainda estiver definida.
+
+### Fixed
+
+- Trechos de capítulos arquivados (na lixeira do manuscrito) ou apagados não aparecem mais na busca.
+
+### Added (pt-BR e local-first)
+
 - Idioma primário pt-BR (interface e prompts). Inglês permanece secundário; zh-CN foi removido (migração 048).
 - Campo `form` no projeto (`short-story` | `novella` | `novel`) e receita de conto com um ciclo de revisão.
 - Onboarding na estante: ideia vs manuscrito.

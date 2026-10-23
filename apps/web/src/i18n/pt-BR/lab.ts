@@ -38,6 +38,29 @@ export const lab = {
     empty: "Nenhuma memória relacionada da história foi encontrada.",
     hint: "Digite uma pergunta e as configurações, o texto e as memórias relacionados aparecem aqui.",
   },
+  index: {
+    title: "Índice de busca do manuscrito",
+    loadError: "Não foi possível carregar o índice agora",
+    documents: "Capítulos indexados",
+    documentsValue: "{indexed} de {total}",
+    passages: "Trechos",
+    model: "Modelo de embedding",
+    noModel: "Nenhum atribuído",
+    vectors: "Trechos com vetor deste modelo",
+    vectorsValue: "{embedded} de {total}",
+    hintNoModel:
+      "Sem modelo de embedding, a busca usa palavras e personagens citados. Atribua um em Configurações para a busca também encontrar trechos por sentido.",
+    hintPending:
+      "Os vetores que faltam são gerados na próxima escrita por IA ou cocriação, com o modelo de embedding atribuído.",
+    hintReady:
+      "Todos os trechos têm vetor do modelo atribuído; a busca combina palavras, personagens e sentido.",
+    stale:
+      "{count} capítulos mudaram desde a última indexação; a próxima busca ou escrita por IA os reindexa.",
+    reindex: "Reindexar agora",
+    reindexing: "Reindexando…",
+    reindexed: "{indexed} capítulos reindexados · {relinked} com vínculos de personagem atualizados",
+    reindexError: "A reindexação não foi concluída",
+  },
   predictions: {
     title: "Previsões de enredo",
     count: "{count} entradas",

@@ -7,7 +7,7 @@ import {
   SqliteDocumentRepository,
   SqliteProjectCoverRepository,
   SqliteProjectRepository,
-  SqliteRetrievalRepository,
+  SqliteManuscriptIndexer,
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
@@ -247,7 +247,6 @@ export function commitDocumentVersion(
   },
 ) {
   const documents = new SqliteDocumentRepository(database);
-  const retrieval = new SqliteRetrievalRepository(database);
   const story = new SqliteStoryRepository(database);
   const document = documents.get(input.projectId, input.documentId);
   if (!document)
@@ -268,23 +267,12 @@ export function commitDocumentVersion(
   });
   documents.deleteDraft(input.projectId, input.documentId, input.content);
   if (document.outlineNodeId) {
-    retrieval.upsertSegment({
-      id: `document:${document.id}:current`,
+    new SqliteManuscriptIndexer(database).indexDocument({
       projectId: input.projectId,
-      sourceType: "document_current",
-      sourceId: document.id,
-      title: document.title,
-      content: version.content,
-      authority: "confirmed",
-      metadata: {
-        documentId: document.id,
-        documentVersionId: version.id,
-        outlineNodeId: document.outlineNodeId,
-        source: input.source,
-      },
-      entityIds: [],
-      createdAt: now,
-      updatedAt: now,
+      documentId: document.id,
+      versionId: version.id,
+      provenance: { source: input.source },
+      now,
     });
     story.updateOutlineStatus(
       input.projectId,

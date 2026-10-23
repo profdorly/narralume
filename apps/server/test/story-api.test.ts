@@ -751,7 +751,7 @@ describe("story kernel API", () => {
       sections: { kind: string }[];
       receipt: { id: string; compiledHash: string; entries: unknown[] };
     };
-    expect(compiled.text).toContain("本轮任务");
+    expect(compiled.text).toContain("Tarefa desta rodada");
     expect(compiled.sections.map((section) => section.kind)).toEqual(
       expect.arrayContaining(["author-intent", "task", "canon", "outline"]),
     );

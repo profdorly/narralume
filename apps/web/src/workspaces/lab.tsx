@@ -18,8 +18,10 @@ import {
   generatePlotPredictions,
   getNarrativeMemories,
   getPlotPredictions,
+  getRetrievalIndexStatus,
   previewDryRun,
   rebuildNarrativeMemories,
+  reindexProjectRetrieval,
   searchProjectMemory,
   type DryRunResult,
   type PlotPrediction,
@@ -74,7 +76,7 @@ export function LabWorkspace() {
 
   const searchMutation = useMutation({
     mutationFn: (query: string) =>
-      searchProjectMemory(projectId!, { query, limit: 8 }),
+      searchProjectMemory(projectId!, { query, limit: 8, maxPerDocument: 2 }),
   });
 
   const dryrunMutation = useMutation({
@@ -151,6 +153,7 @@ export function LabWorkspace() {
             setSearchInput={setSearchInput}
             searchMutation={searchMutation}
           />
+          <RetrievalIndexPanel projectId={projectId} />
           <DryRun
             input={dryrunInput}
             setInput={setDryrunInput}
@@ -376,6 +379,111 @@ function SearchChamber({
         )}
       </div>
     </div>
+  );
+}
+
+/* ---- Índice de busca do manuscrito -------------------------------------- */
+
+function RetrievalIndexPanel({ projectId }: { projectId: string }) {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const queryKey = ["project", projectId, "lab", "retrieval-index"];
+  const statusQuery = useQuery({
+    queryKey,
+    queryFn: ({ signal }) => getRetrievalIndexStatus(projectId, signal),
+  });
+  const reindexMutation = useMutation({
+    mutationFn: () => reindexProjectRetrieval(projectId),
+    onSuccess: (result) => queryClient.setQueryData(queryKey, result.status),
+  });
+  const status = statusQuery.data;
+  const stale = status ? status.documents - status.indexedDocuments : 0;
+  return (
+    <section className="lab__panel" aria-labelledby="lab-index-title">
+      <header className="lab__panel-head">
+        <p className="lab__panel-title" id="lab-index-title">
+          {t("lab.index.title")}
+        </p>
+        <span className="lab__panel-count mono">INDEX-01</span>
+      </header>
+      <div className="lab__panel-body">
+        {statusQuery.isPending ? (
+          <Skeleton lines={2} />
+        ) : statusQuery.isError ? (
+          <ErrorNote error={statusQuery.error} title={t("lab.index.loadError")} />
+        ) : status ? (
+          <>
+            <dl className="lab__index">
+              <div>
+                <dt>{t("lab.index.documents")}</dt>
+                <dd className="mono">
+                  {t("lab.index.documentsValue", {
+                    indexed: status.indexedDocuments,
+                    total: status.documents,
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("lab.index.passages")}</dt>
+                <dd className="mono">{status.passages}</dd>
+              </div>
+              <div>
+                <dt>{t("lab.index.model")}</dt>
+                <dd>
+                  {status.embeddingModel
+                    ? `${status.embeddingModel.modelId} · ${status.embeddingModel.providerName}`
+                    : t("lab.index.noModel")}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("lab.index.vectors")}</dt>
+                <dd className="mono">
+                  {status.embeddingModel
+                    ? t("lab.index.vectorsValue", {
+                        embedded: status.currentModelPassages,
+                        total: status.passages,
+                      })
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+            <p className="lab__note">
+              {!status.embeddingModel
+                ? t("lab.index.hintNoModel")
+                : status.currentModelPassages < status.passages
+                  ? t("lab.index.hintPending")
+                  : t("lab.index.hintReady")}
+            </p>
+            {stale > 0 ? (
+              <p className="lab__note">{t("lab.index.stale", { count: stale })}</p>
+            ) : null}
+            <div className="lab__actions-row">
+              <button
+                type="button"
+                className="btn"
+                disabled={reindexMutation.isPending}
+                onClick={() => reindexMutation.mutate()}
+              >
+                {reindexMutation.isPending
+                  ? t("lab.index.reindexing")
+                  : t("lab.index.reindex")}
+              </button>
+              {reindexMutation.data ? (
+                <span className="lab__flash" role="status">
+                  {t("lab.index.reindexed", {
+                    indexed: reindexMutation.data.indexed,
+                    relinked: reindexMutation.data.relinked,
+                  })}
+                </span>
+              ) : null}
+            </div>
+            {reindexMutation.isError ? (
+              <ErrorNote error={reindexMutation.error} title={t("lab.index.reindexError")} />
+            ) : null}
+          </>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

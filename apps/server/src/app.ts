@@ -146,6 +146,11 @@ export async function buildApp(
     recovery,
     "startup recovery: expired leases requeued, orphaned calls/streams interrupted",
   );
+  if (environment.NARRATIVE_EMBEDDING_MODEL?.trim()) {
+    app.log.warn(
+      "NARRATIVE_EMBEDDING_MODEL is no longer read: assign the embedding model in Settings → Models (role “Embedding”) and remove the variable from .env.local",
+    );
+  }
   let autopilotCoordinator: AutopilotCoordinator | null = null;
   let bibleBackfillCoordinator: BibleBackfillCoordinator | null = null;
   let backupScheduler: DatabaseBackupScheduler | null = null;

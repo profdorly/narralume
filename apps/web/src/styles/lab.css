@@ -488,3 +488,27 @@
 .lab__actions-row .lab__field {
   flex: 1;
 }
+
+/* ---- Índice de busca do manuscrito ---------------------------------------- */
+
+.lab__index {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.6rem 1.2rem;
+  margin: 0;
+}
+.lab__index div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.lab__index dt {
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+.lab__index dd {
+  margin: 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}

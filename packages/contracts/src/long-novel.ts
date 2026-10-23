@@ -13,7 +13,44 @@ export const RetrievalSearchRequestSchema = z.object({
   entityIds: z.array(IdSchema).max(100).default([]),
   limit: z.number().int().min(1).max(50).default(12),
   rerank: z.boolean().default(true),
+  /** Keep at most this many passages per manuscript document. */
+  maxPerDocument: z.number().int().min(1).max(20).optional(),
 });
+
+/** Manuscript retrieval index of one project (passages and vectors). */
+export const RetrievalIndexStatusSchema = z.object({
+  documents: z.number().int().nonnegative(),
+  indexedDocuments: z.number().int().nonnegative(),
+  passages: z.number().int().nonnegative(),
+  legacySegments: z.number().int().nonnegative(),
+  embeddedPassages: z.number().int().nonnegative(),
+  /** The embedding model assigned in Settings, if any. */
+  embeddingModel: z
+    .object({ id: IdSchema, modelId: z.string(), providerName: z.string() })
+    .nullable(),
+  /** Passages holding a vector of the assigned embedding model. */
+  currentModelPassages: z.number().int().nonnegative(),
+  models: z.array(
+    z.object({
+      model: z.string(),
+      dimensions: z.number().int().positive(),
+      segments: z.number().int().nonnegative(),
+    }),
+  ),
+});
+export type RetrievalIndexStatusDto = z.infer<
+  typeof RetrievalIndexStatusSchema
+>;
+
+export const RetrievalReindexResultSchema = z.object({
+  indexed: z.number().int().nonnegative(),
+  relinked: z.number().int().nonnegative(),
+  removed: z.number().int().nonnegative(),
+  status: RetrievalIndexStatusSchema,
+});
+export type RetrievalReindexResultDto = z.infer<
+  typeof RetrievalReindexResultSchema
+>;
 
 export const RetrievalHitSchema = z.object({
   id: IdSchema,

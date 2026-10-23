@@ -1,0 +1,483 @@
+{
+  "version": "retrieval-v1",
+  "description": "Retrieval fixture: two short books (pt-BR and en). Each case lists the chapters that answer the query. 'kind' separates keyword queries, paraphrases with little word overlap, chapter-plan style queries, entity-only lookups and noise queries that should retrieve nothing lexically.",
+  "corpora": [
+    {
+      "id": "farol",
+      "language": "pt-BR",
+      "title": "O Farol de Vila do Sal",
+      "entities": [
+        {
+          "id": "helena",
+          "type": "character",
+          "name": "Helena Prates",
+          "aliases": ["Helena"]
+        },
+        {
+          "id": "ines",
+          "type": "character",
+          "name": "Inês",
+          "aliases": ["Inês Prates"]
+        },
+        {
+          "id": "tomas",
+          "type": "character",
+          "name": "Tomás Aguiar",
+          "aliases": ["Tomás"]
+        },
+        {
+          "id": "marta",
+          "type": "character",
+          "name": "Marta Quintela",
+          "aliases": ["Marta"]
+        },
+        {
+          "id": "euclides",
+          "type": "character",
+          "name": "Padre Euclides",
+          "aliases": ["Euclides"]
+        },
+        {
+          "id": "dario",
+          "type": "character",
+          "name": "Dário Leme",
+          "aliases": ["Dário"]
+        },
+        {
+          "id": "joaquim",
+          "type": "character",
+          "name": "Joaquim",
+          "aliases": []
+        },
+        {
+          "id": "farol",
+          "type": "location",
+          "name": "Farol da Ponta Negra",
+          "aliases": ["Ponta Negra"]
+        },
+        {
+          "id": "gruta",
+          "type": "location",
+          "name": "Gruta das Gaivotas",
+          "aliases": []
+        },
+        {
+          "id": "estrela",
+          "type": "item",
+          "name": "Estrela do Norte",
+          "aliases": []
+        }
+      ],
+      "chapters": [
+        {
+          "id": "c1",
+          "title": "Capítulo 1 — A Chegada",
+          "paragraphs": [
+            "A balsa da manhã atracou em Vila do Sal pouco depois das sete, quando a neblina ainda cobria o cais como um lençol molhado. Helena Prates desceu com uma mala de couro e o caderno de cartógrafa debaixo do braço. Fazia três meses que a irmã, Inês, mandara o último cartão-postal daquele lugar: uma fotografia desbotada do farol da Ponta Negra e uma frase apressada no verso — aqui ninguém fala do mar.",
+            "O cais cheirava a peixe e a sal grosso. Homens de capa amarela empilhavam redes sem levantar os olhos. Helena perguntou por uma pensão e um deles apontou, com o queixo, para um sobrado azul de janelas estreitas: a Taberna da Maré.",
+            "Marta Quintela, a dona, era uma mulher larga, de mãos vermelhas de tanto esfregar balcão. Reconheceu o sobrenome antes que Helena terminasse de dizê-lo. — A moça de cabelo curto, a que desenhava tudo — disse, e baixou a voz. — Deixou as coisas dela aqui. Eu guardei num baú, lá em cima. Ninguém veio buscar.",
+            "Helena pagou uma semana adiantada. Marta lhe entregou a chave do quarto e um conselho que soava como ordem: não andar pela estrada da costa depois que a neblina baixasse. — A neblina daqui engole gente — explicou. — E o que ela devolve, devolve diferente.",
+            "No quarto havia uma cama de ferro, um lavatório rachado e uma cômoda com uma gaveta emperrada. Helena abriu o mapa da costa que comprara num sebo de Porto Alegre e marcou a vila com um círculo a lápis. As curvas de nível mostravam a ponta de rocha onde ficava o farol, uma faixa plana de salinas ao sul e, entre as duas, uma reentrância que o mapa chamava de Gruta das Gaivotas.",
+            "À noite, da janela, Helena viu uma luz verde piscar no alto da Ponta Negra. Três piscadas curtas, uma longa. Contou duas vezes para ter certeza. No balcão, quando desceu para jantar, perguntou a Marta quem acendia o farol. A mulher parou de enxugar o copo. — Aquele farol está apagado desde a tempestade de oitenta e sete — respondeu. — Não acende nada lá em cima."
+          ]
+        },
+        {
+          "id": "c2",
+          "title": "Capítulo 2 — O Faroleiro",
+          "paragraphs": [
+            "Na manhã seguinte, Helena subiu a trilha de pedras soltas até a Ponta Negra. O vento arrancava o fôlego a cada curva, e as gaivotas gritavam lá embaixo, sobre as ondas que estouravam contra a rocha. O farol era uma torre branca descascada, com a lanterna do topo coberta por um pano encerado.",
+            "Quem abriu a porta foi um velho de barba rala e perna arrastada. Tomás Aguiar, disse ele, faroleiro aposentado, o último que a Marinha deixou ficar. Morava no térreo da torre, entre caixotes de ferramentas e uma estufa de ferro onde fervia água para o café. Olhou para Helena com uma desconfiança cansada e, ainda assim, a convidou para entrar.",
+            "Ela perguntou pela luz verde. Tomás riu sem graça. — Luz nenhuma, moça. A lente foi desmontada há trinta anos. A senhora deve ter visto algum barco de pesca.",
+            "Contou, sem que ela perguntasse, a história da tempestade de 1987. O cargueiro Estrela do Norte tinha batido nos rochedos da Ponta Negra numa noite em que o farol, por algum motivo, ficou apagado. Morreram onze homens. Tomás estava de serviço. Desde então, disse, a vila o olhava de lado, como se ele mesmo tivesse empurrado o navio contra as pedras.",
+            "Foi enquanto ele servia o café, em canecas de alumínio amassadas, que Helena viu o lenço. Vermelho, de seda barata, pendurado num prego atrás da porta. Era o lenço de Inês; ela o comprara numa feira em Pelotas, e a mancha de tinta azul na ponta ainda estava lá.",
+            "— De onde veio isso? — perguntou, com a voz mais firme do que se sentia. Tomás demorou a responder. — Uma moça esqueceu aqui. Subiu para ver o mar, como a senhora. Faz tempo. — E pôs a caneca na mesa com cuidado demais, como quem tem medo de derramar alguma coisa além do café."
+          ]
+        },
+        {
+          "id": "c3",
+          "title": "Capítulo 3 — O Diário",
+          "paragraphs": [
+            "O baú de Inês estava no sótão da taberna, debaixo de uma lona e de duas cadeiras quebradas. Marta subiu com Helena, acendeu a lâmpada nua e ficou parada na escada, de braços cruzados, como se vigiasse uma cerimônia.",
+            "Dentro havia roupas dobradas com o cuidado que Inês nunca tivera em casa, um par de botas de borracha, lápis de carvão gastos até o toco e um caderno de capa verde. Helena reconheceu a letra inclinada da irmã na primeira página: Vila do Sal — anotações. Não mostrar a ninguém.",
+            "As primeiras entradas eram desenhos: barcos, casas, o perfil da igreja de São Brás. Depois os desenhos rarearam e vieram as listas. Datas, horários, números de três algarismos ao lado de letras soltas. Salinas, duas e dez da madrugada. Duas caixas. O capitão paga em prata, não em dinheiro. T. acende quando a maré vira.",
+            "Na última página escrita, a letra estava tremida: Achei o livro do padre. O que falta no livro está no navio. Amanhã vou de manhã cedo, antes da maré.",
+            "Entre as folhas do fim, dobrada em quatro, Helena encontrou metade de um mapa costeiro. O papel fora rasgado na diagonal; restavam a linha da praia, as salinas e um traço a tinta vermelha que saía da Gruta das Gaivotas e terminava na borda rasgada, no meio do nada. Helena guardou o caderno dentro da blusa. — Ainda não encontrei o que procuro — disse a Marta. — Mas encontrei por onde começar.",
+            "* * *",
+            "Naquela noite, Helena copiou os números do caderno no seu próprio bloco de cartógrafa e tentou encaixá-los na tábua de marés pendurada na cozinha da taberna. Os horários batiam: toda anotação de Inês caía na virada da maré, quando a água das salinas ficava rasa o bastante para um bote de fundo chato. Alguém usava a maré como relógio."
+          ]
+        },
+        {
+          "id": "c4",
+          "title": "Capítulo 4 — A Missa",
+          "paragraphs": [
+            "No domingo, os sinos de São Brás tocaram cedo, e a vila inteira pareceu caber na pequena igreja caiada. Helena sentou no último banco. Mulheres de lenço preto rezavam o terço em voz baixa; os pescadores ficavam de pé no fundo, com o boné nas mãos.",
+            "Padre Euclides era magro e alto, de óculos remendados com fita. Pregou sobre os afogados, sobre o mar que toma e não pede licença, e citou o nome de cada um dos onze homens do Estrela do Norte, como fazia todo primeiro domingo do mês. Quando chegou ao último nome, a voz falhou por um instante.",
+            "Depois da missa, Helena esperou na sacristia e mostrou ao padre uma fotografia de Inês. Ele a reconheceu na hora. — Ela veio aqui várias vezes — disse. — Queria ver os registros antigos da paróquia. Os livros de óbitos, os de batismo, as listas de quem embarcava. Era muito educada. Fazia perguntas demais.",
+            "O padre abriu um armário e tirou de lá um livro de capa de couro, grosso, de folhas amareladas. Era o livro de registros de 1987. Procurou a data do naufrágio com o dedo, folha por folha, e parou. Faltava uma página. Tinha sido cortada rente à costura, com lâmina, com cuidado. Na folha seguinte, a lista dos mortos começava pelo meio.",
+            "— Quem faria uma coisa dessas? — perguntou Helena. Padre Euclides fechou o livro devagar. — Gente que tem medo do que estava escrito — respondeu. E não disse mais nada, mas Helena notou que as mãos dele tremiam quando guardou o livro no armário e girou a chave duas vezes."
+          ]
+        },
+        {
+          "id": "c5",
+          "title": "Capítulo 5 — Contrabando",
+          "paragraphs": [
+            "Helena esperou a virada da maré escondida entre os montes de sal, com o casaco escuro fechado até o queixo. Passava das duas da manhã. A lua estava encoberta, e as salinas eram uma planície cinzenta onde qualquer sombra parecia gente.",
+            "O bote chegou sem motor, empurrado a remo. Quatro homens desceram na água rasa e começaram a descarregar caixas de madeira, passando-as de mão em mão até uma carroça. O que dava as ordens usava um sobretudo comprido e falava baixo, com a autoridade de quem não precisa gritar. Os outros o chamavam de capitão. Helena reconheceu o nome que Marta tinha dito com desprezo no jantar: Dário Leme, dono de três traineiras e de metade das dívidas da vila.",
+            "Um garoto de uns doze anos ficava no alto do dique, de olho na estrada, assobiando baixinho sempre que um farol de carro passava ao longe. Foi ele quem a viu. Desceu o dique de lado, como um caranguejo, e parou a dois passos dela. — A senhora não devia estar aqui — sussurrou.",
+            "Helena tirou do bolso todas as moedas que tinha. O garoto contou com os olhos, sem pegar. — Meu nome é Joaquim — disse por fim, e guardou o dinheiro. — Se o capitão souber que eu vi a senhora e não falei, ele me afoga.",
+            "Ela perguntou pela luz verde. Joaquim olhou na direção da Ponta Negra. — É o sinal — explicou, como se fosse óbvio. — Quando a luz verde pisca lá em cima, os botes sabem que a guarda costeira está longe e que podem entrar. Três curtas e uma longa.",
+            "Os homens terminaram o descarregamento e a carroça partiu em direção à vila, sem lanternas. Joaquim subiu de volta para o dique. Antes de sumir, disse uma última coisa: — A sua irmã também vinha olhar. Até o dia em que não veio mais."
+          ]
+        },
+        {
+          "id": "c6",
+          "title": "Capítulo 6 — A Chave de Bronze",
+          "paragraphs": [
+            "Joaquim apareceu na taberna dois dias depois, com o boné enterrado na cabeça e as mãos nos bolsos. Esperou que Marta fosse para a cozinha e só então pôs em cima da mesa, embrulhada num pedaço de rede, uma chave grande e pesada.",
+            "Era de bronze, esverdeada pelo sal, com uma argola trabalhada e os dentes grossos de fechadura antiga. Na haste, gravadas fundo, duas letras: E.N. — Achei na Gruta das Gaivotas — disse o menino. — Do lado das sandálias.",
+            "Helena sentiu o estômago afundar. As sandálias de couro trançado eram de Inês; Joaquim as descreveu sem que ela perguntasse, a fivela torta, a sola gasta do lado de fora. Estavam numa pedra seca, acima da linha da maré, arrumadas lado a lado, como se alguém as tivesse tirado para entrar na água.",
+            "Ela virou a chave nas mãos. E.N. Estrela do Norte. O navio que o farol deixou morrer. O navio cujo registro alguém arrancou do livro da paróquia. O que falta no livro está no navio, escrevera Inês.",
+            "— A gruta tem fundo? — perguntou. Joaquim encolheu os ombros. — Na maré cheia, a água fecha a entrada. Na maré baixa dá para andar lá dentro, com a água pela cintura. Os velhos dizem que ela vai longe, por baixo da vila. Ninguém vai até o fim.",
+            "Helena abriu o mapa rasgado ao lado da chave. O traço vermelho de Inês saía exatamente da gruta e seguia para o interior, rumo à metade que faltava. Pela primeira vez desde que chegara, teve certeza de que a irmã não tinha ido embora de Vila do Sal. Tinha ido para baixo dela."
+          ]
+        },
+        {
+          "id": "c7",
+          "title": "Capítulo 7 — A Tempestade",
+          "paragraphs": [
+            "A tempestade chegou de tarde, com um céu cor de chumbo e um vento que arrancava telhas. Helena e Joaquim estavam na trilha da Ponta Negra quando a chuva desabou, e o único abrigo possível era o farol.",
+            "Tomás abriu a porta antes que batessem. Acendeu o lampião, jogou um cobertor nos ombros do menino e pôs água para ferver. Lá fora, o mar batia nos rochedos com um estrondo que fazia tremer as canecas na prateleira.",
+            "Helena não esperou o café. Pôs o caderno de Inês na mesa, aberto na página em que se lia T. acende quando a maré vira. Tomás leu, releu e sentou-se devagar, como se a perna ruim de repente pesasse o dobro.",
+            "Confessou tudo de uma vez, olhando para as próprias mãos. Era ele quem acendia a lanterna verde, no topo, para os botes de Dário Leme. Fazia isso havia seis anos. O capitão pagava em prata, moedas antigas que ninguém sabia de onde vinham, e com elas Tomás pagava a dívida que a Marinha lhe deixara depois do naufrágio. — Eu não acendi o farol naquela noite de oitenta e sete porque estava bêbado — disse. — Onze homens. Depois disso, que diferença fazia uma luz verde?",
+            "Sobre Inês, jurou que nunca encostou nela. A moça o descobrira e ameaçara denunciá-lo à guarda costeira. Ele implorou por uma semana de prazo. A última vez que a viu, ela descia a trilha em direção à Gruta das Gaivotas, de madrugada, na maré baixa, com uma lanterna de mão e uma chave pendurada no pescoço.",
+            "— E o lenço? — perguntou Helena. — Ela deixou aqui de propósito — respondeu Tomás. — Disse que, se não voltasse, alguém viria atrás do lenço."
+          ]
+        },
+        {
+          "id": "c8",
+          "title": "Capítulo 8 — A Gruta",
+          "paragraphs": [
+            "Esperaram a maré mais baixa do mês. Joaquim levava uma corda enrolada no ombro; Helena, a lanterna de mão de Tomás, a chave de bronze no bolso do casaco e o mapa rasgado protegido num saco plástico.",
+            "A entrada da Gruta das Gaivotas era uma boca negra entre as pedras, coberta de cracas e de algas que escorregavam sob as botas. Lá dentro, a água chegava aos joelhos, depois à cintura, fria a ponto de doer. O teto baixava até quase tocar a cabeça e voltava a subir em câmaras onde a voz de Joaquim ecoava três vezes.",
+            "Na quarta câmara, o chão subia e a água ficava para trás. Foi ali que a lanterna iluminou o metal: uma porta de ferro embutida na rocha, enferrujada, com uma fechadura do tamanho de um punho. Helena encaixou a chave de bronze. Precisou das duas mãos e de Joaquim empurrando junto, mas o mecanismo cedeu com um rangido que pareceu atravessar a montanha.",
+            "Atrás da porta havia um depósito. Caixas de madeira empilhadas até o teto, com o carimbo de uma empresa de pesca de Dário Leme; dentro, garrafas de bebida estrangeira, rolos de tecido, maços de cigarro. No fundo, coberto por uma lona, estava o sino de bronze do Estrela do Norte, com o nome do navio gravado em volta da boca.",
+            "Pregada na parede, ao lado do sino, Helena encontrou a outra metade do mapa costeiro. Juntou as duas partes sobre uma caixa. O traço vermelho continuava: saía da gruta, passava por baixo da rua principal e terminava num pequeno quadrado desenhado com cuidado, com uma cruz em cima. — É a igreja — disse Joaquim, num fio de voz. — O túnel vai dar na igreja."
+          ]
+        },
+        {
+          "id": "c9",
+          "title": "Capítulo 9 — A Cripta",
+          "paragraphs": [
+            "O túnel era estreito e seco, escorado por vigas antigas que gemiam quando eles passavam. Andaram curvados por quase meia hora, contando os passos, até encontrar uma escada de pedra que subia para uma laje solta. Helena empurrou a laje com o ombro.",
+            "Estavam na cripta de São Brás. Velas acesas, caixões de pedra, cheiro de cera e de mofo. E, num catre improvisado entre dois túmulos, enrolada em cobertores, estava Inês.",
+            "Helena não lembrava de ter atravessado a cripta. Lembrava só do peso da irmã nos braços, do tornozelo dela enfaixado com tiras de lençol, do riso fraco de Inês dizendo que ela sempre chegava atrasada. Padre Euclides desceu a escada da sacristia com uma bandeja de sopa e parou ao vê-los, pálido, e depois aliviado.",
+            "Contou que Inês chegara ali pelo túnel, numa madrugada, fugindo dos homens de Dário Leme, que a tinham surpreendido no depósito da gruta. Caíra na escada e quebrara o tornozelo. O padre a mantivera ali desde então, levando comida e remédios, sem saber em quem confiar na vila. — Eu tinha medo — admitiu. — Medo dele e medo de mim.",
+            "Inês tirou de dentro do cobertor uma folha dobrada: a página arrancada do livro de registros de 1987. Ela mesma a tinha cortado, para que ninguém a destruísse. A lista de carga do Estrela do Norte não mencionava peixe congelado, como dizia o relatório oficial, e sim trinta caixas de moedas de prata. E, na linha do armador, um nome: Anselmo Leme, pai de Dário.",
+            "— O navio não afundou por acidente — disse Inês. — Afundaram de propósito, para receber o seguro. A prata nunca foi para o fundo do mar. Está pagando a luz verde até hoje."
+          ]
+        },
+        {
+          "id": "c10",
+          "title": "Capítulo 10 — A Maré Alta",
+          "paragraphs": [
+            "Dário Leme chegou à igreja na manhã seguinte, com dois homens e a paciência acabada. Alguém o avisara de que a porta de ferro da gruta estava aberta. Entrou pela nave central sem tirar o chapéu, e a vila, reunida para a missa das sete, abriu caminho em silêncio.",
+            "Helena estava no altar, ao lado do padre, com a página do livro de registros na mão. Leu em voz alta a lista de carga do Estrela do Norte, linha por linha, e depois o nome do armador. Os pescadores no fundo da igreja foram tirando os bonés. Alguns tinham perdido pais e irmãos naquele naufrágio.",
+            "Lá no alto da Ponta Negra, ao mesmo tempo, Tomás Aguiar fazia a única coisa certa que lhe restava. Arrancou o pano encerado da lanterna, apagou a luz verde e acendeu o velho facho branco com uma bateria de caminhão que guardava havia anos. A luz varreu o mar e a vila, uma, duas, três vezes. Era o sinal antigo de socorro, e a lancha da guarda costeira, que patrulhava ao largo, respondeu com a sirene.",
+            "Dário tentou fugir pelos fundos e encontrou Joaquim e meia dúzia de meninos sentados na escada da sacristia, de braços dados. Foi preso no adro, diante de todos, por dois marinheiros molhados até os ossos.",
+            "Dias depois, Helena e Inês embarcaram na balsa da manhã. Marta Quintela foi até o cais e entregou a Helena um medalhão de prata que encontrara no fundo do baú, com o retrato de duas meninas de franja. — Era da sua irmã — disse. — Ela pediu que eu guardasse para quando a família viesse.",
+            "Do convés, as duas viram o farol diminuir na neblina. Pela primeira vez em trinta anos, a luz que piscava lá em cima era branca."
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "pt-keyword-lanterna",
+          "kind": "keyword",
+          "query": "lanterna verde acesa no alto do farol",
+          "relevant": ["c7", "c5", "c1"]
+        },
+        {
+          "id": "pt-keyword-chave",
+          "kind": "keyword",
+          "query": "chave de bronze gravada com as letras E.N.",
+          "relevant": ["c6", "c8"],
+          "evidence": "gravadas fundo"
+        },
+        {
+          "id": "pt-keyword-diario",
+          "kind": "keyword",
+          "query": "caderno de anotações de Inês com horários das salinas",
+          "relevant": ["c3"]
+        },
+        {
+          "id": "pt-keyword-registros",
+          "kind": "keyword",
+          "query": "página cortada do livro de registros da paróquia",
+          "relevant": ["c4", "c9"],
+          "evidence": "Faltava uma página"
+        },
+        {
+          "id": "pt-keyword-naufragio",
+          "kind": "keyword",
+          "query": "naufrágio do cargueiro Estrela do Norte em 1987",
+          "relevant": ["c2", "c4", "c9"]
+        },
+        {
+          "id": "pt-keyword-contrabando",
+          "kind": "keyword",
+          "query": "homens descarregam caixas de madeira de um bote nas salinas",
+          "relevant": ["c5"]
+        },
+        {
+          "id": "pt-keyword-porta",
+          "kind": "keyword",
+          "query": "porta de ferro enferrujada na rocha da gruta",
+          "relevant": ["c8"],
+          "evidence": "porta de ferro embutida"
+        },
+        {
+          "id": "pt-keyword-lenco",
+          "kind": "keyword",
+          "query": "lenço vermelho pendurado atrás da porta",
+          "relevant": ["c2", "c7"],
+          "evidence": "pendurado num prego"
+        },
+        {
+          "id": "pt-paraphrase-confissao",
+          "kind": "paraphrase",
+          "query": "o velho guardião da torre admite que ajudava os criminosos em troca de pagamento",
+          "relevant": ["c7"]
+        },
+        {
+          "id": "pt-paraphrase-escondida",
+          "kind": "paraphrase",
+          "query": "a jovem desaparecida estava ferida e escondida debaixo do templo",
+          "relevant": ["c9"]
+        },
+        {
+          "id": "pt-paraphrase-vigia",
+          "kind": "paraphrase",
+          "query": "uma criança faz vigilância para o bando durante a noite",
+          "relevant": ["c5"]
+        },
+        {
+          "id": "pt-paraphrase-chegada",
+          "kind": "paraphrase",
+          "query": "a protagonista desembarca na cidade litorânea à procura da parente sumida",
+          "relevant": ["c1"]
+        },
+        {
+          "id": "pt-paraphrase-prisao",
+          "kind": "paraphrase",
+          "query": "as autoridades do mar capturam o chefe dos contrabandistas diante do povo",
+          "relevant": ["c10"]
+        },
+        {
+          "id": "pt-plan-gruta",
+          "kind": "plan",
+          "query": "Helena volta à gruta na maré baixa levando a chave que Joaquim encontrou",
+          "relevant": ["c6", "c8", "c7"]
+        },
+        {
+          "id": "pt-plan-tomas",
+          "kind": "plan",
+          "query": "Tomás precisa provar que não fez mal a Inês",
+          "relevant": ["c7"]
+        },
+        {
+          "id": "pt-plan-medalhao",
+          "kind": "plan",
+          "query": "Marta entrega a lembrança de prata guardada no baú",
+          "relevant": ["c10", "c1", "c3"]
+        },
+        {
+          "id": "pt-entity-marta",
+          "kind": "entity",
+          "query": "",
+          "entityIds": ["marta"],
+          "relevant": ["c1", "c3", "c10", "c5", "c6"]
+        },
+        {
+          "id": "pt-entity-joaquim",
+          "kind": "entity",
+          "query": "o garoto",
+          "entityIds": ["joaquim"],
+          "relevant": ["c5", "c6", "c8", "c10", "c7"]
+        },
+        {
+          "id": "pt-noise-title",
+          "kind": "noise",
+          "query": "Capítulo 11",
+          "relevant": []
+        }
+      ]
+    },
+    {
+      "id": "orchard",
+      "language": "en",
+      "title": "The Glass Orchard",
+      "entities": [
+        {
+          "id": "nora",
+          "type": "character",
+          "name": "Nora Vance",
+          "aliases": ["Nora"]
+        },
+        {
+          "id": "elias",
+          "type": "character",
+          "name": "Elias Crane",
+          "aliases": ["Elias"]
+        },
+        {
+          "id": "pell",
+          "type": "character",
+          "name": "Mrs. Pell",
+          "aliases": []
+        },
+        {
+          "id": "hollis",
+          "type": "character",
+          "name": "Sheriff Hollis",
+          "aliases": ["Hollis"]
+        },
+        {
+          "id": "ben",
+          "type": "character",
+          "name": "Ben Archer",
+          "aliases": ["Ben"]
+        },
+        {
+          "id": "clara",
+          "type": "character",
+          "name": "Clara Crane",
+          "aliases": ["Clara"]
+        }
+      ],
+      "chapters": [
+        {
+          "id": "e1",
+          "title": "Chapter 1 — The Letter",
+          "paragraphs": [
+            "The letter arrived on a Tuesday, in an envelope the color of weak tea. Nora Vance read it twice at the kitchen table of her rented flat, then a third time standing at the window. Elias Crane, of Crane Orchard, Ashford, wrote that his trees had begun to bear glass apples — fruit so translucent that, held against a lamp, you could see the seeds turning inside. He had read her paper on mineral uptake in fruit trees. He would pay her travel and lodging for the season. He asked her to tell no one.",
+            "Nora had been a botanist for eleven years and had never been asked to keep a secret about an apple. She packed two cases, her field microscope, and every notebook she owned. The night train to Ashford ran through farmland and then through nothing at all, and she slept with her forehead against the cold window.",
+            "At dawn the conductor shook her awake. The station at Ashford was a single platform and a bench. Someone had left a lantern burning on the bench, and beside it, a folded note in a careful hand: walk north along the wall, the orchard will find you."
+          ]
+        },
+        {
+          "id": "e2",
+          "title": "Chapter 2 — Crane House",
+          "paragraphs": [
+            "Crane House stood at the top of the orchard like a ship run aground, tall and gray, with a glass dome on its east side. Mrs. Pell, the housekeeper, met Nora at the gate. She was small and quick and spoke as if every sentence cost her money.",
+            "She showed Nora the library, the dining room, the narrow bedroom under the eaves. At the end of the hall she stopped before a door with a brass padlock. — The greenhouse — she said. — Mr. Crane keeps it locked. You're not to go in. Nora asked why. Mrs. Pell only straightened a picture frame that did not need straightening.",
+            "The picture was a portrait of a young woman in a green dress, holding a pruning knife as if it were a flower. Clara Crane, Mrs. Pell said, the master's late wife. She had died four winters ago, in a fire that started in the old greenhouse and burned half the east wing. The new dome had been built over the ashes.",
+            "Elias Crane appeared at dinner. He was younger than Nora expected and older than he looked, with burn scars on the backs of both hands. He spoke about soil and rainfall and nothing else, and when Nora mentioned his wife, he set down his fork and left the table."
+          ]
+        },
+        {
+          "id": "e3",
+          "title": "Chapter 3 — The Greenhouse",
+          "paragraphs": [
+            "Nora waited until the house was silent. She had taken the spare key from the hook in the pantry that afternoon, while Mrs. Pell argued with the coal man, and its teeth were still warm from her pocket when she fitted it into the brass padlock.",
+            "Inside the dome the air was thick and wet. Rows of young trees stood in black soil under the moonlight, and their leaves had a faint metallic sheen. At the center, in a ring of white stones, grew a single seedling out of a bed of gray ash. Its stem was clear as a glass rod.",
+            "On a workbench Nora found a notebook bound in green cloth. The handwriting was Clara's — the same hand as the dedication in the library's botany books. Page after page recorded formulas: measured doses of silver nitrate dissolved into the irrigation water, the dates of each feeding, the color of the leaves afterward. In the margins, notes grew shorter and stranger. The trees want more. The workers are coughing. Elias says to stop. I cannot stop now.",
+            "Nora copied three pages into her own notebook by the light of a match. When she relocked the padlock and turned around, a lamp was moving in the upper window of the house, and then it went out."
+          ]
+        },
+        {
+          "id": "e4",
+          "title": "Chapter 4 — The Sheriff",
+          "paragraphs": [
+            "Sheriff Hollis came up the orchard road on the fourth morning, driving a mud-colored car that coughed on the hill. He took his hat off in the kitchen and accepted Mrs. Pell's coffee without sitting down.",
+            "He was looking for a stable hand named Ben Archer, nineteen years old, who had not come home in two weeks. Ben's mother said he had been working at Crane Orchard for the harvest. Elias said the boy had quit and gone to the city. The sheriff wrote that down and did not look as if he believed it.",
+            "On his way out he stopped beside Nora's chair. — You're the botanist — he said. It was not a question. — The last one left in the middle of the night. Didn't take her instruments. Wrote me a letter from two states over saying the trees made her sick. He put his hat back on. — If you need to leave in a hurry, Miss Vance, the road runs both ways."
+          ]
+        },
+        {
+          "id": "e5",
+          "title": "Chapter 5 — Frost",
+          "paragraphs": [
+            "The first frost came early, in the second week of October, and the orchard woke up ringing. Nora heard it from her bed: a high, thin chiming, like a hundred glasses touched with a wet finger. She ran outside in her coat. On every branch the glass apples had cracked in the cold, and the wind passing through the fissures made them sing.",
+            "Mrs. Pell stood on the porch with her hands over her ears. Elias walked between the rows without a coat, touching the broken fruit, his face wet.",
+            "Nora followed a trail of footprints in the frost behind the stables to the root cellar. The door was barred from outside. Inside, in the dark among sacks of potatoes, she found a thin young man with a fever and a cough that shook his whole body. He told her his name was Ben Archer.",
+            "He said Mr. Crane had locked him in when he threatened to go to the sheriff. He said the poison in the soil got into the workers too — the men who spread the water in the dome coughed up gray and lost their sense of taste, and one of them had died in the spring. He said the trees were beautiful, and that was the worst thing about them."
+          ]
+        },
+        {
+          "id": "e6",
+          "title": "Chapter 6 — Harvest",
+          "paragraphs": [
+            "Nora brought Ben into the kitchen, wrapped him in blankets, and told Mrs. Pell to telephone the sheriff. Then she went to find Elias.",
+            "He was in the greenhouse, kneeling beside the seedling that grew out of the ash. He did not turn around. He told her everything in a flat voice, as if reading from Clara's notebook. His wife had discovered that silver salts made the fruit clear. She had wanted to make something no one had ever seen. When the workers fell ill, he had begged her to stop, and she had refused, and one night the old greenhouse burned with her inside it. He had kept her work alive because it was the only part of her left.",
+            "Behind them a lamp fell from the workbench. The oil spread across the dry straw, and the flames climbed the trunks faster than Nora could shout. She grabbed the green notebook from the bench and pulled Elias by the sleeve, and they stumbled out into the cold as the glass dome burst behind them.",
+            "When Sheriff Hollis's car reached the top of the road, the greenhouse was a ring of fire and Elias Crane was sitting on the frozen grass, holding out his scarred hands to be cuffed."
+          ]
+        }
+      ],
+      "cases": [
+        {
+          "id": "en-keyword-nitrate",
+          "kind": "keyword",
+          "query": "silver nitrate dissolved in the irrigation water",
+          "relevant": ["e3", "e6"],
+          "evidence": "silver nitrate"
+        },
+        {
+          "id": "en-keyword-padlock",
+          "kind": "keyword",
+          "query": "the locked greenhouse with the brass padlock",
+          "relevant": ["e2", "e3"]
+        },
+        {
+          "id": "en-keyword-sheriff",
+          "kind": "keyword",
+          "query": "the sheriff is looking for a missing stable hand",
+          "relevant": ["e4"]
+        },
+        {
+          "id": "en-keyword-train",
+          "kind": "keyword",
+          "query": "Nora takes the night train to Ashford after the letter",
+          "relevant": ["e1"]
+        },
+        {
+          "id": "en-paraphrase-portrait",
+          "kind": "paraphrase",
+          "query": "a painting of the owner's deceased spouse hangs in the corridor",
+          "relevant": ["e2"]
+        },
+        {
+          "id": "en-paraphrase-frost",
+          "kind": "paraphrase",
+          "query": "cold weather makes the transparent fruit split and hum",
+          "relevant": ["e5"]
+        },
+        {
+          "id": "en-paraphrase-confession",
+          "kind": "paraphrase",
+          "query": "the widower admits what his partner was doing before the glasshouse goes up in flames",
+          "relevant": ["e6"]
+        },
+        {
+          "id": "en-plan-testimony",
+          "kind": "plan",
+          "query": "Ben tells Nora how the workers got sick",
+          "relevant": ["e5", "e6"]
+        },
+        {
+          "id": "en-entity-ben",
+          "kind": "entity",
+          "query": "",
+          "entityIds": ["ben"],
+          "relevant": ["e4", "e5", "e6"]
+        },
+        {
+          "id": "en-noise-title",
+          "kind": "noise",
+          "query": "Chapter 7",
+          "relevant": []
+        }
+      ]
+    }
+  ]
+}

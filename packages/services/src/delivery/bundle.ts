@@ -33,7 +33,7 @@ import type {
   SqliteLoreRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
-  SqliteRetrievalRepository,
+  SqliteManuscriptIndexer,
   SqliteStoryRepository,
 } from "@narralume/persistence";
 
@@ -49,7 +49,7 @@ export interface DeliveryContext {
   readonly delivery: SqliteDeliveryRepository;
   readonly automation: SqliteAutomationRepository;
   readonly uploads: SqliteImportUploadRepository;
-  readonly retrieval: SqliteRetrievalRepository;
+  readonly indexer: SqliteManuscriptIndexer;
 }
 
 export const BundleSchema = z.object({

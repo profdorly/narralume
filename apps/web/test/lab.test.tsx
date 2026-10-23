@@ -226,6 +226,95 @@ describe("Simulação de longo fôlego", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("mostra o índice de busca e reindexa sob demanda", async () => {
+    const status = {
+      documents: 3,
+      indexedDocuments: 2,
+      passages: 12,
+      legacySegments: 1,
+      embeddedPassages: 4,
+      embeddingModel: {
+        id: "model-embed",
+        modelId: "text-embedding-3-small",
+        providerName: "OpenAI",
+      },
+      currentModelPassages: 4,
+      models: [
+        { model: "text-embedding-3-small", dimensions: 1536, segments: 4 },
+      ],
+    };
+    const fetchMock = vi.fn(
+      (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url === "/api/projects/p-1/predictions") return json([]);
+        if (url.startsWith("/api/projects/p-1/memories")) return json([]);
+        if (url === "/api/projects/p-1/retrieval/index") return json(status);
+        if (
+          url === "/api/projects/p-1/retrieval/reindex" &&
+          init?.method === "POST"
+        )
+          return json({
+            indexed: 1,
+            relinked: 0,
+            removed: 1,
+            status: {
+              ...status,
+              indexedDocuments: 3,
+              passages: 15,
+              legacySegments: 0,
+            },
+          });
+        throw new Error(`unexpected request ${url}`);
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderLab();
+
+    expect(
+      await screen.findByText("text-embedding-3-small · OpenAI"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("2 de 3")).toBeInTheDocument();
+    expect(screen.getByText("4 de 12")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Os vetores que faltam são gerados na próxima escrita/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1 capítulos mudaram/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reindexar agora" }));
+    expect(
+      await screen.findByText(/1 capítulos reindexados/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("3 de 3")).toBeInTheDocument();
+    expect(screen.queryByText(/capítulos mudaram/)).not.toBeInTheDocument();
+  });
+
+  it("explica a busca sem modelo de embedding", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/projects/p-1/predictions") return json([]);
+      if (url.startsWith("/api/projects/p-1/memories")) return json([]);
+      if (url === "/api/projects/p-1/retrieval/index")
+        return json({
+          documents: 1,
+          indexedDocuments: 1,
+          passages: 3,
+          legacySegments: 0,
+          embeddedPassages: 0,
+          embeddingModel: null,
+          currentModelPassages: 0,
+          models: [],
+        });
+      throw new Error(`unexpected request ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderLab();
+
+    expect(await screen.findByText("Nenhum atribuído")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sem modelo de embedding, a busca usa palavras/),
+    ).toBeInTheDocument();
+  });
+
   it("无项目时不发请求，藏书室回回链接在", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");

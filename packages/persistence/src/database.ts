@@ -49,6 +49,7 @@ import { migration045 } from "./migrations/045-knowledge-corrections.js";
 import { migration046 } from "./migrations/046-bible-backfill.js";
 import { migration047 } from "./migrations/047-foreshadow-source.js";
 import { migration048 } from "./migrations/048-language-and-form.js";
+import { migration049 } from "./migrations/049-retrieval-word-index.js";
 
 export interface Migration {
   readonly version: number;
@@ -119,6 +120,7 @@ const MIGRATIONS: readonly Migration[] = [
   migration046,
   migration047,
   migration048,
+  migration049,
 ];
 
 interface MigrationRow {

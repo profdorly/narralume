@@ -517,23 +517,12 @@ export function applyCandidates(
         now,
       });
       if (chapter) {
-        ctx.retrieval.upsertSegment({
-          id: `document:${document.id}:current`,
+        ctx.indexer.indexDocument({
           projectId,
-          sourceType: "document_current",
-          sourceId: document.id,
-          title,
-          content,
-          authority: "confirmed",
-          metadata: {
-            documentId: document.id,
-            documentVersionId: version.id,
-            outlineNodeId: chapter.id,
-            importCandidateId: candidate.id,
-          },
-          entityIds: [],
-          createdAt: now,
-          updatedAt: now,
+          documentId: document.id,
+          versionId: version.id,
+          provenance: { importCandidateId: candidate.id },
+          now,
         });
         const summary = stringField(candidate.payload, "summary");
         if (summary) {
