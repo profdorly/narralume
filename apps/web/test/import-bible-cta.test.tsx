@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setLocale } from "../src/i18n";
+import "./i18n-en";
 import { ImportManager } from "../src/workspaces/delivery/production-tools";
 import { ShelfWorkspace } from "../src/workspaces/shelf";
 

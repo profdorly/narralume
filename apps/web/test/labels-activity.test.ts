@@ -9,6 +9,7 @@ import {
   stopReasonLabel,
 } from "../src/lib/labels";
 import { setLocale } from "../src/i18n";
+import "./i18n-en";
 
 describe("assistant activity label formatters", () => {
   it("renders machine-key goals through the dictionary with params", () => {

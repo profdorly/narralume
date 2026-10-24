@@ -11,6 +11,7 @@
  * - 事件 {type:"event", eventName, payload}（run/model/autopilot 状态四类）
  * - 就绪 {type:"ready"} / 失败 {type:"fatal", message}
  */
+import { NARRALUME_VERSION } from "@narralume/contracts";
 import {
   NarrativeDatabase,
   createOpfsSahpoolDriver,
@@ -313,7 +314,7 @@ async function boot(): Promise<void> {
     body: {
       status: "ok",
       service: "narralume",
-      version: "0.1.0",
+      version: NARRALUME_VERSION,
       database: { status: "ready", migration: database.currentMigration() },
       now: new Date().toISOString(),
     },

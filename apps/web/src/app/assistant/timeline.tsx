@@ -1,5 +1,3 @@
-import DOMPurify from "dompurify";
-import { marked } from "marked";
 import {
   ArrowUp,
   Check,
@@ -11,7 +9,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 import { useI18n } from "../../i18n";
@@ -104,6 +102,7 @@ export function AssistantWelcome({ onPrompt }: { onPrompt: (text: string) => voi
 export function MessageEntry({ message }: { message: AssistantMessageDto }) {
   const { t } = useI18n();
   const isAssistant = message.role !== "user";
+  const render = useMarkdownRenderer(isAssistant);
   return (
     <article
       className="assistant-message"
@@ -118,10 +117,10 @@ export function MessageEntry({ message }: { message: AssistantMessageDto }) {
           {formatRelativeDate(message.createdAt)}
         </time>
       </header>
-      {isAssistant ? (
+      {isAssistant && render ? (
         <div
           className="assistant-message__body"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+          dangerouslySetInnerHTML={{ __html: render(message.content) }}
         />
       ) : (
         <p>{message.content}</p>
@@ -130,16 +129,41 @@ export function MessageEntry({ message }: { message: AssistantMessageDto }) {
   );
 }
 
-/* 助手回复走受限 Markdown：marked 解析 + DOMPurify 消毒，防 XSS。 */
-function renderMarkdown(content: string): string {
-  const raw = marked.parse(content, { async: false, gfm: true, breaks: true });
-  return DOMPurify.sanitize(raw, {
-    ALLOWED_TAGS: [
-      "p", "br", "strong", "em", "b", "i", "code", "pre", "blockquote",
-      "ul", "ol", "li", "h1", "h2", "h3", "h4", "a", "hr", "del", "span",
-    ],
-    ALLOWED_ATTR: ["href", "title", "target", "rel"],
-  });
+type MarkdownRenderer = (content: string) => string;
+
+let markdownRenderer: MarkdownRenderer | null = null;
+let markdownLoading: Promise<MarkdownRenderer> | null = null;
+
+/** Loads the sanitizing Markdown renderer once (marked + DOMPurify live in
+ *  their own chunk). A failed load is retried on the next message. */
+export function loadMarkdownRenderer(): Promise<MarkdownRenderer> {
+  markdownLoading ??= import("./markdown").then(
+    (module) => (markdownRenderer = module.renderMarkdown),
+    (error: unknown) => {
+      markdownLoading = null;
+      throw error;
+    },
+  );
+  return markdownLoading;
+}
+
+/** Until the renderer arrives, replies show as plain text (never as HTML). */
+function useMarkdownRenderer(enabled: boolean): MarkdownRenderer | null {
+  const [renderer, setRenderer] = useState(() => markdownRenderer);
+  useEffect(() => {
+    if (!enabled || renderer) return;
+    let active = true;
+    loadMarkdownRenderer().then(
+      (loaded) => {
+        if (active) setRenderer(() => loaded);
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [enabled, renderer]);
+  return renderer;
 }
 
 export function ActivityEntry({

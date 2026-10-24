@@ -25,6 +25,8 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - As mensagens de validação devolvidas ao modelo para consertar uma resposta (parágrafos de evidência, fatos, candidatos do Canon) e as descrições do esquema de resultado da consolidação estavam em chinês; agora estão em inglês, como o resto do pedido de conserto. As notas de campos dos candidatos do Canon seguem o idioma do projeto.
 - O estilo estatístico criado ao importar um manuscrito em português vem em português ("Estilo pelas estatísticas do original"); outros idiomas latinos continuam em inglês.
 - Documentação de uso em português: guia do usuário, início rápido, dados e backup, Docker, índice da documentação, modelos de issue e de pull request e código de conduta. As versões em inglês foram conferidas com o código: saíram a demonstração online, a Bridge/Relay e a cocriação (fora da v1), e os nomes de botões seguem a interface atual.
+- O pacote principal da interface caiu de 907 kB para 676 kB (gzip 270 → 198 kB): o dicionário em inglês e o renderizador de Markdown do assistente (marked + DOMPurify) carregam só quando usados.
+- `/api/health` informa a versão real do produto (`0.2.0`; antes dizia `0.1.0`), no Server e no núcleo do navegador.
 
 ### Removed
 

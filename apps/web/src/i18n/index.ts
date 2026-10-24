@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from "react";
 
-import { enMessages } from "./en";
 import { ptBrMessages, type Messages } from "./pt-BR";
 
-/* 轻量 i18n：双语字典 + 模块级 locale 单例，React 侧经 useSyncExternalStore 订阅。
-   字典按模块分文件（zh/en 同构，TS 强制两边键形一致），调用侧以点路径取文案。 */
+/* Lightweight i18n: one dictionary per locale plus a module-level locale,
+   which React reads through useSyncExternalStore. Both dictionaries have the
+   same shape (TypeScript enforces it) and callers use dotted keys.
+   pt-BR, the primary language, ships in the main bundle; English loads on
+   demand, so most sessions never download it. */
 
 export type Locale = "pt-BR" | "en";
 
@@ -17,10 +19,16 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 
 const STORAGE_KEY = "narralume:ui-locale";
 
-const MESSAGES: Record<Locale, Messages> = {
+const MESSAGES: Partial<Record<Locale, Messages>> = {
   "pt-BR": ptBrMessages,
-  en: enMessages,
 };
+
+const LOADERS: Record<Locale, () => Promise<Messages>> = {
+  "pt-BR": () => Promise.resolve(ptBrMessages),
+  en: () => import("./en").then((module) => module.enMessages),
+};
+
+const pending = new Map<Locale, Promise<void>>();
 
 type FlattenKeys<T> = {
   [K in keyof T & string]: T[K] extends string
@@ -50,7 +58,7 @@ export function translate(
   key: MessageKey,
   vars?: MessageVars,
 ): string {
-  const template = lookup(locale, key) ?? lookup("en", key);
+  const template = lookup(locale, key) ?? lookup("pt-BR", key);
   if (template === null) {
     if (!warnedKeys.has(key)) {
       warnedKeys.add(key);
@@ -84,7 +92,43 @@ export function getLocale(): Locale {
   return currentLocale;
 }
 
+/** Makes a dictionary available to translate(). Tests use it to preload. */
+export function registerMessages(locale: Locale, messages: Messages): void {
+  MESSAGES[locale] = messages;
+}
+
+/** Loads a locale's dictionary once. Until it arrives, translate() falls
+ *  back to pt-BR; subscribers re-render when the current locale loads. */
+export function loadLocale(locale: Locale): Promise<void> {
+  if (MESSAGES[locale]) return Promise.resolve();
+  const existing = pending.get(locale);
+  if (existing) return existing;
+  const loading = LOADERS[locale]().then(
+    (messages) => {
+      registerMessages(locale, messages);
+      pending.delete(locale);
+      if (locale === currentLocale) for (const listener of listeners) listener();
+    },
+    (error: unknown) => {
+      pending.delete(locale);
+      throw error;
+    },
+  );
+  pending.set(locale, loading);
+  return loading;
+}
+
+/** Switches the interface language. A dictionary that is not loaded yet is
+ *  fetched first, so the switch happens once its text is available. */
 export function setLocale(locale: Locale): void {
+  if (!MESSAGES[locale]) {
+    loadLocale(locale).then(
+      () => setLocale(locale),
+      (error: unknown) =>
+        console.warn(`[i18n] could not load the ${locale} dictionary`, error),
+    );
+    return;
+  }
   if (locale === currentLocale) return;
   currentLocale = locale;
   try {

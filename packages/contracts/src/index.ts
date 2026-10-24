@@ -22,6 +22,10 @@ export * from "./agent-skills.js";
 export * from "./canon-candidate.js";
 export * from "./bible-backfill.js";
 
+/** Product version reported by /api/health on the Server and in the browser
+ *  kernel. Kept equal to the root package.json version by a test. */
+export const NARRALUME_VERSION = "0.2.0";
+
 export const HealthResponseSchema = z.object({
   status: z.literal("ok"),
   service: z.literal("narralume"),

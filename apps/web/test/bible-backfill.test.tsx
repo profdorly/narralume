@@ -15,6 +15,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setLocale } from "../src/i18n";
+import "./i18n-en";
 import type {
   BibleBackfillDetailDto,
   BibleBackfillItemDto,
