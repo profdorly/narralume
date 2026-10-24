@@ -126,6 +126,21 @@ interface CaseResult {
   hits: number;
   contextChars: number;
   topEvidence: boolean | null;
+  /** Per-hit scores, to study cutoffs (vector similarity, rerank probability). */
+  hitScores: {
+    chapter: string;
+    relevant: boolean;
+    vector: number;
+    rerank: number | null;
+  }[];
+  /** Candidates the reranker left out (hybrid+rerank only). */
+  rerankDropped?: number;
+  /** Every judged candidate's probability (hybrid+rerank only). */
+  rerankScores?: {
+    chapter: string;
+    relevant: boolean;
+    probability: number | null;
+  }[];
 }
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -366,18 +381,36 @@ async function evaluateCorpus(
           throw new Error(
             `Rerank failed: ${reranked.warning.code} ${reranked.warning.message}`,
           );
-        results.push(
-          scoreCase(
-            corpus,
-            entry,
-            "hybrid+rerank",
-            limitHitsPerDocument(
-              reranked.hits,
-              RETRIEVAL_MAX_PER_DOCUMENT,
-            ).slice(0, RETRIEVAL_LIMIT),
-            chapterOfDocument,
+        const scored = scoreCase(
+          corpus,
+          entry,
+          "hybrid+rerank",
+          limitHitsPerDocument(reranked.hits, RETRIEVAL_MAX_PER_DOCUMENT).slice(
+            0,
+            RETRIEVAL_LIMIT,
           ),
+          chapterOfDocument,
         );
+        // Keep every judged candidate's probability, not only the final cut.
+        scored.hitScores = scoreCase(
+          corpus,
+          entry,
+          "hybrid+rerank",
+          reranked.hits,
+          chapterOfDocument,
+        ).hitScores;
+        scored.rerankDropped = reranked.dropped;
+        scored.rerankScores = reranked.scores.map((score) => {
+          const candidate = candidates.find((hit) => hit.id === score.id)!;
+          const documentId = segmentDocumentId(candidate) ?? candidate.sourceId;
+          const chapter = chapterOfDocument.get(documentId) ?? documentId;
+          return {
+            chapter,
+            relevant: entry.relevant.includes(chapter),
+            probability: score.probability,
+          };
+        });
+        results.push(scored);
       }
     }
     return results;
@@ -414,6 +447,19 @@ function scoreCase(
     contextChars: hits.reduce((total, hit) => total + hit.content.length, 0),
     topEvidence:
       entry.evidence && top ? top.content.includes(entry.evidence) : null,
+    hitScores: hits.map((hit) => {
+      const documentId = segmentDocumentId(hit) ?? hit.sourceId;
+      const chapter = chapterOfDocument.get(documentId) ?? documentId;
+      return {
+        chapter,
+        relevant: entry.relevant.includes(chapter),
+        vector: Math.round(hit.vectorScore * 1000) / 1000,
+        rerank:
+          hit.rerankScore === null
+            ? null
+            : Math.round(hit.rerankScore * 1000) / 1000,
+      };
+    }),
   };
 }
 

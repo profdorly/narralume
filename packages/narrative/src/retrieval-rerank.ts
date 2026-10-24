@@ -43,6 +43,8 @@ export interface RetrievalRerankOutcome {
   scored: number;
   /** Candidates left out for scoring below RERANK_MIN_PROBABILITY. */
   dropped: number;
+  /** Probability of every judged candidate (null: refused), by hit id. */
+  scores: { id: string; probability: number | null }[];
   model: string | null;
   modelId: string | null;
   usage: RunBudgetUsage;
@@ -75,6 +77,7 @@ export async function rerankRetrievalHits(input: {
     applied: false,
     scored: 0,
     dropped: 0,
+    scores: [],
     model: null,
     modelId: null,
     usage: zeroUsage(),
@@ -127,6 +130,10 @@ export async function rerankRetrievalHits(input: {
       applied: true,
       scored: ranked.length,
       dropped: ranked.length - kept.length,
+      scores: ranked.map(({ hit, probability }) => ({
+        id: hit.id,
+        probability,
+      })),
       model: result.model,
       modelId: result.modelId,
       usage: result.usage,
