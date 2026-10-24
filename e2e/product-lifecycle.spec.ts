@@ -133,7 +133,9 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
   await page.getByLabel("Título").fill(chapterTitle);
   await page.getByLabel("Resumo").fill("林昇回港当夜，灯塔突然熄灭。");
   await page.getByRole("button", { name: "Salvar" }).click();
-  await expect(page.getByRole("status")).toContainText("Salvo no servidor");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Salvo no servidor" }),
+  ).toBeVisible();
   await page.getByLabel("Alvo da edição").selectOption({ label: chapterTitle });
   await page
     .getByRole("link", { name: "Escrever este capítulo na mesa de escrita" })
@@ -142,7 +144,7 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
   await expect(page).toHaveURL(
     new RegExp(`/projects/${projectId}/studio\\?outline=`),
   );
-  await page.getByRole("button", { name: "Criar" }).click();
+  await page.getByRole("button", { name: "Criar", exact: true }).click();
   const editor = page.getByLabel("Editor do corpo em Markdown");
   await expect(editor).toBeVisible();
   await editor.fill(body);
@@ -224,9 +226,11 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
     .getByRole("alertdialog", { name: "Restaurar instantâneo do conteúdo" })
     .getByRole("button", { name: "Restaurar cópia do conteúdo" })
     .click();
-  await expect(page.getByRole("status")).toContainText(
-    "Restaurado como um projeto novo.",
-  );
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Restaurado como um projeto novo." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Abrir a cópia restaurada" }),
   ).toBeVisible();

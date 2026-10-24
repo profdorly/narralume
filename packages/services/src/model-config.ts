@@ -27,7 +27,7 @@ export function seedEnvironmentModelConfig(
   const definitions = [
     {
       id: "environment-chat",
-      name: "环境 · Chat Completions",
+      name: "Ambiente · Chat Completions",
       wireApi: "openai-chat" as const,
       keyEnv: "NARRATIVE_CHAT_API_KEY",
       baseEnv: "NARRATIVE_CHAT_BASE_URL",
@@ -37,7 +37,7 @@ export function seedEnvironmentModelConfig(
     },
     {
       id: "environment-responses",
-      name: "环境 · Responses",
+      name: "Ambiente · Responses",
       wireApi: "openai-responses" as const,
       keyEnv: "NARRATIVE_RESPONSES_API_KEY",
       baseEnv: "NARRATIVE_RESPONSES_BASE_URL",
@@ -47,7 +47,7 @@ export function seedEnvironmentModelConfig(
     },
     {
       id: "environment-anthropic",
-      name: "环境 · Anthropic Messages",
+      name: "Ambiente · Anthropic Messages",
       wireApi: "anthropic-messages" as const,
       keyEnv: "NARRATIVE_ANTHROPIC_API_KEY",
       baseEnv: "NARRATIVE_ANTHROPIC_BASE_URL",

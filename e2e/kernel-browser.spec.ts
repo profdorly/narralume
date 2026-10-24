@@ -52,7 +52,9 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   await page.getByLabel("Título").fill(chapterTitle);
   await page.getByLabel("Resumo").fill("林昇回港当夜，灯塔突然熄灭。");
   await page.getByRole("button", { name: "Salvar" }).click();
-  await expect(page.getByRole("status")).toContainText("Salvo no servidor");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Salvo no servidor" }),
+  ).toBeVisible();
   await page.getByLabel("Alvo da edição").selectOption({ label: chapterTitle });
   await page
     .getByRole("link", { name: "Escrever este capítulo na mesa de escrita" })
@@ -64,14 +66,14 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   expect(chapterId).toBeTruthy();
 
   // 写作台：创建文档 + 手写正文并保存版本（手动创作永远可用）。
-  await page.getByRole("button", { name: "Criar" }).click();
+  await page.getByRole("button", { name: "Criar", exact: true }).click();
   const editor = page.getByLabel("Editor do corpo em Markdown");
   await expect(editor).toBeVisible();
   await editor.fill(body);
   await page.getByRole("button", { name: "Salvar nova versão" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    /Versão registrada|versões/,
-  );
+  await expect(
+    page.getByRole("status").filter({ hasText: /Versão registrada|versões/ }),
+  ).toBeVisible();
 
   // 重启持久性：reload 后内核从 OPFS 重开，章节文档与正文仍在。
   await page.reload();
@@ -111,7 +113,9 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   await timelineEditor
     .getByRole("button", { name: "Salvar", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("Salvo no servidor");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Salvo no servidor" }),
+  ).toBeVisible();
   await page.goto(
     `/projects/${projectId}/bible?spread=outline&view=state&chapter=${encodeURIComponent(chapterId)}`,
   );

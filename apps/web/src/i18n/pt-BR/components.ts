@@ -3,6 +3,7 @@ export const components = {
     pending: "Trabalhando…",
   },
   empty: {
+    seal: "V",
     sealLabel: "Selo da página “{char}”",
   },
   errorNote: {

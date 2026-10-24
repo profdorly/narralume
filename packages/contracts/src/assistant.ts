@@ -287,7 +287,7 @@ export type AssistantConversationDetailDto = z.infer<
 export const CreateAssistantConversationRequestSchema = z
   .object({
     requestId: IdSchema,
-    title: z.string().trim().min(1).max(200).default("项目协作"),
+    title: z.string().trim().min(1).max(200).default("Colaboração no projeto"),
   })
   .strict();
 export type CreateAssistantConversationRequest = z.infer<

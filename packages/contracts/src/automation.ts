@@ -326,7 +326,9 @@ export const SessionActionRequestSchema = z.discriminatedUnion("action", [
         .trim()
         .min(1)
         .max(20_000)
-        .default("请在保持既有优点的前提下，重新修订并提升这一版正文。"),
+        .default(
+          "Reescreva e melhore este manuscrito, preservando os pontos fortes que já existem.",
+        ),
     })
     .strict(),
 ]);

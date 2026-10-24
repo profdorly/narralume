@@ -5,6 +5,7 @@ export const components: typeof componentsPt = {
     pending: "Working…",
   },
   empty: {
+    seal: "E",
     sealLabel: "Page seal “{char}”",
   },
   errorNote: {

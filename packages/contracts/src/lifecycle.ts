@@ -32,7 +32,7 @@ export const SystemBackupPreviewSchema = z.object({
 export type SystemBackupPreviewDto = z.infer<typeof SystemBackupPreviewSchema>;
 
 export const CreateSystemBackupRequestSchema = z.object({
-  label: z.string().trim().min(1).max(200).default("手动完整备份"),
+  label: z.string().trim().min(1).max(200).default("Backup completo manual"),
 });
 
 export const RestoreSystemBackupRequestSchema = z.object({

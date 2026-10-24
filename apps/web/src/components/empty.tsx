@@ -16,7 +16,7 @@ interface EmptyProps {
 }
 
 export function Empty({
-  seal = "空",
+  seal: sealProp,
   title,
   description,
   action,
@@ -24,6 +24,7 @@ export function Empty({
   sealVariant = "empty",
 }: EmptyProps) {
   const { t } = useI18n();
+  const seal = sealProp ?? t("components.empty.seal");
   return (
     <div className="empty">
       <Seal

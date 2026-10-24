@@ -98,9 +98,11 @@ const CHAPTER_PRODUCTION_RECIPE = (now: string) => ({
   id: "recipe-chapter-production",
   kind: "recipe" as const,
   key: "recipe.chapter-production",
-  name: "章节生产配方",
-  description: "上下文、规划、正文、双重检查、修订、结算与提交。",
-  systemInvariants: "commit 永远位于门禁和 settle 之后；不得移除确定性检查。",
+  name: "Receita de produção de capítulo",
+  description:
+    "Contexto, plano, prosa, verificação dupla, revisão, assentamento e registro.",
+  systemInvariants:
+    "O commit sempre vem depois das verificações e do settle; a verificação determinística não pode ser removida.",
   defaultContent: JSON.stringify(
     {
       steps: [
@@ -125,9 +127,11 @@ const COCREATE_REPLY_RECIPE = (now: string) => ({
   id: "recipe-cocreate-reply",
   kind: "recipe" as const,
   key: "recipe.cocreate-reply",
-  name: "共同创作回复配方",
-  description: "编译故事房上下文、回复并暂存候选。",
-  systemInvariants: "回复不得自动进入正典或正文；采纳必须走独立配方。",
+  name: "Receita de resposta da cocriação",
+  description:
+    "Monta o contexto da sala de história, responde e guarda candidatos.",
+  systemInvariants:
+    "A resposta nunca entra sozinha no cânone ou no manuscrito; adotar exige uma receita própria.",
   defaultContent: JSON.stringify(
     { steps: ["cocreate.context", "cocreate.respond", "cocreate.stage"] },
     null,

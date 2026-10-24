@@ -213,7 +213,7 @@ export class SqliteCreativeRepository {
           `INSERT INTO story_branches(
             id, session_id, parent_branch_id, forked_from_turn_id, name,
             status, head_turn_id, created_at, updated_at
-          ) VALUES (?, ?, NULL, NULL, '主线', 'active', NULL, ?, ?)`,
+          ) VALUES (?, ?, NULL, NULL, 'Linha principal', 'active', NULL, ?, ?)`,
         )
         .run(input.branchId, input.id, input.now, input.now);
       const insertParticipant = this.database.raw.prepare(
