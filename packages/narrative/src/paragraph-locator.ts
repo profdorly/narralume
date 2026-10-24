@@ -56,7 +56,7 @@ export class ParagraphLocator {
             if (!paragraph) {
               throw new ParagraphLocatorError(
                 "evidence.paragraph.out_of_range",
-                `段号 P${ordinal} 不存在`,
+                `Paragraph P${ordinal} does not exist`,
               );
             }
             return paragraph;
@@ -75,18 +75,22 @@ export class ParagraphLocator {
     const seen = new Set<number>();
     for (const ordinal of ordinals) {
       if (!Number.isInteger(ordinal) || ordinal < 1) {
-        issues.push(`${path}: 段号必须是从 1 开始的整数`);
+        issues.push(
+          `${path}: paragraph numbers must be integers starting at 1`,
+        );
         continue;
       }
       if (seen.has(ordinal)) {
-        issues.push(`${path}: 段号 P${ordinal} 重复`);
+        issues.push(`${path}: paragraph P${ordinal} is repeated`);
         continue;
       }
       seen.add(ordinal);
       if (!this.#byOrdinal.has(ordinal)) {
-        issues.push(`${path}: 段号 P${ordinal} 不存在`);
+        issues.push(`${path}: paragraph P${ordinal} does not exist`);
       } else if (allowedOrdinals && !allowedOrdinals.has(ordinal)) {
-        issues.push(`${path}: 段号 P${ordinal} 不属于本次提供的正文范围`);
+        issues.push(
+          `${path}: paragraph P${ordinal} is outside the text provided for this task`,
+        );
       }
     }
     return issues;

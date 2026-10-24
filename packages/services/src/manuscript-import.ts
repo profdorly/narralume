@@ -1,6 +1,8 @@
 /** 导入正文的结构识别：章节标题、DOCX 标题样式、HTML/EPUB 标题与统计风格。
  *  这里只做纯文本变换；容器解析与安全上限由 delivery-service 负责。 */
 
+import { detectManuscriptLanguage } from "@narralume/narrative";
+
 export interface ManuscriptSection {
   title: string;
   content: string;
@@ -904,14 +906,17 @@ export type StatisticalStylePayload = {
   active: false;
 };
 
-/** 由导入文本的可复验统计生成风格候选。CJK 正文按字计量并使用中文措辞；
- *  其他文字按词计量、句末同时识别 . 与 …，措辞使用英文。
+/** Style candidate built from reproducible statistics of the imported text.
+ *  CJK prose is measured in characters with Chinese wording; other scripts are
+ *  measured in words, with sentence ends at . and … as well.
  *
- *  语言策略（有意与标签不同）：暂存候选标题、默认关系与导入说明等界面标签跟随作品语言
- *  （见 delivery-service 的 importNoteLabels 与 narrative 的 IMPORT_STAGE_LABELS）；
- *  这里的统计规则则跟随原稿的书写系统，因为句长、段长的计量单位（字或词）本身取决于
- *  原稿，措辞只能二选一：CJK 原稿用中文，其他原稿（葡语、西语、英语等）一律用英文。
- *  AI 风格候选由模型按原稿语言书写，不受此限。 */
+ *  Language policy (deliberately unlike the labels): staged-candidate titles,
+ *  default relations and import notes follow the project language (see
+ *  importNoteLabels and narrative's IMPORT_STAGE_LABELS). These rules follow
+ *  the manuscript instead, because the unit (character or word) depends on it:
+ *  CJK manuscripts read Chinese, Portuguese manuscripts Portuguese, and every
+ *  other one English. AI style candidates are written by the model in the
+ *  manuscript language and are not bound by this. */
 export function inferStylePayload(text: string): StatisticalStylePayload {
   const paragraphs = text.split(/\n\s*\n/u).filter((item) => item.trim());
   const examples = paragraphs
@@ -963,6 +968,27 @@ export function inferStylePayload(text: string): StatisticalStylePayload {
     paragraphs.reduce((sum, item) => sum + words(item), 0) /
       Math.max(1, paragraphs.length),
   );
+  const dialogueHeavy = dialogueMarks > totalWords / 20;
+  if (detectManuscriptLanguage(text) === "Portuguese") {
+    return {
+      name: "Estilo pelas estatísticas do original",
+      description:
+        "Gerado a partir de estatísticas verificáveis do texto importado; revise antes de adotar.",
+      rules: [
+        `As frases têm em média cerca de ${averageSentence} palavras; evite se afastar muito disso sem querer`,
+        `Os parágrafos têm em média cerca de ${averageParagraph} palavras; ajuste ao ritmo da cena em vez de copiar mecanicamente`,
+        dialogueHeavy
+          ? "O diálogo tem bastante peso; preserve a voz dos personagens e o subtexto"
+          : "A narração predomina; o diálogo carrega só a ação necessária",
+      ],
+      negativeRules: [
+        "Não copiar frases do original",
+        "Não tratar traços estatísticos como regras literárias imutáveis",
+      ],
+      examples,
+      active: false,
+    };
+  }
   return {
     name: "Source text statistics style",
     description:
@@ -970,7 +996,7 @@ export function inferStylePayload(text: string): StatisticalStylePayload {
     rules: [
       `Sentences run about ${averageSentence} words on average; avoid drifting far from this unintentionally`,
       `Paragraphs average about ${averageParagraph} words; adjust to scene rhythm instead of copying mechanically`,
-      dialogueMarks > totalWords / 20
+      dialogueHeavy
         ? "Dialogue is prominent; preserve character voices and subtext"
         : "Narration dominates; dialogue carries only necessary action",
     ],

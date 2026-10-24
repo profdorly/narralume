@@ -50,7 +50,7 @@ const EvidenceParagraphsSchema = z
   .min(1)
   .max(5)
   .refine((ordinals) => new Set(ordinals).size === ordinals.length, {
-    message: "段号不得重复",
+    message: "Paragraph numbers must not repeat",
   });
 
 const RelationshipSchema = z.object({

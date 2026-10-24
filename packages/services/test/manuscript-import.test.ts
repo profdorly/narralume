@@ -864,16 +864,27 @@ describe("statistical import style", () => {
     const style = inferStylePayload(
       "Ela correu pela praia. Ele parou… Depois, silêncio!\n\n— Volte — disse ela.\n\n— Não posso.",
     );
-    expect(style.name).toBe("Source text statistics style");
+    expect(style.name).toBe("Estilo pelas estatísticas do original");
     expect(style.rules[0]).toBe(
-      "Sentences run about 3 words on average; avoid drifting far from this unintentionally",
+      "As frases têm em média cerca de 3 palavras; evite se afastar muito disso sem querer",
     );
-    expect(style.rules[1]).toContain("about 4 words");
+    expect(style.rules[1]).toContain("cerca de 4 palavras");
     expect(style.rules[2]).toBe(
-      "Dialogue is prominent; preserve character voices and subtext",
+      "O diálogo tem bastante peso; preserve a voz dos personagens e o subtexto",
     );
     expect(JSON.stringify(style)).not.toMatch(/[\p{Script=Han}]/u);
     expect(style.active).toBe(false);
+  });
+
+  it("words the statistics in English for English and other manuscripts", () => {
+    const style = inferStylePayload(
+      "She ran along the beach. He stopped… Then, silence!\n\nThe tide was coming in and the light was going, but she did not turn back.",
+    );
+    expect(style.name).toBe("Source text statistics style");
+    expect(style.rules[0]).toMatch(/^Sentences run about \d+ words/);
+    expect(style.rules[2]).toBe(
+      "Narration dominates; dialogue carries only necessary action",
+    );
   });
 
   it("keeps the character-based Chinese statistics for CJK text", () => {

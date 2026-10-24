@@ -51,9 +51,9 @@ describe("chapter settlement fact object contract", () => {
     if (result.success) return;
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0]).toContain(
-      "factCandidates.0.value: 已填写 objectEntityId 时 value 必须为 null",
+      "factCandidates.0.value: value must be null when objectEntityId is set",
     );
-    expect(result.issues[0]).toContain("不要额外填写布尔值或字符串 true");
+    expect(result.issues[0]).toContain("do not add true (boolean or string)");
   });
 
   it("requires assert and supersede to provide one non-null object", () => {
@@ -66,7 +66,7 @@ describe("chapter settlement fact object contract", () => {
     expect(result.error.issues[0]).toMatchObject({
       path: ["factCandidates", 0, "value"],
       message: expect.stringContaining(
-        "必须填写 objectEntityId 或非 null value",
+        "must set either objectEntityId or a non-null value",
       ),
     });
   });

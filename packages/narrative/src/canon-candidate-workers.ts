@@ -146,7 +146,7 @@ export class CanonCandidateWorkerSuite {
       task: {
         spread,
         instruction,
-        afterJsonFields: candidateAfterInstructions(spread),
+        afterJsonFields: candidateAfterInstructions(spread, project.language),
       },
       project: {
         id: project.id,
@@ -249,7 +249,7 @@ export class CanonCandidateWorkerSuite {
             "Nunca reescreva o banco diretamente e nunca afirme que os candidatos já vigoram. Cada item deve expor o raciocínio e o impacto; não preencha com mudanças desnecessárias.",
             "O targetId de create deve ser null; update deve usar ids que de fato existem em currentSpread. A intenção do autor só admite update, com targetId fixo em intent.",
             "Só facts podem sofrer withdraw, com afterJson null nesse caso; todo outro create/update deve trazer afterJson como string de um objeto JSON serializado.",
-            `afterJson aceita só estes campos: ${candidateAfterInstructions(context.spread)}. update leva só os campos alterados; create fornece todos os campos obrigatórios.`,
+            `afterJson aceita só estes campos: ${candidateAfterInstructions(context.spread, "pt-BR")}. update leva só os campos alterados; create fornece todos os campos obrigatórios.`,
             "Ao citar entidades, nós de outline, causas ou dependências, use só IDs reais dados em supportingIndex. Nunca invente IDs de banco.",
             "Não altere as políticas de trava em si; se a sugestão toca conteúdo travado, descreva-a mesmo assim como candidata e o sistema pedirá confirmação extra ao autor.",
             CANON_LANGUAGE_INVARIANT["pt-BR"],
@@ -259,7 +259,7 @@ export class CanonCandidateWorkerSuite {
             "Never rewrite the database directly and never claim candidates took effect. Every item must state its reasoning and impact; do not pad with unnecessary changes.",
             "create's targetId must be null; update must use ids that actually exist in currentSpread. Author intent may only be updated, with targetId fixed to intent.",
             "Only facts can be withdrawn, with afterJson null in that case; every other create/update must carry afterJson as a serialized JSON object string.",
-            `afterJson accepts only these fields: ${candidateAfterInstructions(context.spread)}. update carries only changed fields; create provides every required field.`,
+            `afterJson accepts only these fields: ${candidateAfterInstructions(context.spread, "en")}. update carries only changed fields; create provides every required field.`,
             "When referencing entities, outline nodes, causes, or dependencies, use only real IDs given in supportingIndex. Never invent database IDs.",
             "Do not modify lock policies themselves; when a suggestion touches locked content, still describe it as a candidate and the system will ask the author to confirm again.",
             CANON_LANGUAGE_INVARIANT.en,

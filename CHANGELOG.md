@@ -22,6 +22,8 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - "Testar" em modelos de embedding e de reordenação chama o endpoint de cada um (`/embeddings` ou `/decisions`) em vez de enviar pedidos de chat que esses modelos não respondem.
 - A verificação de "voz de IA" no rascunho (advérbios suavizadores, clichês, "não era X, era Y") agora vale também para prosa em português e inglês, conforme o idioma do próprio texto. Em quatro romances de domínio público (Machado de Assis, Austen, Fitzgerald) ela só acusou duas passagens com "não era X; era Y" de verdade.
 - Placeholders em português e inglês também contam: "[inserir …]", "[insert …]", "as an AI language model", "como um modelo de linguagem".
+- As mensagens de validação devolvidas ao modelo para consertar uma resposta (parágrafos de evidência, fatos, candidatos do Canon) e as descrições do esquema de resultado da consolidação estavam em chinês; agora estão em inglês, como o resto do pedido de conserto. As notas de campos dos candidatos do Canon seguem o idioma do projeto.
+- O estilo estatístico criado ao importar um manuscrito em português vem em português ("Estilo pelas estatísticas do original"); outros idiomas latinos continuam em inglês.
 
 ### Removed
 

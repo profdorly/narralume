@@ -6,7 +6,7 @@ const EvidenceParagraphsSchema = z
   .min(1)
   .max(5)
   .refine((ordinals) => new Set(ordinals).size === ordinals.length, {
-    message: "段号不得重复",
+    message: "Paragraph numbers must not repeat",
   });
 
 const SceneSchema = z.object({
@@ -59,7 +59,7 @@ const ReviewIssueSchema = z
       context.addIssue({
         code: "custom",
         path: ["severity"],
-        message: "章节目标问题必须标记为 major 或 critical",
+        message: "Chapter goal issues must be marked major or critical",
       });
     }
   });
@@ -128,14 +128,15 @@ const CandidateFactSchema = z
           code: "custom",
           path: ["objectEntityId"],
           message:
-            "withdraw 通过 factId 指定目标事实，objectEntityId 必须为 null",
+            "withdraw names the target fact by factId; objectEntityId must be null",
         });
       }
       if (fact.value !== null) {
         context.addIssue({
           code: "custom",
           path: ["value"],
-          message: "withdraw 通过 factId 指定目标事实，value 必须为 null",
+          message:
+            "withdraw names the target fact by factId; value must be null",
         });
       }
       return;
@@ -145,7 +146,7 @@ const CandidateFactSchema = z
         code: "custom",
         path: ["value"],
         message:
-          "已填写 objectEntityId 时 value 必须为 null；不要额外填写布尔值或字符串 true 表示事实成立；需要同时记录实体与文本时请拆成两条事实",
+          "value must be null when objectEntityId is set; do not add true (boolean or string) to say the fact holds; to record both an entity and text, split them into two facts",
       });
     }
     if (fact.objectEntityId === null && fact.value === null) {
@@ -153,7 +154,7 @@ const CandidateFactSchema = z
         code: "custom",
         path: ["value"],
         message:
-          "assert/supersede 必须填写 objectEntityId 或非 null value 其中之一",
+          "assert/supersede must set either objectEntityId or a non-null value",
       });
     }
   });
@@ -398,7 +399,7 @@ export const REVIEW_CONTRACT: JsonSchemaContract = {
 export const SETTLEMENT_CONTRACT: JsonSchemaContract = {
   name: "chapter_settlement_candidates",
   description:
-    "从章节正文提取带证据的候选变化。事实的实体宾语与普通值互斥，复杂语义应拆成多条事实。",
+    "Candidate changes extracted from the chapter text, each with evidence. A fact's entity object and plain value are mutually exclusive; split complex meaning into several facts.",
   strict: true,
   schema: {
     type: "object",
@@ -454,7 +455,7 @@ export const SETTLEMENT_CONTRACT: JsonSchemaContract = {
             anchorEventId: {
               type: ["string", "null"],
               description:
-                "新建事件填 null。只有上下文附有 <unanchored-timeline> 列表（从正文补全故事圣经的逐章结算）时，才可填其中某个事件的 ID，把它锚定到本章而不新建。",
+                "null for a new event. Only when the context includes an <unanchored-timeline> list (the chapter-by-chapter settlement that fills the Story Bible from the manuscript) may this be the ID of one of those events, anchoring it to this chapter instead of creating a new one.",
             },
             title: { type: "string" },
             description: { type: ["string", "null"] },
@@ -539,7 +540,7 @@ export const SETTLEMENT_CONTRACT: JsonSchemaContract = {
             expectedStatus: {
               type: ["string", "null"],
               description:
-                "该伏笔当前所处的状态（乐观并发检查用，非目标状态；新状态由 action 决定）",
+                "The foreshadow's current status, for an optimistic concurrency check; not the target status, which action decides.",
               enum: [
                 "planned",
                 "planted",
@@ -609,7 +610,7 @@ function factCandidateContract(): Record<string, unknown> {
         ["assert", "supersede"],
         {
           type: "string",
-          description: "实体宾语 ID；使用该字段时 value 必须为 null。",
+          description: "Entity object ID; value must be null when this is set.",
         },
         { type: "null" },
       ),
@@ -619,18 +620,20 @@ function factCandidateContract(): Record<string, unknown> {
         {
           type: ["string", "number", "boolean"],
           description:
-            "普通标量宾语；使用该字段时 objectEntityId 必须为 null。不要额外填写布尔值或字符串 true 表示事实成立。",
+            "Plain scalar object; objectEntityId must be null when this is set. Do not add true (boolean or string) to say the fact holds.",
         },
       ),
       branch(
         ["withdraw"],
         {
           type: "null",
-          description: "withdraw 通过 factId 指定目标事实，不提供宾语。",
+          description:
+            "withdraw names the target fact by factId and gives no object.",
         },
         {
           type: "null",
-          description: "withdraw 通过 factId 指定目标事实，不提供宾语。",
+          description:
+            "withdraw names the target fact by factId and gives no object.",
         },
       ),
     ],

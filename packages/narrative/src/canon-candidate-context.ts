@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 
 import type { CanonCandidateModelResult } from "./canon-candidate-schemas.js";
+import { promptLanguageOf } from "./prompt-language.js";
 
 const NullableText = z.string().trim().max(30_000).nullable();
 const Id = z.string().trim().min(1).max(300);
@@ -182,23 +183,27 @@ export function candidateSemanticIssues(
     const path = `items.${index}`;
     if (spread === "intent") {
       if (item.operation !== "update" || item.targetId !== "intent")
-        issues.push(`${path}: 作者意图只能 update，targetId 必须为 intent`);
+        issues.push(
+          `${path}: author intent only supports update, with targetId "intent"`,
+        );
     } else if (item.operation === "create" && item.targetId !== null) {
-      issues.push(`${path}: create 的 targetId 必须为 null`);
+      issues.push(`${path}: create needs targetId null`);
     } else if (item.operation !== "create" && !item.targetId) {
-      issues.push(`${path}: update/withdraw 必须指定 targetId`);
+      issues.push(`${path}: update/withdraw needs a targetId`);
     }
     if (item.operation === "withdraw" && spread !== "facts")
-      issues.push(`${path}: 只有正典事实支持 withdraw`);
+      issues.push(`${path}: only canon facts support withdraw`);
     if (item.operation === "withdraw" && item.afterJson !== null)
-      issues.push(`${path}: withdraw 的 afterJson 必须为 null`);
+      issues.push(`${path}: withdraw needs afterJson null`);
     if (item.operation !== "withdraw" && item.afterJson === null)
-      issues.push(`${path}: create/update 必须提供 afterJson`);
+      issues.push(`${path}: create/update needs afterJson`);
     if (item.targetId && item.operation !== "create") {
       if (!targetRecord(current, spread, item.targetId))
-        issues.push(`${path}: targetId 不在当前 ${spread} 中`);
+        issues.push(`${path}: targetId is not in the current ${spread}`);
       if (touched.has(item.targetId))
-        issues.push(`${path}: 同一候选集不能重复修改 ${item.targetId}`);
+        issues.push(
+          `${path}: one candidate set cannot change ${item.targetId} twice`,
+        );
       touched.add(item.targetId);
     }
     if (item.afterJson !== null) {
@@ -206,18 +211,18 @@ export function candidateSemanticIssues(
       if (!after.success) {
         issues.push(`${path}.afterJson: ${after.error}`);
       } else if (Object.keys(after.value).length === 0) {
-        issues.push(`${path}.afterJson: 修改内容不能为空`);
+        issues.push(`${path}.afterJson: the change cannot be empty`);
       } else if (item.operation === "create") {
         for (const field of CREATE_REQUIRED[spread]) {
           if (!(field in after.value))
-            issues.push(`${path}.afterJson: create 缺少 ${field}`);
+            issues.push(`${path}.afterJson: create is missing ${field}`);
         }
         if (spread === "facts") {
           const hasEntity = typeof after.value.objectEntityId === "string";
           const hasValue = after.value.value !== undefined;
           if (hasEntity === hasValue)
             issues.push(
-              `${path}.afterJson: facts create 必须且只能提供 objectEntityId 或 value`,
+              `${path}.afterJson: a facts create needs exactly one of objectEntityId or value`,
             );
         }
       }
@@ -258,15 +263,21 @@ export function materializeCandidateItems(
   });
 }
 
-export function candidateAfterInstructions(spread: CanonSpread): string {
+export function candidateAfterInstructions(
+  spread: CanonSpread,
+  language: string | null | undefined,
+): string {
+  const pt = promptLanguageOf(language) === "pt-BR";
   const fields: Record<CanonSpread, string> = {
-    intent:
-      "promise, themes, audience, tone, boundaries, endingDirection, currentFocus（只写要修改的字段）",
+    intent: `promise, themes, audience, tone, boundaries, endingDirection, currentFocus (${
+      pt ? "só os campos que mudam" : "only the fields that change"
+    })`,
     outline:
       "parentId, kind, ordinal, title, summary, goal, conflict, outcome, povEntityId, storyTime, status, metadata",
     entities: "type, name, aliases, description, attributes, status",
-    facts:
-      "subjectId, predicate, objectEntityId 或 value（二选一）, validFromNodeId, validToNodeId, knowledgeScope, knowledgeSubjectId, confidence",
+    facts: `subjectId, predicate, objectEntityId ${
+      pt ? "ou value (só um dos dois)" : "or value (exactly one)"
+    }, validFromNodeId, validToNodeId, knowledgeScope, knowledgeSubjectId, confidence`,
     relations:
       "fromEntityId, toEntityId, relation, intensity, state, outlineNodeId, storyTime",
     timeline:
@@ -301,7 +312,7 @@ function parseAfterJson(
             .join("; "),
         };
   } catch {
-    return { success: false, error: "不是有效的 JSON 对象" };
+    return { success: false, error: "not a valid JSON object" };
   }
 }
 

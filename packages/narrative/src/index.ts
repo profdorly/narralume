@@ -14,6 +14,7 @@ export * from "./outline-context.js";
 export * from "./outline-baseline.js";
 export { requirePlanningEntitiesReady } from "./planning-entities.js";
 export * from "./paragraph-locator.js";
+export { detectManuscriptLanguage } from "./manuscript-language.js";
 export * from "./import-evidence.js";
 export * from "./unanchored-timeline.js";
 export * from "./revision-application-service.js";

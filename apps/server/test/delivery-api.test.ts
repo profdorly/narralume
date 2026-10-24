@@ -771,7 +771,7 @@ describe("delivery API", () => {
     ]);
     expect(
       textPreview.candidates.find((item) => item.kind === "style")?.title,
-    ).toBe("Source text statistics style");
+    ).toBe("Estilo pelas estatísticas do original");
 
     const docx = new JSZip();
     docx.file(
