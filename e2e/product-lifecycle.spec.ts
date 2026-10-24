@@ -80,7 +80,7 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
   ).toBeVisible();
 
   const modelSection = page.getByRole("region", {
-    name: "Modelo",
+    name: "Modelos",
     exact: true,
   });
   await modelSection.getByRole("button", { name: "Novo" }).click();

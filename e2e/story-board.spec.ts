@@ -91,11 +91,11 @@ test("全书看板显示结构、筛选章节并打开正文", async ({
   await expect(board.locator("article h3").first()).toHaveText(
     "第二章 · 沉默的证人",
   );
-  await board.getByLabel("Estado do capítulo").selectOption("committed");
+  await board.getByLabel("Status do capítulo").selectOption("committed");
   await expect(
     board.getByText("Nenhum capítulo corresponde a estes filtros."),
   ).toBeVisible();
-  await board.getByLabel("Estado do capítulo").selectOption("all");
+  await board.getByLabel("Status do capítulo").selectOption("all");
   await board.getByLabel("Personagem de POV").selectOption("unknown");
   await expect(
     board.getByRole("button", {

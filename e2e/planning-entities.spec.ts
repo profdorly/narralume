@@ -68,10 +68,10 @@ test("规划的新设定经作者采纳后才创建章节", async ({
     .getByRole("button", { name: "Adotar este item", exact: true })
     .first()
     .click();
-  await expect(panel.getByText("Aplicado", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Adotado", { exact: true })).toHaveCount(1);
   await expect(continueButton).toBeDisabled();
   await page.reload();
-  await expect(panel.getByText("Aplicado", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Adotado", { exact: true })).toHaveCount(1);
   await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
   await page.reload();
   const englishPanel = page.getByRole("region", {

@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
+/*
+ * Co-creation is out of v1 (CHANGELOG: "Cocreate fora da v1"): the studio no
+ * longer links to the story room. The API keeps its own tests; these UI
+ * flows come back with the feature.
+ */
+test.skip(true, "Co-creation is not reachable from the v1 interface");
+
 const TERMINAL_RUN_STATUSES = new Set([
   "awaiting_user",
   "cancelled",

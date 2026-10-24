@@ -126,7 +126,7 @@ test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page },
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText("Aplicado", { exact: true })).toBeVisible();
+  await expect(page.getByText("Adotado", { exact: true })).toBeVisible();
 });
 
 test("快速创作致命失败会停靠，并可从 UI 重试为新任务", async ({

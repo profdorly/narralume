@@ -22,7 +22,7 @@ export const bible = {
     noEvidence: "Nenhum capítulo de evidência vinculado", unavailableEvidence: "O capítulo de evidência está indisponível; confira esta referência", noCommittedChapters: "Não há capítulos registrados disponíveis para vincular.",
     corePromise: "Promessa central do livro:", empty: "Ainda não há linhas longas da história. Comece por uma promessa que você queira desenvolver ao longo do tempo.", needCompass: "Estabeleça a bússola do livro antes de organizar as linhas longas da história.", editCompass: "Ver e editar a bússola do livro",
     save: "Salvar linha da história", saved: "Linha da história salva para o planejamento seguinte.", saveError: "Não foi possível salvar a linha da história", loadError: "Não foi possível carregar as linhas longas da história",
-    reload: "Descartar edições e recarregar", reviews: "Últimas revisões de etapa", reviewsHint: "A última revisão de cada volume ou arco aparece aqui. Estas sugestões da IA podem informar os seus registros de etapa; ainda não são direção confirmada pela autoria nem eventos estabelecidos.",
+    reload: "Descartar alterações e recarregar", reviews: "Últimas revisões de etapa", reviewsHint: "A última revisão de cada volume ou arco aparece aqui. Estas sugestões da IA podem informar os seus registros de etapa; ainda não são direção confirmada pela autoria nem eventos estabelecidos.",
     reviewsError: "Não foi possível carregar as revisões de etapa", noReviews: "As revisões de etapa aparecem aqui depois que a escrita contínua conclui uma janela.", recommendations: "Sugestões para os capítulos seguintes", compassAdjustments: "Mudanças sugeridas na direção do livro",
   },
   board: {

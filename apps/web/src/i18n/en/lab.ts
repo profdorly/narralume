@@ -53,7 +53,7 @@ export const lab: typeof labPt = {
     hintNoModel:
       "Without an embedding model, search uses words and named characters. Assign one in Settings so search also finds passages by meaning.",
     hintPending:
-      "Missing vectors are created by the next AI writing or co-creation run, with the assigned embedding model.",
+      "Missing vectors are created by the next AI chapter writing run, with the assigned embedding model.",
     hintReady:
       "Every passage has a vector from the assigned model; search combines words, characters, and meaning.",
     stale:

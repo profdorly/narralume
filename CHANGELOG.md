@@ -7,10 +7,10 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 ### Added
 
 - Busca do manuscrito por trechos: cada capítulo e cena vira trechos de ~380 tokens que não atravessam quebra de cena, ligados aos personagens, lugares e objetos que citam (migração 049 cria o índice por palavras). O índice se atualiza ao registrar versões, aceitar propostas (inclusive de revisão), importar e antes de cada tarefa de IA, que também cobre backups restaurados e bibliotecas antigas.
-- Vetores por trecho: só os trechos cujo texto mudou ganham embedding novo; trechos sem vetor do modelo atribuído (importação, troca de modelo) são preenchidos no início da próxima escrita ou cocriação, até 512 por tarefa.
+- Vetores por trecho: só os trechos cujo texto mudou ganham embedding novo; trechos sem vetor do modelo atribuído (importação, troca de modelo) são preenchidos no início da próxima escrita de capítulo por IA (também na cocriação, fora da v1), até 512 por tarefa.
 - Laboratório narrativo: painel do índice de busca (capítulos indexados, trechos, modelo de embedding, trechos com vetor) com "Reindexar agora"; rotas `GET /api/projects/:id/retrieval/index` e `POST /api/projects/:id/retrieval/reindex`.
 - Avaliação da busca (`evals/retrieval-v1.json`, `npm run test:retrieval`, incluída em `verify` e `verify:ci`) e medição com modelo real (`npm run eval:retrieval:real`).
-- Reordenação da busca com a Decisions API da OpenAI (opcional, papel "Reordenação da busca" em Configurações → Papéis avançados): a busca entrega até 32 candidatos e o modelo `gpt-6-luna` escolhe os 8 que quem escreve precisa, na escrita de capítulos e na cocriação. Se a chamada falhar, vale a ordem da busca e a tarefa registra `run.degraded`. A avaliação ganhou `--reranker=decisions`.
+- Reordenação da busca com a Decisions API da OpenAI (opcional, papel "Reordenação da busca" em Configurações → Papéis avançados): a busca entrega até 32 candidatos e o modelo `gpt-6-luna` escolhe os 8 que quem escreve precisa, na escrita de capítulos (também na cocriação, fora da v1). Se a chamada falhar, vale a ordem da busca e a tarefa registra `run.degraded`. A avaliação ganhou `--reranker=decisions`.
 
 ### Changed
 

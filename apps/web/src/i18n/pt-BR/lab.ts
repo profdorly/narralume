@@ -51,7 +51,7 @@ export const lab = {
     hintNoModel:
       "Sem modelo de embedding, a busca usa palavras e personagens citados. Atribua um em Configurações para a busca também encontrar trechos por sentido.",
     hintPending:
-      "Os vetores que faltam são gerados na próxima escrita por IA ou cocriação, com o modelo de embedding atribuído.",
+      "Os vetores que faltam são gerados na próxima escrita de capítulo por IA, com o modelo de embedding atribuído.",
     hintReady:
       "Todos os trechos têm vetor do modelo atribuído; a busca combina palavras, personagens e sentido.",
     stale:

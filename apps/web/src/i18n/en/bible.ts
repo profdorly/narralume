@@ -23,7 +23,7 @@ export const bible: typeof biblePt = {
     noEvidence: "No evidence chapters linked", unavailableEvidence: "Evidence chapter is unavailable; check this reference", noCommittedChapters: "No committed chapters are available to link.",
     corePromise: "Core book promise:", empty: "No long story lines yet. Start with a promise you want to develop over time.", needCompass: "Establish the book compass before organizing long story lines.", editCompass: "View and edit the book compass",
     save: "Save story line", saved: "Story line saved for subsequent planning.", saveError: "Story line could not be saved", loadError: "Long story lines could not be loaded",
-    reload: "Discard edits and reload", reviews: "Latest stage reviews", reviewsHint: "The latest review for each volume or arc is shown here. These AI suggestions can inform your stage records; they are not yet author-confirmed direction or established events.",
+    reload: "Discard changes and reload", reviews: "Latest stage reviews", reviewsHint: "The latest review for each volume or arc is shown here. These AI suggestions can inform your stage records; they are not yet author-confirmed direction or established events.",
     reviewsError: "Stage reviews could not be loaded", noReviews: "Stage reviews appear here after continuous writing completes a window.", recommendations: "Suggestions for later chapters", compassAdjustments: "Suggested book direction changes",
   },
   board: {
