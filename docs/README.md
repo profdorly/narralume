@@ -1,29 +1,29 @@
-# 文档入口
+[English](README.en.md)
 
-这份索引面向使用者、自托管维护者和贡献者。产品决策、架构图、代码审查和发布记录属于研发资料，不放在公开使用说明中。
+# Documentação
 
-## 开始使用
+Este índice é para quem usa o NarraLume, hospeda a própria instância ou contribui com o projeto.
 
-| 文档                                   | 适合谁                                              |
-| -------------------------------------- | --------------------------------------------------- |
-| [用户指南](user-guide.md)              | 想了解书架、故事、写作、AI 协作和交付的完整用法。   |
-| [快速开始](quick-start.md)             | 第一次启动在线版、桌面发行包或源码工作区。          |
-| [配置](configuration.md)               | 设置模型渠道、默认模型、Server、Docker 和通用代理。 |
-| [数据、隐私与备份](data-and-backup.md) | 了解浏览器存储、项目快照、作品包和整库恢复。        |
+## Primeiros passos
 
-## Autohospedagem
+| Documento                                         | Para quem                                                                                                                     |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [Guia de uso](user-guide.md)                      | Conhecer em detalhe a estante, a história, a escrita, a colaboração com IA e a entrega.                                       |
+| [Início rápido](quick-start.md)                   | Rodar o NarraLume pela primeira vez com um pacote de release para desktop ou a partir do código-fonte.                        |
+| [Configuração](configuration.md)                  | Configurar provedores e modelos, papéis, Server, Docker, embeddings e reordenação da busca.                                   |
+| [Dados, privacidade e backup](data-and-backup.md) | Entender o armazenamento no navegador, os instantâneos do projeto, os pacotes da obra e a restauração da biblioteca completa. |
+
+## Auto-hospedagem
 
 | Documento                                                         | Para quem                                           |
 | ----------------------------------------------------------------- | --------------------------------------------------- |
 | [Docker Compose](docker.md)                                       | Rodar uma instância na própria máquina ou servidor. |
 | [ADR 001 — local-first](adr/001-local-first-e-fronteiras-saas.md) | Fronteiras de persistência e SaaS futuro.           |
 
-## 参与项目
+## Participar do projeto
 
-| 文档                                    | 适合谁                                      |
-| --------------------------------------- | ------------------------------------------- |
-| [参与贡献](../CONTRIBUTING.md)          | 安装开发环境、运行验证、提交 Pull Request。 |
-| [安全策略](../SECURITY.md)              | 报告安全问题和理解凭据边界。                |
-| [第三方声明](../THIRD_PARTY_NOTICES.md) | 查看依赖和许可证信息。                      |
-
-公开快照只包含本页列出的使用和部署文档。研发仓库中的产品、架构、状态、路线图和审阅资料不作为普通用户的操作依据。
+| Documento                                        | Para quem                                                                               |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| [Como contribuir](../CONTRIBUTING.md)            | Preparar o ambiente de desenvolvimento, rodar as verificações e enviar um pull request. |
+| [Política de segurança](../SECURITY.md)          | Relatar problemas de segurança e entender as fronteiras das credenciais.                |
+| [Avisos de terceiros](../THIRD_PARTY_NOTICES.md) | Consultar dependências e licenças.                                                      |

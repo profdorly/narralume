@@ -42,7 +42,7 @@ export const settings = {
     },
     embedding: {
       name: "Modelo de embedding",
-      note: "Dedicado à recuperação e à montagem de contexto; nunca é herdado — deixá-lo vazio degrada para um prompt.",
+      note: "Usado na busca de trechos do manuscrito para o contexto da IA; nunca é herdado. Sem ele, a busca usa só palavras e personagens citados.",
     },
     rerank: {
       name: "Reordenação da busca (opcional)",
@@ -72,7 +72,7 @@ export const settings = {
     label: "Gestão de provedores e modelos",
     summaryHint: "Adicionar provedores, configurar chaves, testar conexões ou manter especificações de modelo",
     counts: "{providers} provedores · {models} modelos",
-    note: "A escrita do dia a dia não precisa desta seção. Com o núcleo no navegador, a chave fica só no banco OPFS deste navegador, e as solicitações vão direto à URL base que você informar, sem passar pelo retransmissor embutido; esse serviço precisa permitir acesso entre origens no navegador.",
+    note: "A escrita do dia a dia não precisa desta seção. Com o núcleo no navegador, a chave fica só no banco OPFS deste navegador, e as solicitações vão direto do navegador à URL base que você informar; esse serviço precisa permitir acesso entre origens (CORS).",
     providersLabel: "Provedores de modelo",
     add: "Novo",
     providersLoadError: "Não foi possível carregar os serviços de modelo agora",

@@ -55,7 +55,7 @@ O `.env.local` nunca deve ir para o Git. Variáveis comuns:
 | `NARRATIVE_MODEL_PRICING_JSON`                                     | Vazio                        | Preços opcionais dos modelos, para estimar o custo das tarefas                           |
 | `NARRATIVE_DATA_DIR`                                               | `./data`                     | Pasta do banco SQLite                                                                    |
 | `NARRATIVE_BACKUP_DIR`                                             | `./data/backups`             | Pasta dos backups consistentes; prefira outro disco ou uma pasta sincronizada            |
-| `NARRATIVE_BACKUP_RETENTION`                                       | `10`, faixa 1-100            | Quantos backups automáticos são mantidos                                                 |
+| `NARRATIVE_BACKUP_RETENTION`                                       | `10`, faixa 1-100            | Quantos backups a pasta mantém, contando os automáticos e os feitos à mão                |
 | `NARRATIVE_BACKUP_INTERVAL_MINUTES`                                | `360`, faixa 5-43200         | Intervalo do backup automático                                                           |
 | `NARRATIVE_BACKUP_ON_STARTUP`                                      | `false`                      | Se o Server faz um backup assim que inicia                                               |
 | `NARRATIVE_SERVER_HOST`                                            | `127.0.0.1`                  | Endereço de escuta; escutar na rede exige configuração extra de segurança                |
@@ -68,7 +68,7 @@ Os launchers de release têm mais três variáveis, que só afetam o launcher: `
 
 ## Variáveis específicas do Docker
 
-O Compose lê o `.env.local` e o ambiente do shell:
+O Compose preenche estas três a partir do ambiente do shell ou de um arquivo `.env` na raiz do repositório (o Git e o build do Docker ignoram esse arquivo). O `.env.local` chega ao contêiner do Server, então serve para chaves de modelo e outras variáveis do Server, mas não muda estas três; `scripts/docker-start.ps1` grava um token aleatório no `.env` se ainda não houver um.
 
 - `NARRATIVE_AUTH_TOKEN`: o valor de exemplo só serve para testes locais; troque-o por um token de alta entropia antes de a máquina sair da sua mesa.
 - `NARRATIVE_WEB_BIND_HOST`: padrão `127.0.0.1`. Mudar para `0.0.0.0` publica a porta Web em todas as interfaces de rede; não faça isso sem TLS, controle de acesso na rede e backups independentes.

@@ -1,11 +1,11 @@
-# 社区行为准则
+# Código de conduta
 
-我们承诺让 NarraLume 社区对所有人保持开放、友善且无骚扰。
+Nós nos comprometemos a manter a comunidade do NarraLume aberta, acolhedora e livre de assédio para todas as pessoas.
 
-可接受的行为包括尊重不同观点、给出建设性反馈、承担错误并关注社区整体利益。不可接受的行为包括侮辱、歧视、骚扰、威胁、公开他人私人信息，或其他在专业环境中不合理的行为。
+Comportamentos aceitáveis incluem respeitar pontos de vista diferentes, dar feedback construtivo, assumir os próprios erros e pensar no bem da comunidade como um todo. Comportamentos inaceitáveis incluem insultos, discriminação, assédio, ameaças, divulgação de informações privadas de outras pessoas e qualquer outra conduta inadequada em um ambiente profissional.
 
-维护者有责任澄清并执行这些标准，可以删除不当内容、暂时限制参与或永久禁止严重违规者。准则适用于项目空间，以及代表项目参与公共活动的场景。
+Os mantenedores são responsáveis por esclarecer e aplicar estes padrões e podem remover conteúdo inadequado, restringir a participação por um tempo ou banir de vez quem cometer violações graves. Este código vale nos espaços do projeto e quando alguém representa o projeto em atividades públicas.
 
-请通过仓库 Security 页面的私密报告入口提交行为事件，不要在公开 Issue 中披露当事人信息。维护者会尽量保密、公平调查并采取与影响相称的措施。
+Relate incidentes de conduta em particular, pelo botão **Report a vulnerability** na página Security do repositório, e não exponha informações das pessoas envolvidas em Issue público. Os mantenedores vão preservar o sigilo sempre que possível, investigar com imparcialidade e tomar medidas proporcionais ao impacto.
 
-本准则基于 [Contributor Covenant 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html)。
+Este código se baseia no [Contributor Covenant 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).

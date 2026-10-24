@@ -1,15 +1,15 @@
-## 变更
+## Mudança
 
-<!-- 说明用户可见结果和不在范围内的内容。 -->
+<!-- Descreva o comportamento visível e o que fica fora do escopo. -->
 
-## 验证
+## Verificação
 
 - [ ] `npm run verify`
-- [ ] 已补充与风险相称的测试
-- [ ] UI 改动附截图；不适用时说明原因
-- [ ] 用户可见行为、按钮或配置变化已同步公开文档；不适用时说明原因
+- [ ] Testes proporcionais ao risco
+- [ ] Capturas de tela para mudanças de UI; se não se aplicar, explique por quê
+- [ ] Documentação pública atualizada quando muda comportamento visível, botão ou configuração; se não se aplicar, explique por quê
 
-## 数据与安全
+## Dados e segurança
 
-- [ ] 不包含密钥、私人正文、真实响应、数据库或内部地址
-- [ ] 已说明迁移、备份、远程访问或依赖许可证影响；不适用时说明原因
+- [ ] Sem chaves, manuscritos privados, respostas reais de modelo, bancos de dados nem endereços internos
+- [ ] Impacto em migração de schema, backup, acesso remoto ou licenças de dependências descrito; se não se aplicar, explique por quê

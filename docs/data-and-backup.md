@@ -1,89 +1,97 @@
-# 数据、隐私与备份
+[English](data-and-backup.en.md)
 
-NarraLume 不提供云同步。作品实际保存在哪里，取决于你使用在线体验、本地 Server 还是 Docker；登录同一个浏览器账号不会让这些数据自动互通。
+# Dados, privacidade e backup
 
-故事线建议与逐项裁定保存在当前库，完整 SQLite 备份会保留这些记录。作品包和项目内容快照保留已采纳后的故事指南针，不包含这类候选及裁定历史；需要保留完整过程时请下载整库备份。
+As propostas de progresso das linhas da história e a decisão sobre cada item ficam na biblioteca atual e entram no backup SQLite completo. O pacote da história e os instantâneos do conteúdo guardam a bússola da história com as mudanças já aceitas, mas não levam o histórico de propostas e decisões. Para guardar o processo inteiro, faça um backup SQLite completo.
 
-先分清三种文件和恢复方式：
+O NarraLume não tem sincronização na nuvem. Onde a obra fica de fato depende de como você o usa: no kernel local do navegador, com um Server local ou com o Docker. Entrar com a mesma conta no navegador não faz esses dados se comunicarem.
 
-| 对象             | 保护范围             | 适合做什么                               | 是否包含模型密钥 |
-| ---------------- | -------------------- | ---------------------------------------- | ---------------- |
-| 作品包           | 一部作品             | 把作品导入另一套 NarraLume，或交给合作者 | 否               |
-| 项目内容快照     | 当前库中的一部作品   | 留下阶段节点，之后恢复为一个新项目       | 否               |
-| 完整 SQLite 备份 | 整个作品库和本地设置 | 升级、迁移机器、清理站点数据前做灾备     | 可能包含         |
+Primeiro, diferencie os três tipos de arquivo e as formas de recuperação:
 
-一个实用的习惯是：完成重要章节后创建项目快照，定期下载完整库，升级或迁移前再做一次完整备份并试着恢复到新目录。同步盘可以保存备份文件，但同步本身不等于可恢复的备份。
+| Objeto                  | Alcance                                        | Indicado para                                                                            | Contém chaves de modelo? |
+| ----------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------ |
+| Pacote da história      | Uma obra                                       | Levar uma obra para outra instalação do NarraLume ou entregá-la a quem colabora com você | Não                      |
+| Instantâneo do conteúdo | Uma obra, guardada dentro da biblioteca atual  | Marcar uma etapa que você pode restaurar depois como projeto novo                        | Não                      |
+| Backup SQLite completo  | A biblioteca inteira e as configurações locais | Recuperação de desastre antes de atualizar, trocar de máquina ou apagar os dados do site | Pode conter              |
 
-## 浏览器本地内核
+Um hábito prático: crie um instantâneo do conteúdo ao terminar capítulos importantes, faça backups completos com regularidade e, antes de qualquer atualização ou migração, faça mais um backup completo e teste a restauração numa pasta nova. Uma pasta sincronizada pode guardar os arquivos de backup, mas a sincronização em si não é um backup recuperável.
 
-浏览器模式把作品、故事指南针、运行记录和在界面保存的自带模型密钥放在当前浏览器、当前站点的 OPFS SQLite 数据库中。
+## Kernel local do navegador
 
-- 数据按站点隔离；更换域名、浏览器用户目录或无痕窗口都可能看不到原库。
-- 清除站点数据会删除本地库。清理缓存前先在设置点击“下载我的库”，并确认下载文件可读取。
-- 浏览器内核直连模型时，上游必须允许当前站点的 CORS；这与本地 Server 的调用链不同。
-- 浏览器库不会自动复制到发行包的 `data/`，也不会因为登录同一个账号而同步。
+O kernel local do navegador entra em uso quando a página não encontra um Server respondendo em `/api/health` ou quando você escolhe "Núcleo local no navegador" em Configurações, na seção "Driver de execução". Se a biblioteca aparecer vazia de repente, confira nessa seção qual driver está em vigor.
 
-## 本地 Server 与发行包启动器
+Nesse modo, as obras, a bússola da história, o histórico de execuções e as chaves de modelo salvas na interface ficam num banco SQLite no OPFS do navegador e do site atuais.
 
-默认数据库是 `data/narralume.sqlite`，一致性备份写入 `data/backups/`。如果设置了 `NARRATIVE_DATA_DIR` 或 `NARRATIVE_BACKUP_DIR`，以环境变量为准。各平台启动器的 `NARRALUME_DATA_DIR` 会覆盖它使用的数据目录。
+- Os dados ficam isolados por site: trocar de domínio ou de perfil do navegador, ou abrir uma janela anônima, pode esconder a biblioteca original.
+- Apagar os dados do site apaga a biblioteca local. Antes de limpar qualquer cache, clique em "Baixar minha biblioteca (.sqlite)" em Configurações e confira se o arquivo baixado pode ser lido.
+- Quando o kernel do navegador chama um modelo diretamente, o provedor precisa permitir CORS para o site atual; com o Server local, a chamada segue outro caminho.
+- A biblioteca do navegador não é copiada sozinha para a pasta `data/` do pacote de release e não sincroniza só porque você entrou com a mesma conta.
 
-不要在服务运行时直接复制 SQLite 主文件。请使用设置中的完整库下载、Windows 的 `scripts/backup.ps1`、macOS/Linux 的 `scripts/backup.sh` 或 Server 的备份 API；备份流程会执行 SQLite 完整性检查、外键检查和 SHA-256 校验，并先写入临时文件再原子替换，避免把半成品当作可恢复备份。
+## Server local e launchers de release
 
-启动器发行包中：
+Por padrão, o banco fica em `data/narralume.sqlite` e os backups consistentes vão para `data/backups/`. Quando você inicia o Server por conta própria (por exemplo, com `npm run dev`), `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR`, no ambiente ou no `.env.local`, mudam essas pastas; sem `NARRATIVE_BACKUP_DIR`, os backups vão para `backups/` dentro da pasta de dados. Os próprios launchers definem essas duas variáveis: a pasta de dados vem de `NARRALUME_DATA_DIR` e os backups ficam em `backups/` dentro dela. Só o launcher de macOS/Linux também aceita `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR` definidos no shell.
 
-- `data/` 是作品和备份，必须进入个人备份计划。
-- `.runtime/logs/` 是启动日志和错误日志，排查启动失败时查看，不等于数据备份。
-- 项目内容快照不包含模型渠道和密钥；完整 SQLite 备份可能包含本地保存的渠道凭据。
+Enquanto roda (também no Docker), o Server faz um backup automático a cada 6 horas (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, padrão `360`) e mais um ao iniciar, se `NARRATIVE_BACKUP_ON_STARTUP=true`. A cada backup novo, a pasta mantém só os 10 mais recentes (`NARRATIVE_BACKUP_RETENTION`), contando os automáticos e os feitos à mão; copie para outro lugar os que precisar guardar por mais tempo. Deixe nessa pasta só o que o NarraLume criou: um `.sqlite` sem manifesto ou um `.partial` esquecido faz a listagem e a criação de backups darem erro.
 
-## Docker 数据卷
+Não copie o arquivo principal do SQLite com o serviço rodando. Use o botão "Fazer backup agora" (em Configurações, seção "Arquivos de backup do sistema"), `scripts/backup.ps1` no Windows, `scripts/backup.sh` no macOS/Linux ou a API de backup do Server (`POST /api/system/backups`); o botão "Baixar minha biblioteca (.sqlite)" só funciona no kernel do navegador. O backup do Server é gravado primeiro num arquivo temporário (`.partial`), passa pelas checagens de integridade e de chaves estrangeiras do SQLite e só então recebe o nome final, ao lado de um manifesto (`.manifest.json`) que registra o SHA-256; a prévia e a restauração conferem esse hash. Assim, um arquivo pela metade nunca é tomado por backup recuperável.
 
-Compose 将数据库放在 `narralume-data` 卷，将备份独立挂载到宿主机的 `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`。数据卷本身不是备份；备份目录也不应与唯一数据库放在同一块易损磁盘上。
+No pacote de release dos launchers:
 
-创建在线备份：
+- `data/` guarda as obras e os backups e precisa entrar no seu plano pessoal de backup.
+- `.runtime/logs/` guarda os logs de inicialização e de erro, para investigar quando o launcher não sobe; não é backup de dados.
+- Os instantâneos do conteúdo não contêm provedores nem chaves; o backup SQLite completo pode conter credenciais de provedor salvas localmente.
+
+## Volumes do Docker
+
+O Compose põe o banco no volume `narralume-data` e monta os backups à parte, na pasta do host `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`. Para mudar essa pasta, defina `NARRATIVE_BACKUP_HOST_DIR` no shell ou num arquivo `.env` na raiz do repositório; no `.env.local` ela não tem efeito. O volume em si não é backup, e a pasta de backups não deve ficar no mesmo disco frágil que guarda a única cópia do banco.
+
+Crie um backup consistente com o serviço rodando:
 
 ```powershell
 powershell -File scripts/docker-backup.ps1
 ```
 
-停止服务但保留数据：
+Pare o serviço e mantenha os dados:
 
 ```powershell
 powershell -File scripts/docker-stop.ps1
 ```
 
-不要使用 `docker compose down --volumes`，除非你明确要删除全部作品数据并已经有可验证的外部备份。
+Não use `docker compose down --volumes`, a menos que queira mesmo apagar todos os dados das obras e já tenha um backup externo verificado.
 
-## 项目快照与作品包：单作品恢复和迁移
+## Instantâneos do conteúdo e pacote da história: recuperar e migrar uma obra
 
-适合把单个作品交给合作者、在同一库中做实验副本，或在交付前留下可读的节点：
+Servem para entregar uma obra a quem colabora com você, fazer uma cópia de experimento na mesma biblioteca ou deixar uma etapa legível antes da entrega:
 
-1. 进入项目“交付”，填写“备份标签”，点击“创建内容快照”。
-2. 在快照列表确认标签、时间和内容范围。
-3. 需要迁移时，在“导出格式”中下载“作品包”，再在目标环境导入；Markdown、纯文本、DOCX 和 EPUB 只作为阅读/交付格式。
-4. 需要回滚时在对应行点击“恢复内容副本”，确认对话框后打开新项目。
-5. 对新项目核对故事指南针、大纲、最新正文版本、批注和运行记录；原项目不会被覆盖。
+1. Abra "Entrega" no projeto, preencha "Rótulo do backup" e clique em "Criar instantâneo do conteúdo".
+2. Na lista de instantâneos, confira o rótulo, a data e as contagens de conteúdo.
+3. Para migrar, baixe "Pacote da história" em "Formatos de exportação" (um arquivo `.narrative.json`) e importe-o no ambiente de destino. Markdown, Texto simples, DOCX e EPUB servem só para leitura e entrega.
+4. Para voltar atrás, clique em "Restaurar cópia do conteúdo" na linha do instantâneo, confirme na caixa de diálogo e abra o projeto novo em "Abrir a cópia restaurada".
+5. No projeto novo, confira a bússola da história, a estrutura, as versões mais recentes do manuscrito e os comentários. O projeto original não é sobrescrito, e o histórico de execuções não vem para a cópia.
 
-项目快照刻意不携带模型渠道和密钥。恢复后如需 AI，重新在目标环境的设置中配置并派任模型。
+O pacote baixado em "Formatos de exportação" leva só a versão atual de cada documento, sem histórico de versões, comentários nem execuções. O instantâneo do conteúdo guarda o histórico de versões e os comentários.
 
-当前作品包格式为第 6 版，包含认知登记、更正与撤销原因、关联的历史事实和已撤销事件。恢复或复制后，章节认知与修订链会保留，已撤销的命题不会重新生效。旧格式作品包不再受支持；现有 SQLite 库可直接升级后重新导出作品包。
+Os instantâneos não levam, de propósito, provedores nem chaves. Depois de restaurar, se quiser usar IA, configure e atribua os modelos de novo em Configurações no ambiente de destino.
 
-## 完整 SQLite 备份：整库灾备
+O formato atual do pacote é a versão 6. Ele inclui os registros de conhecimento, os motivos de correção e de retirada, os fatos históricos referenciados e os eventos anulados. Restaurar ou duplicar preserva o conhecimento por capítulo e as cadeias de correção, sem reativar afirmações retiradas. Pacotes em formatos antigos não são mais aceitos: abra a biblioteca SQLite existente com a versão atual, que atualiza o banco ao iniciar, e exporte um pacote novo.
 
-适合清理浏览器站点数据前、升级发行包前、迁移机器前和发布候选验收：
+## Backup SQLite completo: recuperação da biblioteca inteira
 
-1. 停止会改写数据库的操作，创建整库备份。运行中的本地 Server 在 Windows 使用 `scripts/backup.ps1`，在 macOS/Linux 使用 `scripts/backup.sh`；浏览器模式用设置中的“下载我的库”。
-2. 记录备份文件的 SHA-256，并把文件复制到与应用目录分离的加密存储或受控同步目录。
-3. 在设置中预览或校验备份，确认完整性、外键和哈希检查通过。
-4. 恢复时准备一个全新的目标目录，不覆盖当前运行中的数据库。
-5. 使用恢复目录启动测试实例，核对作品数量、最近正文版本、故事指南针、大纲、批注、运行记录和备份列表。
-6. 只有演练通过后，才停止正式实例并切换 `NARRATIVE_DATA_DIR`；保留旧目录，直到新实例稳定运行。
+Indicado antes de apagar os dados do site no navegador, antes de atualizar um pacote de release, antes de trocar de máquina e na homologação de uma versão candidata:
 
-## 如何确认备份真的可用
+1. Pare o que estiver alterando o banco e crie um backup da biblioteca inteira. Com o Server local rodando, use "Fazer backup agora" em "Arquivos de backup do sistema", `scripts/backup.ps1` no Windows ou `scripts/backup.sh` no macOS/Linux; no kernel do navegador, use "Baixar minha biblioteca (.sqlite)" em Configurações.
+2. Anote o SHA-256 do arquivo e copie-o para um armazenamento criptografado ou uma pasta sincronizada sob seu controle, fora da pasta do aplicativo. No Server, copie o `.sqlite` junto com o `.manifest.json` do mesmo backup: o manifesto registra o SHA-256, e a restauração pela interface depende dele.
+3. Nos backups do Server, clique em "Prévia" em "Arquivos de backup do sistema" e confira se "Checagem de hash" mostra "Coincide", "Integridade" mostra `ok` e "Violações de chave estrangeira" está em 0.
+4. Para recuperar, prepare uma pasta de destino nova; nunca sobrescreva o banco da instância em execução. Na prévia, clique em "Restaurar em um diretório novo", informe o "Diretório de destino no servidor" e confirme em "Restaurar no diretório de destino". O Server confere o hash e a integridade da cópia e recusa a pasta de dados atual, a pasta de backups e uma pasta que já tenha um banco.
+5. Inicie uma instância de teste apontando para a pasta restaurada e confira a quantidade de obras, as versões mais recentes do manuscrito, a bússola da história, a estrutura, os comentários, o histórico de execuções e os instantâneos do conteúdo.
+6. Só depois que o teste passar, pare a instância principal e aponte `NARRATIVE_DATA_DIR` (ou `NARRALUME_DATA_DIR`, nos launchers) para a pasta restaurada; mantenha a pasta antiga até a nova instância rodar de forma estável.
 
-不要只确认“文件已经存在”。定期选一个完整备份恢复到新的测试目录，再核对作品数量、最近正文版本、大纲、已确认事实、批注和运行记录。记录备份文件名、创建时间、SHA-256、应用版本和恢复目录；确认测试实例正常后再清理测试数据，正式数据目录始终保留不动。
+## Como confirmar que um backup funciona de verdade
 
-项目维护者还应检查恢复过程中是否留下 `.partial`、`.partial-shm` 或 `.partial-wal` 文件，并为每个发布候选保留一条可复核的恢复记录。
+Não se contente com "o arquivo existe". Restaure de tempos em tempos um backup completo numa pasta de teste nova e confira a quantidade de obras, as versões mais recentes do manuscrito, a estrutura, os fatos confirmados, os comentários e o histórico de execuções. Anote o nome do arquivo, a data de criação, o SHA-256, a versão do aplicativo e a pasta da restauração. Só apague os dados de teste depois que a instância de teste estiver em ordem; a pasta de dados principal fica intocada.
 
-维护者可先运行 `npm run test:release:recovery` 回归备份恢复、孤儿任务中断和 partial 恢复契约；发布候选再运行 `npm run verify:release`，依次执行代码校验、高风险 E2E、恢复回归和真实模型矩阵。这些自动化只验证已编码的契约，不能替代上面的独立目录恢复演练和人工核对。
+Quem mantém o projeto também deve verificar se a restauração deixou para trás arquivos `.partial`, `.partial-shm` ou `.partial-wal` e guardar um registro de restauração revisável para cada versão candidata.
 
-如果备份包含真实模型凭据，不要把哈希旁边的密钥、完整数据库或模型响应上传到公开 Issue、CI artifact 或截图中。安全事件处理见 [SECURITY.md](../SECURITY.md)。
+Quem mantém o projeto pode começar por `npm run test:release:recovery`, com os testes de regressão de restauração de backup, de interrupção de execuções órfãs e de recuperação parcial. Para uma versão candidata, rode `npm run verify:release`, que executa, nesta ordem, a verificação do código, a suíte E2E completa, os testes de recuperação e a matriz com modelos reais. Essas checagens automáticas só verificam os contratos já codificados; não substituem o ensaio de restauração numa pasta separada nem a conferência manual descritas acima.
+
+Se um backup tiver credenciais reais de modelo, não publique em Issues públicas, artefatos de CI ou capturas de tela as chaves, o banco completo ou respostas de modelo, nem mesmo ao lado do hash do backup. Para incidentes de segurança, veja [SECURITY.md](../SECURITY.md).

@@ -1,336 +1,342 @@
-# 用户指南
+[English](user-guide.en.md)
 
-这份指南按写作过程介绍 NarraLume。你不需要一次读完：通常从书架开始，写到哪一页就看哪一页。界面中的按钮名称用引号标出。
+# Guia do usuário
 
-## 先了解三件事
+Este guia apresenta o NarraLume na ordem do processo de escrita. Não é preciso lê-lo de ponta a ponta: comece pela Estante e leia cada parte quando chegar a ela. Os nomes de botões da interface aparecem entre aspas.
 
-### 没有模型也可以写作
+## Três coisas para saber primeiro
 
-模型只在需要 AI 生成、审稿、故事整理或语义检索时才需要。没有模型时，你仍然可以：
+### Escrever não exige modelo
 
-- 新建、导入和管理作品；
-- 整理故事意图、大纲、人物、事实、时间线和伏笔；
-- 在写作台手写正文、保存版本和批注；
-- 导出作品、创建内容快照和下载整库备份。
+Um modelo só é necessário para geração por IA, revisão, organização da história e busca semântica. Sem modelo, você ainda pode:
 
-### AI 先给建议，作者再决定
+- criar, importar e gerenciar obras;
+- organizar a intenção da história, a estrutura, os personagens, os fatos, a linha do tempo e as antecipações;
+- escrever a prosa à mão na mesa de escrita e salvar versões e comentários;
+- exportar obras, criar instantâneos do conteúdo e baixar backups da biblioteca inteira.
 
-AI 生成的正文、编辑建议和故事设定变化都会先以候选形式出现。候选不会自动覆盖当前正文，也不会直接改变故事设定。你可以逐项采纳、拒绝或保留，采纳后的内容才成为正式版本。
+### A IA propõe, a autoria decide
 
-### 数据取决于运行方式
+Prosa gerada por IA, sugestões de reescrita e mudanças no cânone sempre aparecem primeiro como candidatos. Um candidato nunca sobrescreve a prosa atual nem altera o cânone diretamente. Você pode adotar, recusar ou manter cada item; só o conteúdo adotado vira a versão oficial.
 
-在线体验使用当前浏览器、当前站点的本地数据库；Windows、macOS、Linux 启动器和源码模式使用本地 Server；Docker 使用自己的数据卷。它们不会因为使用同一个浏览器或同一个项目名称而自动同步。迁移和恢复方法见[数据、隐私与备份](data-and-backup.md)。
+### Onde ficam os dados depende de como você roda
 
-## 先认识界面
+O núcleo local no navegador guarda um banco de dados restrito ao navegador e ao site atuais; os launchers de Windows, macOS e Linux e o modo código-fonte usam o Server local; o Docker usa o próprio volume de dados. Eles não se sincronizam sozinhos só porque usam o mesmo navegador ou o mesmo nome de projeto. Para migrar e recuperar dados, veja [Dados, privacidade e backup](data-and-backup.md).
 
-左侧导航把功能分成三组：书架、项目概览、故事、写作和交付是日常主线；“AI 快速创作”单独放在 AI 创作区；运行中心、长篇推演和设置放在高级工具区。进入作品后，左侧入口始终指向当前作品，不需要回到书架重新选择。
+## Conhecendo a interface
 
-常用的全局入口有：
+A navegação à esquerda começa pela rotina do dia a dia: Estante, Visão geral, História, Escrita e Entrega. "Criação rápida com IA" fica sozinha no grupo "Criar com IA". Execuções e Laboratório narrativo ficam no grupo "Ferramentas avançadas", que começa recolhido: clique em "Ferramentas avançadas" para abri-lo. Configurações fica no pé da navegação, acima do estado do núcleo. Depois que você entra numa obra, os itens da esquerda sempre apontam para ela — não é preciso voltar à Estante para escolhê-la de novo.
 
-- 点击左下角的收起按钮，给正文留出更多横向空间；窄屏会自动收起导航。
-- 点击太阳或月亮图标切换浅色、深色和跟随系统主题。
-- 按 `Ctrl+K`（macOS 为 `Command+K`）打开命令面板，按名称跳转工作区。
-- 在作品内按 `Ctrl+J`（macOS 为 `Command+J`）打开或关闭项目协作侧栏。
+Entradas globais mais usadas:
 
-左下角的“内核在线”表示当前数据驱动可以响应请求，不代表模型渠道一定可用。模型连接需要在“设置”的渠道卡片中单独探测。
+- Clique no botão de recolher, no canto inferior esquerdo, para dar mais espaço horizontal à prosa; em telas estreitas, a navegação se recolhe sozinha.
+- Clique no ícone de sol ou de lua para alternar entre claro e escuro; clique de novo para voltar a seguir o tema do sistema.
+- Pressione `Ctrl+K` (`Command+K` no macOS) para abrir a paleta de comandos e ir a um workspace pelo nome.
+- Dentro de uma obra, pressione `Ctrl+J` (`Command+J` no macOS) para abrir ou fechar a barra lateral de colaboração do projeto.
 
-## 书架：管理作品
+"Núcleo online", no canto inferior esquerdo, indica que o driver de dados atual responde às requisições; não garante que algum provedor de modelo esteja utilizável. A conexão com cada modelo é testada à parte, com "Testar" no cartão do modelo em "Configurações".
 
-书架是所有作品的入口。每本书显示封面、书名、简介、章节数、字数和最近更新时间。
+A interface está disponível em português do Brasil, o idioma principal, e em inglês; um navegador configurado em inglês abre em inglês. Troque o idioma em "Idioma da interface", nas "Configurações", ou pelo botão de idioma no pé da navegação. O idioma da interface não muda o idioma de escrita de uma obra, que é o que decide o idioma da prosa e das respostas da IA. O chinês não é mais oferecido: as obras que, em versões anteriores, tinham o chinês como idioma de escrita passam a usar o português, e o texto delas não é traduzido. Os nomes citados neste guia seguem a interface em português.
 
-![书架、建书入口和自定义封面](../assets/narralume-shelf-1920x1080.png)
+## Estante: gerenciar obras
 
-搜索框会同时匹配书名、副题和卷首语。右上角可以切换封面视图与列表视图；“含归档”只决定是否显示已归档作品，不会改变作品状态。
+A Estante é a porta de entrada de todas as obras. Cada livro mostra capa, título, subtítulo, premissa, número de capítulos, número de caracteres e a data da última atualização.
 
-### 新建作品
+![Estante, entradas de criação de livro e uma capa personalizada](../assets/narralume-shelf-1920x1080.png)
 
-点击“空白建书”，填写书名和卷首语，再点击“创建并入藏”。卷首语可以留空，之后在书架的编辑窗口补充。
+A busca procura no título, na premissa e no ID. A barra de ferramentas alterna entre as vistas "Capas" e "Lista"; "Incl. arquivados" só decide se as obras arquivadas aparecem — não muda o estado de nenhuma obra.
 
-如果只有一个想法，可以点击“AI 引导建书”，输入题材、人物、冲突或结局方向。AI 会先整理成创作方向候选；确认后再进入项目。这个入口需要已派任的默认生成模型。
+### Criar uma obra
 
-### 导入旧稿
+Com a Estante vazia, o NarraLume pergunta se você tem uma ideia ou um manuscrito: "Só uma ideia" abre o livro com a IA, "Já tenho um manuscrito" abre a importação e "Criar um livro" abre um livro em branco.
 
-点击“导入旧稿”，选择 Markdown、纯文本、DOCX、HTML、EPUB 或 NarraLume 作品包。导入首先生成一个批次和候选清单，不会立即改写故事。
+Clique em "Livro em branco", preencha o título, escolha o idioma da prosa e a forma (conto, novela ou romance) e clique em "Criar e colocar na estante"; a obra abre na visão geral. A premissa é opcional e pode ser preenchida depois em "Editar livro e capa", na Estante.
 
-1. 等待文件分析完成。
-2. 查看候选的类型、标题和状态，取消不需要的项目。
-3. 点击“应用”把选中的内容写入项目，或点击“丢弃批次”。
-4. 导入过程中的分析运行可以在“运行中心”回看。
+Se você só tem uma ideia, clique em "Livro com a IA", escreva a premissa e o que vier — gênero, personagens, rumos — e clique em "Criar e gerar candidatos". A obra abre na hora, enquanto a IA organiza a ideia em candidatos de direção; a visão geral então indica "Confirmar a direção da história". Essa entrada exige um modelo padrão de geração atribuído; sem ele, a obra não é criada.
 
-作品包适合迁移一部已经在 NarraLume 中整理过的作品；Markdown、纯文本、DOCX 和 EPUB 适合导入正文或旧稿。导入不会携带模型密钥。
+### Importar um manuscrito
 
-正文会在识别到的章节标题处切分：
+Clique em "Importar manuscrito" e escolha Markdown, texto simples, DOCX, HTML, EPUB ou um pacote de projeto do NarraLume (`.json`). O arquivo é dividido em candidatos na hora, sem modelo, e nada é gravado ainda:
 
-- Markdown 的 `#` 到 `###` 标题，中文的“第 N 章 / 节 / 卷 / 部 / 回”，以及 `Chapter` 加阿拉伯数字开头的行；这两种行不限长度。
-- 独占一行、不超过 80 个字符的葡语、西语或英语标题：`Capítulo`、`Chapter`、`Parte`、`Part`、`Livro`、`Libro`、`Book` 后接序号（阿拉伯数字，可带 `1º`、`1ª`、`1.º` 这样的序数标记；`II` 这样的罗马数字；或 `Um`、`Três`、`One`、`Twenty-One` 这样的拼写数字）；`Prólogo`、`Prologue`、`Epílogo`、`Epilogue`、`Interlúdio`、`Interlude` 可以不带序号。序号后可用 `:`、`.`、`–`、`—`、后面带空格的 `-` 或空格接标题，例如 `CAPÍTULO II — O Retorno`、`Capítulo 1- A Chegada`、`Capítulo 1. A Chegada`。80 个字符的上限只适用于这些关键词标题。标题部分以小写字母开头时，整行仍是正文，例如 `Livro 1: leia antes de dormir.`；标题部分接在 `.` 或空格之后、有三个及以上的词并以单个句号结尾时，同样是正文，例如 `Capítulo 3. Era a última página.`。以 `?`、`!`、`…`、`...` 结尾的标题，以及接在 `:`、`–`、`—`、`-` 之后的标题，仍是章节标题，例如 `Capítulo 5: Quem Matou Laura?`、`Capítulo 2 — O Fim do Mundo.`。序号连着连字符词时按正文处理，例如 `Parte segunda-feira para Lisboa.`。
-- DOCX 中使用“标题”或“标题 1–3”样式（包括葡语等本地化 Word 的同名内置样式）或大纲级别 1–3 的段落；HTML 和 EPUB 中的 `h1` 到 `h3`。只有图片的标题以图片的 alt 文字为标题，没有 alt 时标题为 `§`。未闭合或标记超过 2000 个字符的标题按普通正文处理。
+1. Na janela de revisão, confira o tipo e o título de cada candidato e desmarque o que não precisar.
+2. Clique no botão que coloca os itens marcados na estante, ou em "Agora não" para fechar a janela sem importar.
+3. Para importar numa obra que já existe, ou para a IA analisar um manuscrito em personagens, relações, linha do tempo, estilo e candidatos parecidos, use o "Gerenciador de importação" nas Configurações: envie o arquivo, clique em "Analisar com IA", revise os candidatos e aplique os marcados ou clique em "Descartar lote". "Ver execução da análise" abre a análise na Central de execuções.
 
-只有关键词与序号的标题（如 `Capítulo 1`、`Chapter 1`）后面紧接一个章名标题、中间没有正文时（Word 的标题 1 + 标题 2、EPUB 的 `h1` + `h2`），两者合为一章，标题为 `Capítulo 1 — A Chegada`。第二个标题本身是章节标题时（`Parte II` 后接 `Capítulo 1`）不合并，中文标题也不合并。
+Um pacote de projeto serve para migrar uma obra já organizada no NarraLume; Markdown, texto simples, DOCX, HTML e EPUB servem para importar prosa ou rascunhos antigos. Importações nunca trazem chaves de modelo.
 
-第一个标题之前的文字（扉页、题记等）单独成段：中文等 CJK 原稿命名为“卷首”，其他原稿以作品标题命名。只有页码的分段（书前带页码的目录）仅在独占一行的葡语、西语或英语关键词标题下丢弃，例如 `Capítulo 1 — A Chegada`、`Chapter One — Arrival`。`Chapter` 加阿拉伯数字开头的行（`Chapter 1 — Arrival`）与中文标题保持原有行为，Markdown、DOCX、HTML 和 EPUB 标题下同样不做此过滤：这些标题下的目录仍会导入为只有页码的短分段，可在应用前取消勾选。单独一行的 `#`、`# # #`、`***`、`* * *`、`⁂` 视为场景分隔，在任何格式中都保留在正文里，套用标题样式或标题标记时也一样。没有识别到任何标题时，全文作为一份正文导入。
+A prosa é dividida em capítulos nos títulos reconhecidos:
 
-AI 拆书会要求模型用原稿本身的语言书写候选；对葡语、西语、英语和中文原稿，请求中还会注明按常用词或书写系统检测出的原稿语言。两者都只是尽力而为，采用前请先检查候选。候选标题与导入笔记的标签跟随作品创作语言。不经 AI 计算的统计风格候选，CJK 原稿用中文书写，其他原稿（包括葡语、西语）一律用英文书写；AI 风格候选跟随原稿语言。
+- Títulos Markdown de `#` a `###`, linhas chinesas que começam com `第N章` (ou `节`, `卷`, `部` ou `回` no lugar de `章`, com N em numerais chineses ou algarismos e sem espaços) e linhas que começam com `Chapter` seguido de algarismos; essas duas formas de linha não têm limite de tamanho.
+- Títulos em português, espanhol ou inglês numa linha só, com até 80 caracteres: `Capítulo`, `Chapter`, `Parte`, `Part`, `Livro`, `Libro` ou `Book` seguido de um número (algarismos, com marca ordinal opcional como em `1º`, `1ª` ou `1.º`; algarismos romanos como `II`; ou números por extenso como `Um`, `Três`, `One`, `Twenty-One`); `Prólogo`, `Prologue`, `Epílogo`, `Epilogue`, `Interlúdio` e `Interlude` podem aparecer sem número. Um título pode vir depois do número após `:`, `.`, `–`, `—`, um `-` seguido de espaço ou um espaço, por exemplo `CAPÍTULO II — O Retorno`, `Capítulo 1- A Chegada` ou `Capítulo 1. A Chegada`. O limite de 80 caracteres vale só para esses títulos com palavra-chave. A linha continua sendo prosa quando a parte do título começa com letra minúscula, como em `Livro 1: leia antes de dormir.`, ou quando a parte do título vem depois de `.` ou de um espaço simples, tem três palavras ou mais e termina num único ponto, como em `Capítulo 3. Era a última página.`. Títulos terminados em `?`, `!`, `…` ou `...`, e títulos depois de `:`, `–`, `—` ou `-`, continuam sendo títulos, por exemplo `Capítulo 5: Quem Matou Laura?` ou `Capítulo 2 — O Fim do Mundo.`. A linha também continua sendo prosa quando o número emenda numa palavra com hífen, como em `Parte segunda-feira para Lisboa.`
+- Parágrafos DOCX com os estilos internos de título do Word (Title e Heading 1–3, que no Word em português se chamam `Título` e `Título 1` a `Título 3`) ou com nível de tópico 1–3; `h1` a `h3` em HTML e EPUB. Em HTML e EPUB, um título que só contém uma imagem usa o texto alternativo (alt) da imagem como título, ou `§` quando não há, e uma marcação de título que nunca se fecha, ou que passa de 2000 caracteres, é lida como texto comum.
 
-### 从正文补全故事圣经
+Um título que só tem a palavra-chave e o número, como `Capítulo 1` ou `Chapter 1`, seguido diretamente de um título com o nome do capítulo, sem texto entre eles (Título 1 + Título 2 no Word, `h1` + `h2` no EPUB), vira um só capítulo chamado `Capítulo 1 — A Chegada`. Isso não vale quando o segundo título também é um título de capítulo (`Parte II` seguido de `Capítulo 1`), nem para títulos chineses.
 
-导入的章节以已保存正文进入项目，但没有逐章结算，因此缺少章节摘要、已确认事实、人物认知，以及锚定到章节的时间线、关系和伏笔变化。“从正文补全故事圣经”会按阅读顺序，用与手动保存章节相同的故事变化流程逐章结算。它使用设置中派任的写作模型；没有可用模型时会直接拒绝开始，而不是跳过章节。每章都会产生模型费用：至少一次模型调用；响应失败或无效时自动重试（最多 5 次，格式有误的回复还可能多一次修复调用）；派任了嵌入模型时每章另有一次嵌入调用。没有费用上限，想停下时随时点“暂停”或“取消补全”；面板会显示目前已用的模型调用次数和 token，在 `NARRATIVE_MODEL_PRICING_JSON` 中配置模型计价后还会显示费用估算。
+O texto antes do primeiro título (folha de rosto, epígrafe e afins) vira uma seção própria, chamada `卷首` em manuscritos chineses e em outros manuscritos CJK e, nos demais, com o nome da obra. Uma seção que só contém um número de página (um sumário no começo do livro) é descartada apenas sob títulos com palavra-chave em português, espanhol e inglês escritos como linhas simples, como `Capítulo 1 — A Chegada` ou `Chapter One — Arrival`. Linhas que começam com `Chapter` seguido de algarismos (`Chapter 1 — Arrival`) e títulos chineses mantêm o comportamento anterior, e títulos de Markdown, DOCX, HTML e EPUB também não são filtrados: um sumário sob eles ainda é importado como seções curtas de número de página, que você pode desmarcar antes de aplicar. Uma linha só com `#`, `# # #`, `***`, `* * *` ou `⁂` é uma quebra de cena e fica no texto em qualquer formato, mesmo com estilo ou marcação de título. Quando nenhum título é reconhecido, o texto inteiro é importado como um único manuscrito.
 
-- 从哪里开始：在书架上入藏一批含正文的导入后，导入对话框会提供“用 AI 生成故事圣经”；在“交付”页的“导入管理”中应用后，“导入已应用。”提示旁也有同样的链接。两者都会打开故事圣经工作区，并展开页首的“从正文补全故事圣经”面板。也可以随时在那里点击“展开”，再点击“开始补全”。
-- 开始前的对话框会询问故事变化如何采纳，显示将处理多少章已有正文的章节，并提示模型费用。点击对话框中的“开始生成”即开始。
-- “逐章审阅”：每章产生变化后暂停，直接在面板中显示这些变化。点击“采纳并继续”或“拒绝并继续”；作者裁定后才结算下一章，因为后面的章节建立在前面章节确认的正典之上。同一组变化也会出现在写作台的“故事变化”面板中。没有故事变化的章节会自动继续。
-- “全部自动生成（推荐）”（默认）：每章变化就绪后自动采纳，其余情况下会无人值守地读完整本书；与当前正典冲突（目标记录已锁定、已不存在或已变动）时停下并列出冲突。可以选择“强制采纳并继续”（仅在冲突允许覆盖时提供）、修正记录后“采纳并继续”、“拒绝并继续”或“跳过本章”。某章要撤回、替换事实，更改、结束关系，把时间线事件锚定到本章，或推进、回收伏笔，而该记录既不是本次补全、也不是导入时创建的（例如你自己录入的内容）时，或要重新打开已回收、已放弃的伏笔时，也会先停下并列出这些记录，由你采纳或拒绝本章后再继续。导入创建的伏笔会记录来源，推进或回收它们不会停下；本次更新前应用的导入没有记录伏笔来源，这些伏笔按你录入的内容处理。新增的事实、事件、关系和伏笔会直接添加，不会停下。
-- 运行中，面板显示“已处理 n / N 章”、正在读取的章节，以及每章的状态（等待中、读取中、待审阅、已采纳、已拒绝、无变化、失败、已跳过、已结算过）。可以随时“暂停”“继续”或“取消补全”；暂停会等当前章节读完；补全沿用的、从写作台发起的结算不会被暂停。某章结算失败时，可以“重试本章”或“跳过本章”，“查看运行记录”会在运行中心打开对应运行。进度会保存，重启后从停下的位置继续。遇到意外错误停下时，面板会说明原因，点“继续”会从同一章重试。取消不会撤回已采纳的变化；仍待裁定的变化留在“故事变化”面板中，从写作台发起的结算会继续在那里运行。跳过待审阅的章节也不会裁定它：它的变更集仍留在“故事变化”面板。
-- 补全还没读到或正在读某章时修改了这一章，补全会只按新正文读一次，而不是另开一次结算；该章状态旁会注明，旧正文已产生的变更集仍未裁定，留在“故事变化”面板。若补全还没读到这一章就被取消，这一章会照常由写作台结算。写作台已经为当前正文做过的结算会直接沿用，不再重读。
-- 当前正文已经结算过、且结果已采纳或没有故事变化的章节会被跳过；变化被拒绝的章节会重新读取。导入时抽取的关系、时间线事件和伏笔会被引用和更新，而不是重复创建：章节写到导入时抽取、尚未锚定章节的时间线事件时，会把这个事件锚定到该章（故事变化中显示为“时间线 · 锚定”，事件的标题、描述、参与者、因果和可见性保持不变），而不是再新建一条。每章只会看到导入证据落在该章的事件，外加少量无法定位到章节的事件，因此前面章节只是提到的前史不会挤掉后面章节的事件。补全结束时会提示还有多少导入的时间线事件没有锚定到章节，它们保留在时间线板块中。只有这项补全会锚定已有事件，普通的章节结算总是新建事件。章节摘要和故事变化会要求模型用章节正文本身的语言书写（例如葡语原稿写葡语），属尽力而为。
-- 完成后，面板汇总已采纳、已拒绝、无变化、已跳过和失败的章节数。作者意图、整体大纲、人物档案等宏观部分不会从单章正文写出：点击“用 AI 补充意图”“用 AI 补充大纲”或“用 AI 补充实体”，跳到对应板块的 AI 候选面板生成建议。之后新增、改动了章节，或想重读被拒绝的章节，可以点击“再次补全”。
-- 一键生成整部故事圣经：面板中的“生成完整故事圣经”默认选中“全部自动生成（推荐）”，按顺序读完所有章节，不必逐章点击。勾选“随后用 AI 生成作者意图、实体和大纲的建议”（默认勾选）时，最后一章完成后面板会立即发起这三个板块的 AI 建议，它们仍是需要你在各板块中审阅的候选；若当时面板未打开，下次在本机打开时发起；也可以随时点击“用 AI 生成作者意图、实体和大纲”手动发起。
-- 想重做某一章：在完成后的章节清单中点击该章旁的“重新阅读”。AI 会对照当前故事圣经再读一遍这一章，补充遗漏、纠正错误，不重复已有条目；默认勾选“采纳前先审阅变化”。想重做实体等板块，可在对应板块的 AI 面板中写下你的要求。
-- 如果作品正文是作为一整份文稿导入的，就没有可逐章结算的章节，面板会给出提示；请用带章节标题的文件重新导入（例如“第一章 ……”或 Markdown 的“# 章节名”），让每章成为独立文档。
+A análise por IA ("Analisar com IA" no Gerenciador de importação) é instruída a escrever os candidatos no idioma do próprio manuscrito. Para manuscritos em português, espanhol, inglês e chinês, o pedido também informa o idioma detectado pelas palavras mais comuns ou pelo sistema de escrita. As duas coisas são feitas na base do melhor esforço, então confira os candidatos antes de aplicá-los. Os rótulos que o próprio NarraLume acrescenta, como o título do candidato de intenção da autoria e os cabeçalhos das notas importadas, seguem o idioma do projeto. O candidato de estilo estatístico, calculado sem IA, vem em chinês para manuscritos CJK, em português para manuscritos detectados como português e em inglês para todos os outros, inclusive o espanhol; o candidato de estilo da IA segue o idioma do manuscrito.
 
-### 封面、复制和归档
+### Completar a Bíblia da história a partir do manuscrito
 
-在作品的更多操作中可以编辑书名、副题、卷首语和封面。封面支持 JPG、PNG 和 WebP，上传后可以在 3:4 竖版取景框中调整。
+Os capítulos importados chegam como prosa salva, mas ainda não foram acertados capítulo a capítulo, então faltam os resumos de capítulo, os fatos do cânone, o conhecimento dos personagens e as mudanças de linha do tempo, relações e antecipações ancoradas em cada capítulo. "Completar a Bíblia da história a partir do manuscrito" acerta cada capítulo em ordem de leitura, pelo mesmo fluxo de mudanças da história usado quando você salva um capítulo à mão. Usa o modelo de escrita atribuído nas Configurações e se recusa a começar, em vez de pular capítulos, quando não há modelo disponível. Cada capítulo gera custo de modelo: pelo menos uma chamada de modelo, novas tentativas automáticas quando uma resposta falha ou é inválida (até 5 tentativas, e uma resposta malformada pode acrescentar uma chamada de reparo), mais uma chamada de embedding por capítulo quando há um modelo de embedding atribuído. Não há teto de gasto, então use "Pausar" ou "Cancelar conclusão" quando quiser parar; o painel mostra as chamadas de modelo e os tokens usados até agora e, quando os preços dos modelos estão configurados em `NARRATIVE_MODEL_PRICING_JSON`, uma estimativa de custo.
 
-“复制”会建立一部独立作品，适合做实验版本或交给合作者。“归档”只从默认书架隐藏作品，不删除内容；打开“含归档”即可查看。
+- Onde começar: depois de colocar na estante uma importação com texto de manuscrito, a janela de importação da Estante oferece "Gerar a Bíblia da história com IA"; em Configurações → "Gerenciador de importação", o mesmo link aparece ao lado da mensagem "Importação aplicada." Os dois abrem a Bíblia da história com o painel "Completar a Bíblia da história a partir do manuscrito" aberto no topo. Você também pode abrir esse painel ali a qualquer momento com "Mostrar" e clicar em "Gerar a Bíblia da história completa".
+- A janela de início pergunta como as mudanças da história serão adotadas, mostra quantos capítulos com texto de manuscrito serão processados e lembra o custo de modelo. Clique em "Gerar" para começar.
+- "Revisar cada capítulo" pausa depois de cada capítulo que produziu mudanças e as mostra no próprio painel. Clique em "Aplicar e continuar" ou "Recusar e continuar"; o capítulo seguinte só é acertado depois dessa decisão, porque os capítulos posteriores se apoiam no cânone que os anteriores estabeleceram. O mesmo conjunto de mudanças também aparece no painel "Mudanças da história" da mesa de escrita. Capítulos sem mudanças da história seguem sozinhos.
+- "Gerar tudo automaticamente (recomendado)", o padrão, adota as mudanças de cada capítulo assim que ficam prontas e, fora isso, segue pelo livro inteiro sem supervisão. Quando uma mudança conflita com o cânone atual (mira um registro travado, ausente ou que mudou desde então), a conclusão para e lista os conflitos. Escolha "Forçar aplicação e continuar" (só quando o conflito pode ser sobrescrito), "Aplicar e continuar" depois de corrigir o registro, "Recusar e continuar" ou "Pular capítulo". Ela também para antes que um capítulo retire ou substitua um fato, mude ou encerre uma relação, ancore um evento da linha do tempo no capítulo, ou desenvolva ou resolva uma antecipação que nem esta conclusão nem a importação criaram — por exemplo, qualquer coisa que você mesmo registrou —, e antes que reabra uma antecipação resolvida ou abandonada; o painel lista esses registros para você aplicar ou recusar o capítulo, e a conclusão então continua. As antecipações criadas pela importação registram de onde vieram, então desenvolvê-las ou resolvê-las não faz a conclusão parar; antecipações de uma importação aplicada antes desta atualização não têm origem registrada e contam como suas. Fatos, eventos, relações e antecipações novos são acrescentados sem parar.
+- Durante a execução, o painel mostra quantos capítulos já foram concluídos, o capítulo em leitura e um estado para cada capítulo (Aguardando, Lendo, Precisa de revisão, Aplicado, Recusado, Sem mudanças, Falhou, Pulado, Já acertado). Use "Pausar", "Retomar" ou "Cancelar conclusão" a qualquer momento; pausar espera o capítulo atual terminar, exceto quando a conclusão está reaproveitando um acerto que você iniciou na mesa de escrita, que continua rodando. Se o acerto de um capítulo falhar, use "Tentar de novo o capítulo" ou "Pular capítulo"; "Ver execução" abre a execução dele na Central de execuções. O progresso fica salvo, então o trabalho continua de onde parou depois de um reinício. Se a conclusão parar por um erro inesperado, o painel explica o que houve e "Retomar" tenta de novo a partir do mesmo capítulo. Cancelar mantém as mudanças já adotadas; as que ainda aguardam decisão ficam no painel "Mudanças da história", e um acerto que você iniciou na mesa de escrita continua rodando lá. Pular um capítulo que aguarda revisão também não o decide: o conjunto de mudanças dele fica no painel "Mudanças da história".
+- Se você editar um capítulo que a conclusão ainda vai ler, ela lê o texto novo uma vez, em vez de abrir um acerto separado; o estado do capítulo registra a edição, e um conjunto de mudanças já produzido para o texto anterior fica sem decisão no painel "Mudanças da história". Se você cancelar antes de a conclusão chegar lá, o capítulo editado é acertado pela mesa de escrita, como de costume. Um acerto que a mesa de escrita já fez para exatamente o texto atual é aproveitado, sem nova leitura.
+- Capítulos cujo texto atual já foi acertado, com o resultado aplicado ou sem mudanças da história, são pulados; capítulos cujas mudanças foram recusadas são lidos de novo. Relações, eventos da linha do tempo e antecipações extraídos na importação são referenciados e atualizados, não criados de novo: quando um capítulo mostra um evento da linha do tempo que a importação extraiu e que nenhum capítulo tem ainda, esse evento é ancorado no capítulo (aparece como "Linha do tempo · âncora" nas mudanças da história, mantendo título, descrição, participantes, causas e visibilidade) em vez de ser acrescentado uma segunda vez. Cada capítulo recebe os eventos importados cuja evidência de origem está nele, mais um número limitado dos que não puderam ser situados em nenhum capítulo, para que eventos que a prosa só menciona no começo não tomem o lugar dos capítulos seguintes. Ao terminar, a passagem informa quantos eventos importados da linha do tempo ainda não estão ancorados num capítulo; eles ficam na seção Linha do tempo. Só esta passagem ancora eventos existentes; os acertos comuns de capítulo sempre criam eventos novos. Os resumos de capítulo e as mudanças da história são pedidos no idioma do próprio capítulo (um manuscrito em português recebe resumos em português, por exemplo), na base do melhor esforço.
+- Ao terminar, o painel resume quantos capítulos foram aplicados, recusados, ficaram sem mudanças, foram pulados ou falharam. Seções mais amplas, como a intenção da autoria, a estrutura geral e os perfis de personagem, não são escritas a partir de capítulos isolados: os botões de sugestão do painel para "Intenção", "Estrutura" e "Entidades" levam ao painel de candidatos de IA de cada seção. "Rodar de novo" processa os capítulos acrescentados, alterados ou recusados desde então.
+- Um clique para a Bíblia da história inteira: o botão "Gerar a Bíblia da história completa" do painel lê todos os capítulos em ordem com "Gerar tudo automaticamente (recomendado)" escolhido por padrão, sem que você precise clicar capítulo a capítulo. Com "Em seguida, gerar sugestões de Intenção, Entidades e Estrutura com IA (você as revisa em cada aba)" marcado (o padrão), o painel inicia as sugestões de IA dessas três seções assim que o último capítulo termina. Se o painel estiver fechado nesse momento, ele as inicia na próxima vez que abrir neste computador, e "Gerar Intenção, Entidades e Estrutura com IA" as inicia à mão a qualquer momento.
+- Para refazer um capítulo, abra a lista de capítulos concluídos e clique em "Reler" ao lado dele. A IA lê esse capítulo de novo contra a Bíblia da história atual, acrescenta o que falta e corrige o que está errado, sem duplicar registros existentes; "Revisar as mudanças antes de aplicá-las" vem marcado por padrão. Para refazer uma seção como Entidades, use o painel de IA dessa aba com a sua própria instrução.
+- Um projeto cuja prosa foi importada como um único manuscrito não tem capítulos para acertar. O painel avisa; reimporte o arquivo com títulos de capítulo (por exemplo, "Capítulo 1" ou um "# Título do capítulo" em Markdown) para que cada capítulo vire um documento próprio.
 
-### 回收站
+### Capas, cópias e arquivamento
 
-“移入回收站”会把作品保留 30 天。回收站中的作品可以恢复；“永久删除”不可撤销，并且不会进入普通备份恢复流程。删除前请确认已经有可读取的备份。
+No menu de mais ações de uma obra, "Editar livro e capa" edita o título, o subtítulo, a premissa, o idioma da escrita e a capa. As capas aceitam JPG, PNG e WebP e, depois do envio, podem ser ajustadas num enquadramento vertical 3:4.
 
-## 项目概览：知道下一步做什么
+"Copiar" cria uma obra independente, boa para versões experimentais ou para entregar a quem colabora. "Arquivar" tira a obra da Estante padrão sem apagar conteúdo; ative "Incl. arquivados" para vê-la de novo.
 
-进入作品后，默认会看到“项目概览”。这里集中显示：
+### Lixeira
 
-- 已完成的章节、总字数和最近一次写作时间；
-- 正在运行的 AI 任务；
-- 待处理的审稿问题和故事变化；
-- “继续当前任务”“整理故事”“AI 快速创作”等下一步入口。
+Só uma obra arquivada pode ir para a lixeira: "Mover para a lixeira" pede que você digite o título e guarda a obra por 30 dias. Obras na lixeira podem ser restauradas e voltam arquivadas; "Excluir em definitivo" não tem volta, e depois disso só um backup feito antes ainda guarda a obra. Confirme que você tem um backup legível antes de excluir.
 
-任务在后台继续运行时可以离开页面。返回项目后，从概览或任务卡进入原来的处理位置，不要重复提交同一项工作。
+## Visão geral do projeto: saber o que fazer em seguida
 
-![项目概览、活动任务和下一步入口](../assets/narralume-overview-1920x1080.png)
+Ao entrar numa obra, você chega à "Visão geral", encabeçada pelo título do livro. Ela reúne:
 
-## 故事：维护故事资料
+- os capítulos registrados, o total de caracteres e a data da última escrita;
+- a tarefa de IA em andamento;
+- pendências como pontos de revisão, propostas de reescrita e mudanças da história;
+- entradas para o próximo passo, como "Continuar a tarefa atual", "Organizar a história" e "Criação rápida com IA".
 
-“故事”页面也叫“故事设定集”，用七个板块保存会影响后续章节的资料。左侧的板块辑签可以快速切换。
+Você pode sair da página enquanto uma tarefa continua em segundo plano. Ao voltar, retome o ponto em que parou pela visão geral ou pelo cartão da tarefa ("Voltar à tarefa") — não envie o mesmo trabalho duas vezes.
 
-### 作者意图
+![Visão geral do projeto, tarefas ativas e entradas do próximo passo](../assets/narralume-overview-1920x1080.png)
 
-记录这本书想给读者的核心体验、主题、读者、语气、结局方向、当前焦点和不写边界。它是 AI 规划和审稿时的重要参考，也是你判断候选稿是否跑题的依据。
+## História: manter o material da história
 
-### 大纲
+A página "História" também se chama "Bíblia da história". Ela guarda o material que afeta os capítulos seguintes em sete seções — "Intenção", "Estrutura", "Entidades", "Fatos", "Relações", "Linha do tempo" e "Antecipações" —, que você troca rápido pelas abas à esquerda.
 
-建立卷、章节和场景的层级结构，填写标题、摘要和章节目标。章节正文可以绑定大纲节点；已绑定或已归档的节点不会再次出现在新建章节列表中。
+### Intenção da autoria
 
-大纲是写作安排，不是正文。修改大纲不会自动重写已经保存的章节。
+Registre a experiência de leitura central que este livro promete, além de temas, público, tom, direção do desfecho, foco atual e os limites do que ele não vai escrever. É uma referência importante para o planejamento e a revisão da IA, e a sua base para julgar se um rascunho candidato saiu do rumo.
 
-### 长期故事线与进展建议
+### Estrutura
 
-在“故事 → 大纲 → 长期故事线”维护阶段目标、进展、未兑现承诺和下一步方向。连续创作的阶段复盘会在“故事线进展建议”中列出有正文摘要支持的建议，展示修改前后值和当时的证据摘要，可跳回章节核对。
+Monte a hierarquia de volumes, capítulos e cenas, com títulos, resumos e objetivos de capítulo. A aba tem quatro vistas: "Estrutura e edição", "Quadro da história", "Linhas longas da história" e "Estado do capítulo". A prosa de um capítulo pode se vincular a um nó da estrutura; nós já vinculados ou arquivados não reaparecem na lista de novos capítulos.
 
-逐项采纳才会更新故事线；拒绝保留裁定而不修改记录。资料变动后旧建议不能覆盖新记录，重复提交也不会重复更新。下一轮规划会参考作者裁定，后续方向仍是计划。缺少与当前正文版本匹配的摘要时不会用大纲摘要代替证据。
+A estrutura é o plano de escrita, não a prosa. Editar a estrutura não reescreve sozinha os capítulos já salvos.
 
-### 按章核对和维护认知
+### Linhas da história e propostas de progresso
 
-在“故事 → 大纲 → 章节状态”选择章节与认知视角，查看截至本章末（含下属场景）的登记。事实变化不代表人物已经得知；“相信”“怀疑”“误信”单列，未登记也不代表不知道。
+Use "História → Estrutura → Linhas longas da história" para manter objetivos de etapa, progresso, promessas em aberto e o rumo futuro. As revisões de etapa da criação contínua produzem propostas de progresso apoiadas em resumos do manuscrito, com os valores de antes e depois, os resumos de evidência usados no momento da revisão e links de volta aos capítulos.
 
-点击“人工登记与更正”打开作者维护区。这里包含全书记录和修订历史，不受认知视角筛选。选择读者或人物、已有事实或事件、认知状态，以及已定稿章节或其场景，然后保存；历史补录会保留后章的认知变化。
+Só a aceitação item a item atualiza uma linha da história; recusar registra a decisão sem mudar o registro. Propostas desatualizadas não podem sobrescrever registros que mudaram, e repetir uma decisão não aplica a mudança duas vezes. A janela de planejamento seguinte leva em conta as decisões da autoria; o rumo futuro continua sendo um plano. Resumos do manuscrito ausentes ou desatualizados nunca são substituídos por resumos da estrutura como evidência.
 
-故事中后来改变了信念，用“登记认知变化”新增一条。原来登记错了，用“更正登记”修改状态或证据节点并写明原因；主体或命题选错则先“撤销登记”，再重新登记。原记录与原因始终保留。撤销可能恢复更早的有效登记，不表示人物在故事中遗忘。
+### Conferir e manter o conhecimento por capítulo
 
-若保存时相关记录或资料已被修改，界面会保留输入并提示冲突。先复制需要保留的内容，再点击“放弃本次修改，重新载入”核对后提交。保存后的记录用于章节核对与后续生成，不会自动重写已有正文。
+Em "História → Estrutura → Estado do capítulo", escolha um capítulo e uma perspectiva para inspecionar os registros até o fim daquele capítulo, incluindo as cenas dele. Um fato que mudou não quer dizer que um personagem soube dele. Crenças, suspeitas e crenças falsas aparecem separadas; a falta de registro não quer dizer desconhecimento.
 
-### 实体、已确认事实和关系
+Abra "Registrar e corrigir conhecimento" para a manutenção pela autoria. Ali estão os registros e o histórico de correções do livro inteiro, independente do filtro de perspectiva. Escolha o leitor ou um personagem, um fato ou evento existente, um estado de crença e um capítulo ou cena registrado. Registros com data retroativa preservam as mudanças de conhecimento posteriores.
 
-- “实体”保存人物、地点、组织、物品等对象。
-- “事实”保存已经确认的内容，例如人物状态、能力和设定限制。
-- “关系”记录人物或实体之间的关系变化和发生时点。
+Use "Registrar mudança de conhecimento" quando uma crença muda mais adiante na história. Use "Corrigir registro" para consertar um estado de crença ou um nó de evidência errado, com um motivo. Se quem sabe ou o que se sabe está errado, use "Retirar registro" e registre de novo. As entradas originais e os motivos ficam no histórico. Uma retirada pode trazer de volta uma entrada válida anterior; ela não representa um esquecimento na história.
 
-你可以手动编辑这些内容，也可以在相应板块生成 AI 候选。候选面板会逐项显示差异；锁定的事实需要先处理冲突，不能被普通候选静默覆盖。
+Se registros ou referências relacionados mudarem antes de salvar, o que você digitou é preservado, com um aviso de conflito. Copie o que quiser manter, escolha "Descartar alterações e recarregar", revise e envie de novo. Os registros salvos informam a inspeção e a geração seguinte, sem reescrever a prosa existente.
 
-### 时间线和伏笔
+### Entidades, fatos do cânone e relações
 
-时间线记录故事世界中的事件、时间和说明。伏笔记录埋下、发展、回收或暂时保留的线索。未回收的伏笔不自动视为错误，只有在你决定回收时才会改变状态。
+- "Entidades" guarda pessoas, lugares, organizações, objetos e afins.
+- "Fatos do cânone" guarda conteúdo confirmado, como estados de personagens, habilidades e limites do cenário.
+- "Relações" registra como as relações entre pessoas ou entidades mudam, e quando.
 
-### 故事候选
+Você pode editá-los à mão em "Editar esta página" ou gerar candidatos de IA na seção correspondente. O painel de candidatos mostra as diferenças item a item; mudar conteúdo travado pede uma confirmação explícita ("Confirmar mudança de conteúdo travado"), então um candidato comum nunca o sobrescreve em silêncio.
 
-在“候选修改”中写清楚想补充或调整的内容，例如“让人物动机更具体，但不要改变已锁定的结局”。生成后逐项查看差异，再选择“采纳”或“拒绝”。采纳后才会写入故事资料。
+### Linha do tempo e antecipações
 
-![故事设定集的七个板块与候选修改区域](../assets/narralume-bible-1920x1080.png)
+A linha do tempo registra eventos do mundo da história, com datas e observações. As antecipações acompanham pistas planejadas, plantadas, em desenvolvimento, resolvidas ou abandonadas. Uma antecipação não resolvida não é um erro por si só; o estado dela só muda quando você decide.
 
-## 写作：从草稿到正式版本
+### Candidatos da história
 
-### 创建稿件
+Em "Mudanças candidatas", escreva o que quer acrescentar ou ajustar — por exemplo, "deixar a motivação do personagem mais concreta, sem mudar o final travado". Depois de "Gerar mudanças candidatas", revise as diferenças item a item e escolha "Adotar este item" ou "Recusar". Nada entra no material da história antes da adoção.
 
-在“写作”页面点击“新建”，可以选择：
+![As sete seções da Bíblia da história e a área de mudanças candidatas](../assets/narralume-bible-1920x1080.png)
 
-- 章节正文：绑定一个大纲章节；
-- 场景正文：写局部场景，不承担完整章节结算；
-- 大纲稿、故事梗概、写作笔记和风格样本：保存辅助资料。
+## Escrita: do rascunho à versão oficial
 
-章节正文最好绑定大纲节点。没有对应大纲时，先回到“故事”建立章节。
+### Criar um manuscrito
 
-### 手写和保存版本
+Na página "Escrita", clique em "Novo" e escolha o "Tipo":
 
-正文编辑器使用 Markdown。可以直接输入或粘贴文本，完成后点击“保存新版本”。保存版本会保留当前正文和时间点，之后可以在“版本”面板回看并恢复历史版本。
+- "Prosa do capítulo": vinculada a um capítulo da estrutura;
+- "Prosa da cena": vinculada a uma cena da estrutura; pode usar a reescrita da seleção com IA, mas "Passar para a IA" só aparece para prosa de capítulo;
+- "Rascunho da estrutura", "Sinopse", "Notas de escrita" e "Amostra de estilo": material de apoio.
 
-恢复历史版本不会抹掉其他版本；恢复的内容需要再次保存，才会成为当前正式版本。
+A prosa de capítulo e a de cena precisam estar vinculadas a um nó da estrutura; nós já vinculados a um manuscrito ou arquivados não são oferecidos de novo. Se não houver estrutura correspondente, volte a "História" e crie primeiro o capítulo ou a cena.
 
-### 稿件回收站
+### Escrever à mão e salvar versões
 
-写作台右侧的“移入回收站”会隐藏当前稿件，但保留正文、版本、批注和审稿记录。回收站中的稿件不参与新的写作、审稿和导出任务；需要继续使用时，从稿目顶部打开“回收站”并恢复。
+O editor de prosa é um editor de texto formatado que guarda o texto em Markdown. Digite ou cole o texto direto; o rascunho é sincronizado enquanto você escreve. Quando terminar, clique em "Salvar nova versão". Uma versão salva guarda a prosa atual e o momento em que foi salva; depois você pode revê-la no painel "Versões" e restaurar uma versão anterior.
 
-稿件回收站和书架回收站不是同一层级。前者只处理一部作品中的稿件，后者处理整部作品；恢复稿件不会改变作品的归档状态。
+Restaurar nunca reescreve versões antigas: "Restaurar como nova versão" acrescenta o conteúdo escolhido como uma versão nova, que passa a ser a atual.
 
-### 选区、批注和局部编辑
+### Lixeira de manuscritos
 
-先在正文中选中文字，再打开“选区”工具：
+"Mover para a lixeira", no alto da mesa de escrita, ao lado do título do manuscrito, esconde o manuscrito atual e mantém a prosa, as versões, os comentários e os registros de revisão. Manuscritos na lixeira não entram em novas tarefas de escrita, revisão ou exportação; para voltar a usar um deles, abra "Lixeira" no alto da lista de rascunhos e clique em "Restaurar para os rascunhos".
 
-- 在“批注”中记录需要回看的问题。首次对一段文字批注时，系统会同时保存版本锚点。
-- 在“AI 编辑指令”中说明目标，例如“减少重复的动作描写，保留紧张感”。点击“生成编辑提案”后，候选会回到写作台。
-- 查看差异后，可以采纳、拒绝或继续修改指令。候选不会直接替换正文。
+A lixeira de manuscritos e a lixeira da Estante não estão no mesmo nível. A primeira cuida dos manuscritos de uma obra e os guarda até você restaurá-los, sem prazo; a segunda cuida de obras inteiras. Restaurar um manuscrito não muda o estado de arquivamento da obra.
 
-### 交给 AI 写一章
+### Seleções, comentários e edições locais
 
-选择章节正文后点击“交给 AI”。AI 会按照当前故事资料和大纲生成章节候选，并执行轻量检查和审稿。完成后从“AI 写作任务”进入候选面板，查看正文、审稿结果和故事变化。
+Primeiro selecione um trecho da prosa e depois abra a ferramenta "Seleção":
 
-采纳候选后会形成正式正文版本；如果任务失败，先修复模型或网络，再从任务现场选择重试或恢复。已经保存的部分正文会留在任务详情中。
+- Registre em "Comentário" o que vale a pena rever. Se o texto tiver mudanças que ainda não viraram versão, o botão fica "Salvar versão e comentar" e salva uma versão antes, para o comentário ficar ancorado nela.
+- Descreva o objetivo em "Instrução de reescrita da IA" — por exemplo, "reduzir a descrição repetitiva das ações, mantendo a tensão" — e clique em "Gerar proposta de reescrita". A proposta aparece logo abaixo, em "Reescritas da seleção", com o original riscado e o novo trecho inserido.
+- "Aceitar" aplica a proposta como uma versão nova, e "Recusar" a descarta; para tentar outra instrução, gere uma nova proposta. Uma proposta nunca substitui a prosa sem a sua decisão.
 
-### 审稿和修订
+### Passar um capítulo para a IA
 
-“审稿”面板显示当前版本的审稿结论、评分细项和待裁定问题。问题通常分为人物、连续性、节奏、文句或章节目标等类别。
+Com uma prosa de capítulo aberta, clique em "Passar para a IA". A IA gera um capítulo candidato a partir do material da história e da estrutura atuais e depois roda verificações automáticas e uma revisão. O painel da tarefa abre no alto da mesa de escrita com o "Plano do capítulo", o "Manuscrito candidato" e "Esta revisão".
 
-每个问题都带有证据片段和建议动作。你可以接受、拒绝、标记误报或保留问题。需要修改时，在“修订”面板生成候选，采纳后再保存新版本。
+"Adotar como versão do manuscrito" cria uma versão oficial da prosa; em seguida, as mudanças da história do capítulo esperam por você no painel "Mudanças da história". "Pedir outra passagem" manda à IA uma instrução de reescrita, e "Descartar candidato" descarta o candidato. Se a geração falhar, corrija primeiro o modelo ou a rede e depois clique em "Tentar de novo este capítulo". Se a geração for interrompida, o trecho já gerado pode ser recuperado em "Ver os detalhes da tarefa", na Central de execuções.
 
-审稿是辅助检查，不是出版许可。最终是否保留一段文字仍由作者决定。
+### Revisão e reescritas
 
-### 故事变化
+O painel "Revisão" mostra o veredito da versão atual, o detalhamento das notas e os pontos que aguardam decisão; numa prosa de capítulo, "Revisar a versão atual" ou "Revisar de novo" pede uma nova revisão. Os pontos costumam ser classificados como continuidade, personagem, ritmo, prosa, objetivo do capítulo e afins.
 
-章节保存或采纳 AI 候选后，系统会整理本章可能改变的人物状态、事实、关系、时间线和伏笔。变化显示在“故事变化”面板中，采纳前不会写入故事资料。
+Cada ponto traz trechos de evidência e uma sugestão de ação. Você pode clicar em "Aceitar" ou "Recusar", marcar como "Falso positivo" ou "Manter de propósito". As reescritas do texto inteiro propostas pela IA aparecem na aba "Reescritas" ("Propostas de reescrita"): "Aplicar como nova versão" transforma uma delas na versão atual, e "Recusar" a descarta.
 
-如果变化与锁定事实冲突，面板会暂停在等待裁定状态。先处理冲突，再继续后面的任务。
+A revisão é uma checagem auxiliar, não uma licença de publicação. Se um trecho fica ou não é sempre decisão da autoria.
 
-### 共创沙盒
+### Mudanças da história
 
-切换到“共创沙盒”可以建立故事房，配置参与者、发言策略和导演注。共创回合会保存为独立记录，适合头脑风暴、角色对话和场景试写。共创内容在采纳或保存前不会自动进入章节正文。
+Depois de salvar uma versão de capítulo ou adotar um candidato da IA, o sistema organiza os estados de personagens, fatos, relações, eventos da linha do tempo e antecipações que esse capítulo pode ter mudado. As mudanças aparecem no painel "Mudanças da história" e só entram no material da história com "Adotar estas mudanças"; "Agora não" as recusa.
 
-![写作台的稿目、正文、审稿与版本工具](../assets/narralume-studio-1920x1080.png)
+Se uma mudança conflitar com o cânone atual — por exemplo, com um registro travado —, o painel lista os conflitos em vez de adotar. Quando eles podem ser sobrescritos, aparece "Forçar adoção"; caso contrário, recuse o conjunto e corrija a origem no manuscrito. Resolva o conflito primeiro e depois siga com as próximas tarefas.
 
-## AI 快速创作：连续完成多章
+A cocriação não faz parte da v1, e a mesa de escrita não leva mais a ela.
 
-“AI 快速创作”适合已经有明确方向、希望一次推进多个章节的情况。它和“交给 AI”共用同一套章节生产流程，但范围更大。
+![Lista de rascunhos, prosa, revisão e versões na mesa de escrita](../assets/narralume-studio-1920x1080.png)
 
-### 三个步骤
+## Criação rápida com IA: vários capítulos numa só execução
 
-1. **准备故事方向**：直接填写想法，或让 AI 从脑暴中整理候选。
-2. **确认创作方向**：填写核心承诺、结局方向、主题问题、不可违背的要求、目标章数、每章参考字数和卷数。
-3. **开始连续创作**：选择连续创作或逐章确认，再设置规划方式和生成质量。
+"Criação rápida com IA" serve quando o rumo já está claro e você quer avançar vários capítulos de uma vez. Ela usa o mesmo fluxo de produção de capítulos de "Passar para a IA", numa escala maior.
 
-没有章节细纲时，可以选择“自动执行”，让任务在内部生成轻量计划；需要先看计划时选择“每章规划先确认”。
+### Três passos
 
-### 运行期间如何介入
+1. **Preparar a direção da história** (opcional): escreva a ideia e clique em "Deixar a IA organizar a direção da história"; depois escolha "Adotar" ou "Deixar de lado" em cada candidato. Pule este passo se o rumo já estiver claro.
+2. **Confirmar a direção da história**: preencha o que o livro deve dar aos leitores, a direção do desfecho, as perguntas a continuar fazendo, as exigências que não podem ser quebradas, os capítulos-alvo, as palavras de referência por capítulo e o número de volumes; depois clique em "Confirmar direção da história".
+3. **Começar a criação em série**: escolha o "Modo de criação" — "Contínuo (recomendado)" ou "Esperar a minha confirmação depois de cada capítulo" — e quantos capítulos escrever desta vez. Em "Opções avançadas" ficam o planejamento dos capítulos, quantos capítulos planejar à frente, o máximo de reescritas automáticas e a qualidade da geração. Clique em "Começar criação rápida com IA".
 
-任务卡会显示当前章节、阶段、等待原因和下一步动作。运行期间可以补充方向、暂停、继续、重试或取消。
+Em "Planejamento dos capítulos", "Rodar automaticamente" (o padrão) deixa a tarefa planejar cada capítulo sozinha; escolha "Confirmar primeiro o plano de cada capítulo" para ver e adotar cada plano antes. Quando um plano propõe personagens, lugares ou outros elementos novos, a tarefa para em "Novos elementos da história no plano": os capítulos só são criados depois das suas decisões.
 
-- 只影响当前章节或后续计划的要求，会在下一个安全节点生效。
-- 涉及正文或故事设定的要求，会先生成修订候选或故事变化候选。
-- 采纳候选后，后续章节会基于新状态继续。
-- 任务发现锁定事实冲突或关键审稿问题时，会停下来等待处理。
+### Como intervir durante a execução
 
-在线体验的内置模型对一次快速创作最多开放 3 章；使用自带模型渠道时，以你配置的模型和资源为准。
+A página mostra o capítulo atual, as etapas, o motivo de qualquer parada e as ações disponíveis. Durante a execução, você pode dar direção em "Instruções criativas para a IA" ("Aplicar aos próximos capítulos"), "Pausar", "Retomar" ou "Encerrar esta criação"; depois de uma interrupção, pode tentar de novo o capítulo atual, pulá-lo, replanejar ou parar.
 
-![AI 快速创作的方向、确认、执行与介入区域](../assets/narralume-autopilot-1920x1080.png)
+- Uma exigência sobre o capítulo atual vira uma nota ativa e interrompe o capítulo em andamento; exigências sobre as próximas cenas viram notas ativas, e exigências sobre capítulos futuros disparam um novo planejamento.
+- Exigências que mudam o cânone ou reescrevem prosa existente esperam em "Instruções aguardando decisão": "Adotar e reagendar" ou "Recusar e continuar escrevendo".
+- Depois que um candidato é adotado, os capítulos seguintes continuam a partir do novo estado.
+- Quando a tarefa encontra um conflito com um fato travado ou um problema crítico de revisão, ela para e espera você resolver.
 
-## 项目助手：用一句话找到入口
+![As áreas de direção, confirmação, execução e intervenção da criação rápida com IA](../assets/narralume-autopilot-1920x1080.png)
 
-在项目内点击右侧的“协作”，可以向助手提问或直接描述目标。助手默认读取当前页面的上下文，例如选中的章节、正文选区或故事板块；上下文条上的切换按钮可以让后续消息只使用项目全局资料。按 `Ctrl+J` 或 `Command+J` 也能打开和关闭侧栏。
+## Assistente do projeto: achar o caminho numa frase
 
-适合直接说的事情包括：
+Dentro de um projeto, clique em "Colaborar", no canto inferior direito, para fazer perguntas ao assistente ou descrever um objetivo. Por padrão, o assistente lê o contexto da página atual — o capítulo escolhido, a seleção na prosa ou uma seção da história; "Só o projeto", na faixa de contexto, faz as próximas mensagens usarem só o material global do projeto, e "Seguir a página" volta atrás. `Ctrl+J` ou `Command+J` também abre e fecha a barra lateral.
 
-- “查看这一章有哪些未解决的审稿问题。”
-- “为下一章规划三个可能的冲突。”
-- “把这段文字改得更克制，先给我候选。”
-- “暂停当前快速创作，保留已经完成的章节。”
+Coisas que funcionam bem ditas diretamente:
 
-每个项目可以建立多条协作对话。顶部菜单用于切换、新建、重命名和归档对话；归档后的对话只读，历史消息、任务活动和关键产物仍然保留。侧栏底部可以为当前对话切换同协议模型和思考档，跨协议切换需要回到“设置”更改默认生成模型。
+- "Mostre os pontos de revisão sem solução deste capítulo."
+- "Planeje três conflitos possíveis para o próximo capítulo."
+- "Deixe este trecho mais contido; me dê candidatos primeiro."
+- "Pause a criação rápida atual e mantenha os capítulos prontos."
 
-助手直接回答分析类问题；涉及写作或任务控制时，会先给出待确认动作。正文采纳、故事设定采纳和永久删除仍从对应页面完成，避免在聊天里误操作。
+Cada projeto pode ter várias conversas de colaboração. O menu no topo troca de conversa, e os botões ao lado renomeiam, arquivam e criam conversas; uma conversa arquivada é só leitura, mas o histórico, a atividade das tarefas e os artefatos principais continuam lá. No pé da barra lateral, você troca o "Modelo" e o "Esforço" da conversa atual, dentro do mesmo protocolo; para usar outro protocolo, mude o modelo padrão de geração em "Configurações".
 
-### Writing Skill 与 Agent Skill
+O assistente responde direto a perguntas de análise; quando o assunto é escrita ou controle de tarefas, ele propõe primeiro as ações pendentes, que você executa com "Confirmar e executar" ou descarta com "Não executar". A adoção de prosa, a adoção de mudanças no cânone e a exclusão definitiva continuam sendo feitas nas próprias páginas, para evitar enganos dentro de um chat.
 
-- Writing Skill 是写作提示和参考资料，可以按全部、章节、共创、编辑或审稿范围启用。可以在界面中创建和修改，也可以导入、校验或导出 `.skill.zip` 包。
-- Agent Skill 是受约束的助手任务包，负责声明触发说明、指令和能力白名单。目前从 ZIP 包导入，可以启停或删除，不能在界面中直接创建和导出。
+### Habilidade de escrita e Agent Skill
 
-导入的 Agent Skill 只能使用系统允许的只读或候选型能力，不能执行任意脚本、发起任意网络请求或直接写数据库。正式正文和已确认设定的采纳仍遵守产品内置的确认边界。
+As duas ficam em "Configurações" → "Ferramentas avançadas", para o projeto escolhido em "Projeto dos ativos de produção".
 
-![项目概览中的 AI 助手侧栏](../assets/narralume-assistant-1920x1080.png)
+- Uma habilidade de escrita (Writing Skill) é um pacote de prompts de escrita e material de referência, ativado por escopo: `all`, `chapter`, `edit` ou `review` (a lista ainda mostra `cocreate`, mas a cocriação não faz parte da v1). Você pode criá-las e editá-las na aba "Habilidade de escrita", ou importar ("Importar .skill.zip"), validar ("Validar") e exportar ("Exportar pacote") pacotes `.skill.zip`.
+- Uma Agent Skill é um pacote restrito de tarefas do assistente que declara a descrição de quando acionar, as instruções e uma lista de capacidades permitidas. Por enquanto ela é importada de um pacote ZIP ("Importar pacote de Agent Skill"); pode ser ativada, desativada ou excluída, mas não criada nem exportada pela interface.
 
-## 高级工具
+Uma Agent Skill importada só usa as capacidades somente leitura ou de candidato que o sistema permite; não roda scripts arbitrários, não faz requisições de rede arbitrárias nem grava direto no banco de dados. A adoção de prosa oficial e de cânone confirmado continua seguindo os limites de confirmação embutidos no produto.
 
-### 运行中心
+![A barra lateral do assistente de IA na visão geral do projeto](../assets/narralume-assistant-1920x1080.png)
 
-运行中心按月份整理每次 AI 任务，显示状态、修订轮次和模型调用次数。打开一条运行后，可以查看正文流、步骤与错误、检查点、审稿、有效执行策略、上下文收据、模型快照和调用账本。
+## Ferramentas avançadas
 
-页面只显示当前状态允许的操作，例如暂停、继续、接受计划、采纳或丢弃正文、请求修订、重试章节、转为手写和取消。流式生成中断时，已经持久化且达到最低可用长度的部分正文可以继续、采纳、重新生成或丢弃；不要为了恢复任务重新发起一条相同运行。
+### Central de execuções
 
-普通创作遇到失败时，优先从写作台或快速创作任务卡处理；需要核对失败原因、模型用量或部分正文时再进入运行中心。
+A Central de execuções organiza cada tarefa de IA por mês, com o estado, os ciclos de reescrita e o número de chamadas de modelo. Ao abrir uma execução, você vê os fluxos de texto, os passos e erros, os checkpoints, as revisões, a política de execução vigente, os recibos de contexto, os instantâneos do modelo e o livro de chamadas.
 
-![运行中心的任务、步骤和恢复信息](../assets/narralume-runs-1920x1080.png)
+A página só mostra as operações que o estado atual permite — pausar, retomar, adotar o plano, adotar ou descartar o manuscrito, pedir reescrita, tentar o capítulo de novo, passar para o manual e cancelar. Quando uma geração em streaming é interrompida, a prosa parcial já persistida com pelo menos 50 caracteres pode ser continuada ("Continuar"), aproveitada ("Aproveitar o rascunho parcial"), gerada de novo ("Gerar de novo") ou descartada ("Descartar"); uma prosa parcial menor só pode ser gerada de novo ou descartada. Não comece uma execução idêntica só para recuperar uma tarefa.
 
-### 长篇推演
+Quando uma criação comum falhar, prefira resolvê-la na mesa de escrita ou no cartão da tarefa de criação rápida; entre na Central de execuções quando precisar conferir o motivo da falha, o uso do modelo ou a prosa parcial.
 
-长篇推演提供四类操作：用自然语言检索故事记忆；按方向、预测跨度和候选数量生成剧情预测；重建或整理记忆；在正式修改前预演一项设定变化会影响哪些资料。
+![Tarefas, passos e informações de recuperação na Central de execuções](../assets/narralume-runs-1920x1080.png)
 
-预测结果可以采纳为后续参考，也可以搁置；当基础故事资料发生变化时，旧预测会标记为过期。记忆维护和影响预演是分析工具，不会自动改写正文、已确认设定或时间线。
+### Laboratório narrativo
 
-![长篇推演中的预测、记忆、检索与影响预览](../assets/narralume-lab-1920x1080.png)
+O Laboratório narrativo oferece estes tipos de operação: buscar na memória da história em linguagem natural; gerar previsões de enredo por direção, capítulos à frente e quantidade de candidatos; reconstruir ou consolidar a memória; ensaiar em "Prévia de impacto" que material da história uma mudança afetaria antes de fazê-la de verdade; e acompanhar o "Índice de busca do manuscrito", que "Reindexar agora" atualiza. Como a busca, os embeddings e a reordenação funcionam está descrito em [Configuração](configuration.md#busca-semântica-e-embeddings).
 
-### 设置
+As previsões podem ser adotadas ("Adotar") como referência futura ou dispensadas ("Dispensar"); quando o material da história em que se basearam muda, as previsões antigas ficam marcadas como "Desatualizada" e não podem mais ser adotadas. A manutenção da memória e a prévia de impacto são ferramentas de análise — nunca reescrevem sozinhas a prosa, o cânone confirmado ou a linha do tempo.
 
-设置包含四组内容：
+![Previsões, memória, busca e prévia de impacto no Laboratório narrativo](../assets/narralume-lab-1920x1080.png)
 
-- **模型与岗位**：选择默认生成模型，按需覆盖规划和审稿模型，并单独设置嵌入模型。渠道管理可以新建、编辑、停用和探测渠道及模型。
-- **生产资产**：先选择资产所属项目，再维护风格、Writing Skill、Agent Skill 和历史导入批次。风格可以记录正向规则、禁用规则和示例；导入管理可以继续分析、筛选、应用或丢弃旧稿候选。
-- **运行驱动**：在自动探测、浏览器本地内核和本地 Server 之间切换。浏览器模式还会显示存储用量、持久存储授权和最近一次整库下载时间。
-- **系统备份档**：为本地 Server 创建完整 SQLite 备份，预览哈希、完整性和外键检查，再恢复到一个不同于当前数据目录的新目录。
+### Configurações
 
-浏览器内核使用“下载我的库”取得完整 SQLite 文件；本地 Server 模式使用系统备份档或备份脚本。切换运行驱动不会迁移数据，刷新后看到不同作品库是正常现象。
+As Configurações têm estas seções:
 
-![模型渠道、数据驱动和高级资产设置](../assets/narralume-settings-1920x1080.png)
+- **Idioma da interface**: português ou inglês.
+- **Modelo padrão de geração e herança de papéis**: escolha o modelo padrão de geração e o modelo de embedding; os papéis avançados substituem os modelos de planejamento e de revisão e acrescentam a reordenação opcional da busca. A busca, os embeddings e a reordenação estão descritos em [Configuração](configuration.md#busca-semântica-e-embeddings).
+- **Modelos de prompt**: edite as instruções oficiais das etapas de geração, em português e em inglês, e restaure o padrão oficial quando quiser.
+- **Gestão de provedores e modelos**: crie, edite, desative e teste provedores e modelos.
+- **Ferramentas avançadas**: links para a Central de execuções e o Laboratório narrativo, e os ativos de produção do projeto escolhido em "Projeto dos ativos de produção": "Estilos", "Habilidade de escrita", "Agent Skill" e "Gerenciador de importação". Os estilos registram regras positivas, regras proibidas e exemplos; o gerenciador de importação envia arquivos ao projeto, roda a análise por IA e aplica ou descarta lotes de importação.
+- **Driver de execução**: alterne entre a detecção automática, o núcleo local no navegador e o serviço local. No modo navegador, a seção mostra também o uso de armazenamento, a autorização de armazenamento persistente e a última exportação da biblioteca.
+- **Arquivos de backup do sistema**: crie backups SQLite completos do Server local, confira hash, integridade e chaves estrangeiras e restaure num diretório novo, diferente do diretório de dados atual.
 
-## 交付：导出和留档
+O núcleo no navegador usa "Baixar minha biblioteca (.sqlite)" para obter o arquivo SQLite completo; o Server local usa os arquivos de backup do sistema ou os scripts de backup. Trocar o driver de execução não migra dados; ver outra biblioteca depois de recarregar a página é normal.
 
-### 质量检查
+![Provedores de modelo, driver de dados e configurações avançadas de ativos](../assets/narralume-settings-1920x1080.png)
 
-交付页面会检查是否存在正文、章节标题、空稿、未完成任务等情况。质量检查只提供提醒，不会阻止导出，也不会替作者决定内容是否合格。
+## Entrega: exportar e guardar
 
-### 导出格式
+### Checagens de qualidade
 
-- Markdown：适合继续编辑和版本控制；
-- 纯文本：适合只需要正文内容的场景；
-- DOCX：适合交给 Word 用户继续排版；
-- EPUB：适合电子书预览；
-- 作品包：包含一部作品的作者可见资料，适合迁移到另一套 NarraLume 环境。
+Em "Especificações de publicação (controles de qualidade)", a página Entrega confere a premissa e a promessa ao leitor, o plano de capítulos, se há prosa, manuscritos em branco, fatos candidatos não julgados, antecipações e comentários em aberto e condições parecidas. As checagens de qualidade só avisam; nunca bloqueiam a exportação e não decidem pela autoria se o conteúdo está pronto.
 
-### 项目内容快照
+### Formatos de exportação
 
-在“交付”中填写标签，点击“创建内容快照”。快照包含作品资料、故事结构、正文版本、批注、审稿、共创和助手历史，但不包含模型密钥。点击“恢复内容副本”会创建一个新项目，不覆盖原项目。
+- Markdown: bom para continuar editando e para controle de versão;
+- Texto simples: bom quando só o conteúdo da prosa importa;
+- DOCX: bom para entregar a quem usa o Word e vai continuar a diagramação;
+- EPUB: bom para pré-visualizar como e-book;
+- Pacote da história: o material de uma obra visível à autoria, bom para migrar para outro ambiente do NarraLume.
 
-恢复后请核对大纲、最近正文版本、批注、故事变化和运行记录，再决定是否继续写作。
+### Instantâneos do conteúdo do projeto
 
-### 完整库备份
+Em "Entrega", preencha o "Rótulo do backup" e clique em "Criar instantâneo do conteúdo". O instantâneo guarda o material da obra, a estrutura da história, as versões da prosa, os comentários, as revisões e o histórico do assistente (e os registros de cocriação, se a obra tiver algum) — mas nenhuma chave de modelo. "Restaurar cópia do conteúdo" cria um projeto novo, sem sobrescrever o original.
 
-浏览器模式在设置中使用“下载我的库”；本地 Server 在 Windows 使用 `scripts/backup.ps1`，在 macOS/Linux 使用 `scripts/backup.sh`；Docker 使用 `scripts/docker-backup.ps1`。完整 SQLite 备份可能包含模型渠道凭据，应和正文一样保存到受控目录。不要在服务运行时直接复制主数据库文件。
+Depois de restaurar, confira a estrutura, as versões mais recentes da prosa, os comentários, as mudanças da história e os registros de execução antes de decidir continuar escrevendo.
 
-![质量提醒、导出格式和项目内容快照](../assets/narralume-delivery-1920x1080.png)
+### Backups da biblioteca inteira
 
-## 移动端和桌面端
+No modo navegador, use "Baixar minha biblioteca (.sqlite)" nas Configurações; com o Server local, use `scripts/backup.ps1` no Windows ou `scripts/backup.sh` no macOS/Linux; com o Docker, use `scripts/docker-backup.ps1`. Um backup SQLite completo pode conter credenciais de provedores, então guarde-o num diretório controlado, como o próprio manuscrito. Nunca copie o arquivo do banco principal diretamente com o serviço rodando.
 
-移动端会把导航收进顶部按钮，工作区改为单列布局。浏览、查看故事资料、处理候选和轻量编辑可以在移动端完成；长篇正文编辑、连续创作和大量导入更适合桌面浏览器。
+![Avisos de qualidade, formatos de exportação e instantâneos do conteúdo do projeto](../assets/narralume-delivery-1920x1080.png)
 
-## 相关文档
+## Celular e computador
 
-- [快速开始](quick-start.md)：启动在线版、Windows、macOS/Linux 和开发环境。
-- [配置](configuration.md)：模型协议、环境变量、Docker 和 Bridge/Relay。
-- [数据、隐私与备份](data-and-backup.md)：存储位置、作品包、项目快照和整库恢复。
-- [Docker Compose](docker.md)：自托管运行、更新、停止和备份。
+Em telas estreitas, como as de celular, a navegação vira uma barra no pé da tela com os cinco workspaces do dia a dia, e o estado do núcleo e os botões de idioma, tema e paleta de comandos vão para o topo; abra a Criação rápida com IA, as Execuções, o Laboratório narrativo e as Configurações pela paleta de comandos. Navegar, revisar o material da história, tratar candidatos e fazer edições leves funcionam bem no celular; editar prosa longa, criar em série e fazer importações grandes fica melhor num navegador de computador.
+
+## Documentos relacionados
+
+- [Início rápido](quick-start.md): como iniciar os pacotes de release para Windows, macOS e Linux e o ambiente de desenvolvimento.
+- [Configuração](configuration.md): protocolos de provedores, variáveis de ambiente, Docker, busca semântica, embeddings e reordenação.
+- [Dados, privacidade e backup](data-and-backup.md): onde os dados ficam, instantâneos do conteúdo, pacotes da história e recuperação da biblioteca inteira.
+- [Docker Compose](docker.md): auto-hospedagem — rodar, atualizar, parar e fazer backup.

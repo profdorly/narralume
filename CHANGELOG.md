@@ -24,6 +24,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - Placeholders em português e inglês também contam: "[inserir …]", "[insert …]", "as an AI language model", "como um modelo de linguagem".
 - As mensagens de validação devolvidas ao modelo para consertar uma resposta (parágrafos de evidência, fatos, candidatos do Canon) e as descrições do esquema de resultado da consolidação estavam em chinês; agora estão em inglês, como o resto do pedido de conserto. As notas de campos dos candidatos do Canon seguem o idioma do projeto.
 - O estilo estatístico criado ao importar um manuscrito em português vem em português ("Estilo pelas estatísticas do original"); outros idiomas latinos continuam em inglês.
+- Documentação de uso em português: guia do usuário, início rápido, dados e backup, Docker, índice da documentação, modelos de issue e de pull request e código de conduta. As versões em inglês foram conferidas com o código: saíram a demonstração online, a Bridge/Relay e a cocriação (fora da v1), e os nomes de botões seguem a interface atual.
 
 ### Removed
 
@@ -34,6 +35,8 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - Trechos de capítulos arquivados (na lixeira do manuscrito) ou apagados não aparecem mais na busca.
 - A verificação automática do rascunho não confunde mais a palavra "todo" ("o dia todo", "todo mundo") com um marcador TODO; antes, a maioria dos capítulos em português caía em revisão obrigatória por "placeholder" (39 de 50 trechos de romance testados). TODO só conta em maiúsculas e junto de dois-pontos ou colchetes.
 - Frases repetidas em português e inglês são contadas por palavras (6 palavras repetidas 4 vezes), não por letras: nomes como "Lady Catherine" não disparam mais a revisão. Texto em chinês mantém a contagem por caracteres.
+- `scripts/docker-start.ps1` gravava o token aleatório no `.env.local`, que o Compose não usa para preencher `${NARRATIVE_AUTH_TOKEN}`; os dois contêineres ficavam com o token padrão `local-compose-token-change-me-24`. Agora o token vai para o `.env`, que o Compose lê.
+- A nota da seção de provedores em Configurações não cita mais o retransmissor removido, e a nota do papel "Embedding" diz o que acontece sem ele (a busca usa só palavras e personagens).
 
 ### Added (pt-BR e local-first)
 

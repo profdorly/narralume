@@ -1,60 +1,75 @@
-# Docker Compose 自托管
+[English](docker.en.md)
 
-Docker 是源码工作区中的高级自托管入口，仍需预先安装并启动 Docker Desktop 或 Docker Engine。桌面发行包不包含 Docker 构建上下文。
+# Auto-hospedagem com Docker Compose
 
-开始前确认：
+O Docker é a opção avançada de auto-hospedagem a partir do repositório de código-fonte; antes, instale e inicie o Docker Desktop ou o Docker Engine. Os pacotes de release para desktop não incluem o contexto de build do Docker.
 
-- Docker Engine/Desktop 正在运行，并支持 Compose v2；
-- 4318 端口没有被其他服务占用；
-- 仓库根目录可以创建仅本机使用的 `.env.local` 和 `data/backups/`；
-- 如果要从其他设备访问，已经准备好 TLS、反向代理、访问控制和独立备份位置。
+Antes de começar, confirme:
 
-Windows 可运行：
+- o Docker Engine/Desktop está rodando, com Docker Compose 2.24 ou mais recente (o `docker-compose.yml` usa `env_file` com `required: false`);
+- a porta 4318 não está em uso por outro serviço;
+- na raiz do repositório dá para criar um `.env.local`, só para esta máquina, e a pasta `data/backups/`;
+- se for acessar de outros dispositivos, TLS, proxy reverso, controle de acesso e um local de backup independente já estão prontos.
+
+No Windows, rode:
 
 ```powershell
 powershell -File scripts/docker-start.ps1
 ```
 
-脚本会检查 Docker、在 `.env.local` 中生成本地认证令牌、启动 Compose、等待健康检查并打开浏览器。也可以手动执行：
+O script verifica o Docker, grava um `NARRATIVE_AUTH_TOKEN` aleatório num arquivo `.env` na raiz do repositório se ainda não houver um, sobe o Compose, espera a verificação de saúde e abre o navegador. Você também pode fazer isso à mão:
 
 ```bash
 docker compose up -d --build
 ```
 
-访问 `http://127.0.0.1:4318`。Server 不直接发布宿主端口，Nginx 同源代理 `/api` 并注入认证令牌。作品保存在 `narralume-data` 卷，备份写入 `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`。
+Acesse `http://127.0.0.1:4318`. O Server não publica porta no host; o Nginx encaminha `/api` na mesma origem e acrescenta o token de autenticação. As obras ficam no volume `narralume-data`, e os backups vão para `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`.
 
-确认运行状态：
+O Compose só preenche `${NARRATIVE_AUTH_TOKEN}`, `${NARRATIVE_WEB_BIND_HOST}` e `${NARRATIVE_BACKUP_HOST_DIR}` com valores do shell ou de um arquivo `.env` na raiz do repositório (o Git e o build do Docker ignoram esse arquivo). O `.env.local` é repassado ao contêiner do Server, então serve para chaves de modelo e outras variáveis do Server, mas não muda essas três nem os valores que o `docker-compose.yml` fixa em `environment`: sem `.env` nem variável no shell, os dois contêineres usam o token padrão `local-compose-token-change-me-24`. Versões anteriores do `docker-start.ps1` gravavam o token no `.env.local`, onde ele não tem efeito; rode o script de novo para criar o `.env`. No Linux/macOS, crie o token assim antes do primeiro `docker compose up`:
+
+```bash
+printf 'NARRATIVE_AUTH_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env
+```
+
+Confira o estado:
 
 ```bash
 docker compose ps
 docker compose logs --tail 100 server web
 ```
 
-健康检查地址是 `http://127.0.0.1:4318/api/health`。不要把日志中的令牌、模型请求或正文贴到公开 Issue。
+A verificação de saúde fica em `http://127.0.0.1:4318/api/health`. Nunca cole em uma Issue pública tokens, requisições a modelos ou trechos do manuscrito que apareçam nos logs.
 
-常用维护入口：
+Comandos de manutenção no Windows:
 
 ```powershell
-# 创建在线一致性备份；文件写入独立挂载的 backups 目录
+# Cria um backup consistente online; os arquivos vão para a pasta de backups montada à parte
 powershell -File scripts/docker-backup.ps1
-# 拉取干净源码工作区的更新、重建并等待健康检查
+# Atualiza um checkout sem alterações locais, reconstrói as imagens e espera a verificação de saúde
 powershell -File scripts/docker-update.ps1
-# 停止容器但保留数据卷
+# Para os contêineres e mantém os volumes de dados
 powershell -File scripts/docker-stop.ps1
 ```
 
-更新脚本只接受没有本地改动的 Git 工作区，会执行快进拉取、重新构建镜像并等待健康检查。它不会替你创建备份；更新前先运行 `docker-backup.ps1`，并确认备份文件确实出现在宿主机目录。
+Num checkout Git, o script de atualização para se houver alterações locais; sem alterações, faz `git pull --ff-only`, reconstrói as imagens, sobe os contêineres e espera a verificação de saúde. Ele não faz backup por você: rode `docker-backup.ps1` antes de atualizar e confira se o arquivo de backup apareceu de fato na pasta do host.
 
-Linux/macOS 可以使用对应的 Compose 命令：
+No Linux/macOS, use os comandos equivalentes:
 
 ```bash
+# Backup online (o mesmo pedido que o docker-backup.ps1 envia)
+curl --fail -X POST -H 'Content-Type: application/json' -d '{"label":"docker"}' http://127.0.0.1:4318/api/system/backups
+# Atualização
+git pull --ff-only
 docker compose build --pull
 docker compose up -d
+# Parada
 docker compose down
 ```
 
-`docker compose down` 会停止并移除容器，但保留命名数据卷。重新启动后，先核对作品数量和最近正文版本，再继续写作。
+O `docker compose down` para e remove os contêineres, mas mantém os volumes nomeados. Depois de reiniciar, confira a quantidade de obras e as versões mais recentes do manuscrito antes de voltar a escrever.
 
-不要使用 `docker compose down --volumes`，除非明确要删除全部作品数据。将 Web 端口暴露到局域网或公网前，必须使用高熵 `NARRATIVE_AUTH_TOKEN`、TLS、访问控制和独立备份目录。
+Não use `docker compose down --volumes`, a menos que queira mesmo apagar todos os dados das obras.
 
-更多环境变量见[配置](configuration.md)，备份与恢复步骤见[数据、隐私与备份](data-and-backup.md)。
+A porta Web só escuta em `127.0.0.1`, a menos que você mude `NARRATIVE_WEB_BIND_HOST`. O token não protege essa porta: o Nginx o acrescenta a toda requisição para `/api`, então quem alcança a porta 4318 consegue usar a API. Antes de expor a porta na rede local ou na internet, coloque TLS e controle de acesso na frente (proxy reverso, VPN ou firewall), troque o token padrão por um valor de alta entropia e mantenha uma pasta de backup independente.
+
+Mais variáveis de ambiente em [Configuração](configuration.md); passos de backup e restauração em [Dados, privacidade e backup](data-and-backup.md).

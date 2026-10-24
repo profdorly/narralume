@@ -1,21 +1,21 @@
-name: Feature request
-description: 提议一个有明确用户价值的改进
+name: Sugestão de melhoria
+description: Proponha uma melhoria com valor claro para quem usa o NarraLume
 title: "[Feature] "
 labels: ["type:feature", "status:needs-triage"]
 body:
   - type: textarea
     attributes:
-      label: 用户问题
-      description: 哪类用户在什么场景下遇到什么问题？
+      label: Problema
+      description: Quem enfrenta que problema, e em que situação?
     validations:
       required: true
   - type: textarea
     attributes:
-      label: 建议结果
-      description: 描述期望结果，不必先设计内部架构。
+      label: Resultado proposto
+      description: Descreva o resultado esperado, sem precisar definir antes a arquitetura interna.
     validations:
       required: true
   - type: textarea
     attributes:
-      label: 替代方案与边界
-      description: 已尝试什么？是否影响数据、隐私、兼容性或部署？
+      label: Alternativas e limites
+      description: O que você já tentou? A mudança afeta dados, privacidade, compatibilidade ou implantação?

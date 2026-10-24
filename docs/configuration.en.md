@@ -55,7 +55,7 @@ cp .env.example .env.local
 | `NARRATIVE_MODEL_PRICING_JSON`                                     | Empty                        | Optional model pricing metadata for run-cost estimation                                        |
 | `NARRATIVE_DATA_DIR`                                               | `./data`                     | SQLite database directory                                                                      |
 | `NARRATIVE_BACKUP_DIR`                                             | `./data/backups`             | Consistency backup directory; an independent disk or synced directory is recommended           |
-| `NARRATIVE_BACKUP_RETENTION`                                       | `10`, range 1-100            | Number of backups kept automatically                                                           |
+| `NARRATIVE_BACKUP_RETENTION`                                       | `10`, range 1-100            | Number of backups the directory keeps, automatic and manual alike                              |
 | `NARRATIVE_BACKUP_INTERVAL_MINUTES`                                | `360`, range 5-43200         | Automatic backup interval                                                                      |
 | `NARRATIVE_BACKUP_ON_STARTUP`                                      | `false`                      | Whether to back up immediately when the Server starts                                          |
 | `NARRATIVE_SERVER_HOST`                                            | `127.0.0.1`                  | Listen address; remote listening requires extra security configuration                         |
@@ -68,7 +68,7 @@ The release launchers have three more variables that affect only the launcher: `
 
 ## Docker-specific variables
 
-Compose reads `.env.local` and the shell environment:
+Compose fills these three from the shell environment or from a `.env` file at the repository root (Git and the Docker build ignore that file). `.env.local` reaches the Server container, so it works for model keys and other Server variables, but it does not change these three; `scripts/docker-start.ps1` writes a random token to `.env` when there is none.
 
 - `NARRATIVE_AUTH_TOKEN`: the default example value is only acceptable for local trials; replace it with a high-entropy token before the machine leaves your desk.
 - `NARRATIVE_WEB_BIND_HOST`: defaults to `127.0.0.1`. Changing it to `0.0.0.0` publishes the Web port on every network interface; do not do this without TLS, network ACLs, and independent backups.

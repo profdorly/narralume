@@ -44,7 +44,7 @@ export const settings: typeof settingsPt = {
     },
     embedding: {
       name: "Embedding model",
-      note: "Dedicated to retrieval and context assembly; never inherited — leaving it unset degrades to a prompt.",
+      note: "Used to search manuscript passages for the AI context; never inherited. Without it, search uses words and named characters only.",
     },
     rerank: {
       name: "Search reranking (optional)",
@@ -74,7 +74,7 @@ export const settings: typeof settingsPt = {
     label: "Provider and model management",
     summaryHint: "Add providers, configure keys, probe connections, or maintain model specs",
     counts: "{providers} providers · {models} models",
-    note: "Regular writing never needs this section. With the local browser kernel, your key stays only in this browser's OPFS database, and requests go straight to the Base URL you enter without passing through the built-in relay; that service must allow cross-origin browser access.",
+    note: "Regular writing never needs this section. With the local browser kernel, your key stays only in this browser's OPFS database, and requests go straight from the browser to the Base URL you enter; that service must allow cross-origin access (CORS).",
     providersLabel: "Model providers",
     add: "New",
     providersLoadError: "Model services cannot be loaded right now",

@@ -1,27 +1,27 @@
-name: Bug report
-description: 报告可复现的产品或工程问题
+name: Relato de bug
+description: Informe um problema reproduzível no produto ou no código
 title: "[Bug] "
 labels: ["type:bug", "status:needs-triage"]
 body:
   - type: textarea
     attributes:
-      label: 问题描述
-      description: 实际发生了什么，预期是什么？
+      label: Descrição do problema
+      description: O que aconteceu e o que você esperava?
     validations:
       required: true
   - type: textarea
     attributes:
-      label: 复现步骤
+      label: Passos para reproduzir
       placeholder: "1. …\n2. …\n3. …"
     validations:
       required: true
   - type: input
     attributes:
-      label: 版本与运行方式
-      placeholder: "v0.1.0 / Windows launcher / browser kernel / Docker"
+      label: Versão e modo de execução
+      placeholder: "v0.2.0 / launcher do Windows / núcleo local no navegador / Docker"
     validations:
       required: true
   - type: textarea
     attributes:
-      label: 日志或截图
-      description: 请先移除作品正文、密钥、Cookie 和私人地址。
+      label: Logs ou capturas de tela
+      description: Antes de enviar, remova o texto da obra, chaves, cookies e endereços privados.
