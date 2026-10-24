@@ -1019,3 +1019,126 @@ describe("GatewayNarrativeModelClient B1 assignment runtime", () => {
     database.close();
   });
 });
+
+describe("GatewayNarrativeModelClient decisions (rerank role)", () => {
+  const decisionRequest = {
+    input: "O que será escrito agora: capítulo 8",
+    questions: [
+      {
+        type: "predicate" as const,
+        name: "c1",
+        instructions: "Este trecho importa?",
+      },
+    ],
+  };
+
+  it("calls /decisions with the rerank assignment and records the call", async () => {
+    const database = new NodeNarrativeDatabase();
+    database.migrate();
+    seedAssignment(database);
+    seedAssignment(database, {
+      role: "rerank",
+      modelRowId: "model-rerank",
+      modelId: "gpt-6-luna",
+      wireApi: "openai-responses",
+    });
+    // A conversation model override never replaces the rerank model.
+    const { runs, step } = createRun(database, "run-rerank", {
+      assistantModelId: "model-writing",
+    });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            model: "gpt-6-luna",
+            answers: [{ type: "predicate", name: "c1", probability: 0.83 }],
+            usage: {
+              input_tokens: 64,
+              input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+              output_tokens: 0,
+              total_tokens: 64,
+            },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new GatewayNarrativeModelClient(database, {});
+    expect(client.hasRerankAssignment()).toBe(true);
+    const result = await client.decide(
+      runs.getRun("run-rerank")!,
+      step,
+      "context-retrieval-rerank",
+      decisionRequest,
+      new AbortController().signal,
+    );
+    expect(result).toMatchObject({
+      answers: [{ type: "predicate", name: "c1", probability: 0.83 }],
+      model: "gpt-6-luna",
+      modelId: "model-rerank",
+      usage: { inputTokens: 64, outputTokens: 0, calls: 1 },
+    });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(String(url)).toBe("https://provider-rerank.example/v1/decisions");
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      model: "gpt-6-luna",
+      questions: decisionRequest.questions,
+    });
+    expect(
+      database.raw
+        .prepare(
+          "SELECT model_id, model, purpose, status FROM llm_calls WHERE run_id = ?",
+        )
+        .all("run-rerank"),
+    ).toEqual([
+      {
+        model_id: "model-rerank",
+        model: "gpt-6-luna",
+        purpose: "context-retrieval-rerank:rerank",
+        status: "completed",
+      },
+    ]);
+    database.close();
+  });
+
+  it("refuses without a rerank assignment or on an Anthropic provider", async () => {
+    const database = new NodeNarrativeDatabase();
+    database.migrate();
+    seedAssignment(database);
+    const { runs, step } = createRun(database, "run-no-rerank");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new GatewayNarrativeModelClient(database, {});
+    expect(client.hasRerankAssignment()).toBe(false);
+    await expect(
+      client.decide(
+        runs.getRun("run-no-rerank")!,
+        step,
+        "context-retrieval-rerank",
+        decisionRequest,
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: "model.rerank_assignment.unavailable" });
+
+    seedAssignment(database, {
+      role: "rerank",
+      modelRowId: "model-rerank",
+      modelId: "gpt-6-luna",
+      wireApi: "anthropic-messages",
+    });
+    await expect(
+      client.decide(
+        runs.getRun("run-no-rerank")!,
+        step,
+        "context-retrieval-rerank",
+        decisionRequest,
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: "model.rerank_profile.unavailable" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    database.close();
+  });
+});

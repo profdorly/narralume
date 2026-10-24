@@ -86,6 +86,16 @@ Quando a IA escreve um capítulo ou responde na cocriação, o NarraLume procura
 - **Situação**: o Laboratório narrativo mostra quantos capítulos estão indexados, quantos trechos têm vetor do modelo atribuído e um botão "Reindexar agora". A variável `NARRATIVE_EMBEDDING_MODEL` não é mais lida; o Server registra um aviso se ela ainda estiver definida.
 - **Medição**: `npm run test:retrieval` roda a avaliação offline da busca (`evals/retrieval-v1.json`: dois livros de exemplo, em português e em inglês) e falha quando a qualidade cai abaixo do piso. `npm run eval:retrieval:real` roda os mesmos casos com um modelo de embedding real compatível com a OpenAI, enviando só o texto dos exemplos, usando `NARRATIVE_EVAL_EMBEDDING_API_KEY` (ou `NARRATIVE_LLM_API_KEY`) e, se quiser, `NARRATIVE_EVAL_EMBEDDING_BASE_URL`. Acrescente `--index=chapter` para comparar com o índice anterior, de um segmento por capítulo.
 
+### Reordenação com a Decisions API (opcional)
+
+Com um modelo atribuído ao papel "Reordenação da busca (opcional)", a busca entrega até 32 trechos candidatos e a [Decisions API da OpenAI](https://developers.openai.com/api/docs/guides/decisions) lê cada um ao lado do que vai ser escrito e estima a probabilidade de quem escreve precisar dele. Entram no contexto os 8 mais prováveis (no máximo dois por capítulo); trechos abaixo de 5% ficam de fora. A reordenação só escolhe entre o que a busca encontrou: sem a busca por palavras, personagens e embeddings não há candidatos.
+
+- **Onde vale**: escrita de capítulos por IA e cocriação. A busca do Laboratório narrativo não usa a reordenação.
+- **Como ativar**: em "Gestão de provedores e modelos", num provedor OpenAI (Chat Completions ou Responses, Base URL `https://api.openai.com/v1`), adicione o modelo `gpt-6-luna` com o tipo de tarefa "Reordenação". "Testar" envia uma pergunta à Decisions API. Depois, em "Papéis avançados", atribua o modelo a "Reordenação da busca (opcional)".
+- **Custo e privacidade**: a Decisions API cobra só a entrada, US$ 0,10 por milhão de tokens (preço de outubro de 2026). Com 32 trechos de cerca de 450 tokens, isso dá perto de US$ 0,0015 por capítulo. Os trechos candidatos são enviados à OpenAI em toda escrita por IA e cocriação.
+- **Falhas**: se a chamada falhar, a tarefa continua com a ordem da busca e registra um evento `run.degraded` (capacidade `rerank`).
+- **Medição**: `npm run eval:retrieval:real -- --reranker=decisions` acrescenta a linha `hybrid+rerank` à avaliação da busca, enviando só o texto dos livros de exemplo.
+
 ## Falhas comuns de configuração
 
 - **Há modelos, mas as tarefas dizem que não existe modelo padrão**: volte ao papel "Modelo padrão de geração" e atribua de novo; desativar um modelo ou provedor também remove as atribuições dele.

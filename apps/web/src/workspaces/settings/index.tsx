@@ -194,8 +194,8 @@ export function SettingsWorkspace() {
         inheritedModel={role === "planning" || role === "review" ? allModels.find((model) => model.id === writingAssignment?.modelId) : undefined}
         inherited={role === "planning" || role === "review"}
         providers={providers}
-        candidates={role === "embedding"
-          ? allModels.filter((model) => assignable(model) && model.taskType === "embedding")
+        candidates={role === "embedding" || role === "rerank"
+          ? allModels.filter((model) => assignable(model) && model.taskType === role)
           : generationModels}
         pending={assignMutation.isPending && assignMutation.variables?.role === role}
         error={assignMutation.variables?.role === role ? assignMutation.error : null}

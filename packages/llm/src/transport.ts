@@ -8,7 +8,7 @@ import {
 import type { AdapterConfig, FetchLike, ModelCallTiming } from "./types.js";
 
 export type EndpointKind =
-  "chat/completions" | "responses" | "messages" | "embeddings";
+  "chat/completions" | "responses" | "messages" | "embeddings" | "decisions";
 
 export const MAX_MODEL_RESPONSE_BYTES = 8 * 1024 * 1024;
 

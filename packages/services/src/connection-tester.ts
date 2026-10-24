@@ -1,6 +1,8 @@
 import {
   ModelGateway,
   createModelAdapter,
+  generateOpenAIDecisions,
+  generateOpenAIEmbeddings,
   isMaxTokensUnsupportedError,
   isReasoningEffortUnsupportedError,
   isSamplingParameterUnsupportedError,
@@ -60,7 +62,12 @@ export interface ProbeRequestCapabilities {
 }
 
 export interface ConnectionTestStage {
-  stage: "text" | "stream" | "tool" | "structured-output";
+  /**
+   * Generation models are probed on text, stream, tool and structured
+   * output; embedding models on "embedding"; rerank models on "decision".
+   */
+  stage:
+    "text" | "stream" | "tool" | "structured-output" | "embedding" | "decision";
   status: "passed" | "failed" | "unsupported" | "skipped";
   latencyMs: number;
   detail: string;
@@ -319,6 +326,78 @@ export async function testModelConnection(
   );
 
   return stages;
+}
+
+/**
+ * Probes a model of task type "embedding" or "rerank" with one call to the
+ * endpoint it serves (/embeddings or /decisions). Generation probes would
+ * send chat requests these models cannot answer.
+ */
+export async function testAuxiliaryModelConnection(
+  profile: ConnectionTestProfile,
+  taskType: "embedding" | "rerank",
+  environment: Readonly<Record<string, string | undefined>> = {},
+  dependencies: { fetch?: FetchLike } = {},
+): Promise<ConnectionTestStage[]> {
+  const stage = taskType === "embedding" ? "embedding" : "decision";
+  const apiKey = environment[profile.apiKeyEnv]?.trim();
+  if (!apiKey)
+    return [
+      {
+        stage,
+        status: "failed",
+        latencyMs: 0,
+        detail: `Environment variable ${profile.apiKeyEnv} is not configured`,
+      },
+    ];
+  if (profile.protocol === "anthropic-messages")
+    return [
+      {
+        stage,
+        status: "unsupported",
+        latencyMs: 0,
+        detail:
+          taskType === "embedding"
+            ? "The Anthropic Messages wire API does not offer embeddings; use an OpenAI-compatible provider"
+            : "The Decisions API is offered by OpenAI; use an OpenAI Chat Completions or Responses provider",
+      },
+    ];
+  const config: AdapterConfig = {
+    protocol: profile.protocol,
+    baseUrl: profile.baseUrl,
+    apiKey,
+    headers: profile.extraHeaders,
+    ...(profile.queryParams === undefined
+      ? {}
+      : { queryParams: profile.queryParams }),
+    timeoutMs: 45_000,
+    maxRetries: 1,
+    ...(dependencies.fetch === undefined ? {} : { fetch: dependencies.fetch }),
+  };
+  return [
+    await runStage(stage, async () => {
+      if (taskType === "embedding") {
+        const result = await generateOpenAIEmbeddings(config, profile.model, [
+          "Connection probe: the lighthouse went dark at midnight.",
+        ]);
+        return `Received a vector with ${result.vectors[0]?.length ?? 0} dimensions`;
+      }
+      const result = await generateOpenAIDecisions(config, profile.model, {
+        input: "The lighthouse went dark at midnight.",
+        questions: [
+          {
+            type: "predicate",
+            name: "probe",
+            instructions: "Does the input say that a light went out?",
+          },
+        ],
+      });
+      const answer = result.answers[0];
+      if (answer?.type !== "predicate")
+        throw new Error("The model declined the probe question");
+      return `Answered the probe question with probability ${answer.probability.toFixed(2)}`;
+    }),
+  ];
 }
 
 async function runStructuredOutputStage(

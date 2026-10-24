@@ -28,6 +28,7 @@ import { z } from "zod";
 
 import type { RouteApp } from "@narralume/services";
 import {
+  testAuxiliaryModelConnection,
   testModelConnection,
   type ConnectionTestProfile,
   type ConnectionTestStage,
@@ -188,12 +189,33 @@ export function registerProviderRoutes(
         finishedAt: new Date().toISOString(),
         stages: [
           {
-            stage: "text",
+            stage:
+              model.taskType === "embedding"
+                ? "embedding"
+                : model.taskType === "rerank"
+                  ? "decision"
+                  : "text",
             status: "failed",
             latencyMs: 0,
             detail: credential.reason,
           },
         ],
+      };
+    }
+    // Embedding and rerank models answer one endpoint each; probing them with
+    // chat requests would only produce failures. Their probe leaves the
+    // stored capability flags untouched.
+    if (model.taskType === "embedding" || model.taskType === "rerank") {
+      return {
+        providerId: provider.id,
+        modelId: model.id,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        stages: await testAuxiliaryModelConnection(
+          toProbeProfile(provider, model),
+          model.taskType,
+          { ...options.environment, [PROBE_KEY_ENV]: credential.apiKey },
+        ),
       };
     }
     const stages = await testModelConnection(

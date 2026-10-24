@@ -9,11 +9,14 @@ import type {
 import {
   createModelAdapter,
   collectModelEvents,
+  generateOpenAIDecisions,
   generateOpenAIEmbeddings,
   ModelGateway,
   StructuredOutputError,
   structuredTierPlan,
   type AdapterConfig,
+  type DecisionAnswer,
+  type DecisionRequest,
   type FinishReason,
   type FetchLike,
   type JsonSchemaContract,
@@ -94,6 +97,14 @@ export interface NarrativeEmbeddingResult {
   usage: RunBudgetUsage;
 }
 
+export interface NarrativeDecisionResult {
+  /** One answer per question, in question order. */
+  answers: DecisionAnswer[];
+  model: string;
+  modelId: string;
+  usage: RunBudgetUsage;
+}
+
 export interface NarrativeModelClient {
   text(
     run: NarrativeRun,
@@ -128,6 +139,19 @@ export interface NarrativeModelClient {
    * assigned. Lets callers skip passages that already have a current vector.
    */
   embeddingModelName?(run: NarrativeRun, purpose: string): string | null;
+  /**
+   * Typed decisions (OpenAI Decisions API) with the model assigned to the
+   * "rerank" role. Never falls back to another role.
+   */
+  decide?(
+    run: NarrativeRun,
+    step: NarrativeRunStep,
+    purpose: string,
+    request: DecisionRequest,
+    signal: AbortSignal,
+  ): Promise<NarrativeDecisionResult>;
+  /** True when an explicit rerank assignment is configured. */
+  hasRerankAssignment?(): boolean;
   /** Model-aware context ceiling for prompt compilation. */
   effectiveContextWindow?(run: NarrativeRun, purpose: string): number;
   /** Model- and role-aware output ceiling for context reserve planning. */
@@ -289,6 +313,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
     return this.assignments.resolve("embedding") !== null;
   }
 
+  hasRerankAssignment(): boolean {
+    return this.assignments.resolve("rerank") !== null;
+  }
+
   embeddingModelName(run: NarrativeRun, purpose: string): string | null {
     return (
       this.resolveSnapshotAssignment(run, `${purpose}:embedding`, "embedding")
@@ -432,6 +460,116 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
       logicalCall.dispose();
       return {
         vectors: response.vectors,
+        model: model.modelId,
+        modelId: model.id,
+        usage: budgetUsage(
+          response.usage,
+          durationMs,
+          physicalAttempts.count,
+          pricingFor(run, model.id),
+        ),
+      };
+    } catch (error) {
+      const scopedError = logicalCall.normalizeError(error, signal);
+      logicalCall.dispose();
+      this.recordFailure(
+        call.id,
+        call.started,
+        scopedError,
+        signal.aborted,
+        physicalAttempts.count,
+      );
+      const normalized = modelStepError(scopedError, signal.aborted);
+      throw {
+        ...normalized,
+        usage: pricedFailureUsage(
+          scopedError,
+          normalized,
+          Date.now() - call.started,
+          physicalAttempts.count,
+          pricingFor(run, model.id),
+        ),
+      };
+    }
+  }
+
+  async decide(
+    run: NarrativeRun,
+    step: NarrativeRunStep,
+    purpose: string,
+    request: DecisionRequest,
+    signal: AbortSignal,
+  ): Promise<NarrativeDecisionResult> {
+    const snapshotPurpose = `${purpose}:rerank`;
+    const resolved = this.resolveSnapshotAssignment(
+      run,
+      snapshotPurpose,
+      "rerank",
+    );
+    if (!resolved)
+      throw <RunStepError>{
+        code: "model.rerank_assignment.unavailable",
+        message: "No usable rerank model assignment is configured",
+        retryable: false,
+      };
+    const { model, provider } = resolved;
+    if (provider.wireApi === "anthropic-messages") {
+      throw <RunStepError>{
+        code: "model.rerank_profile.unavailable",
+        message: `Provider "${provider.name}" with the ${provider.wireApi} wire API does not offer the Decisions API`,
+        retryable: false,
+      };
+    }
+    const credential = resolveCredentialForEnvironment(
+      provider,
+      this.environment,
+    );
+    if (!credential.ok) throw credentialStepError(provider, credential);
+    const physicalAttempts = createPhysicalAttemptCounter();
+    const call = this.beginAuxiliaryCall(
+      run,
+      step,
+      `${purpose}:rerank`,
+      { model: model.modelId, request },
+      { callModelId: model.id, callProtocol: provider.wireApi },
+    );
+    const logicalCall = createLogicalCallScope(
+      resolveRuntimeTimeouts(run, provider).logicalCallDeadlineMs.value,
+      signal,
+    );
+    try {
+      const response = await withProviderPermit(
+        provider.id,
+        logicalCall.signal,
+        () =>
+          generateOpenAIDecisions(
+            this.assignmentAdapterConfig(
+              run,
+              step,
+              provider,
+              credential.apiKey,
+              physicalAttempts,
+            ),
+            model.modelId,
+            request,
+            logicalCall.signal,
+          ),
+      );
+      const durationMs = Date.now() - call.started;
+      this.calls.complete(call.id, {
+        finishReason: "stop",
+        usage: response.usage,
+        durationMs,
+        finishedAt: new Date().toISOString(),
+        details: {
+          physicalAttempts: physicalAttempts.count,
+          questions: request.questions.length,
+        },
+      });
+      this.recordAssignmentSnapshot(run, snapshotPurpose, "rerank", resolved);
+      logicalCall.dispose();
+      return {
+        answers: response.answers,
         model: model.modelId,
         modelId: model.id,
         usage: budgetUsage(
@@ -730,9 +868,10 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
     const frozen = this.assignmentSnapshots.get(run.id, purpose);
     if (!frozen) {
       // A conversation's model override picks a generation model; it never
-      // replaces the embedding model (vectors of another model are useless).
+      // replaces the embedding model (vectors of another model are useless)
+      // or the rerank model (the Decisions API serves one model).
       const override =
-        requestedRole === "embedding"
+        requestedRole === "embedding" || requestedRole === "rerank"
           ? null
           : this.resolvePolicyModelOverride(run);
       if (override) {
@@ -950,6 +1089,23 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
     request: { model: string; inputs: readonly string[] },
     target: { callModelId: string; callProtocol: ModelProtocol },
   ) {
+    return this.beginAuxiliaryCall(
+      run,
+      step,
+      `${purpose}:embedding`,
+      request,
+      target,
+    );
+  }
+
+  /** Ledger entry for a non-generative call (embeddings, decisions). */
+  private beginAuxiliaryCall(
+    run: NarrativeRun,
+    step: NarrativeRunStep,
+    ledgerPurpose: string,
+    request: { model: string } & Record<string, unknown>,
+    target: { callModelId: string; callProtocol: ModelProtocol },
+  ) {
     const id = randomUuid();
     const started = Date.now();
     this.calls.start({
@@ -960,7 +1116,7 @@ export class GatewayNarrativeModelClient implements NarrativeModelClient {
       modelId: target.callModelId,
       protocol: target.callProtocol,
       model: request.model,
-      purpose: `${purpose}:embedding`,
+      purpose: ledgerPurpose,
       requestHash: sha256Hex(stableJson(request)),
       startedAt: new Date(started).toISOString(),
     });

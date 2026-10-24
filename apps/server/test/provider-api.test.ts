@@ -1387,3 +1387,98 @@ function probeStreamResponse(): Response {
     headers: { "content-type": "text/event-stream" },
   });
 }
+
+describe("probing embedding and rerank models", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("probes a rerank model with one Decisions call and leaves its flags alone", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app);
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: {
+        providerId: provider.id,
+        modelId: "gpt-6-luna",
+        taskType: "rerank",
+      },
+    });
+    expect(created.statusCode, created.body).toBe(201);
+    const model = created.json() as {
+      id: string;
+      capabilities: Record<string, boolean>;
+    };
+    const assigned = await app.inject({
+      method: "PUT",
+      url: "/api/assignments/rerank",
+      payload: { modelId: model.id },
+    });
+    expect(assigned.statusCode, assigned.body).toBe(200);
+
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            model: "gpt-6-luna",
+            answers: [{ type: "predicate", name: "probe", probability: 0.97 }],
+            usage: { input_tokens: 30, output_tokens: 0, total_tokens: 30 },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const probed = await app.inject({
+      method: "POST",
+      url: "/api/providers/test",
+      payload: { providerId: provider.id, modelId: model.id },
+    });
+    expect(probed.statusCode, probed.body).toBe(200);
+    expect(probed.json()).toMatchObject({
+      stages: [
+        {
+          stage: "decision",
+          status: "passed",
+          detail: "Answered the probe question with probability 0.97",
+        },
+      ],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toMatch(
+      /\/v1\/decisions$/,
+    );
+    const after = (
+      await app.inject({ method: "GET", url: "/api/models" })
+    ).json() as { id: string; capabilities: Record<string, boolean> }[];
+    expect(after.find((entry) => entry.id === model.id)?.capabilities).toEqual(
+      model.capabilities,
+    );
+  });
+
+  it("reports a missing credential on the stage of the model's task type", async () => {
+    const { app } = await setup();
+    const provider = await createProvider(app, "env:NARRATIVE_UNSET_PROBE_KEY");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/models",
+      payload: {
+        providerId: provider.id,
+        modelId: "text-embedding-3-small",
+        taskType: "embedding",
+      },
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const probed = await app.inject({
+      method: "POST",
+      url: "/api/providers/test",
+      payload: {
+        providerId: provider.id,
+        modelId: (created.json() as { id: string }).id,
+      },
+    });
+    expect(probed.json()).toMatchObject({
+      stages: [{ stage: "embedding", status: "failed" }],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

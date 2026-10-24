@@ -10,6 +10,7 @@ import type { StepExecutionResult } from "@narralume/harness";
 import {
   optionalEmbeddings,
   recordEmbeddingDegradation,
+  recordRunDegradation,
 } from "../embedding-support.js";
 import { outlineContextSources } from "../outline-context.js";
 import { promptLanguageOf } from "../prompt-language.js";
@@ -20,6 +21,13 @@ import {
   RETRIEVAL_MAX_PER_DOCUMENT,
   retrievalContextSources,
 } from "../retrieval-query.js";
+import {
+  hasRetrievalReranker,
+  limitHitsPerDocument,
+  RERANK_CANDIDATES,
+  RERANK_MAX_PER_DOCUMENT,
+  rerankRetrievalHits,
+} from "../retrieval-rerank.js";
 import { SqliteManuscriptIndexer } from "@narralume/persistence";
 
 import {
@@ -396,10 +404,15 @@ export async function compileContext(
     step.id,
     queryEmbedding.degradation,
   );
-  const retrievalHits = deps.retrieval.search(run.projectId, retrievalQuery, {
+  // With a rerank model assigned, the hybrid search proposes more
+  // candidates and the reranker picks the ones the writer needs.
+  const reranking = hasRetrievalReranker(deps.model);
+  const candidates = deps.retrieval.search(run.projectId, retrievalQuery, {
     entityIds: plannedEntityIds,
-    limit: RETRIEVAL_LIMIT,
-    maxPerDocument: RETRIEVAL_MAX_PER_DOCUMENT,
+    limit: reranking ? RERANK_CANDIDATES : RETRIEVAL_LIMIT,
+    maxPerDocument: reranking
+      ? RERANK_MAX_PER_DOCUMENT
+      : RETRIEVAL_MAX_PER_DOCUMENT,
     excludeDocumentIds: [...pinnedDocumentIds],
     rerank: false,
     ...(queryEmbedding.vectors[0]
@@ -409,6 +422,21 @@ export async function compileContext(
       : {}),
     ...(queryEmbedding.model ? { embeddingModel: queryEmbedding.model } : {}),
   });
+  const rerank = await rerankRetrievalHits({
+    client: deps.model,
+    run,
+    step,
+    purpose: "context-retrieval-rerank",
+    task: retrievalQuery,
+    language: project.language,
+    hits: candidates,
+    signal,
+  });
+  recordRunDegradation(deps.database, run.id, step.id, rerank.degradation);
+  const retrievalHits = limitHitsPerDocument(
+    rerank.hits,
+    RETRIEVAL_MAX_PER_DOCUMENT,
+  ).slice(0, RETRIEVAL_LIMIT);
   sources.push(
     ...retrievalContextSources(
       retrievalHits.filter((hit) => !pinnedDocumentSourceIds.has(hit.sourceId)),
@@ -469,6 +497,9 @@ export async function compileContext(
       inventoryDigest: string;
     }
   > = {};
+  const degradations = [queryEmbedding.degradation, rerank.degradation].filter(
+    (entry): entry is NonNullable<typeof entry> => entry !== null,
+  );
   for (const [purpose, purposeRequest] of Object.entries(purposeRequests)) {
     const statePacket = [
       "scene-plan",
@@ -526,9 +557,7 @@ export async function compileContext(
       materializationDigest: sha256(
         `${purposeInventoryDigest}\0${purpose}\0${contextWindow}\0${outputReserve}\0${modelMaterializationKey}`,
       ),
-      ...(queryEmbedding.degradation
-        ? { degradations: [queryEmbedding.degradation] }
-        : {}),
+      ...(degradations.length > 0 ? { degradations } : {}),
     };
     if (!deps.receipts.get(run.projectId, receipt.id)) {
       deps.receipts.insert(receipt, { runId: run.id, stepId: step.id });
@@ -572,8 +601,21 @@ export async function compileContext(
         pendingPassages: indexEmbedding.remaining,
         warning: indexEmbedding.warning,
       },
+      retrievalRerank: {
+        applied: rerank.applied,
+        model: rerank.model,
+        modelId: rerank.modelId,
+        candidates: candidates.length,
+        scored: rerank.scored,
+        dropped: rerank.dropped,
+        warning: rerank.warning,
+      },
     },
-    usage: addBudgetUsage(indexEmbedding.usage, queryEmbedding.usage),
+    usage: addBudgetUsage(
+      indexEmbedding.usage,
+      queryEmbedding.usage,
+      rerank.usage,
+    ),
   };
 }
 

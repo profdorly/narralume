@@ -182,13 +182,21 @@ export function qualityPresetLabel(preset: QualityPreset): string {
 }
 
 export function probeStageLabel(
-  stage: "text" | "stream" | "tool" | "structured-output",
+  stage:
+    | "text"
+    | "stream"
+    | "tool"
+    | "structured-output"
+    | "embedding"
+    | "decision",
 ): string {
   const keys: Record<typeof stage, MessageKey> = {
     text: "labels.probeStage.text",
     stream: "labels.probeStage.stream",
     tool: "labels.probeStage.tool",
     "structured-output": "labels.probeStage.structuredOutput",
+    embedding: "labels.probeStage.embedding",
+    decision: "labels.probeStage.decision",
   };
   return translate(getLocale(), keys[stage]);
 }

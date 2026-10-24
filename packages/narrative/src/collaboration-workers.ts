@@ -39,6 +39,7 @@ import type { NarrativeModelClient } from "./model-client.js";
 import {
   optionalEmbeddings,
   recordEmbeddingDegradation,
+  recordRunDegradation,
 } from "./embedding-support.js";
 import { outlineContextSources } from "./outline-context.js";
 import {
@@ -51,6 +52,13 @@ import {
   RETRIEVAL_MAX_PER_DOCUMENT,
   retrievalContextSources,
 } from "./retrieval-query.js";
+import {
+  hasRetrievalReranker,
+  limitHitsPerDocument,
+  RERANK_CANDIDATES,
+  RERANK_MAX_PER_DOCUMENT,
+  rerankRetrievalHits,
+} from "./retrieval-rerank.js";
 import {
   authoredInstructions,
   instructionsFor,
@@ -78,6 +86,9 @@ import {
 } from "./project-guard.js";
 
 const LORE_CONTEXT_BUDGET_CHARS = 12_000;
+
+/** Retrieved passages in the story-room context. */
+const COCREATE_RETRIEVAL_LIMIT = 6;
 
 export class CollaborationWorkerSuite {
   private readonly creative: SqliteCreativeRepository;
@@ -546,22 +557,49 @@ export class CollaborationWorkerSuite {
       step.id,
       queryEmbedding.degradation,
     );
+    const reranking = hasRetrievalReranker(this.model);
+    const candidates = this.retrieval.search(
+      session.projectId,
+      retrievalQuery,
+      {
+        entityIds: [speakerPersona?.entityId].filter((value): value is string =>
+          Boolean(value),
+        ),
+        limit: reranking ? RERANK_CANDIDATES : COCREATE_RETRIEVAL_LIMIT,
+        maxPerDocument: reranking
+          ? RERANK_MAX_PER_DOCUMENT
+          : RETRIEVAL_MAX_PER_DOCUMENT,
+        rerank: false,
+        ...(queryEmbedding.vectors[0]
+          ? { queryEmbedding: queryEmbedding.vectors[0] }
+          : {}),
+        ...(queryEmbedding.model
+          ? { embeddingModel: queryEmbedding.model }
+          : {}),
+      },
+    );
+    const rerank = await rerankRetrievalHits({
+      client: this.model,
+      run: snapshot.run,
+      step,
+      purpose: "cocreate-retrieval-rerank",
+      task: retrievalQuery,
+      language: project.language,
+      hits: candidates,
+      signal,
+    });
+    recordRunDegradation(
+      this.database,
+      snapshot.run.id,
+      step.id,
+      rerank.degradation,
+    );
     sources.push(
       ...retrievalContextSources(
-        this.retrieval.search(session.projectId, retrievalQuery, {
-          entityIds: [speakerPersona?.entityId].filter(
-            (value): value is string => Boolean(value),
-          ),
-          limit: 6,
-          maxPerDocument: RETRIEVAL_MAX_PER_DOCUMENT,
-          rerank: false,
-          ...(queryEmbedding.vectors[0]
-            ? { queryEmbedding: queryEmbedding.vectors[0] }
-            : {}),
-          ...(queryEmbedding.model
-            ? { embeddingModel: queryEmbedding.model }
-            : {}),
-        }),
+        limitHitsPerDocument(rerank.hits, RETRIEVAL_MAX_PER_DOCUMENT).slice(
+          0,
+          COCREATE_RETRIEVAL_LIMIT,
+        ),
         {
           idPrefix: "cocreate-retrieval",
           language: project.language,
@@ -667,9 +705,13 @@ export class CollaborationWorkerSuite {
         contextStatus: receipt?.status ?? "excluded",
       };
     });
+    const degradations = [
+      queryEmbedding.degradation,
+      rerank.degradation,
+    ].filter((entry): entry is NonNullable<typeof entry> => entry !== null);
     this.receipts.insert(
-      queryEmbedding.degradation
-        ? { ...compiled.receipt, degradations: [queryEmbedding.degradation] }
+      degradations.length > 0
+        ? { ...compiled.receipt, degradations }
         : compiled.receipt,
       {
         runId: snapshot.run.id,
@@ -720,8 +762,21 @@ export class CollaborationWorkerSuite {
           pendingPassages: indexEmbedding.remaining,
           warning: indexEmbedding.warning,
         },
+        retrievalRerank: {
+          applied: rerank.applied,
+          model: rerank.model,
+          modelId: rerank.modelId,
+          candidates: candidates.length,
+          scored: rerank.scored,
+          dropped: rerank.dropped,
+          warning: rerank.warning,
+        },
       },
-      usage: addBudgetUsage(indexEmbedding.usage, queryEmbedding.usage),
+      usage: addBudgetUsage(
+        indexEmbedding.usage,
+        queryEmbedding.usage,
+        rerank.usage,
+      ),
     };
   }
 

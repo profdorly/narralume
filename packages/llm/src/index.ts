@@ -4,6 +4,7 @@ import { OpenAIResponsesAdapter } from "./adapters/openai-responses.js";
 import type { AdapterConfig, ModelAdapter } from "./types.js";
 
 export * from "./error.js";
+export * from "./decisions.js";
 export * from "./embeddings.js";
 export * from "./gateway.js";
 export * from "./sse.js";

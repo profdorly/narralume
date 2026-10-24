@@ -22,6 +22,13 @@
  *   --index=passage    index shape: passages (default, what the product
  *                      writes) or "chapter" (one segment per chapter, the
  *                      previous index) for comparison.
+ *   --reranker=decisions
+ *                      also score "hybrid+rerank": the hybrid candidates
+ *                      reranked by OpenAI's Decisions API through the same
+ *                      code the product runs. Sends fixture text only.
+ *                      Same credentials as --embedder=openai.
+ *   --rerank-model=<name>
+ *                      Decisions model (default gpt-6-luna).
  *   --check            fail when the offline quality floor regresses.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -34,9 +41,20 @@ import {
   createOutlineNode,
   createProject,
 } from "@narralume/domain";
+import type {
+  NarrativeRun,
+  NarrativeRunStep,
+  RunBudgetUsage,
+} from "@narralume/domain";
+import { generateOpenAIDecisions } from "@narralume/llm";
 import {
+  limitHitsPerDocument,
+  RERANK_CANDIDATES,
+  RERANK_MAX_PER_DOCUMENT,
+  rerankRetrievalHits,
   RETRIEVAL_LIMIT,
   RETRIEVAL_MAX_PER_DOCUMENT,
+  type NarrativeModelClient,
 } from "@narralume/narrative";
 import {
   LEGACY_DOCUMENT_SOURCE,
@@ -89,7 +107,8 @@ interface Embedder {
   embed(texts: readonly string[]): Promise<number[][]>;
 }
 
-type SignalMix = "lexical" | "lexical+entity" | "vector" | "hybrid";
+type SignalMix =
+  "lexical" | "lexical+entity" | "vector" | "hybrid" | "hybrid+rerank";
 const SIGNAL_MIXES: readonly SignalMix[] = [
   "lexical",
   "lexical+entity",
@@ -119,17 +138,30 @@ async function main(): Promise<void> {
   const embedder =
     args.embedder === "openai" ? openAiEmbedder(args.model) : hashEmbedder();
 
+  const reranker = args.reranker ? openAiReranker(args.rerankModel) : null;
+  const mixes: readonly SignalMix[] = reranker
+    ? [...SIGNAL_MIXES, "hybrid+rerank"]
+    : SIGNAL_MIXES;
   const results: CaseResult[] = [];
   for (const corpus of dataset.corpora) {
-    results.push(...(await evaluateCorpus(corpus, embedder, args.index)));
+    results.push(
+      ...(await evaluateCorpus(corpus, embedder, args.index, reranker)),
+    );
   }
 
-  const summary = summarize(results);
+  const summary = summarize(results, mixes);
   const report = {
     dataset: dataset.version,
     generatedAt: new Date().toISOString(),
     embedder: { name: embedder.name, model: embedder.model },
     index: args.index,
+    reranker: reranker
+      ? {
+          model: args.rerankModel,
+          calls: reranker.usage.calls,
+          inputTokens: reranker.usage.inputTokens,
+        }
+      : null,
     summary,
     results,
   };
@@ -137,14 +169,18 @@ async function main(): Promise<void> {
     root,
     ".tmp",
     "evals",
-    `${dataset.version}-${embedder.name}-${args.index}.json`,
+    `${dataset.version}-${embedder.name}-${args.index}${reranker ? "-rerank" : ""}.json`,
   );
   mkdirSync(dirname(reportPath), { recursive: true });
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   console.log(
-    `embedder: ${embedder.name} (${embedder.model}) · index: ${args.index}`,
+    `embedder: ${embedder.name} (${embedder.model}) · index: ${args.index}${
+      reranker
+        ? ` · reranker: ${args.rerankModel} (${reranker.usage.calls} calls, ${reranker.usage.inputTokens} input tokens)`
+        : ""
+    }`,
   );
-  printSummary(summary);
+  printSummary(summary, mixes);
   console.log(`report: ${reportPath}`);
 
   if (args.check) {
@@ -162,6 +198,7 @@ async function evaluateCorpus(
   corpus: Corpus,
   embedder: Embedder,
   indexMode: IndexMode,
+  reranker: Reranker | null,
 ): Promise<CaseResult[]> {
   const database = new NodeNarrativeDatabase();
   try {
@@ -276,7 +313,7 @@ async function evaluateCorpus(
       queries.map((query) => query || " "),
     );
     const results: CaseResult[] = [];
-    corpus.cases.forEach((entry, index) => {
+    for (const [index, entry] of corpus.cases.entries()) {
       for (const mix of SIGNAL_MIXES) {
         const useLexical = mix !== "vector";
         const useEntity = mix === "lexical+entity" || mix === "hybrid";
@@ -301,7 +338,48 @@ async function evaluateCorpus(
         );
         results.push(scoreCase(corpus, entry, mix, hits, chapterOfDocument));
       }
-    });
+      if (reranker) {
+        // What the chapter writer does with a rerank model assigned.
+        const candidates = retrieval.search(projectId, entry.query, {
+          entityIds: entry.entityIds ?? [],
+          limit: RERANK_CANDIDATES,
+          rerank: false,
+          maxPerDocument: RERANK_MAX_PER_DOCUMENT,
+          ...(entry.query
+            ? {
+                queryEmbedding: queryVectors[index]!,
+                embeddingModel: embedder.model,
+              }
+            : {}),
+        });
+        const reranked = await rerankRetrievalHits({
+          client: reranker.client,
+          run: EVAL_RUN,
+          step: EVAL_STEP,
+          purpose: "retrieval-eval-rerank",
+          task: entry.query || corpus.title,
+          language: corpus.language,
+          hits: candidates,
+          signal: new AbortController().signal,
+        });
+        if (reranked.warning)
+          throw new Error(
+            `Rerank failed: ${reranked.warning.code} ${reranked.warning.message}`,
+          );
+        results.push(
+          scoreCase(
+            corpus,
+            entry,
+            "hybrid+rerank",
+            limitHitsPerDocument(
+              reranked.hits,
+              RETRIEVAL_MAX_PER_DOCUMENT,
+            ).slice(0, RETRIEVAL_LIMIT),
+            chapterOfDocument,
+          ),
+        );
+      }
+    }
     return results;
   } finally {
     database.close();
@@ -356,9 +434,12 @@ type Summary = Record<
   }
 >;
 
-function summarize(results: readonly CaseResult[]): Summary {
+function summarize(
+  results: readonly CaseResult[],
+  mixes: readonly SignalMix[],
+): Summary {
   const summary = {} as Summary;
-  for (const mix of SIGNAL_MIXES) {
+  for (const mix of mixes) {
     const forMix = results.filter((result) => result.mix === mix);
     const scored = forMix.filter((result) => result.kind !== "noise");
     const entry: Summary[SignalMix] = {
@@ -406,12 +487,12 @@ function mixSummary(results: readonly CaseResult[]): MixSummary {
   };
 }
 
-function printSummary(summary: Summary): void {
+function printSummary(summary: Summary, mixes: readonly SignalMix[]): void {
   const rows: string[] = [];
   rows.push(
     "mix             kind        cases  hit@1  hit@3  hit@8   MRR   ctxChars  evid@1",
   );
-  for (const mix of SIGNAL_MIXES) {
+  for (const mix of mixes) {
     const entry = summary[mix];
     for (const kind of [
       "all",
@@ -525,22 +606,7 @@ function fnv1a(value: string): number {
 }
 
 function openAiEmbedder(model: string): Embedder {
-  for (const file of [".env.local", ".env"]) {
-    const path = resolve(root, file);
-    if (existsSync(path)) process.loadEnvFile(path);
-  }
-  const apiKey =
-    process.env.NARRATIVE_EVAL_EMBEDDING_API_KEY ??
-    process.env.NARRATIVE_LLM_API_KEY;
-  const baseUrl = (
-    process.env.NARRATIVE_EVAL_EMBEDDING_BASE_URL ??
-    process.env.NARRATIVE_LLM_BASE_URL ??
-    "https://api.openai.com/v1"
-  ).replace(/\/+$/u, "");
-  if (!apiKey)
-    throw new Error(
-      "Set NARRATIVE_EVAL_EMBEDDING_API_KEY (or NARRATIVE_LLM_API_KEY) to use --embedder=openai",
-    );
+  const { apiKey, baseUrl } = openAiCredentials("--embedder=openai");
   return {
     name: `openai-${model}`,
     model,
@@ -584,10 +650,110 @@ function openAiEmbedder(model: string): Embedder {
   };
 }
 
+interface Reranker {
+  client: NarrativeModelClient;
+  usage: RunBudgetUsage;
+}
+
+const EVAL_RUN = {
+  id: "retrieval-eval",
+  projectId: "retrieval-eval",
+  policy: {},
+} as unknown as NarrativeRun;
+const EVAL_STEP = {
+  id: "retrieval-eval:rerank",
+  runId: "retrieval-eval",
+} as unknown as NarrativeRunStep;
+
+/**
+ * A model client that only offers `decide`, backed by the real Decisions
+ * API. The product's rerankRetrievalHits builds the questions.
+ */
+function openAiReranker(model: string): Reranker {
+  const { apiKey, baseUrl } = openAiCredentials("--reranker=decisions");
+  const usage: RunBudgetUsage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    calls: 0,
+    costUsd: 0,
+    wallTimeMs: 0,
+  };
+  const client = {
+    text: () => Promise.reject(new Error("not used")),
+    structured: () => Promise.reject(new Error("not used")),
+    hasRerankAssignment: () => true,
+    async decide(
+      _run: NarrativeRun,
+      _step: NarrativeRunStep,
+      _purpose: string,
+      request: Parameters<typeof generateOpenAIDecisions>[2],
+    ) {
+      const started = Date.now();
+      try {
+        const result = await generateOpenAIDecisions(
+          { protocol: "openai-responses", baseUrl, apiKey, timeoutMs: 120_000 },
+          model,
+          request,
+        );
+        const callUsage = {
+          inputTokens: result.usage.inputTokens,
+          outputTokens: 0,
+          calls: 1,
+          costUsd: 0,
+          wallTimeMs: Date.now() - started,
+        };
+        usage.inputTokens += callUsage.inputTokens;
+        usage.calls += 1;
+        usage.wallTimeMs += callUsage.wallTimeMs;
+        return {
+          answers: result.answers,
+          model,
+          modelId: model,
+          usage: callUsage,
+        };
+      } catch (error) {
+        // Report the status and error code only, never the provider body.
+        const status =
+          error && typeof error === "object" && "status" in error
+            ? String((error as { status: unknown }).status)
+            : "?";
+        throw {
+          code: "eval.rerank.failed",
+          message: `Decisions request failed (HTTP ${status})`,
+          retryable: false,
+        };
+      }
+    },
+  } as unknown as NarrativeModelClient;
+  return { client, usage };
+}
+
+function openAiCredentials(flag: string): { apiKey: string; baseUrl: string } {
+  for (const file of [".env.local", ".env"]) {
+    const path = resolve(root, file);
+    if (existsSync(path)) process.loadEnvFile(path);
+  }
+  const apiKey =
+    process.env.NARRATIVE_EVAL_EMBEDDING_API_KEY ??
+    process.env.NARRATIVE_LLM_API_KEY;
+  const baseUrl = (
+    process.env.NARRATIVE_EVAL_EMBEDDING_BASE_URL ??
+    process.env.NARRATIVE_LLM_BASE_URL ??
+    "https://api.openai.com/v1"
+  ).replace(/\/+$/u, "");
+  if (!apiKey)
+    throw new Error(
+      `Set NARRATIVE_EVAL_EMBEDDING_API_KEY (or NARRATIVE_LLM_API_KEY) to use ${flag}`,
+    );
+  return { apiKey, baseUrl };
+}
+
 function parseArgs(argv: readonly string[]) {
   let embedderName: "hash" | "openai" = "hash";
   let model = "text-embedding-3-small";
   let index: IndexMode = "passage";
+  let reranker: "decisions" | null = null;
+  let rerankModel = "gpt-6-luna";
   let check = false;
   for (const argument of argv) {
     if (argument === "--check") check = true;
@@ -598,6 +764,13 @@ function parseArgs(argv: readonly string[]) {
       embedderName = value;
     } else if (argument.startsWith("--model=")) {
       model = argument.slice("--model=".length).trim() || model;
+    } else if (argument.startsWith("--reranker=")) {
+      const value = argument.slice("--reranker=".length);
+      if (value !== "decisions") throw new Error(`Unknown reranker: ${value}`);
+      reranker = value;
+    } else if (argument.startsWith("--rerank-model=")) {
+      rerankModel =
+        argument.slice("--rerank-model=".length).trim() || rerankModel;
     } else if (argument.startsWith("--index=")) {
       const value = argument.slice("--index=".length);
       if (value !== "passage" && value !== "chapter")
@@ -605,11 +778,11 @@ function parseArgs(argv: readonly string[]) {
       index = value;
     } else {
       throw new Error(
-        "Usage: tsx scripts/retrieval-eval.ts [--embedder=hash|openai] [--model=name] [--index=passage|chapter] [--check]",
+        "Usage: tsx scripts/retrieval-eval.ts [--embedder=hash|openai] [--model=name] [--index=passage|chapter] [--reranker=decisions] [--rerank-model=name] [--check]",
       );
     }
   }
-  return { embedder: embedderName, model, index, check };
+  return { embedder: embedderName, model, index, reranker, rerankModel, check };
 }
 
 function round(value: number): number {

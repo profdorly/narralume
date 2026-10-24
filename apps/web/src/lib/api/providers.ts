@@ -38,7 +38,13 @@ export async function deleteProvider(providerId: string): Promise<void> {
 }
 
 export interface ProbeStage {
-  stage: "text" | "stream" | "tool" | "structured-output";
+  stage:
+    | "text"
+    | "stream"
+    | "tool"
+    | "structured-output"
+    | "embedding"
+    | "decision";
   status: "passed" | "failed" | "unsupported" | "skipped";
   latencyMs: number;
   detail: string;

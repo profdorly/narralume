@@ -86,6 +86,16 @@ When the AI writes a chapter or answers in co-creation, NarraLume searches the e
 - **Status**: the Narrative Lab shows how many chapters are indexed, how many passages have a vector from the assigned model, and a "Reindex now" button. `NARRATIVE_EMBEDDING_MODEL` is no longer read; the Server logs a warning if it is still set.
 - **Measuring**: `npm run test:retrieval` runs the offline retrieval eval (`evals/retrieval-v1.json`: two fixture books, Portuguese and English) and fails when quality drops below its floor. `npm run eval:retrieval:real` runs the same cases against a real OpenAI-compatible embedding model, sending only the fixture text, with `NARRATIVE_EVAL_EMBEDDING_API_KEY` (or `NARRATIVE_LLM_API_KEY`) and an optional `NARRATIVE_EVAL_EMBEDDING_BASE_URL`. Add `--index=chapter` to compare with the previous one-segment-per-chapter index.
 
+### Reranking with the Decisions API (optional)
+
+With a model assigned to the "Search reranking (optional)" role, the search hands up to 32 candidate passages to the [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), which reads each one next to what is about to be written and estimates the probability that the writer needs it. The 8 most likely (at most two per chapter) go into the context; passages below 5% are left out. Reranking only chooses among what the search found: without the word, character, and embedding search there are no candidates.
+
+- **Where it applies**: AI chapter writing and co-creation. The Narrative Lab search does not rerank.
+- **How to enable**: in "Provider and model management", under an OpenAI provider (Chat Completions or Responses, Base URL `https://api.openai.com/v1`), add the model `gpt-6-luna` with task type "Rerank". "Probe" sends one question to the Decisions API. Then, under "Advanced roles", assign the model to "Search reranking (optional)".
+- **Cost and privacy**: the Decisions API bills input only, US$ 0.10 per million tokens (October 2026 price). With 32 passages of about 450 tokens, that is roughly US$ 0.0015 per chapter. The candidate passages are sent to OpenAI on every AI writing and co-creation turn.
+- **Failures**: if the call fails, the task continues with the search order and records a `run.degraded` event (capability `rerank`).
+- **Measuring**: `npm run eval:retrieval:real -- --reranker=decisions` adds a `hybrid+rerank` row to the retrieval eval, sending only the fixture text.
+
 ## Common configuration failures
 
 - **Models exist, but tasks report no default model**: go back to the "Default generation model" role and reassign it; disabling a model or provider also removes its assignments.

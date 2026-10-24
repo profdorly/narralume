@@ -8,7 +8,7 @@ import type {
 } from "../../lib/api";
 
 export const PRIMARY_ROLES: AssignmentRole[] = ["writing", "embedding"];
-export const ADVANCED_ROLES: AssignmentRole[] = ["planning", "review"];
+export const ADVANCED_ROLES: AssignmentRole[] = ["planning", "review", "rerank"];
 export const TASK_TYPES: ModelTaskType[] = [...PRIMARY_ROLES, ...ADVANCED_ROLES];
 export const WIRE_APIS: WireApi[] = [
   "openai-chat",

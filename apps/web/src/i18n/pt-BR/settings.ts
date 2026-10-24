@@ -23,7 +23,7 @@ export const settings = {
     label: "Modelo padrão de geração e herança de papéis",
     hint: "Escolha um modelo padrão de geração; escrita, planejamento e revisão o compartilham; o modelo de embedding se configura à parte.",
     loadError: "Não foi possível carregar a configuração do modelo padrão agora",
-    advancedSummary: "Substituições avançadas · atribuir um modelo à parte para planejamento ou revisão",
+    advancedSummary: "Papéis avançados · modelo à parte para planejamento ou revisão e reordenação da busca",
     advancedHint:
       "Em geral não é preciso mexer aqui. Substitua só quando de fato precisar de outro modelo; ao remover a substituição, a herança do modelo padrão de geração volta na hora.",
   },
@@ -45,8 +45,8 @@ export const settings = {
       note: "Dedicado à recuperação e à montagem de contexto; nunca é herdado — deixá-lo vazio degrada para um prompt.",
     },
     rerank: {
-      name: "Reordenação",
-      note: "",
+      name: "Reordenação da busca (opcional)",
+      note: "Lê os trechos que a busca encontrou e escolhe os que a IA precisa para escrever. Usa a Decisions API da OpenAI: crie o modelo gpt-6-luna com o tipo “Reordenação” num provedor OpenAI. Sem ele, vale a ordem da busca.",
     },
   },
   roleCard: {
@@ -115,7 +115,7 @@ export const settings = {
     modelIdLabel: "Nome do modelo na origem",
     taskTypeLabel: "Tipo de modelo",
     taskTypeHint:
-      "Modelos generativos podem servir à escrita, ao planejamento e à revisão; isto só registra o uso mais frequente.",
+      "Modelos generativos podem servir à escrita, ao planejamento e à revisão; isto só registra o uso mais frequente. Embedding e Reordenação são tipos à parte, cada um com o seu papel.",
     contextLabel: "Limite de contexto",
     outputLabel: "Limite de saída",
     limitPlaceholder: "Deixe vazio se não souber",

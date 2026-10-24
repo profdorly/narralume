@@ -1213,6 +1213,213 @@ describe("ChapterWorkerSuite", () => {
   });
 });
 
+describe("ChapterWorkerSuite retrieval rerank", () => {
+  function seedEarlierChapters() {
+    const story = new SqliteStoryRepository(database);
+    const documents = new SqliteDocumentRepository(database);
+    const root = story.requireOutlineNode("p1", "book");
+    const chapters = [
+      {
+        node: chapterId,
+        id: "doc-1",
+        title: "雾港失灯",
+        text: "林昼在旧港仓库找到铜钥匙。",
+      },
+      {
+        node: "chapter-2",
+        id: "doc-2",
+        title: "空椅来客",
+        text: "父亲把铜钥匙藏进灯塔的旧箱子。",
+      },
+      {
+        node: "chapter-3",
+        id: "doc-3",
+        title: "潮声",
+        text: "潮水退去，铜钥匙在石阶上发亮。",
+      },
+    ];
+    chapters.forEach((chapter, ordinal) => {
+      if (ordinal > 0)
+        story.insertOutlineNode(
+          createOutlineNode({
+            id: chapter.node,
+            projectId: "p1",
+            parent: root,
+            kind: "chapter",
+            ordinal,
+            title: chapter.title,
+            now,
+          }),
+        );
+      documents.insert(
+        createDocument({
+          id: chapter.id,
+          projectId: "p1",
+          kind: "chapter",
+          title: chapter.title,
+          outlineNodeId: chapter.node,
+          now,
+        }),
+      );
+      documents.appendVersion("p1", chapter.id, {
+        id: `${chapter.id}-v1`,
+        content: chapter.text,
+        source: "manual",
+        expectedCurrentVersionId: null,
+        now,
+      });
+    });
+    return story.insertOutlineNode(
+      createOutlineNode({
+        id: "chapter-4",
+        projectId: "p1",
+        parent: root,
+        kind: "chapter",
+        ordinal: 3,
+        title: "灯塔底层",
+        summary: "林昼用铜钥匙打开灯塔底层。",
+        now,
+      }),
+    );
+  }
+
+  async function compileWith(model: NarrativeModelClient, runId: string) {
+    const target = seedEarlierChapters();
+    const recipe = buildChapterRecipe(runId, 0);
+    runs.create({
+      id: runId,
+      projectId: "p1",
+      recipe: recipe.name,
+      recipeVersion: recipe.version,
+      mode: "autopilot",
+      targetOutlineNodeId: target.id,
+      policy: { minChapterCharacters: 20, contextWindow: 8_000 },
+      steps: recipe.steps,
+      now,
+    });
+    const supervisor = new HarnessSupervisor(
+      runs,
+      new ChapterWorkerSuite(database, model, () => new Date(now)).registry(),
+      { now: () => new Date(now) },
+    );
+    expect(await supervisor.processNext("worker-rerank")).toBe(true);
+    const snapshot = runs.getSnapshot(runId);
+    const compile = snapshot.steps.find(
+      (step) => step.kind === "context.compile",
+    )!;
+    const receipt = new SqliteContextReceiptRepository(database)
+      .list("p1", 10)
+      .find((entry) => entry.purpose === "chapter-draft")!;
+    return {
+      compile,
+      receipt,
+      retrieved: receipt.entries.filter((entry) => entry.kind === "retrieval"),
+      events: snapshot.events,
+    };
+  }
+
+  it("lets the rerank model pick and order the retrieved passages", async () => {
+    const questions: string[][] = [];
+    const model: NarrativeModelClient = {
+      ...scriptedModel("第四章正文足够长，可以通过机械检查。", {
+        nearEvidence: true,
+      }),
+      hasRerankAssignment: () => true,
+      async decide(_run, _step, purpose, request) {
+        expect(purpose).toBe("context-retrieval-rerank");
+        questions.push(
+          request.questions.map((question) => question.instructions),
+        );
+        return {
+          answers: request.questions.map((question) => ({
+            type: "predicate" as const,
+            name: question.name,
+            // Chapter 2 hides the key in the lighthouse; chapter 1 is noise.
+            probability: question.instructions.includes("藏进灯塔")
+              ? 0.91
+              : 0.01,
+          })),
+          model: "gpt-6-luna",
+          modelId: "model-rerank",
+          usage: {
+            inputTokens: 300,
+            outputTokens: 0,
+            calls: 1,
+            costUsd: 0,
+            wallTimeMs: 5,
+          },
+        };
+      },
+    };
+    const { compile, retrieved } = await compileWith(model, "run-rerank");
+
+    // Chapter 3 is the previous chapter (pinned in full), so only chapters
+    // 1 and 2 were candidates; the reranker kept chapter 2 alone.
+    expect(questions).toHaveLength(1);
+    expect(questions[0]).toHaveLength(2);
+    expect(retrieved).toEqual([
+      expect.objectContaining({
+        label: "Trecho recuperado 1 · 空椅来客 (trecho 1 de 1)",
+        status: "included",
+      }),
+    ]);
+    expect(compile.outputArtifact).toMatchObject({
+      retrievalRerank: {
+        applied: true,
+        model: "gpt-6-luna",
+        candidates: 2,
+        scored: 2,
+        dropped: 1,
+        warning: null,
+      },
+    });
+  });
+
+  it("keeps the search order and records the degradation when the rerank call fails", async () => {
+    const model: NarrativeModelClient = {
+      ...scriptedModel("第四章正文足够长，可以通过机械检查。", {
+        nearEvidence: true,
+      }),
+      hasRerankAssignment: () => true,
+      async decide() {
+        throw {
+          code: "model.http_401",
+          message: "Incorrect API key",
+          retryable: false,
+        };
+      },
+    };
+    const { compile, receipt, retrieved, events } = await compileWith(
+      model,
+      "run-rerank-failed",
+    );
+    expect(retrieved.map((entry) => entry.label)).toEqual([
+      expect.stringMatching(/^Trecho recuperado 1 · /),
+      expect.stringMatching(/^Trecho recuperado 2 · /),
+    ]);
+    expect(compile.outputArtifact).toMatchObject({
+      retrievalRerank: {
+        applied: false,
+        warning: { code: "model.http_401" },
+      },
+    });
+    expect(receipt.degradations).toEqual(
+      expect.arrayContaining([
+        { capability: "rerank", reason: "model.http_401" },
+      ]),
+    );
+    expect(
+      events
+        .filter((event) => event.type === "run.degraded")
+        .map((event) => event.payload),
+    ).toEqual(
+      expect.arrayContaining([
+        { capability: "rerank", reason: "model.http_401" },
+      ]),
+    );
+  });
+});
+
 /** Deterministic character-bigram vector, enough to rank shared wording. */
 function bigramVector(text: string): number[] {
   const vector = new Array<number>(64).fill(0);

@@ -25,7 +25,7 @@ export const settings: typeof settingsPt = {
     label: "Default generation model and role inheritance",
     hint: "Pick one default generation model and writing, planning, and review all share it; the embedding model is configured separately.",
     loadError: "Default model configuration cannot be loaded right now",
-    advancedSummary: "Advanced overrides · assign a separate model for planning or review",
+    advancedSummary: "Advanced roles · a separate model for planning or review, and search reranking",
     advancedHint:
       "Usually nothing to set here. Override only when you truly need a different model; removing the override immediately restores inheritance from the default generation model.",
   },
@@ -47,8 +47,8 @@ export const settings: typeof settingsPt = {
       note: "Dedicated to retrieval and context assembly; never inherited — leaving it unset degrades to a prompt.",
     },
     rerank: {
-      name: "Rerank",
-      note: "",
+      name: "Search reranking (optional)",
+      note: "Reads the passages the search found and picks the ones the AI needs to write. Uses the OpenAI Decisions API: create the model gpt-6-luna with task type “Rerank” under an OpenAI provider. Without it, the search order is used.",
     },
   },
   roleCard: {
@@ -117,7 +117,7 @@ export const settings: typeof settingsPt = {
     modelIdLabel: "Upstream model name",
     taskTypeLabel: "Model type",
     taskTypeHint:
-      "Generative models can all serve writing, planning, and review; this only records the direction it is used for most.",
+      "Generative models can all serve writing, planning, and review; this only records the direction it is used for most. Embedding and Rerank are separate types, each for its own role.",
     contextLabel: "Context limit",
     outputLabel: "Output limit",
     limitPlaceholder: "Leave empty if unknown",

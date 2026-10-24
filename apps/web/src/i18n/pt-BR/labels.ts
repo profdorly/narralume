@@ -86,7 +86,7 @@ export const labels = {
     embedding:
       "Recuperação vetorial; degrada de forma explícita quando não está definido, nunca recai na Escrita",
     rerank:
-      "Reordenação; degrada de forma explícita quando não está definido; no momento não há caminho de chamada em produção",
+      "Reordena os trechos encontrados pela busca com a Decisions API da OpenAI; opcional, sem ela vale a ordem da busca",
   },
   metadataSource: {
     manual: "Declarado manualmente",
@@ -104,6 +104,8 @@ export const labels = {
     stream: "Eventos em fluxo",
     tool: "Chamadas de ferramenta",
     structuredOutput: "Saída estruturada",
+    embedding: "Embedding",
+    decision: "Decisão (Decisions API)",
   },
   probeStageStatus: {
     passed: "Aprovado",

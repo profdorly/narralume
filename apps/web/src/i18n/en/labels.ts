@@ -88,7 +88,7 @@ export const labels: typeof labelsPt = {
     embedding:
       "Vector retrieval; degrades explicitly when unset, never falls back to Writing",
     rerank:
-      "Reranking; degrades explicitly when unset, currently no production call path",
+      "Reranks the passages the search found with the OpenAI Decisions API; optional, without it the search order is used",
   },
   metadataSource: {
     manual: "Declared manually",
@@ -106,6 +106,8 @@ export const labels: typeof labelsPt = {
     stream: "Streaming events",
     tool: "Tool calls",
     structuredOutput: "Structured output",
+    embedding: "Embedding",
+    decision: "Decision (Decisions API)",
   },
   probeStageStatus: {
     passed: "Passed",

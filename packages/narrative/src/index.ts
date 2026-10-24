@@ -2,6 +2,7 @@ export * from "./model-client.js";
 export * from "./embedding-support.js";
 export * from "./retrieval-index.js";
 export * from "./retrieval-query.js";
+export * from "./retrieval-rerank.js";
 export * from "./story-state-packet.js";
 export {
   buildOutlineScope,

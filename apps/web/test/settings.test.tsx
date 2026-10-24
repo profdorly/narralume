@@ -196,10 +196,14 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(screen.getByText("A especificação precisa de revisão")).toBeInTheDocument();
     expect(screen.getByText(/o modelo continua funcionando, e as execuções usam um orçamento conservador/)).toBeInTheDocument();
 
-    // 岗位分配：默认生成模型已派；队伍不出现重排
+    // 岗位分配：默认生成模型已派；重排（Decisions API）在高级岗位里，候选只限重排模型
     expect(screen.getAllByText("Modelo padrão de geração").length).toBeGreaterThan(0);
     expect(screen.getByText("Atribuído")).toBeInTheDocument();
-    expect(screen.queryByText("Reordenação")).not.toBeInTheDocument();
+    const rerankRole = screen.getByRole("group", { name: "Reordenação da busca (opcional)" });
+    expect(rerankRole.closest("details")).toHaveClass("settings__advanced-roles");
+    expect(within(rerankRole).getByText(/Decisions API da OpenAI/)).toBeInTheDocument();
+    expect(within(rerankRole).queryByRole("button", { name: /deepseek/ })).not.toBeInTheDocument();
+    expect(within(rerankRole).getByText("Não atribuído")).toBeInTheDocument();
 
     // 未声明物理上限的规划模型也可成为默认生成模型；生成类模型不再按岗位互斥。
     const reasonerButton = within(defaultRole).getByRole("button", { name: /deepseek-reasoner/ });

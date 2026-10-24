@@ -48,7 +48,15 @@ export const ProviderConnectionTestRequestSchema = z.object({
 });
 
 export const ConnectionTestStageSchema = z.object({
-  stage: z.enum(["text", "stream", "tool", "structured-output"]),
+  /** Embedding models report "embedding"; rerank models "decision". */
+  stage: z.enum([
+    "text",
+    "stream",
+    "tool",
+    "structured-output",
+    "embedding",
+    "decision",
+  ]),
   status: z.enum(["passed", "failed", "unsupported", "skipped"]),
   latencyMs: z.number().int().nonnegative(),
   detail: z.string(),

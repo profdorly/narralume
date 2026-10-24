@@ -95,6 +95,23 @@ export function recordEmbeddingDegradation(
   degradation: EmbeddingDegradation | null,
   now = new Date().toISOString(),
 ): void {
+  recordRunDegradation(database, runId, stepId, degradation, now);
+}
+
+/** A capability a run had to do without (embedding, rerank). */
+export interface RunCapabilityDegradation {
+  capability: string;
+  reason: string;
+}
+
+/** recordEmbeddingDegradation for any capability. */
+export function recordRunDegradation(
+  database: NarrativeDatabase,
+  runId: string,
+  stepId: string,
+  degradation: RunCapabilityDegradation | null,
+  now = new Date().toISOString(),
+): void {
   if (!degradation) return;
   const existing = database.raw
     .prepare(
