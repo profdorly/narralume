@@ -917,6 +917,41 @@ export function repeatedPhraseEvidence(
   return null;
 }
 
+/**
+ * Word-window variant for space-delimited scripts. A character window there
+ * catches names ("Lady Catherine" with the spaces removed is 13 letters), so
+ * it counts runs of whole words instead.
+ */
+export function repeatedWordPhraseEvidence(
+  content: string,
+  phraseWords: number,
+  threshold: number,
+): string | null {
+  const words =
+    content
+      .normalize("NFC")
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu) ?? [];
+  const counts = new Map<string, number>();
+  for (let index = 0; index + phraseWords <= words.length; index += 1) {
+    const phrase = words.slice(index, index + phraseWords).join(" ");
+    const count = (counts.get(phrase) ?? 0) + 1;
+    if (count >= threshold) return phrase;
+    counts.set(phrase, count);
+  }
+  return null;
+}
+
+/** True when Han, kana or Hangul make up at least half of the letters. */
+export function isMostlyCjk(content: string): boolean {
+  const letters = content.match(/\p{L}/gu)?.length ?? 0;
+  const cjk =
+    content.match(
+      /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu,
+    )?.length ?? 0;
+  return letters > 0 && cjk * 2 >= letters;
+}
+
 export function paragraphs(content: string): string[] {
   return content
     .split(/\n\s*\n/)

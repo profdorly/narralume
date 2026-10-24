@@ -20,6 +20,8 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - Os trechos recuperados entram no contexto em ordem de relevância e com rótulo de posição ("Trecho recuperado 1 · … (trecho 2 de 5)"); a prévia de contexto usa o idioma do projeto.
 - O modelo escolhido para uma conversa do assistente não substitui mais o modelo de embedding nem o de reordenação.
 - "Testar" em modelos de embedding e de reordenação chama o endpoint de cada um (`/embeddings` ou `/decisions`) em vez de enviar pedidos de chat que esses modelos não respondem.
+- A verificação de "voz de IA" no rascunho (advérbios suavizadores, clichês, "não era X, era Y") agora vale também para prosa em português e inglês, conforme o idioma do próprio texto. Em quatro romances de domínio público (Machado de Assis, Austen, Fitzgerald) ela só acusou duas passagens com "não era X; era Y" de verdade.
+- Placeholders em português e inglês também contam: "[inserir …]", "[insert …]", "as an AI language model", "como um modelo de linguagem".
 
 ### Removed
 
@@ -28,6 +30,8 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 ### Fixed
 
 - Trechos de capítulos arquivados (na lixeira do manuscrito) ou apagados não aparecem mais na busca.
+- A verificação automática do rascunho não confunde mais a palavra "todo" ("o dia todo", "todo mundo") com um marcador TODO; antes, a maioria dos capítulos em português caía em revisão obrigatória por "placeholder" (39 de 50 trechos de romance testados). TODO só conta em maiúsculas e junto de dois-pontos ou colchetes.
+- Frases repetidas em português e inglês são contadas por palavras (6 palavras repetidas 4 vezes), não por letras: nomes como "Lady Catherine" não disparam mais a revisão. Texto em chinês mantém a contagem por caracteres.
 
 ### Added (pt-BR e local-first)
 

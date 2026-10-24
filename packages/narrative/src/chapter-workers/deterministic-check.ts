@@ -1,34 +1,45 @@
 import { type RunSnapshot } from "@narralume/domain";
 import type { StepExecutionResult } from "@narralume/harness";
 
-import { proseLintIssues } from "../prose-lint.js";
+import { proseLintIssues, type ProseLintIssue } from "../prose-lint.js";
 
 import {
   type ChapterWorkerDeps,
   finalContent,
+  isMostlyCjk,
   paragraphs,
   policyNumber,
   repeatedPhraseEvidence,
+  repeatedWordPhraseEvidence,
   sha256,
   zeroUsage,
 } from "./helpers.js";
 
-export async function deterministicCheck(
-  deps: ChapterWorkerDeps,
-  snapshot: RunSnapshot,
-): Promise<StepExecutionResult> {
-  const content = finalContent(snapshot);
-  const issues: {
-    code: string;
-    severity: "major" | "critical";
-    message: string;
-    evidence: string | null;
-  }[] = [];
-  const minCharacters = policyNumber(
-    snapshot.run.policy,
-    "minChapterCharacters",
-    1_200,
-  );
+/**
+ * Template slots, unfinished-draft markers and model self-descriptions.
+ * TODO is matched in capitals and next to a colon or bracket only: "todo" is
+ * an everyday Portuguese and Spanish word ("o dia todo", "salió todo mojado").
+ */
+const PLACEHOLDER_PATTERNS: readonly RegExp[] = [
+  /\{\{[^}]+\}\}/u,
+  /\[待(?:补|写|定)[^\]]*\]/u,
+  /\bTODO\b\s*[:：\])）]|[[(（]\s*TODO\b/u,
+  /作为(?:一个)?[Aa][Ii]/u,
+  /\[\s*(?:inserir|insira|preencher|completar|a definir|insert|fill in|placeholder)\b[^\]]*\]/iu,
+  /\bas an AI language model\b|\bas a large language model\b/iu,
+  /\bcomo (?:um )?modelo de linguagem\b/iu,
+];
+
+/** Words in a repeated run for space-delimited prose, and how many repeats report. */
+const REPEATED_PHRASE_WORDS = 6;
+const REPEATED_PHRASE_REPEATS = 4;
+
+export function draftIssues(
+  content: string,
+  policy: Readonly<Record<string, unknown>>,
+): ProseLintIssue[] {
+  const issues: ProseLintIssue[] = [];
+  const minCharacters = policyNumber(policy, "minChapterCharacters", 1_200);
   if ([...content].length < minCharacters) {
     issues.push({
       code: "draft.too_short",
@@ -37,10 +48,9 @@ export async function deterministicCheck(
       evidence: null,
     });
   }
-  const placeholder =
-    /(\{\{[^}]+\}\}|\[待(?:补|写|定)[^\]]*\]|\bTODO\b|作为(?:一个)?AI)/i.exec(
-      content,
-    );
+  const placeholder = PLACEHOLDER_PATTERNS.map((pattern) =>
+    pattern.exec(content),
+  ).find((match) => match !== null);
   if (placeholder) {
     issues.push({
       code: "draft.placeholder",
@@ -64,8 +74,8 @@ export async function deterministicCheck(
     }
     seen.add(normalized);
   }
-  const bannedTerms = Array.isArray(snapshot.run.policy.bannedTerms)
-    ? snapshot.run.policy.bannedTerms.filter(
+  const bannedTerms = Array.isArray(policy.bannedTerms)
+    ? policy.bannedTerms.filter(
         (term): term is string => typeof term === "string" && Boolean(term),
       )
     : [];
@@ -103,7 +113,13 @@ export async function deterministicCheck(
       evidence: sectionBreaks?.[0]?.trim() ?? null,
     });
   }
-  const repeatedPhrase = repeatedPhraseEvidence(content, 12, 4);
+  const repeatedPhrase = isMostlyCjk(content)
+    ? repeatedPhraseEvidence(content, 12, 4)
+    : repeatedWordPhraseEvidence(
+        content,
+        REPEATED_PHRASE_WORDS,
+        REPEATED_PHRASE_REPEATS,
+      );
   if (repeatedPhrase) {
     issues.push({
       code: "draft.repeated_phrase_density",
@@ -113,6 +129,15 @@ export async function deterministicCheck(
     });
   }
   issues.push(...proseLintIssues(content));
+  return issues;
+}
+
+export async function deterministicCheck(
+  deps: ChapterWorkerDeps,
+  snapshot: RunSnapshot,
+): Promise<StepExecutionResult> {
+  const content = finalContent(snapshot);
+  const issues = draftIssues(content, snapshot.run.policy);
   return {
     artifactKind: "deterministic-review",
     output: {
