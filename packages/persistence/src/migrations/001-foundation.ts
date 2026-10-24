@@ -7,7 +7,7 @@ export const migration001 = {
       title TEXT NOT NULL CHECK (length(trim(title)) > 0),
       subtitle TEXT,
       premise TEXT,
-      language TEXT NOT NULL DEFAULT 'pt-BR',
+      language TEXT NOT NULL DEFAULT 'zh-CN',
       phase TEXT NOT NULL CHECK (phase IN ('idea','foundation','outlining','writing','revising','complete')),
       archived_at TEXT,
       created_at TEXT NOT NULL,

@@ -1,4 +1,11 @@
+import { readdirSync } from "node:fs";
+
 import { expect, test } from "@playwright/test";
+
+/** Every migration file is one schema version; the browser applies all. */
+const LATEST_MIGRATION = readdirSync(
+  new URL("../packages/persistence/src/migrations/", import.meta.url),
+).filter((file) => /^\d{3}-.+\.ts$/u.test(file)).length;
 
 /**
  * M2 spike：真实浏览器（Worker + OPFS）里验证 sqlite-wasm 驱动承载完整
@@ -27,7 +34,7 @@ test("sqlite-wasm OPFS driver passes the persistence spike", async ({
     results: Record<string, unknown>;
   };
   expect(result.ok).toBe(true);
-  expect(result.results.migrationVersion).toBe(44);
+  expect(result.results.migrationVersion).toBe(LATEST_MIGRATION);
   // sahpool 官方建议 exclusive + WAL；若 WAL 不可接受则退化为 delete 也算过，
   // 但要显式记录（journalMode 进结果便于诊断）。
   expect(["wal", "delete", "truncate"]).toContain(result.results.journalMode);
