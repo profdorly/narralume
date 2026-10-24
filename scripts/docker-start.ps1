@@ -3,7 +3,10 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw "Install and start Docker Desktop first." }
 docker info | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "The Docker service is not running." }
-$envFile = Join-Path $root ".env.local"
+$envFile = Join-Path $root ".env"
+# Compose fills ${NARRATIVE_AUTH_TOKEN} for both containers from the shell or
+# from .env, never from .env.local (that one only reaches the server through
+# env_file, and docker-compose.yml's own environment value wins over it).
 if (-not (Test-Path -LiteralPath $envFile) -or -not (Select-String -LiteralPath $envFile -Pattern '^NARRATIVE_AUTH_TOKEN=' -Quiet)) {
   $bytes = New-Object byte[] 32
   $generator = [Security.Cryptography.RandomNumberGenerator]::Create()
