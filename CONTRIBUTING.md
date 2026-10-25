@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Web em `http://127.0.0.1:4318`, API em `http://127.0.0.1:4317`. Variáveis locais: copie `.env.example` para `.env.local` (nunca commitar).
+Web em `http://127.0.0.1:4318`, API em `http://127.0.0.1:4317`. Variáveis locais: copie `.env.example` para `.env.local` (nunca commitar). Para ter um livro para explorar, `npm run seed:example` grava o exemplo "O Correio das Marés" na biblioteca de `NARRATIVE_DATA_DIR` (padrão `./data`); rodar de novo não duplica.
 
 Antes de mudar código:
 

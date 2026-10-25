@@ -161,7 +161,7 @@ The timeline records events in the story world, with times and notes. Foreshadow
 
 In "Candidate changes", write down what you want to add or adjust — for example, "make the character's motivation more concrete, but do not change the locked ending". After "Generate candidate changes", review the diff item by item, then choose "Adopt this item" or "Reject". Nothing is written into the story material until adoption.
 
-![The seven sections of the Story Bible and the candidate-changes area](../assets/narralume-bible-1920x1080.png)
+![The seven sections of the Story Bible, the complete-from-manuscript panel, and page editing](../assets/narralume-bible-1920x1080.png)
 
 ## Writing: from draft to official version
 
@@ -278,7 +278,7 @@ The page only shows operations the current state allows — pause, resume, adopt
 
 When ordinary creation fails, prefer handling it from the writing desk or the quick-creation task card; enter the Run Center when you need to verify the failure reason, model usage, or partial prose.
 
-![Tasks, steps, and recovery information in the Run Center](../assets/narralume-runs-1920x1080.png)
+![The Run Center of a work that has not run AI tasks yet](../assets/narralume-runs-1920x1080.png)
 
 ### Narrative Lab
 
@@ -302,7 +302,7 @@ Settings contains these sections:
 
 The browser kernel uses "Download my library (.sqlite)" to obtain the complete SQLite file; the local Server uses system backup archives or the backup scripts. Switching the run driver does not migrate data; seeing a different library after a refresh is normal.
 
-![Model providers, data driver, and advanced asset settings](../assets/narralume-settings-1920x1080.png)
+![Interface language, models assigned to roles, prompt templates, and providers in Settings](../assets/narralume-settings-1920x1080.png)
 
 ## Delivery: export and preserve
 

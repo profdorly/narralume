@@ -27,6 +27,13 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - Documentação de uso em português: guia do usuário, início rápido, dados e backup, Docker, índice da documentação, modelos de issue e de pull request e código de conduta. As versões em inglês foram conferidas com o código: saíram a demonstração online, a Bridge/Relay e a cocriação (fora da v1), e os nomes de botões seguem a interface atual.
 - O pacote principal da interface caiu de 907 kB para 676 kB (gzip 270 → 198 kB): o dicionário em inglês e o renderizador de Markdown do assistente (marked + DOMPurify) carregam só quando usados.
 - `/api/health` informa a versão real do produto (`0.2.0`; antes dizia `0.1.0`), no Server e no núcleo do navegador.
+- Plural correto na interface em português e em inglês ("1 capítulo", "1 versão", "1 fato candidato ainda não foi julgado"), inclusive nas checagens de qualidade da Entrega; a concordância segue o número.
+- Rótulos que tinham ficado em inglês ou crus na interface em português: "ETAPA 1–3" na Criação rápida, "A SEGUIR" na visão geral, "ASSISTENTE DO PROJETO" e "CONTEXTO DA PÁGINA" no assistente, e os campos travados da intenção pelo nome ("Travado · Promessa criativa"). Saíram os rótulos decorativos em inglês das seções da Bíblia da história.
+- Aspas, travessões e reticências em português e inglês não aparecem mais com o espaçamento largo da fonte chinesa: esses sinais vêm de uma fonte serifada latina do sistema.
+- Layout: a lista de rascunhos da mesa de escrita cabe "Rascunhos · Lixeira · Novo"; o mostrador de progresso da Criação rápida voltou para a coluna principal (o texto ficava com uma palavra por linha); as notas da Entrega não sobrepõem "Continuidade" ao selo; o subtítulo das capas geradas não invade o selo.
+- O painel do índice de busca não diz mais que "todos os trechos têm vetor" quando o índice está vazio.
+- Configurações não oferece mais o prompt de adoção da cocriação, que está fora da v1.
+- `npm run seed:example` grava um livro de exemplo em português ("O Correio das Marés"); antes o exemplo era em chinês. As capturas de tela do guia do usuário foram refeitas com a interface atual em português.
 
 ### Removed
 

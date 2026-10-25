@@ -161,7 +161,7 @@ A linha do tempo registra eventos do mundo da história, com datas e observaçõ
 
 Em "Mudanças candidatas", escreva o que quer acrescentar ou ajustar — por exemplo, "deixar a motivação do personagem mais concreta, sem mudar o final travado". Depois de "Gerar mudanças candidatas", revise as diferenças item a item e escolha "Adotar este item" ou "Recusar". Nada entra no material da história antes da adoção.
 
-![As sete seções da Bíblia da história e a área de mudanças candidatas](../assets/narralume-bible-1920x1080.png)
+![As sete seções da Bíblia da história, o painel de completar a partir do manuscrito e a edição da página](../assets/narralume-bible-1920x1080.png)
 
 ## Escrita: do rascunho à versão oficial
 
@@ -278,7 +278,7 @@ A página só mostra as operações que o estado atual permite — pausar, retom
 
 Quando uma criação comum falhar, prefira resolvê-la na mesa de escrita ou no cartão da tarefa de criação rápida; entre na Central de execuções quando precisar conferir o motivo da falha, o uso do modelo ou a prosa parcial.
 
-![Tarefas, passos e informações de recuperação na Central de execuções](../assets/narralume-runs-1920x1080.png)
+![A Central de execuções de uma obra que ainda não rodou tarefas de IA](../assets/narralume-runs-1920x1080.png)
 
 ### Laboratório narrativo
 
@@ -302,7 +302,7 @@ As Configurações têm estas seções:
 
 O núcleo no navegador usa "Baixar minha biblioteca (.sqlite)" para obter o arquivo SQLite completo; o Server local usa os arquivos de backup do sistema ou os scripts de backup. Trocar o driver de execução não migra dados; ver outra biblioteca depois de recarregar a página é normal.
 
-![Provedores de modelo, driver de dados e configurações avançadas de ativos](../assets/narralume-settings-1920x1080.png)
+![Idioma da interface, modelos atribuídos aos papéis, modelos de prompt e provedores em Configurações](../assets/narralume-settings-1920x1080.png)
 
 ## Entrega: exportar e guardar
 
