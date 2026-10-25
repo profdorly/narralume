@@ -244,9 +244,9 @@ describe("Bíblia da história", () => {
     }));
     renderBible("/projects/p-1-tides/bible?spread=outline&view=board");
     await screen.findByRole("heading", { name: "Ver a história inteira" });
-    expect(screen.getByText("1 capítulos · 1 registrados")).toBeInTheDocument();
+    expect(screen.getByText("1 capítulo · 1 registrado")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir na mesa de escrita" })).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-1");
-    fireEvent.click(screen.getByText("1 preparações relacionadas"));
+    fireEvent.click(screen.getByText("1 preparação relacionada"));
     expect(screen.getByRole("link", { name: "第一章 灯下潮痕" })).toHaveAttribute("href", "/projects/p-1-tides/studio?outline=n-ch-1");
     fireEvent.change(screen.getByRole("combobox", { name: "Status do capítulo" }), { target: { value: "planned" } });
     expect(screen.getByText("Nenhum capítulo corresponde a estes filtros.")).toBeInTheDocument();

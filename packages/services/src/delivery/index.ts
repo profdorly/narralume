@@ -285,21 +285,27 @@ export class DeliveryService {
       add(
         "canon",
         "warning",
-        `${metrics.candidateFacts} fatos candidatos ainda não foram julgados`,
+        metrics.candidateFacts === 1
+          ? "1 fato candidato ainda não foi julgado"
+          : `${metrics.candidateFacts} fatos candidatos ainda não foram julgados`,
         "Confirme, promova ou descarte os candidatos na Bíblia da história",
       );
     if (metrics.unresolvedForeshadows > 0)
       add(
         "continuity",
         "info",
-        `${metrics.unresolvedForeshadows} antecipações ainda estão em aberto`,
+        metrics.unresolvedForeshadows === 1
+          ? "1 antecipação ainda está em aberto"
+          : `${metrics.unresolvedForeshadows} antecipações ainda estão em aberto`,
         "Antes de exportar, confirme que elas são intencionais, não esquecidas",
       );
     if (openComments > 0)
       add(
         "workflow",
         "warning",
-        `${openComments} anotações do manuscrito ainda estão abertas`,
+        openComments === 1
+          ? "1 anotação do manuscrito ainda está aberta"
+          : `${openComments} anotações do manuscrito ainda estão abertas`,
         "Trate cada uma ou deixe explícito que ficam para a próxima revisão",
       );
     if (!metrics.activeStyleProfiles)
@@ -347,7 +353,7 @@ export class DeliveryService {
         message:
           metrics.chapters === 0
             ? "Ainda não há capítulos a registrar."
-            : `${metrics.committedChapters}/${metrics.chapters} capítulos registrados; capítulos incompletos não podem ser disfarçados pela nota suave.`,
+            : `${metrics.committedChapters}/${metrics.chapters} ${metrics.chapters === 1 ? "capítulo registrado" : "capítulos registrados"}; capítulos incompletos não podem ser disfarçados pela nota suave.`,
         targetType: "outline",
         targetId: null,
       },
@@ -355,7 +361,7 @@ export class DeliveryService {
         id: "manuscript-present",
         label: "Há prosa entregável",
         passed: metrics.manuscriptCharacters >= 1_000,
-        message: `O manuscrito atual tem ${metrics.manuscriptCharacters} caracteres; a entrega só entra em julgamento a partir de 1.000.`,
+        message: `O manuscrito atual tem ${metrics.manuscriptCharacters} ${metrics.manuscriptCharacters === 1 ? "caractere" : "caracteres"}; a entrega só entra em julgamento a partir de 1.000.`,
         targetType: "document",
         targetId: null,
       },

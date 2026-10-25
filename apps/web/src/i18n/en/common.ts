@@ -58,12 +58,12 @@ export const common: typeof commonPt = {
     enabled: "Enabled",
     disabled: "Disabled",
     selected: "{count} selected",
-    characters: "{count} characters",
+    characters: "{count, plural, one {# character} other {# characters}}",
   },
   time: {
     justNow: "Just now",
     today: "Today",
     yesterday: "Yesterday",
-    daysAgo: "{days} days ago",
+    daysAgo: "{days, plural, one {# day ago} other {# days ago}}",
   },
 };

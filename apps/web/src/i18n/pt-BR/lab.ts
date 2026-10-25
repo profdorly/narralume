@@ -48,6 +48,8 @@ export const lab = {
     noModel: "Nenhum atribuído",
     vectors: "Trechos com vetor deste modelo",
     vectorsValue: "{embedded} de {total}",
+    hintEmpty:
+      "O índice ainda está vazio. Ele é montado antes da próxima tarefa de IA, ou agora com “Reindexar agora”.",
     hintNoModel:
       "Sem modelo de embedding, a busca usa palavras e personagens citados. Atribua um em Configurações para a busca também encontrar trechos por sentido.",
     hintPending:
@@ -55,18 +57,18 @@ export const lab = {
     hintReady:
       "Todos os trechos têm vetor do modelo atribuído; a busca combina palavras, personagens e sentido.",
     stale:
-      "{count} capítulos mudaram desde a última indexação; a próxima busca ou escrita por IA os reindexa.",
+      "{count, plural, one {# capítulo mudou desde a última indexação; a próxima busca ou escrita por IA o reindexa.} other {# capítulos mudaram desde a última indexação; a próxima busca ou escrita por IA os reindexa.}}",
     reindex: "Reindexar agora",
     reindexing: "Reindexando…",
-    reindexed: "{indexed} capítulos reindexados · {relinked} com vínculos de personagem atualizados",
+    reindexed: "{indexed, plural, one {# capítulo reindexado} other {# capítulos reindexados}} · {relinked} com vínculos de personagem atualizados",
     reindexError: "A reindexação não foi concluída",
   },
   predictions: {
     title: "Previsões de enredo",
-    count: "{count} entradas",
+    count: "{count, plural, one {# entrada} other {# entradas}}",
     loadError: "Não foi possível carregar as previsões agora",
     empty: "Nenhuma simulação se tornou previsão ainda.",
-    horizon: "+{horizon} capítulos à frente",
+    horizon: "+{horizon, plural, one {# capítulo à frente} other {# capítulos à frente}}",
     stale: "Desatualizada",
     adopt: "Adotar",
     dismiss: "Dispensar",
@@ -86,7 +88,7 @@ export const lab = {
     title: "Prévia de impacto",
     intro:
       "Antes de mudar algo, veja quais configurações, capítulos e estados da história seriam afetados.",
-    placeholder: "ex.: Transformar Lin Zhao em alguém que nunca existiu de fato.",
+    placeholder: "ex.: Fazer de Lia alguém que nunca existiu de fato.",
     inputLabel: "Mudança a prever",
     submit: "Prever impacto",
     error: "A prévia de impacto falhou",

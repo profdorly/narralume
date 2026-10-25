@@ -20,11 +20,12 @@ import {
 /* 提示词模板（生成类步骤）：呈现官方默认写作法，允许整体替换并随时恢复官方版本。
  * 结构不变量（锁定正典、输出格式等）由服务端代码强制追加，不在此暴露。 */
 
+// Co-creation is out of v1, so its adoption prompt ("prompt.cocreate-adoption")
+// is not offered here; its copy below stays for when the feature returns.
 const EXPOSED_PROMPT_KEYS: readonly string[] = [
   "prompt.chapter-draft",
   "prompt.chapter-revision",
   "prompt.line-edit",
-  "prompt.cocreate-adoption",
   "prompt.book-foundation",
 ];
 

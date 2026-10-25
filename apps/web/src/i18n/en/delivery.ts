@@ -8,7 +8,7 @@ export const delivery: typeof deliveryPt = {
       "Select a work to check manuscript quality, export files, and keep recoverable content snapshots here.",
   },
   pageBand: {
-    meta: "Press specs · {count} export formats",
+    meta: "Press specs · {count, plural, one {# export format} other {# export formats}}",
   },
   gates: {
     title: "Press specs (quality gates)",
@@ -131,7 +131,7 @@ export const delivery: typeof deliveryPt = {
           "Paste a passage of your own or reference writing (at least 200 characters)…",
         hint: "Paste a sample and the AI distills a draft style profile; review it and enable it manually. Prompt templates govern general craft; the style profile governs this book's voice.",
         tooShort:
-          "Sample too short ({count} characters so far): at least 200 characters are needed to distill stable craft rules.",
+          "Sample too short ({count, plural, one {# character} other {# characters}} so far): at least 200 characters are needed to distill stable craft rules.",
         submit: "Distill style profile",
         running: "Distilling…",
         runningNote:
@@ -176,7 +176,7 @@ export const delivery: typeof deliveryPt = {
       restoring: "Restoring import batch…",
       detailError: "Import batch details are temporarily unavailable",
       analyze: "AI analyze",
-      apply: "Apply {count} items",
+      apply: "Apply {count, plural, one {# item} other {# items}}",
       discard: "Discard batch",
       refresh: "Refresh from server",
       viewRun: "View analysis run",

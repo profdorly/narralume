@@ -82,7 +82,7 @@ export function AssistantWelcome({ onPrompt }: { onPrompt: (text: string) => voi
       <div className="assistant-welcome__seal" aria-hidden="true">
         <Sparkles size={19} strokeWidth={1.35} />
       </div>
-      <p className="assistant-welcome__eyebrow mono">CONTEXT IN HAND</p>
+      <p className="assistant-welcome__eyebrow mono">{t("assistant.welcome.eyebrow")}</p>
       <h3>{t("assistant.welcome.title")}</h3>
       <p>
         {t("assistant.welcome.body")}

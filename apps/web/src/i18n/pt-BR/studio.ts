@@ -64,13 +64,13 @@ export const studio = {
     planLink: "Planejar capítulos na página História",
   },
   desk: {
-    versionCount: "{count} versões",
+    versionCount: "{count, plural, one {# versão} other {# versões}}",
     draftSynced: "Rascunho sincronizado",
     draftSyncing: "Sincronizando o rascunho…",
     draftUnsynced: "Rascunho sem sincronizar",
     archive: "Mover para a lixeira",
     versionSaved: "Versão registrada",
-    stats: "{count} caracteres · {selected} selecionados",
+    stats: "{count, plural, one {# caractere} other {# caracteres}} · {selected, plural, one {# selecionado} other {# selecionados}}",
     savingVersion: "Registrando…",
     saveVersion: "Salvar nova versão",
     operationErrorTitle:
@@ -178,7 +178,7 @@ export const studio = {
     revisionDefault:
       "Reescreva e melhore este manuscrito, preservando os pontos fortes que ele já tem.",
     partialRecovery:
-      "A geração foi interrompida; {count} caracteres podem ser recuperados. Abra os detalhes da tarefa para aproveitar o rascunho parcial ou gerar de novo.",
+      "A geração foi interrompida; {count, plural, one {# caractere pode ser recuperado} other {# caracteres podem ser recuperados}}. Abra os detalhes da tarefa para aproveitar o rascunho parcial ou gerar de novo.",
     confirmCancelTitle: "Cancelar esta tarefa de IA",
     confirmCancelLabel: "Confirmar o cancelamento",
     confirmCancelBody:
@@ -227,15 +227,15 @@ export const studio = {
       "Depois de salvar uma versão oficial, você pode revisá-la daqui, sem reescrever o manuscrito.",
     reportCurrent: "Versão atual",
     reportPast: "Revisão anterior indecisa",
-    reportMeta: "{verdict} · {count} problemas em aberto · {time}",
+    reportMeta: "{verdict} · {count, plural, one {# problema em aberto} other {# problemas em aberto}} · {time}",
     reportAria: "Veredito da revisão",
     scoresAria: "Detalhamento das notas",
     reviewedCopySummary:
-      "Expandir o manuscrito completo enviado à revisão na ocasião · {count} caracteres",
+      "Expandir o manuscrito completo enviado à revisão na ocasião · {count, plural, one {# caractere} other {# caracteres}}",
     reviewedCopyAria: "Manuscrito revisado (completo)",
     cleanTitle: "Revisão limpa",
     cleanBody: "Este rascunho não tem problemas novos para julgar.",
-    allDecided: "Todos os {count} itens deste relatório já foram julgados.",
+    allDecided: "{count, plural, one {O único item deste relatório já foi julgado.} other {Todos os # itens deste relatório já foram julgados.}}",
     deciderAria: "Julgar",
     falsePositive: "Falso positivo",
     intentionalKeep: "Manter de propósito",
@@ -258,10 +258,10 @@ export const studio = {
     title: "Propostas de reescrita",
     empty: "Não há reescritas do texto inteiro aguardando adoção no manuscrito atual.",
     itemTitle: "Reescrita do texto inteiro · {status}",
-    baseSummary: "Base: original com {count} caracteres",
-    revisedAria: "Manuscrito reescrito (completo) · {count} caracteres",
+    baseSummary: "Base: original com {count, plural, one {# caractere} other {# caracteres}}",
+    revisedAria: "Manuscrito reescrito (completo) · {count, plural, one {# caractere} other {# caracteres}}",
     diffSummary: "Ver o diff detalhado",
-    addressedIssues: "Trata {count} problemas da revisão",
+    addressedIssues: "Trata {count, plural, one {# problema da revisão} other {# problemas da revisão}}",
     apply: "Aplicar como nova versão",
   },
   status: {
@@ -348,7 +348,7 @@ export const studio = {
   },
   versions: {
     title: "Histórico de versões",
-    meta: "{source} · {count} caracteres · {time}",
+    meta: "{source} · {count, plural, one {# caractere} other {# caracteres}} · {time}",
     restore: "Restaurar",
   },
   versionSource: {
@@ -402,7 +402,7 @@ export const studio = {
     empty:
       "Crie primeiro uma persona e depois monte uma sala da história. Turnos, versões de resposta e ramificações ficam só no sandbox por padrão.",
     lastRunLink: "Ver a execução mais recente de geração/adoção",
-    roomStats: "{status} · {branches} ramificações · {turns} turnos",
+    roomStats: "{status} · {branches, plural, one {# ramificação} other {# ramificações}} · {turns, plural, one {# turno} other {# turnos}}",
     composerPlaceholder:
       "Escreva o próximo turno; a resposta gerada também fica no sandbox.",
     composerLabel: "Seu turno",
@@ -538,7 +538,7 @@ export const studio = {
       bindPersonaTarget: "Cartão de personagem",
       bindPersona: "Ativar quando este cartão de personagem for o falante atual",
       entries: "Informações do mundo",
-      entryCount: "{count} entradas",
+      entryCount: "{count, plural, one {# entrada} other {# entradas}}",
       newEntry: "Adicionar informação do mundo",
       entryTitle: "Título",
       content: "Conteúdo",
@@ -549,7 +549,7 @@ export const studio = {
       updateEntry: "Salvar entrada",
       createEntry: "Criar entrada",
       deleteEntry: "Excluir entrada",
-      turnHits: "Usou {count} entradas de lore neste turno",
+      turnHits: "Usou {count, plural, one {# entrada de lore} other {# entradas de lore}} neste turno",
       matchedKeys: "Correspondências: {keys}",
       constantHit: "Entrada constante",
     },

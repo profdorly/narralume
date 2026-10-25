@@ -109,7 +109,7 @@ describe("Visão geral do projeto", () => {
     expect(screen.getByText("O porto esquece uma pessoa por ano.")).toBeInTheDocument();
     expect(screen.getByText("VISÃO · 02")).toBeInTheDocument();
     expect(
-      screen.getByText("1 registrados · 2 capítulos · 12345 caracteres"),
+      screen.getByText("1 registrado · 2 capítulos · 12345 caracteres"),
     ).toBeInTheDocument();
 
     expect(screen.getByText("Capítulo atual")).toBeInTheDocument();

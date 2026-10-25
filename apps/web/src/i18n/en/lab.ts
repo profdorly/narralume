@@ -50,6 +50,8 @@ export const lab: typeof labPt = {
     noModel: "None assigned",
     vectors: "Passages with a vector from this model",
     vectorsValue: "{embedded} of {total}",
+    hintEmpty:
+      "The index is still empty. It is built before the next AI task, or now with “Reindex now”.",
     hintNoModel:
       "Without an embedding model, search uses words and named characters. Assign one in Settings so search also finds passages by meaning.",
     hintPending:
@@ -57,18 +59,18 @@ export const lab: typeof labPt = {
     hintReady:
       "Every passage has a vector from the assigned model; search combines words, characters, and meaning.",
     stale:
-      "{count} chapters changed since the last indexing; the next search or AI writing run reindexes them.",
+      "{count, plural, one {# chapter changed since the last indexing; the next search or AI writing run reindexes it.} other {# chapters changed since the last indexing; the next search or AI writing run reindexes them.}}",
     reindex: "Reindex now",
     reindexing: "Reindexing…",
-    reindexed: "{indexed} chapters reindexed · {relinked} with updated character links",
+    reindexed: "{indexed, plural, one {# chapter reindexed} other {# chapters reindexed}} · {relinked} with updated character links",
     reindexError: "Reindexing did not complete",
   },
   predictions: {
     title: "Plot predictions",
-    count: "{count} entries",
+    count: "{count, plural, one {# entry} other {# entries}}",
     loadError: "Predictions cannot be loaded right now",
     empty: "No simulations have become predictions yet.",
-    horizon: "+{horizon} chapters later",
+    horizon: "+{horizon, plural, one {# chapter later} other {# chapters later}}",
     stale: "Stale",
     adopt: "Adopt",
     dismiss: "Dismiss",
@@ -88,7 +90,7 @@ export const lab: typeof labPt = {
     title: "Impact preview",
     intro:
       "Before making a change, check which settings, chapters, and story states it would affect.",
-    placeholder: "e.g. Change Lin Zhao into someone who never really existed.",
+    placeholder: "e.g. Make Lia someone who never really existed.",
     inputLabel: "Change to preview",
     submit: "Preview impact",
     error: "Impact preview failed",

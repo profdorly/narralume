@@ -376,7 +376,7 @@ export function ProjectAssistant({
         >
         <header className="assistant-panel__head">
           <div className="assistant-panel__identity">
-            <p className="assistant-panel__eyebrow mono">PROJECT ASSISTANT</p>
+            <p className="assistant-panel__eyebrow mono">{t("assistant.panel.eyebrow")}</p>
             {renamingConversation ? (
               <form className="assistant-conv__rename" onSubmit={(event) => { event.preventDefault(); submitRename(); }}>
                 <input

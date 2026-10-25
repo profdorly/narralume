@@ -670,6 +670,8 @@
 .book-cover__default span:not(.book-cover__mark) {
   max-height: 3.4em;
   overflow: hidden;
+  /* Clear the seal in the bottom-right corner (2rem + gap). */
+  padding-right: 2.6rem;
   color: color-mix(in srgb, var(--paper-raised) 78%, transparent);
   font-family: var(--font-quote);
   font-size: 0.72rem;

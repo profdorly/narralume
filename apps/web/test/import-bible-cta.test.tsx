@@ -129,7 +129,9 @@ function renderShelf() {
 async function uploadAndApply(view: ReturnType<typeof render>, count: number) {
   const input = view.container.querySelector<HTMLInputElement>('input[type="file"]')!;
   fireEvent.change(input, { target: { files: [new File(["# Chapter 1\n\nText"], "draft.md")] } });
-  fireEvent.click(await screen.findByRole("button", { name: `Shelve ${count} items` }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: `Shelve ${count} ${count === 1 ? "item" : "items"}` }),
+  );
 }
 
 describe("Import follow-up: Generate Story Bible with AI", () => {

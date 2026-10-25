@@ -278,14 +278,14 @@ describe("Simulação de longo fôlego", () => {
     expect(
       screen.getByText(/Os vetores que faltam são gerados na próxima escrita/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/1 capítulos mudaram/)).toBeInTheDocument();
+    expect(screen.getByText(/1 capítulo mudou/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Reindexar agora" }));
     expect(
-      await screen.findByText(/1 capítulos reindexados/),
+      await screen.findByText(/1 capítulo reindexado/),
     ).toBeInTheDocument();
     expect(screen.getByText("3 de 3")).toBeInTheDocument();
-    expect(screen.queryByText(/capítulos mudaram/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/desde a última indexação/)).not.toBeInTheDocument();
   });
 
   it("explica a busca sem modelo de embedding", async () => {

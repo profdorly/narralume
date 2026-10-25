@@ -49,7 +49,7 @@ export const storyState: typeof storyStatePt = {
   editForeshadows: "Manage foreshadows",
   authorPlansHidden:
     "Foreshadow plans appear only in the author overview and are not treated as reader or character knowledge.",
-  reference: "View accessible records · {facts} facts / {events} events",
+  reference: "View accessible records · {facts, plural, one {# fact} other {# facts}} / {events, plural, one {# event} other {# events}}",
   referenceHint:
     "Records filtered by visibility and chapter boundary. Records without a linked node are treated as global settings. Explicit reader and character knowledge is listed above.",
   facts: "Accessible facts",

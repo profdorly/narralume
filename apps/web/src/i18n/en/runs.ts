@@ -2,24 +2,24 @@ import type { runs as runsPt } from "../pt-BR/runs";
 
 export const runs: typeof runsPt = {
   title: "Run Center",
-  volumeMeta: "{runs} runs / {issues} issues",
+  volumeMeta: "{runs, plural, one {# run} other {# runs}} / {issues, plural, one {# issue} other {# issues}}",
   issueArchiveLabel: "Issue archive",
   catalog: {
     title: "Volume catalog",
-    count: "{count} issues",
+    count: "{count, plural, one {# issue} other {# issues}}",
   },
   emptyGuide: "No runs yet; generate a chapter from the story bible outline.",
-  issueTitle: "Issue {issue} · {count} runs",
+  issueTitle: "Issue {issue} · {count, plural, one {# run} other {# runs}}",
   currentIssueLabel: "Current issue",
   emptyArchive: "No archive yet",
   volumePrefix: "This volume · {issue}",
-  sheetCount: "{count} entries",
+  sheetCount: "{count, plural, one {# entry} other {# entries}}",
   sheetMeta:
     "Completed {completed} · Failed {failed} · Awaiting retry {retry} · Running {running}",
-  revisionCycles: "{count} revision cycles",
+  revisionCycles: "{count, plural, one {# revision cycle} other {# revision cycles}}",
   retryIncluded: "Includes automatic retries",
-  modelCallsCount: "{count} model calls",
-  modelCallsWithId: "{count} model calls · {id}",
+  modelCallsCount: "{count, plural, one {# model call} other {# model calls}}",
+  modelCallsWithId: "{count, plural, one {# model call} other {# model calls}} · {id}",
   selectHint:
     "Select a run to view its persisted text, policy, receipts, model snapshots, and call ledger.",
   actionSubmitted: "Action submitted; details are refreshing from the server.",
@@ -27,8 +27,8 @@ export const runs: typeof runsPt = {
   handleCanonChange: "Resolve story changes",
   backToAutopilot: "Back to quick-creation task",
   flowProgress: "Steps {done}/{total}",
-  inputTokens: "Input {count} tokens",
-  outputTokens: "Output {count} tokens",
+  inputTokens: "Input {count, plural, one {# token} other {# tokens}}",
+  outputTokens: "Output {count, plural, one {# token} other {# tokens}}",
   wallTime: "Model time {seconds}s",
   attempt: "Attempt {attempt}/{max}",
   blocks: {

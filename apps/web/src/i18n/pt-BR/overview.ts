@@ -8,7 +8,7 @@ export const overview = {
   loadError: "A visão geral está temporariamente indisponível",
   masthead: {
     emptyPremise: "A página de abertura ainda não foi escrita.",
-    progress: "{committed} registrados · {total} capítulos · {words} caracteres",
+    progress: "{committed, plural, one {# registrado} other {# registrados}} · {total, plural, one {# capítulo} other {# capítulos}} · {words, plural, one {# caractere} other {# caracteres}}",
     lastWriting: "Última escrita {time}",
     neverWriting: "Ainda não houve escrita",
   },
@@ -40,6 +40,7 @@ export const overview = {
     fallback: "Nenhum capítulo está sendo escrito; próximo passo: {action}.",
   },
   entries: {
+    next: "A SEGUIR · {action}",
     ariaLabel: "Entradas do próximo passo",
     organizeStory: {
       label: "Organizar a história",

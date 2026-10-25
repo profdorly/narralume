@@ -150,7 +150,7 @@ function OverviewBoard({ overview }: { overview: ProjectOverview }) {
       <PendingStrip projectId={overview.project.id} pending={pending} activeTask={activeTask} />
 
       <section className="overview__entries" aria-label={t("overview.entries.ariaLabel")}>
-        <h3 className="overview__entries-head mono">NEXT · {nextActionKindLabel(nextAction.kind)}</h3>
+        <h3 className="overview__entries-head mono">{t("overview.entries.next", { action: nextActionKindLabel(nextAction.kind) })}</h3>
         {EntryCard(nextEntry.label, nextEntry.href, nextEntry.blurb, true)}
         {nextEntry.href !== projectWorkspacePath(overview.project.id, "bible") ? EntryCard(t("overview.entries.organizeStory.label"), projectWorkspacePath(overview.project.id, "bible"), t("overview.entries.organizeStory.blurb")) : null}
         {nextEntry.href !== projectWorkspacePath(overview.project.id, "autopilot") ? EntryCard(t("overview.entries.autopilot.label"), projectWorkspacePath(overview.project.id, "autopilot"), t("overview.entries.autopilot.blurb")) : null}

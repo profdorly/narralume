@@ -376,8 +376,8 @@ export const labels: typeof labelsPt = {
   /* --- Assistant activity cards: dict paths mirror server machine keys ---- */
   activity: {
     goal: {
-      sessionOutline: "Plan outlines for the next {count} chapters",
-      sessionChapters: "AI quick-write {count} chapters",
+      sessionOutline: "{count, plural, one {Plan the outline for the next chapter} other {Plan outlines for the next # chapters}}",
+      sessionChapters: "AI quick-write {count, plural, one {# chapter} other {# chapters}}",
       assistantTurn: "Understanding your request",
       bookFoundation: "Shaping the story direction",
       rollingOutline: "Planning upcoming chapters",
@@ -464,8 +464,8 @@ export const labels: typeof labelsPt = {
     goal: {
       foundation: { start: "Organize and generate story direction candidates" },
       chapter: { start: "Generate candidate prose for a chapter" },
-      autopilot: { start: "Write {count} chapters in a row" },
-      outline: { plan: { start: "Plan outlines for the next {count} chapters" } },
+      autopilot: { start: "Write {count, plural, one {# chapter} other {# chapters}} in a row" },
+      outline: { plan: { start: "{count, plural, one {Plan the outline for the next chapter} other {Plan outlines for the next # chapters}}" } },
       canon: {
         candidate: {
           start: {
@@ -480,7 +480,7 @@ export const labels: typeof labelsPt = {
         },
       },
       selection: { edit: { start: "Generate a revision candidate for the selection" } },
-      long_goal: { start: "Align the outline and write {count} chapters in a row" },
+      long_goal: { start: "Align the outline and write {count, plural, one {# chapter} other {# chapters}} in a row" },
       task: {
         control: {
           pause: "Pause the current task",

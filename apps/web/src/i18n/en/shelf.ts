@@ -31,7 +31,7 @@ export const shelf: typeof shelfPt = {
     description: "Try a different keyword, or turn off “Incl. archived”.",
   },
   catalog: {
-    worksCount: "{count} books",
+    worksCount: "{count, plural, one {# book} other {# books}}",
     latestUpdate: "Last updated · {date}",
     headNo: "No.",
     headTitle: "Title · Premise",
@@ -42,7 +42,7 @@ export const shelf: typeof shelfPt = {
     archived: "Archived",
     noPremise: "The frontispiece awaits its first line.",
     noPremiseRow: "—Premise pending",
-    chapters: "{count} chapters",
+    chapters: "{count, plural, one {# chapter} other {# chapters}}",
     moreActions: "More actions for “{name}”",
     customCover: "Custom cover of “{name}”",
     defaultCover: "Default cover of “{name}”",
@@ -149,11 +149,11 @@ export const shelf: typeof shelfPt = {
   },
   import: {
     title: "Review “{name}”",
-    note: "Supports Markdown, plain text, Word, HTML, EPUB, and this project's JSON; review is preview-only and changes nothing. Found {count} candidates — check the parts to shelve.",
+    note: "Supports Markdown, plain text, Word, HTML, EPUB, and this project's JSON; review is preview-only and changes nothing. Found {count, plural, one {# candidate} other {# candidates}} — check the parts to shelve.",
     error: "Nothing shelved this time",
     cancel: "Not now",
     submitting: "Shelving…",
-    submit: "Shelve {count} items",
+    submit: "Shelve {count, plural, one {# item} other {# items}}",
     appliedTitle: "“{name}” is on the shelf",
     appliedBody:
       "The chapters were imported as saved prose, but the Story Bible hasn't been filled in chapter by chapter yet. Let AI read them in order to add chapter summaries, facts, character knowledge, and more to the Story Bible.",

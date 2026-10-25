@@ -7,6 +7,7 @@ export const assistant: typeof assistantPt = {
     label: "Co-work",
   },
   panel: {
+    eyebrow: "PROJECT ASSISTANT",
     label: "Project Co-work",
     close: "Close Project Co-work",
   },
@@ -48,9 +49,10 @@ export const assistant: typeof assistantPt = {
     projectOnlyTitle: "Later messages will use only the global project context",
     outlineNode: "Current chapter",
     document: "Current draft",
-    selection: "{count} characters selected",
+    selection: "{count, plural, one {# character selected} other {# characters selected}}",
   },
   welcome: {
+    eyebrow: "CONTEXT IN HAND",
     title: "Start from where you are looking",
     body: "I read the current work, page, and selection. Analysis is answered directly; writing and task control are listed first as actions awaiting your confirmation.",
     promptStatus: "Summarize the current state of the work and tell me the most worthwhile next step",

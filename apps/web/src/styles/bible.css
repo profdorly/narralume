@@ -224,12 +224,6 @@
   letter-spacing: 0.04em;
   line-height: 1.2;
 }
-.bible__section-en {
-  color: var(--ink-faint);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.62rem;
-}
 .bible__section-sub {
   margin-left: auto;
   color: var(--ink-faint);

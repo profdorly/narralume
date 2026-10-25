@@ -561,6 +561,10 @@
   min-height: 7.5rem;
 }
 .autopilot__setup-link {
+  /* Its own row: as a grid item in column 1 it pushed the compass card into
+     the 340px side column, where the dial left the text one word wide. */
+  grid-column: 1 / -1;
+  justify-self: start;
   align-self: flex-start;
   color: var(--vera);
   font-size: 0.78rem;

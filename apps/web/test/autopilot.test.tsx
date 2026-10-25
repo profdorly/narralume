@@ -541,7 +541,7 @@ describe("自动驾驶", () => {
     renderAutopilot();
 
     const summary = await screen.findByLabelText("Resumo de qualidade desta criação");
-    expect(summary).toHaveTextContent("1 aprovados");
+    expect(summary).toHaveTextContent("1 aprovado");
     expect(summary).toHaveTextContent("1 a revisar");
     expect(summary).toHaveTextContent("0 bloqueados");
     expect(summary).not.toHaveTextContent("sem relatório");

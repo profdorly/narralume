@@ -448,11 +448,13 @@ function RetrievalIndexPanel({ projectId }: { projectId: string }) {
               </div>
             </dl>
             <p className="lab__note">
-              {!status.embeddingModel
-                ? t("lab.index.hintNoModel")
-                : status.currentModelPassages < status.passages
-                  ? t("lab.index.hintPending")
-                  : t("lab.index.hintReady")}
+              {status.passages === 0
+                ? t("lab.index.hintEmpty")
+                : !status.embeddingModel
+                  ? t("lab.index.hintNoModel")
+                  : status.currentModelPassages < status.passages
+                    ? t("lab.index.hintPending")
+                    : t("lab.index.hintReady")}
             </p>
             {stale > 0 ? (
               <p className="lab__note">{t("lab.index.stale", { count: stale })}</p>

@@ -11,7 +11,7 @@ import { ErrorNote } from "../components/error-note";
 import { PageBand } from "../components/page-band";
 import { ProjectRequiredState } from "../components/project-required-state";
 import { Skeleton } from "../components/skeleton";
-import { useI18n } from "../i18n";
+import { useI18n, type MessageKey } from "../i18n";
 import { getStoryBible, type StoryBible } from "../lib/api";
 import {
   entityTypeLabel,
@@ -28,6 +28,17 @@ import { CanonCandidatePanel } from "./bible/candidate-panel";
 import { StoryBoard } from "./bible/story-board";
 import { StoryLines } from "./bible/story-lines";
 import { StoryState } from "./bible/story-state";
+
+/** Author-intent field ids shown as locked, by their form label. */
+const INTENT_FIELD_LABELS: Record<string, MessageKey> = {
+  promise: "bible.fields.promise",
+  themes: "bible.fields.themes",
+  audience: "bible.fields.audience",
+  tone: "bible.fields.tone",
+  boundaries: "bible.fields.boundaries",
+  endingDirection: "bible.fields.endingDirection",
+  currentFocus: "bible.fields.currentFocus",
+};
 
 export type BibleSectionId = BibleEditorSection;
 
@@ -287,7 +298,6 @@ function IntentSection({ bible }: { bible: StoryBible }) {
           § 01
         </span>
         <h2 className="bible__section-title">{t("bible.intent.title")}</h2>
-        <span className="bible__section-en">INTENT</span>
         {intent?.currentFocus ? (
           <span className="bible__section-sub">
             {t("bible.intent.currentFocus", { value: intent.currentFocus })}
@@ -352,7 +362,11 @@ function IntentSection({ bible }: { bible: StoryBible }) {
               <div className="bible__intent-locked">
                 {intent.lockedFields.map((field) => (
                   <span key={field} className="bible__lock">
-                    {t("bible.intent.locked", { field })}
+                    {t("bible.intent.locked", {
+                      field: INTENT_FIELD_LABELS[field]
+                        ? t(INTENT_FIELD_LABELS[field])
+                        : field,
+                    })}
                   </span>
                 ))}
               </div>
@@ -383,7 +397,6 @@ function OutlineSection({ bible }: { bible: StoryBible }) {
           § 02
         </span>
         <h2 className="bible__section-title">{t("bible.outline.title")}</h2>
-        <span className="bible__section-en">OUTLINE</span>
         <span className="bible__section-sub">{t("bible.outline.count", { count: nodes.length })}</span>
       </header>
       <div className="bible__section-body bible__section-body--fill">
@@ -455,7 +468,6 @@ function EntitySection({ bible }: { bible: StoryBible }) {
           § 03
         </span>
         <h2 className="bible__section-title">{t("bible.entities.title")}</h2>
-        <span className="bible__section-en">ENTIDADES</span>
         <span className="bible__section-sub">{t("bible.entities.count", { count: bible.entities.length })}</span>
       </header>
       <div className="bible__section-body">
@@ -509,7 +521,6 @@ function FactSection({ bible }: { bible: StoryBible }) {
           § 04
         </span>
         <h2 className="bible__section-title">{t("bible.facts.title")}</h2>
-        <span className="bible__section-en">FACTS</span>
         <span className="bible__section-sub">{t("bible.facts.count", { count: facts.length })}</span>
       </header>
       <div className="bible__section-body bible__section-body--fill">
@@ -571,7 +582,6 @@ function RelationSection({ bible }: { bible: StoryBible }) {
           § 05
         </span>
         <h2 className="bible__section-title">{t("bible.relations.title")}</h2>
-        <span className="bible__section-en">RELATIONS</span>
         <span className="bible__section-sub">
           {t("bible.relations.count", { count: bible.relationships.length })}
         </span>
@@ -615,7 +625,6 @@ function TimelineSection({ bible }: { bible: StoryBible }) {
           § 06
         </span>
         <h2 className="bible__section-title">{t("bible.timeline.title")}</h2>
-        <span className="bible__section-en">TIMELINE</span>
         <span className="bible__section-sub">{t("bible.timeline.count", { count: bible.timeline.length })}</span>
       </header>
       <div className="bible__section-body">
@@ -650,7 +659,6 @@ function ForeshadowSection({ bible }: { bible: StoryBible }) {
           § 07
         </span>
         <h2 className="bible__section-title">{t("bible.foreshadows.title")}</h2>
-        <span className="bible__section-en">FORESHADOW</span>
         <span className="bible__section-sub">
           {t("bible.foreshadows.count", { count: bible.foreshadows.length })}
         </span>

@@ -537,7 +537,7 @@ describe("作品内角色共创沙盒", () => {
     stubFetch([detail.session], { "s-lore": detail });
     renderCoCreate("s-lore");
 
-    const summary = await screen.findByText("Usou 1 entradas de lore neste turno");
+    const summary = await screen.findByText("Usou 1 entrada de lore neste turno");
     fireEvent.click(summary);
     expect(screen.getByText("煤油灯规则")).toBeVisible();
     expect(screen.getByText("Correspondências: 煤油灯")).toBeVisible();

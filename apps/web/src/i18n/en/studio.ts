@@ -66,13 +66,13 @@ export const studio: typeof studioPt = {
     planLink: "Plan chapters on the Story page",
   },
   desk: {
-    versionCount: "{count} versions",
+    versionCount: "{count, plural, one {# version} other {# versions}}",
     draftSynced: "Draft synced",
     draftSyncing: "Draft syncing…",
     draftUnsynced: "Draft not synced",
     archive: "Move to recycle bin",
     versionSaved: "Version written",
-    stats: "{count} characters · {selected} selected",
+    stats: "{count, plural, one {# character} other {# characters}} · {selected} selected",
     savingVersion: "Committing…",
     saveVersion: "Save new version",
     operationErrorTitle:
@@ -180,7 +180,7 @@ export const studio: typeof studioPt = {
     revisionDefault:
       "Please revise and improve this manuscript while keeping its existing strengths.",
     partialRecovery:
-      "Generation was interrupted; {count} characters can be recovered. Open the task details to take the partial draft or regenerate.",
+      "Generation was interrupted; {count, plural, one {# character can be recovered} other {# characters can be recovered}}. Open the task details to take the partial draft or regenerate.",
     confirmCancelTitle: "Cancel this AI task",
     confirmCancelLabel: "Confirm cancel",
     confirmCancelBody:
@@ -229,15 +229,15 @@ export const studio: typeof studioPt = {
       "Once you have saved an official version, you can review it from here on its own, without rewriting the manuscript.",
     reportCurrent: "Current version",
     reportPast: "Past undecided review",
-    reportMeta: "{verdict} · {count} open issues · {time}",
+    reportMeta: "{verdict} · {count, plural, one {# open issue} other {# open issues}} · {time}",
     reportAria: "Review verdict",
     scoresAria: "Score breakdown",
     reviewedCopySummary:
-      "Expand the full manuscript submitted for review at the time · {count} characters",
+      "Expand the full manuscript submitted for review at the time · {count, plural, one {# character} other {# characters}}",
     reviewedCopyAria: "Reviewed manuscript (full)",
     cleanTitle: "Reviewed clean",
     cleanBody: "This draft has no new issues to adjudicate.",
-    allDecided: "All {count} items in this report have been adjudicated.",
+    allDecided: "{count, plural, one {The only item in this report has been adjudicated.} other {All # items in this report have been adjudicated.}}",
     deciderAria: "Adjudicate",
     falsePositive: "False positive",
     intentionalKeep: "Intentionally keep",
@@ -260,10 +260,10 @@ export const studio: typeof studioPt = {
     title: "Revision proposals",
     empty: "No full-text revisions pending adoption for the current manuscript.",
     itemTitle: "Full-text revision · {status}",
-    baseSummary: "Baseline: original {count} characters",
-    revisedAria: "Revised manuscript (full) · {count} characters",
+    baseSummary: "Baseline: original {count, plural, one {# character} other {# characters}}",
+    revisedAria: "Revised manuscript (full) · {count, plural, one {# character} other {# characters}}",
     diffSummary: "View detailed diff",
-    addressedIssues: "Addresses {count} review issues",
+    addressedIssues: "Addresses {count, plural, one {# review issue} other {# review issues}}",
     apply: "Apply as new version",
   },
   status: {
@@ -350,7 +350,7 @@ export const studio: typeof studioPt = {
   },
   versions: {
     title: "Version history",
-    meta: "{source} · {count} characters · {time}",
+    meta: "{source} · {count, plural, one {# character} other {# characters}} · {time}",
     restore: "Restore",
   },
   versionSource: {
@@ -404,7 +404,7 @@ export const studio: typeof studioPt = {
     empty:
       "Create a Persona first, then set up a story room. Turns, Swipes, and branches live only in the sandbox by default.",
     lastRunLink: "View the latest generation/adoption run",
-    roomStats: "{status} · {branches} branches · {turns} turns",
+    roomStats: "{status} · {branches, plural, one {# branch} other {# branches}} · {turns, plural, one {# turn} other {# turns}}",
     composerPlaceholder:
       "Write the next turn; the generated reply stays in the sandbox too.",
     composerLabel: "Your turn",
@@ -540,7 +540,7 @@ export const studio: typeof studioPt = {
       bindPersonaTarget: "Character card",
       bindPersona: "Enable when this character card is the current speaker",
       entries: "World information",
-      entryCount: "{count} entries",
+      entryCount: "{count, plural, one {# entry} other {# entries}}",
       newEntry: "Add world information",
       entryTitle: "Title",
       content: "Content",
@@ -551,7 +551,7 @@ export const studio: typeof studioPt = {
       updateEntry: "Save entry",
       createEntry: "Create entry",
       deleteEntry: "Delete entry",
-      turnHits: "Used {count} lore entries in this turn",
+      turnHits: "Used {count, plural, one {# lore entry} other {# lore entries}} in this turn",
       matchedKeys: "Matched: {keys}",
       constantHit: "Constant entry",
     },

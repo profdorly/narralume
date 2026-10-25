@@ -93,7 +93,7 @@ describe("Gerenciador de importação", () => {
       await screen.findByText("旧稿.md");
       expect(screen.getByRole("checkbox")).toBeDisabled();
       expect(screen.getByRole("button", { name: "Analisar com IA" })).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Aplicar 1 itens/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Aplicar 1 item" })).toBeDisabled();
       expect(screen.getByRole("button", { name: "Descartar lote" })).toBeDisabled();
       await vi.waitFor(() =>
         expect(

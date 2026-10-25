@@ -4,6 +4,26 @@
    唯一例外是「朱印」这类物件配件（物件本身有真实颜色，不是 UI 色）。
    ========================================================================== */
 
+/* Noto Serif SC draws “ ” ‘ ’, – — and … as full-width CJK marks, which
+   leaves wide gaps in Portuguese and English ("use “Passar para a IA” na")
+   and centers the ellipsis dots. These faces take only those marks from a
+   Latin serif already on the system; without one, the CJK glyphs remain. */
+@font-face {
+  font-family: "NL Latin Punctuation";
+  font-weight: 100 549;
+  src: local("Georgia"), local("Times New Roman"), local("Noto Serif"),
+    local("DejaVu Serif"), local("Liberation Serif");
+  unicode-range: U+2013-2014, U+2018-201F, U+2026;
+}
+@font-face {
+  font-family: "NL Latin Punctuation";
+  font-weight: 550 900;
+  src: local("Georgia Bold"), local("Georgia-Bold"),
+    local("Times New Roman Bold"), local("Noto Serif Bold"),
+    local("DejaVu Serif Bold"), local("Liberation Serif Bold");
+  unicode-range: U+2013-2014, U+2018-201F, U+2026;
+}
+
 :root {
   color-scheme: light;
 
@@ -32,11 +52,15 @@
   --hairline: rgba(38, 33, 26, 0.14);
   --hairline-soft: rgba(38, 33, 26, 0.07);
 
-  /* 字族：宋正文（可变轴）/ 仿宋引（同族低字重实现）/ mono 注记 / sans 兜底 */
+  /* 字族：宋正文（可变轴）/ 仿宋引（同族低字重实现）/ mono 注记 / sans 兜底。
+     "NL Latin Punctuation" (below) supplies only quotes, dashes and the
+     ellipsis, which Noto Serif SC draws as full-width CJK marks. */
   --font-serif:
-    "Noto Serif SC Variable", "Songti SC", "Noto Serif SC", "SimSun", serif;
+    "NL Latin Punctuation", "Noto Serif SC Variable", "Songti SC",
+    "Noto Serif SC", "SimSun", serif;
   --font-quote:
-    "Noto Serif SC Variable", "STFangsong", "FangSong", "仿宋", serif;
+    "NL Latin Punctuation", "Noto Serif SC Variable", "STFangsong",
+    "FangSong", "仿宋", serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   --font-sans: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
 

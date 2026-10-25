@@ -52,6 +52,33 @@ function lookup(locale: Locale, key: string): string | null {
 
 const warnedKeys = new Set<string>();
 
+/** "{count, plural, one {# capítulo} other {# capítulos}}": "one" for
+ *  exactly 1 (and -1), "other" otherwise, in both languages; "#" prints the
+ *  number. Branches hold plain text and "#" only, no nested placeholders. */
+const PLURAL = /\{(\w+), plural, one \{([^{}]*)\} other \{([^{}]*)\}\}/g;
+
+/** Callers sometimes pass formatted counts ("1.000", "1,000", "1 000"):
+ *  read digit groups as one number, so a thousand is never "one". */
+function pluralValue(value: string | number): number {
+  if (typeof value === "number") return value;
+  const text = value.trim();
+  return /^-?\d{1,3}(?:[.,\s\u00a0\u202f]\d{3})+$/u.test(text)
+    ? Number(text.replace(/[^\d-]/gu, ""))
+    : Number(text);
+}
+
+function applyPlurals(template: string, vars: MessageVars): string {
+  return template.replace(
+    PLURAL,
+    (raw, name: string, one: string, other: string) => {
+      if (!(name in vars)) return raw;
+      const value = vars[name]!;
+      const branch = Math.abs(pluralValue(value)) === 1 ? one : other;
+      return branch.replace(/#/g, String(value));
+    },
+  );
+}
+
 /** 非 React 环境也可用的纯翻译函数；变量插值格式为 {name}。 */
 export function translate(
   locale: Locale,
@@ -67,8 +94,9 @@ export function translate(
     return key;
   }
   if (!vars) return template;
-  return template.replace(/\{(\w+)\}/g, (raw, name: string) =>
-    name in vars ? String(vars[name]) : raw,
+  return applyPlurals(template, vars).replace(
+    /\{(\w+)\}/g,
+    (raw, name: string) => (name in vars ? String(vars[name]) : raw),
   );
 }
 

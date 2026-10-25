@@ -10,7 +10,7 @@ export const overview: typeof overviewPt = {
   loadError: "Overview is temporarily unavailable",
   masthead: {
     emptyPremise: "The opening page is still unwritten.",
-    progress: "{committed} committed · {total} chapters · {words} characters",
+    progress: "{committed} committed · {total, plural, one {# chapter} other {# chapters}} · {words, plural, one {# character} other {# characters}}",
     lastWriting: "Last writing {time}",
     neverWriting: "No writing yet",
   },
@@ -42,6 +42,7 @@ export const overview: typeof overviewPt = {
     fallback: "No chapter is being written; next step: {action}.",
   },
   entries: {
+    next: "NEXT · {action}",
     ariaLabel: "Next-step entries",
     organizeStory: {
       label: "Organize the story",

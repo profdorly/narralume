@@ -111,7 +111,7 @@ test("故事房经 UI 生成 Swipe，并解释本回合命中的世界书", asyn
       exact: true,
     }),
   ).toBeVisible({ timeout: 12_000 });
-  const loreHits = page.getByText("Usou 1 entradas de lore neste turno", {
+  const loreHits = page.getByText("Usou 1 entrada de lore neste turno", {
     exact: true,
   });
   await expect(loreHits).toBeVisible();

@@ -17,13 +17,13 @@ export const autopilot: typeof autopilotPt = {
       "Pick a project and let AI finish chapter after chapter following the story plan; you can step in anytime.",
   },
   headline: {
-    progress: "{status} · {completed} / {target} chapters done",
-    recordCount: "{count} creation records",
+    progress: "{status} · {completed} / {target} {target, plural, one {chapter done} other {chapters done}}",
+    recordCount: "{count, plural, one {# creation record} other {# creation records}}",
     notStarted: "No serial creation yet",
   },
   task: {
     foundationLabel: "Foundation candidate generation",
-    quickCreationLabel: "Quick creation: {count} chapters",
+    quickCreationLabel: "Quick creation: {count, plural, one {# chapter} other {# chapters}}",
   },
   status: {
     pending: "Waiting to start",
@@ -46,6 +46,7 @@ export const autopilot: typeof autopilotPt = {
     pending: "Waiting",
   },
   unexpectedEnd: "The task ended unexpectedly. Please retry or end it.",
+  step: "STEP {n}",
   foundation: {
     stepTitle: "Prepare the story direction",
     hint: "Skip this if your settings are clear; with only an idea, let AI shape it into a direction you can confirm first.",
@@ -82,7 +83,7 @@ export const autopilot: typeof autopilotPt = {
       coreDirection: "Core direction",
       themeQuestions: "Ongoing questions",
       length: "Length",
-      lengthValue: "{chapters} chapters · about {words} words each",
+      lengthValue: "{chapters, plural, one {# chapter} other {# chapters}} · about {words, plural, one {# word} other {# words}} each",
       name: "Name",
       description: "Description",
       role: "Story role",
@@ -136,7 +137,7 @@ export const autopilot: typeof autopilotPt = {
     titleAwaiting: "Quick creation needs your input",
     titleFailed: "Quick creation needs attention",
     titleRunning: "AI is writing continuously",
-    progress: "{status} · {completed} / {target} chapters done",
+    progress: "{status} · {completed} / {target} {target, plural, one {chapter done} other {chapters done}}",
     currentChapter: "Working on “{title}”",
     resumeHint:
       "You can leave this page; the same task and its results resume from the server when you return.",
@@ -145,12 +146,12 @@ export const autopilot: typeof autopilotPt = {
   progress: {
     label: "Serial creation progress",
     kicker: "Progress · {percent}%",
-    planned: "Planning {count} chapters",
+    planned: "Planning {count, plural, one {# chapter} other {# chapters}}",
     currentChapter: "Now: {title}",
     modeContinuous: "Continuous",
     modePerChapter: "Per-chapter confirmation",
-    completed: "{count} chapters done",
-    skipped: "{count} chapters skipped",
+    completed: "{count, plural, one {# chapter done} other {# chapters done}}",
+    skipped: "{count, plural, one {# chapter skipped} other {# chapters skipped}}",
     notStarted:
       "Not started yet. Confirm the story direction above, then choose continuous or per-chapter confirmation.",
     qualityLabel: "Quality summary for this creation",
@@ -166,12 +167,12 @@ export const autopilot: typeof autopilotPt = {
   deck: {
     label: "Creation records",
     title: "Creation records",
-    count: "{count} records",
+    count: "{count, plural, one {# record} other {# records}}",
     errorTitle: "Creation records cannot be loaded right now",
     empty:
       "No serial creation records yet. Finish the three steps above and progress will be saved here.",
-    sessionDone: "{completed}/{target} chapters done",
-    sessionProgress: "{completed}/{target} chapters · {mode}",
+    sessionDone: "{completed}/{target} {target, plural, one {chapter done} other {chapters done}}",
+    sessionProgress: "{completed}/{target} {target, plural, one {chapter} other {chapters}} · {mode}",
     taskShort: "Task {id}",
     currentChapter: "Current chapter {id}",
     pause: "Pause",

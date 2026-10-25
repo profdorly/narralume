@@ -374,8 +374,8 @@ export const labels = {
   /* --- Assistant activity cards: dict paths mirror server machine keys ---- */
   activity: {
     goal: {
-      sessionOutline: "Planejar a estrutura dos próximos {count} capítulos",
-      sessionChapters: "Criação rápida de {count} capítulos",
+      sessionOutline: "{count, plural, one {Planejar a estrutura do próximo capítulo} other {Planejar a estrutura dos próximos # capítulos}}",
+      sessionChapters: "Criação rápida de {count, plural, one {# capítulo} other {# capítulos}}",
       assistantTurn: "Compreendendo o seu pedido",
       bookFoundation: "Dando forma à direção da história",
       rollingOutline: "Planejando os próximos capítulos",
@@ -462,8 +462,8 @@ export const labels = {
     goal: {
       foundation: { start: "Organizar e gerar candidatos de direção da história" },
       chapter: { start: "Gerar prosa candidata de um capítulo" },
-      autopilot: { start: "Escrever {count} capítulos em sequência" },
-      outline: { plan: { start: "Planejar a estrutura dos próximos {count} capítulos" } },
+      autopilot: { start: "Escrever {count, plural, one {# capítulo} other {# capítulos}} em sequência" },
+      outline: { plan: { start: "{count, plural, one {Planejar a estrutura do próximo capítulo} other {Planejar a estrutura dos próximos # capítulos}}" } },
       canon: {
         candidate: {
           start: {
@@ -478,7 +478,7 @@ export const labels = {
         },
       },
       selection: { edit: { start: "Gerar um candidato de reescrita da seleção" } },
-      long_goal: { start: "Alinhar a estrutura e escrever {count} capítulos em sequência" },
+      long_goal: { start: "Alinhar a estrutura e escrever {count, plural, one {# capítulo} other {# capítulos}} em sequência" },
       task: {
         control: {
           pause: "Pausar a tarefa atual",

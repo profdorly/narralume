@@ -29,7 +29,7 @@ export const shelf = {
     description: "Tente outra palavra-chave, ou desligue “Incl. arquivados”.",
   },
   catalog: {
-    worksCount: "{count} livros",
+    worksCount: "{count, plural, one {# livro} other {# livros}}",
     latestUpdate: "Última atualização · {date}",
     headNo: "Nº",
     headTitle: "Título · Premissa",
@@ -40,7 +40,7 @@ export const shelf = {
     archived: "Arquivado",
     noPremise: "O frontispício espera a primeira linha.",
     noPremiseRow: "—Premissa pendente",
-    chapters: "{count} capítulos",
+    chapters: "{count, plural, one {# capítulo} other {# capítulos}}",
     moreActions: "Mais ações para “{name}”",
     customCover: "Capa personalizada de “{name}”",
     defaultCover: "Capa padrão de “{name}”",
@@ -147,11 +147,11 @@ export const shelf = {
   },
   import: {
     title: "Revisar “{name}”",
-    note: "Aceita Markdown, texto simples, Word, HTML, EPUB e o JSON deste projeto; a revisão é só prévia e não altera nada. Encontramos {count} candidatos — marque as partes a colocar na estante.",
+    note: "Aceita Markdown, texto simples, Word, HTML, EPUB e o JSON deste projeto; a revisão é só prévia e não altera nada. Encontramos {count, plural, one {# candidato} other {# candidatos}} — marque as partes a colocar na estante.",
     error: "Nada foi para a estante desta vez",
     cancel: "Agora não",
     submitting: "Colocando na estante…",
-    submit: "Colocar {count} itens na estante",
+    submit: "Colocar {count, plural, one {# item} other {# itens}} na estante",
     appliedTitle: "“{name}” está na estante",
     appliedBody:
       "Os capítulos foram importados como prosa salva, mas a Bíblia da história ainda não foi preenchida capítulo a capítulo. Deixe a IA lê-los em ordem para acrescentar resumos, fatos, conhecimento de personagens e o restante à Bíblia da história.",

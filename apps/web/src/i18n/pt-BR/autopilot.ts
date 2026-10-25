@@ -15,13 +15,13 @@ export const autopilot = {
       "Escolha um projeto e deixe a IA concluir capítulo após capítulo seguindo o plano da história; você pode intervir a qualquer momento.",
   },
   headline: {
-    progress: "{status} · {completed} / {target} capítulos concluídos",
-    recordCount: "{count} registros de criação",
+    progress: "{status} · {completed} / {target} {target, plural, one {capítulo concluído} other {capítulos concluídos}}",
+    recordCount: "{count, plural, one {# registro de criação} other {# registros de criação}}",
     notStarted: "Ainda não houve criação em série",
   },
   task: {
     foundationLabel: "Geração de candidatos de fundação",
-    quickCreationLabel: "Criação rápida: {count} capítulos",
+    quickCreationLabel: "Criação rápida: {count, plural, one {# capítulo} other {# capítulos}}",
   },
   status: {
     pending: "Aguardando início",
@@ -44,6 +44,7 @@ export const autopilot = {
     pending: "Aguardando",
   },
   unexpectedEnd: "A tarefa terminou de forma inesperada. Tente de novo ou encerre-a.",
+  step: "ETAPA {n}",
   foundation: {
     stepTitle: "Preparar a direção da história",
     hint: "Pule esta etapa se as configurações já estão claras; se você só tem uma ideia, deixe a IA transformá-la numa direção que você possa confirmar primeiro.",
@@ -80,7 +81,7 @@ export const autopilot = {
       coreDirection: "Direção central",
       themeQuestions: "Perguntas em aberto",
       length: "Extensão",
-      lengthValue: "{chapters} capítulos · cerca de {words} palavras cada",
+      lengthValue: "{chapters, plural, one {# capítulo} other {# capítulos}} · cerca de {words, plural, one {# palavra} other {# palavras}} cada",
       name: "Nome",
       description: "Descrição",
       role: "Papel na história",
@@ -134,7 +135,7 @@ export const autopilot = {
     titleAwaiting: "A criação rápida precisa da sua intervenção",
     titleFailed: "A criação rápida precisa de atenção",
     titleRunning: "A IA está escrevendo em sequência",
-    progress: "{status} · {completed} / {target} capítulos concluídos",
+    progress: "{status} · {completed} / {target} {target, plural, one {capítulo concluído} other {capítulos concluídos}}",
     currentChapter: "Trabalhando em “{title}”",
     resumeHint:
       "Você pode sair desta página; a mesma tarefa e seus resultados retomam a partir do servidor quando você voltar.",
@@ -143,18 +144,18 @@ export const autopilot = {
   progress: {
     label: "Progresso da criação em série",
     kicker: "Progresso · {percent}%",
-    planned: "Planejando {count} capítulos",
+    planned: "Planejando {count, plural, one {# capítulo} other {# capítulos}}",
     currentChapter: "Agora: {title}",
     modeContinuous: "Contínuo",
     modePerChapter: "Confirmação por capítulo",
-    completed: "{count} capítulos concluídos",
-    skipped: "{count} capítulos pulados",
+    completed: "{count, plural, one {# capítulo concluído} other {# capítulos concluídos}}",
+    skipped: "{count, plural, one {# capítulo pulado} other {# capítulos pulados}}",
     notStarted:
       "Ainda não começou. Confirme a direção da história acima e escolha contínuo ou confirmação por capítulo.",
     qualityLabel: "Resumo de qualidade desta criação",
-    qualityPass: "aprovados",
+    qualityPass: "{count, plural, one {aprovado} other {aprovados}}",
     qualityRevise: "a revisar",
-    qualityBlock: "bloqueados",
+    qualityBlock: "{count, plural, one {bloqueado} other {bloqueados}}",
     qualityMissing: "sem relatório",
     legsEmpty:
       "Depois de começar, o progresso do planejamento, da escrita e da revisão de etapa aparece aqui.",
@@ -164,12 +165,12 @@ export const autopilot = {
   deck: {
     label: "Registros de criação",
     title: "Registros de criação",
-    count: "{count} registros",
+    count: "{count, plural, one {# registro} other {# registros}}",
     errorTitle: "Não foi possível carregar os registros de criação agora",
     empty:
       "Ainda não há registros de criação em série. Conclua as três etapas acima e o progresso fica salvo aqui.",
-    sessionDone: "{completed}/{target} capítulos concluídos",
-    sessionProgress: "{completed}/{target} capítulos · {mode}",
+    sessionDone: "{completed}/{target} {target, plural, one {capítulo concluído} other {capítulos concluídos}}",
+    sessionProgress: "{completed}/{target} {target, plural, one {capítulo} other {capítulos}} · {mode}",
     taskShort: "Tarefa {id}",
     currentChapter: "Capítulo atual {id}",
     pause: "Pausar",

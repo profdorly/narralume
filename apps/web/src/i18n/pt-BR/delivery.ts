@@ -6,7 +6,7 @@ export const delivery = {
       "Selecione uma obra para conferir a qualidade do manuscrito, exportar arquivos e guardar instantâneos recuperáveis do conteúdo.",
   },
   pageBand: {
-    meta: "Especificações de publicação · {count} formatos de exportação",
+    meta: "Especificações de publicação · {count, plural, one {# formato de exportação} other {# formatos de exportação}}",
   },
   gates: {
     title: "Especificações de publicação (controles de qualidade)",
@@ -129,7 +129,7 @@ export const delivery = {
           "Cole um trecho da sua escrita ou de uma referência (pelo menos 200 caracteres)…",
         hint: "Cole uma amostra e a IA destila um rascunho de perfil de estilo; revise-o e ative-o manualmente. Os modelos de prompt regem o ofício em geral; o perfil de estilo rege a voz deste livro.",
         tooShort:
-          "Amostra curta demais ({count} caracteres até agora): são necessários pelo menos 200 caracteres para destilar regras de ofício estáveis.",
+          "Amostra curta demais ({count, plural, one {# caractere} other {# caracteres}} até agora): são necessários pelo menos 200 caracteres para destilar regras de ofício estáveis.",
         submit: "Destilar perfil de estilo",
         running: "Destilando…",
         runningNote:
@@ -174,7 +174,7 @@ export const delivery = {
       restoring: "Restaurando lote de importação…",
       detailError: "Os detalhes do lote de importação estão temporariamente indisponíveis",
       analyze: "Analisar com IA",
-      apply: "Aplicar {count} itens",
+      apply: "Aplicar {count, plural, one {# item} other {# itens}}",
       discard: "Descartar lote",
       refresh: "Atualizar a partir do servidor",
       viewRun: "Ver execução da análise",

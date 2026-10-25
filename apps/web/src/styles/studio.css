@@ -17,8 +17,10 @@
 
 .studio__layout {
   display: grid;
+  /* 13rem fits the Portuguese header ("Rascunhos · Lixeira · Novo") and
+     keeps two-line chapter titles in the list. */
   grid-template-columns:
-    176px minmax(0, 1fr)
+    13rem minmax(0, 1fr)
     clamp(18rem, 23vw, 20rem);
   gap: clamp(0.9rem, 1.6vw, 1.4rem);
   flex: 1;
@@ -44,13 +46,15 @@
   padding: 0.7rem 0.9rem;
   border-bottom: 1px solid var(--hairline-soft);
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.6rem;
+  gap: 0.25rem 0.6rem;
 }
 .studio__docs-head > div {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  margin-left: auto;
 }
 .studio__docs-title {
   font-family: var(--font-serif);
@@ -901,7 +905,7 @@
 
 @media (max-width: 1250px) {
   .studio__layout {
-    grid-template-columns: 176px minmax(0, 1fr);
+    grid-template-columns: 13rem minmax(0, 1fr);
   }
   .studio__side {
     position: static;

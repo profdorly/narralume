@@ -48,7 +48,7 @@ export const storyState = {
   editForeshadows: "Gerenciar antecipações",
   authorPlansHidden:
     "Os planos de antecipação aparecem só na visão da autoria e não são tratados como conhecimento do leitor ou do personagem.",
-  reference: "Ver registros acessíveis · {facts} fatos / {events} eventos",
+  reference: "Ver registros acessíveis · {facts, plural, one {# fato} other {# fatos}} / {events, plural, one {# evento} other {# eventos}}",
   referenceHint:
     "Registros filtrados por visibilidade e pelo limite do capítulo. Registros sem nó vinculado são tratados como configuração global. O conhecimento explícito de leitor e personagem está listado acima.",
   facts: "Fatos acessíveis",

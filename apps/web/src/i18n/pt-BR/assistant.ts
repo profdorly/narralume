@@ -5,6 +5,7 @@ export const assistant = {
     label: "Colaborar",
   },
   panel: {
+    eyebrow: "ASSISTENTE DO PROJETO",
     label: "Colaboração no projeto",
     close: "Fechar colaboração no projeto",
   },
@@ -46,9 +47,10 @@ export const assistant = {
     projectOnlyTitle: "As próximas mensagens usam só o contexto global do projeto",
     outlineNode: "Capítulo atual",
     document: "Rascunho atual",
-    selection: "{count} caracteres selecionados",
+    selection: "{count, plural, one {# caractere selecionado} other {# caracteres selecionados}}",
   },
   welcome: {
+    eyebrow: "CONTEXTO DA PÁGINA",
     title: "Comece de onde você está olhando",
     body: "Eu leio a obra, a página e a seleção atuais. Análise é respondida direto; escrita e controle de tarefa aparecem primeiro como ações à espera da sua confirmação.",
     promptStatus: "Resuma o estado atual da obra e diga o próximo passo que mais vale a pena",

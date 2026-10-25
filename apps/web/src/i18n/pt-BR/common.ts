@@ -55,13 +55,13 @@ export const common = {
     no: "Não",
     enabled: "Ativado",
     disabled: "Desativado",
-    selected: "{count} selecionados",
-    characters: "{count} caracteres",
+    selected: "{count, plural, one {# selecionado} other {# selecionados}}",
+    characters: "{count, plural, one {# caractere} other {# caracteres}}",
   },
   time: {
     justNow: "Agora há pouco",
     today: "Hoje",
     yesterday: "Ontem",
-    daysAgo: "Há {days} dias",
+    daysAgo: "{days, plural, one {Há # dia} other {Há # dias}}",
   },
 };
