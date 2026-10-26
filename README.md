@@ -50,4 +50,6 @@ Não é um editor colaborativo em tempo real nem um serviço de contas na nuvem.
 
 ## Licença
 
-Apache-2.0. Veja [LICENSE](LICENSE) e [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Apache-2.0. Veja [LICENSE](LICENSE), [NOTICE](NOTICE) e [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Projeto derivado do [NarraLume original](https://github.com/abligail/narralume) (Apache-2.0); veja o [NOTICE](NOTICE) para a atribuição.

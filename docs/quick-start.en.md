@@ -6,7 +6,7 @@ This page does one thing: get NarraLume running, and make sure you know where yo
 
 ## Windows
 
-Windows users can use the release package from [GitHub Releases](https://github.com/abligail/narralume/releases) directly; no Node.js installation is required.
+Windows users can use the release package from [GitHub Releases](https://github.com/profdorly/narralume/releases) directly; no Node.js installation is required.
 
 1. Download the latest Windows x64 ZIP.
 2. Extract it to a writable directory, for example `D:\NarraLume`.

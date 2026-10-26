@@ -6,7 +6,7 @@ Esta página resolve uma coisa só: colocar o NarraLume para rodar e mostrar ond
 
 ## Windows
 
-No Windows, use o pacote de release do [GitHub Releases](https://github.com/abligail/narralume/releases); não é preciso instalar o Node.js.
+No Windows, use o pacote de release do [GitHub Releases](https://github.com/profdorly/narralume/releases); não é preciso instalar o Node.js.
 
 1. Baixe o ZIP mais recente para Windows x64.
 2. Extraia o ZIP numa pasta em que você tenha permissão de escrita, por exemplo `D:\NarraLume`.

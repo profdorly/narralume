@@ -1,0 +1,12 @@
+NarraLume
+Copyright 2026 NarraLume contributors
+
+This product includes software originally developed by the NarraLume
+project (https://github.com/abligail/narralume), licensed under the
+Apache License, Version 2.0.
+
+This repository (https://github.com/profdorly/narralume) is a derivative
+work: it makes Brazilian Portuguese the primary language, rebuilds
+manuscript retrieval (passages, hybrid search, optional reranking), and
+revises the documentation and interface. Files changed from the original
+carry their changes in the Git history and the CHANGELOG.

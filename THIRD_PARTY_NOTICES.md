@@ -13,3 +13,7 @@ Reviewed license families include MIT/MIT-0, ISC, BSD-2-Clause, BSD-3-Clause, Ap
 The demo cover in `assets/narralume-demo-cover.jpg` is derived from [Night Sky - Boney Mountain](<https://commons.wikimedia.org/wiki/File:Night_Sky_-_Boney_Mountain_(12957596483).jpg>), photographed by Santa Monica Mountains National Recreation Area. Wikimedia Commons identifies the source as a work of the U.S. National Park Service and marks it as public domain. The source image is retained as `assets/narralume-cover-source.jpg` for provenance.
 
 The installed packages include their own license and notice files. Release archives must preserve those files inside `node_modules`; removing them is not supported. Projects referenced in design/research documents were studied for patterns but their source is not copied into NarraLume.
+
+## Upstream project
+
+This repository is a derivative of the [NarraLume project](https://github.com/abligail/narralume), licensed under Apache-2.0. The attribution required by the Apache-2.0 license is recorded in the [`NOTICE`](NOTICE) file; the changes made here are described in the [`CHANGELOG.md`](CHANGELOG.md) and the Git history.
