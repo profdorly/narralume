@@ -1,16 +1,21 @@
 <p align="center">
-  <img src="assets/narralume-logo-wide.svg" alt="NarraLume" width="960">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/lauda-logo-wide-dark.svg">
+    <img src="assets/lauda-logo-wide.svg" alt="Lauda" width="960">
+  </picture>
 </p>
 
-<h3 align="center">Do manuscrito ou da ideia ao texto entregável.</h3>
+<h3 align="center">A última palavra é sua.</h3>
 
-NarraLume é um estúdio de escrita local-first, com inteligência artificial, para contos, novelas e romances. Você importa um manuscrito e trabalha nele — ou parte de uma ideia e deixa a IA construir o texto, sempre com o autor no comando: prosa, revisão e mudanças de cânone entram como candidatos até você aceitar.
+<p align="center">Do manuscrito ou da ideia ao texto entregável.</p>
+
+Lauda é um estúdio de escrita local-first, com inteligência artificial, para contos, novelas e romances. Você importa um manuscrito e trabalha nele — ou parte de uma ideia e deixa a IA construir o texto, sempre com o autor no comando: prosa, revisão e mudanças de cânone entram como candidatos até você aceitar.
 
 A interface e os prompts oficiais são em **português brasileiro** (inglês como segundo idioma). Criar livros, importar, organizar a história, escrever, exportar e fazer backup não exige modelo de IA.
 
 ## Princípios
 
-| Princípio                                         | Como o NarraLume trata                                                                                              |
+| Princípio                                         | Como a Lauda trata                                                                                                  |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Conhecimento da história não vive em chats soltos | Intenção do autor, outline, entidades, fatos, relações, linha do tempo e foreshadowing ficam na Bíblia da História. |
 | Sugestão de IA não é decisão                      | Prosa, revisões e mudanças de cânone são candidatos até o autor aceitar.                                            |
@@ -46,7 +51,7 @@ Requer Node.js 24+ e npm 11+. Copie `.env.example` para `.env.local` para config
 
 Self-host: veja [Docker Compose](docs/docker.md). Dados, privacidade e backup: [data-and-backup](docs/data-and-backup.md).
 
-Não é um editor colaborativo em tempo real nem um serviço de contas na nuvem. Um chat genérico basta para uma pergunta avulsa; o NarraLume vale quando outline, versões, cânone e tarefas longas precisam permanecer ligados.
+Não é um editor colaborativo em tempo real nem um serviço de contas na nuvem. Um chat genérico basta para uma pergunta avulsa; a Lauda vale quando outline, versões, cânone e tarefas longas precisam permanecer ligados.
 
 ## Licença
 

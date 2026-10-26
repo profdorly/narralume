@@ -6,6 +6,9 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Added
 
+- Identidade Lauda: a marca "L." (um L com ponto final), o logotipo "lauda" em Alegreya, o favicon e o logotipo do README em versões clara e escura. O gerador (`scripts/brand/build-logo.mjs`) refaz os arquivos a partir da fonte.
+- Fontes embutidas Alegreya (texto), Alegreya Sans (interface) e Courier Prime (código e números), sob a licença OFL-1.1, em `apps/web/public/fonts/` (420 kB no total).
+- Tratamento "tinta e lápis" das sugestões da IA: o que ainda espera decisão aparece em grafite (borda tracejada, rótulo de estado, texto proposto no editor sublinhado a lápis); o que foi aceito passa a ser tinta. Vale no estúdio, na Bíblia da história, no assistente, no piloto automático e na visão geral.
 - Busca do manuscrito por trechos: cada capítulo e cena vira trechos de ~380 tokens que não atravessam quebra de cena, ligados aos personagens, lugares e objetos que citam (migração 049 cria o índice por palavras). O índice se atualiza ao registrar versões, aceitar propostas (inclusive de revisão), importar e antes de cada tarefa de IA, que também cobre backups restaurados e bibliotecas antigas.
 - Vetores por trecho: só os trechos cujo texto mudou ganham embedding novo; trechos sem vetor do modelo atribuído (importação, troca de modelo) são preenchidos no início da próxima escrita de capítulo por IA (também na cocriação, fora da v1), até 512 por tarefa.
 - Laboratório narrativo: painel do índice de busca (capítulos indexados, trechos, modelo de embedding, trechos com vetor) com "Reindexar agora"; rotas `GET /api/projects/:id/retrieval/index` e `POST /api/projects/:id/retrieval/reindex`.
@@ -14,6 +17,10 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Changed
 
+- O nome visível passa a ser Lauda: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE e avisos de terceiros. Na fase 1, pacotes `@narralume/*`, variáveis `NARRALUME_*`, launchers, chaves do navegador e arquivos de dados mantêm o nome antigo.
+- Paleta nova: azul de caneta para ações do autor, foco e links, grafite para sugestões pendentes e vermelho só para achados, erros e conflitos, nos temas claro e escuro.
+- Os metadados de EPUB e DOCX exportados (editora e autor do arquivo) dizem "Lauda".
+- O arquivo baixado da biblioteca no modo navegador se chama `lauda-<data>.sqlite`.
 - A busca por palavras agora combina os termos da consulta (antes buscava a frase exata), ignora acentos, flexões comuns, palavras vazias e títulos de capítulo; texto em chinês continua no índice por caracteres.
 - A consulta do capítulo usa título, plano (resumo, objetivo, conflito, desfecho), personagens previstos e notas de direção, com o resumo do capítulo anterior quando o capítulo não tem plano.
 - O corte de semelhança vetorial passou a ser relativo ao melhor resultado (antes `> 0.04`, que deixava passar todo o livro); no máximo dois trechos por capítulo; o capítulo anterior, que já vai inteiro, não é recuperado de novo.
@@ -37,6 +44,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Removed
 
+- A fonte Noto Serif SC (6 MB), o ajuste "NL Latin Punctuation" para pontuação latina, a textura de papel de arroz e o selo vermelho 朱印.
 - `NARRATIVE_EMBEDDING_MODEL` saiu do `.env.example` e da documentação; o Server registra um aviso se a variável ainda estiver definida.
 
 ### Fixed
