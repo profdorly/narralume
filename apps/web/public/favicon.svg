@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Lauda">
+  <title>Lauda</title>
+  <style>@media (prefers-color-scheme: dark){.bg{fill:#12161e}.ink{fill:#e7e2d6}.dot{fill:#e0705c}}</style>
+  <rect width="32" height="32" rx="7" class="bg" fill="#f3efe2"/>
+  <g transform="translate(-2 -0.5)">
+    <path class="ink" d="M7 5h4v18h11v4H7z" fill="#1c2433"/>
+    <circle class="dot" cx="26" cy="25" r="3" fill="#b03a2e"/>
+  </g>
+</svg>
