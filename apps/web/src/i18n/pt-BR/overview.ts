@@ -1,6 +1,5 @@
 export const overview = {
   requiredState: {
-    seal: "V",
     title: "Visão geral do projeto",
     description:
       "Selecione uma obra para ver o progresso da escrita, as tarefas em andamento e o próximo passo.",

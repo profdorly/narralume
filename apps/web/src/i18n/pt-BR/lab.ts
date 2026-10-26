@@ -2,7 +2,6 @@ export const lab = {
   title: "Laboratório narrativo",
   meta: "Busca semântica · Previsões de enredo · Prévia de impacto · Memória da história",
   missing: {
-    seal: "L",
     description:
       "Selecione um projeto para simular rumos do enredo, a memória da história e o impacto possível de mudanças de configuração.",
   },

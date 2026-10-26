@@ -8,7 +8,6 @@ export const studio: typeof studioPt = {
     cocreate: "Co-create sandbox",
   },
   required: {
-    seal: "E",
     title: "Writing",
     description:
       "Pick a work, then write prose here, review and revise it, and manage candidate drafts and version history.",
@@ -471,7 +470,7 @@ export const studio: typeof studioPt = {
       creatorNotes: "Creator notes",
       sourceFormat: "Source format",
       importedAt: "Imported at",
-      sourceNative: "Narralume native",
+      sourceNative: "Lauda native",
       sourceCcv2: "Character Card V2",
       sourceCcv3: "Character Card V3",
       exportJson: "Export JSON",

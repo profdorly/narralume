@@ -708,10 +708,9 @@
   display: grid;
   place-items: center;
   margin-bottom: 1rem;
-  border: 1px solid var(--accent);
-  border-radius: 8% 11% 9% 12%;
+  border: 1px solid var(--accent-hairline);
+  border-radius: 50%;
   color: var(--accent);
-  transform: rotate(-2deg);
 }
 
 .assistant-welcome__eyebrow {

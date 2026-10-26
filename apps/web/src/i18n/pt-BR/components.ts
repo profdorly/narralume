@@ -2,22 +2,15 @@ export const components = {
   confirmDialog: {
     pending: "Trabalhando…",
   },
-  empty: {
-    seal: "V",
-    sealLabel: "Selo da página “{char}”",
-  },
   errorNote: {
     defaultTitle: "Algo deu errado",
   },
   projectRequired: {
     backToShelf: "Voltar à estante",
   },
-  seal: {
-    label: "Selo “{char}”",
-  },
   kernel: {
     lockBusy:
-      "O núcleo local está em uso em outra aba. Feche as outras páginas do Narralume e tente de novo.",
+      "O núcleo local está em uso em outra aba. Feche as outras páginas da Lauda e tente de novo.",
     deserializeFailed: "Não foi possível ler uma mensagem do núcleo",
     workerTerminated: "O worker do núcleo foi encerrado",
     bootTimeout:

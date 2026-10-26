@@ -81,7 +81,6 @@ export function OverviewWorkspace() {
     return (
       <div className="overview">
         <ProjectRequiredState
-          seal={t("overview.requiredState.seal")}
           title={t("overview.requiredState.title")}
           description={t("overview.requiredState.description")}
         />

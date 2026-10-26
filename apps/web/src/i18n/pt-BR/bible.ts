@@ -52,7 +52,6 @@ export const bible = {
     "{outline, plural, one {# nó} other {# nós}} · {entities, plural, one {# entidade} other {# entidades}} · {facts, plural, one {# fato} other {# fatos}} · {foreshadows, plural, one {# antecipação} other {# antecipações}}",
   loadError: "Não foi possível carregar as configurações da história agora",
   missing: {
-    seal: "H",
     title: "História",
     description:
       "Selecione um projeto para organizar aqui a intenção criativa, os personagens, a estrutura e os fatos duradouros da história.",

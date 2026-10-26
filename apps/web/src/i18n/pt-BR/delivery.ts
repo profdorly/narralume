@@ -1,6 +1,5 @@
 export const delivery = {
   requiredState: {
-    seal: "D",
     title: "Entrega",
     description:
       "Selecione uma obra para conferir a qualidade do manuscrito, exportar arquivos e guardar instantâneos recuperáveis do conteúdo.",

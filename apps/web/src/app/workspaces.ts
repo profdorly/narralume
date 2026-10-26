@@ -17,7 +17,6 @@ import type { MessageKey } from "../i18n";
 /* 主导航收敛为五个创作面：书架 / 项目概览 / 故事 / 写作 / 交付。
    其余工作区（审稿、自动驾驶、运行账本、长篇推演、模型供给）暂挂「高级工具」组，
    随写作台合并与设置迁移逐步并入或退役。
-   seal 是左栏顶部「当前工作区印记」的白文单字，随路由切换。
    label / blurb 是 i18n 字典键，展示侧用 t() / translate() 解析。 */
 
 export interface WorkspaceDef {
@@ -29,7 +28,6 @@ export interface WorkspaceDef {
   index: string;
   icon: LucideIcon;
   blurb: MessageKey;
-  seal: string;
 }
 
 export const WORKSPACES: WorkspaceDef[] = [
@@ -42,7 +40,6 @@ export const WORKSPACES: WorkspaceDef[] = [
     index: "01",
     icon: LibraryBig,
     blurb: "shell.nav.shelfBlurb",
-    seal: "E",
   },
   {
     id: "overview",
@@ -53,7 +50,6 @@ export const WORKSPACES: WorkspaceDef[] = [
     index: "02",
     icon: Compass,
     blurb: "shell.nav.overviewBlurb",
-    seal: "V",
   },
   {
     id: "bible",
@@ -64,7 +60,6 @@ export const WORKSPACES: WorkspaceDef[] = [
     index: "03",
     icon: BookOpenText,
     blurb: "shell.nav.bibleBlurb",
-    seal: "B",
   },
   {
     id: "studio",
@@ -75,7 +70,6 @@ export const WORKSPACES: WorkspaceDef[] = [
     index: "04",
     icon: PenLine,
     blurb: "shell.nav.studioBlurb",
-    seal: "T",
   },
   {
     id: "delivery",
@@ -86,7 +80,6 @@ export const WORKSPACES: WorkspaceDef[] = [
     index: "05",
     icon: Truck,
     blurb: "shell.nav.deliveryBlurb",
-    seal: "D",
   },
 ];
 
@@ -101,7 +94,6 @@ export const QUICK_WORKSPACES: WorkspaceDef[] = [
     index: "Q1",
     icon: Radar,
     blurb: "shell.nav.autopilotBlurb",
-    seal: "C",
   },
 ];
 
@@ -116,7 +108,6 @@ export const ADVANCED_WORKSPACES: WorkspaceDef[] = [
     index: "L1",
     icon: Activity,
     blurb: "shell.nav.runsBlurb",
-    seal: "R",
   },
   {
     id: "lab",
@@ -127,7 +118,6 @@ export const ADVANCED_WORKSPACES: WorkspaceDef[] = [
     index: "L2",
     icon: Brain,
     blurb: "shell.nav.labBlurb",
-    seal: "L",
   },
   {
     id: "supply",
@@ -138,7 +128,6 @@ export const ADVANCED_WORKSPACES: WorkspaceDef[] = [
     index: "S1",
     icon: Cpu,
     blurb: "shell.nav.settingsBlurb",
-    seal: "A",
   },
 ];
 

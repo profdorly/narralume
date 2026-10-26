@@ -6,7 +6,6 @@ export const studio = {
     cocreate: "Sandbox de coescrita",
   },
   required: {
-    seal: "E",
     title: "Escrita",
     description:
       "Escolha uma obra, escreva a prosa aqui, revise e reescreva, e gerencie rascunhos candidatos e o histórico de versões.",
@@ -469,7 +468,7 @@ export const studio = {
       creatorNotes: "Notas do criador",
       sourceFormat: "Formato de origem",
       importedAt: "Importado em",
-      sourceNative: "Nativo do Narralume",
+      sourceNative: "Nativo da Lauda",
       sourceCcv2: "Character Card V2",
       sourceCcv3: "Character Card V3",
       exportJson: "Exportar JSON",

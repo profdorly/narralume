@@ -92,7 +92,6 @@
   color: transparent;
   -webkit-text-stroke: 1.5px var(--ink);
   opacity: 0.055;
-  transform: rotate(-2deg);
   pointer-events: none;
   user-select: none;
 }
@@ -111,8 +110,6 @@
   font-size: clamp(3.4rem, 7vw, 7rem);
   line-height: 1.02;
   letter-spacing: 0.03em;
-  transform-origin: left bottom;
-  transform: rotate(-1.4deg);
 }
 
 .shelf__kicker {
@@ -537,7 +534,6 @@
   }
   .shelf__title {
     font-size: clamp(3.4rem, 18vw, 6rem);
-    transform: rotate(-1.1deg);
   }
   .shelf__ghost {
     font-size: 34vw;
@@ -659,20 +655,19 @@
     hsl(var(--book-hue) 30% 29%);
 }
 .book-cover__default strong {
-  max-height: 6.2em;
+  max-height: 7.2em;
   overflow: hidden;
+  overflow-wrap: anywhere;
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: var(--weight-display);
   line-height: 1.38;
   letter-spacing: 0.08em;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
 }
 .book-cover__default span:not(.book-cover__mark) {
   max-height: 3.4em;
   overflow: hidden;
-  /* Clear the seal in the bottom-right corner (2rem + gap). */
+  /* Clear the "L." mark in the bottom-right corner (1.6rem + gap). */
   padding-right: 2.6rem;
   color: color-mix(in srgb, var(--paper-raised) 78%, transparent);
   font-family: var(--font-quote);
@@ -684,24 +679,13 @@
   font-size: 0.58rem;
   letter-spacing: 0.14em;
 }
-.book-cover__default i {
+/* Monochrome "L." mark in the bottom-right corner of the default cover. */
+.book-cover__default .lauda-mark--cover {
+  --mark-size: 1.6rem;
   position: absolute;
   right: 0.9rem;
-  bottom: 1.1rem;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid color-mix(in srgb, var(--paper-raised) 55%, transparent);
-  border-radius: 50%;
-}
-.book-cover__default i::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0.35rem;
-  width: 1.2rem;
-  height: 1px;
-  background: color-mix(in srgb, var(--paper-raised) 60%, transparent);
-  transform: rotate(-35deg);
+  bottom: 1rem;
+  color: color-mix(in srgb, var(--paper-raised) 72%, transparent);
 }
 .book-cover__edge {
   position: absolute;

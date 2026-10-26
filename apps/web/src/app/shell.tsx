@@ -20,7 +20,7 @@ import {
 } from "react-router";
 
 import { IconButton } from "../components/icon-button";
-import { Seal } from "../components/seal";
+import { BRAND_NAME, LaudaMark, LaudaWordmark } from "../components/lauda-mark";
 import { getLocale, translate, useI18n, type MessageKey } from "../i18n";
 import { getHealth } from "../lib/api";
 import { CommandPalette } from "./command-palette";
@@ -314,14 +314,10 @@ function ShellFrame() {
     >
       <aside className="rail">
         <div className="rail__brand">
-          <Seal
-            char={current.seal}
-            variant="rail"
-            label={t("shell.seal.current", { seal: current.seal })}
-          />
-          <div className="rail__brand-text mono" aria-hidden="true">
-            <span>NarraLume</span>
-            <span className="rail__brand-en">escrita</span>
+          <LaudaMark variant="rail" label={BRAND_NAME} />
+          <div className="rail__brand-text">
+            <LaudaWordmark />
+            <span className="rail__brand-tagline">{t("shell.brand.tagline")}</span>
           </div>
         </div>
         <nav className="rail__nav" aria-label={t("shell.nav.aria")}>

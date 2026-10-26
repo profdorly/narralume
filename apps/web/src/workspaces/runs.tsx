@@ -203,7 +203,6 @@ function MissingProject() {
   return (
     <div className="runs">
       <ProjectRequiredState
-        seal={t("runs.missing.seal")}
         title={t("runs.title")}
         description={t("runs.missing.description")}
       />

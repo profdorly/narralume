@@ -64,7 +64,6 @@ export const runs = {
       "O trecho parcial tem menos de {count} caracteres; só dá para descartar ou gerar de novo.",
   },
   missing: {
-    seal: "X",
     description:
       "Selecione um projeto para revisar o processo, os resultados, o uso de modelo e os motivos de falha de cada execução de IA.",
   },

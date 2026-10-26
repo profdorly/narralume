@@ -11,7 +11,6 @@ export const autopilot: typeof autopilotPt = {
     unavailable: "The current candidates are unavailable. Refresh or replan.",
   },
   page: {
-    seal: "C",
     title: "AI Quick Creation",
     description:
       "Pick a project and let AI finish chapter after chapter following the story plan; you can step in anytime.",

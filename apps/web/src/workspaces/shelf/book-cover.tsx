@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
+import { LaudaMark } from "../../components/lauda-mark";
 import { useI18n } from "../../i18n";
 import {
   projectCoverBlob,
@@ -52,11 +53,11 @@ export function BookCover({ project }: { project: Project }) {
           aria-label={t("shelf.book.defaultCover", { name: project.title })}
         >
           <span className="book-cover__mark mono">
-            NL · {project.phase.slice(0, 1).toUpperCase()}
+            Lauda · {project.phase.slice(0, 1).toUpperCase()}
           </span>
           <strong>{project.title}</strong>
           <span>{project.subtitle ?? t("shelf.book.unfinished")}</span>
-          <i aria-hidden="true" />
+          <LaudaMark variant="cover" mono />
         </div>
       )}
       <span className="book-cover__edge" aria-hidden="true" />

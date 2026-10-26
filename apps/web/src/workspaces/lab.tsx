@@ -126,7 +126,6 @@ export function LabWorkspace() {
     return (
       <div className="lab">
         <ProjectRequiredState
-          seal={t("lab.missing.seal")}
           title={t("lab.title")}
           description={t("lab.missing.description")}
         />

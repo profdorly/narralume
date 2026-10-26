@@ -286,7 +286,6 @@ export function StudioWorkspace() {
     return (
       <div className="studio">
         <ProjectRequiredState
-          seal={t("studio.required.seal")}
           title={t("studio.required.title")}
           description={t("studio.required.description")}
         />

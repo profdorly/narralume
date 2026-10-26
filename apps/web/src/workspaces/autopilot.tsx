@@ -253,7 +253,6 @@ export function AutopilotWorkspace() {
     return (
       <div className="autopilot">
         <ProjectRequiredState
-          seal={t("autopilot.page.seal")}
           title={t("autopilot.page.title")}
           description={t("autopilot.page.description")}
         />

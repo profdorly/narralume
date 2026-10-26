@@ -4,7 +4,6 @@ export const lab: typeof labPt = {
   title: "Narrative Lab",
   meta: "Semantic search · Plot predictions · Impact preview · Story memory",
   missing: {
-    seal: "L",
     description:
       "Select a project to simulate plot directions, story memory, and the potential impact of setting changes here.",
   },

@@ -2,7 +2,6 @@ import type { delivery as deliveryPt } from "../pt-BR/delivery";
 
 export const delivery: typeof deliveryPt = {
   requiredState: {
-    seal: "D",
     title: "Delivery",
     description:
       "Select a work to check manuscript quality, export files, and keep recoverable content snapshots here.",

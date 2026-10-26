@@ -66,7 +66,6 @@ export const runs: typeof runsPt = {
       "Partial is fewer than {count} characters; it can only be discarded or regenerated.",
   },
   missing: {
-    seal: "X",
     description:
       "Select a project to review each AI run's process, results, model usage, and failure reasons here.",
   },

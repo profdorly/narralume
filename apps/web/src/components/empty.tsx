@@ -1,37 +1,27 @@
 import type { ReactNode } from "react";
 
-import { useI18n } from "../i18n";
+import { LaudaMark } from "./lauda-mark";
 
-import { Seal } from "./seal";
-
-/* 通用空态：一枚小朱印 + 宋体题句 + 描述 + 可选动作。 */
+/* Shared empty state: the decorative "L." mark + a serif title + description + optional action. */
 
 interface EmptyProps {
-  seal?: string;
   title: string;
   description?: string;
   action?: ReactNode;
   titleAs?: "h1" | "h2";
-  sealVariant?: "empty" | "hero";
+  markVariant?: "empty" | "hero";
 }
 
 export function Empty({
-  seal: sealProp,
   title,
   description,
   action,
   titleAs: Title = "h2",
-  sealVariant = "empty",
+  markVariant = "empty",
 }: EmptyProps) {
-  const { t } = useI18n();
-  const seal = sealProp ?? t("components.empty.seal");
   return (
     <div className="empty">
-      <Seal
-        char={seal}
-        variant={sealVariant}
-        label={t("components.empty.sealLabel", { char: seal })}
-      />
+      <LaudaMark variant={markVariant} />
       <Title className="empty__title">{title}</Title>
       {description ? <p className="empty__description">{description}</p> : null}
       {action ? <div className="empty__action">{action}</div> : null}

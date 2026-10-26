@@ -157,7 +157,6 @@ export function DeliveryWorkspace() {
     return (
       <div className="delivery">
         <ProjectRequiredState
-          seal={t("delivery.requiredState.seal")}
           title={t("delivery.requiredState.title")}
           description={t("delivery.requiredState.description")}
         />

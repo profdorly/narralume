@@ -35,8 +35,8 @@ export const shell: typeof shellPt = {
   repository: {
     viewSource: "View source on GitHub",
   },
-  seal: {
-    current: "Current workspace seal “{seal}”",
+  brand: {
+    tagline: "You have the last word.",
   },
   rail: {
     expand: "Expand navigation",

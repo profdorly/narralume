@@ -53,7 +53,6 @@ export const bible: typeof biblePt = {
     "{outline, plural, one {# node} other {# nodes}} · {entities, plural, one {# entity} other {# entities}} · {facts, plural, one {# fact} other {# facts}} · {foreshadows, plural, one {# foreshadow} other {# foreshadows}}",
   loadError: "Story settings cannot be loaded right now",
   missing: {
-    seal: "H",
     title: "Story",
     description:
       "Select a project to organize its creative intent, characters, outline, and long-lived story facts here.",

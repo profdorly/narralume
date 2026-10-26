@@ -2,7 +2,6 @@ import type { overview as overviewPt } from "../pt-BR/overview";
 
 export const overview: typeof overviewPt = {
   requiredState: {
-    seal: "V",
     title: "Project overview",
     description:
       "Select a work to see writing progress, running tasks, and the next step here.",

@@ -1,6 +1,7 @@
 /* ==========================================================================
    Shell: the left rail (212px, collapses to a 64px icon rail), the brand
-   mark, status light, command palette and the PaperEmpty title page.
+   ("L." mark, "lauda" wordmark and tagline), status light, command palette
+   and the PaperEmpty title page.
    At <=1100px JS collapses the rail; at <=760px it becomes a bottom bar.
    ========================================================================== */
 
@@ -28,7 +29,7 @@
   transition: width 240ms var(--ease-out-editorial);
 }
 
-/* Brand area: workspace mark + small brand text */
+/* Brand area: the "L." mark + the "lauda" wordmark over the tagline */
 .rail__brand {
   display: flex;
   align-items: center;
@@ -39,14 +40,15 @@
 .rail__brand-text {
   display: flex;
   flex-direction: column;
-  gap: 0.14rem;
-  font-size: 0.625rem;
-  line-height: 1.35;
-  color: var(--ink-soft);
+  align-items: flex-start;
+  gap: 0.28rem;
+  min-width: 0;
 }
-.rail__brand-en {
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.rail__brand-tagline {
+  font-family: var(--font-quote);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  color: var(--ink-faint);
 }
 
 .rail__nav {
@@ -183,8 +185,8 @@
 .shell[data-rail-collapsed="true"] .rail__brand-text {
   display: none;
 }
-.shell[data-rail-collapsed="true"] .seal--rail {
-  --seal-size: 28px;
+.shell[data-rail-collapsed="true"] .lauda-mark--rail {
+  --mark-size: 28px;
 }
 .shell[data-rail-collapsed="true"] .rail__nav {
   overflow: visible;
@@ -402,9 +404,6 @@
   }
   .rail__brand-text {
     display: none;
-  }
-  .seal--rail {
-    --seal-size: 28px;
   }
   .rail__nav {
     width: 100%;

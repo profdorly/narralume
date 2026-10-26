@@ -33,8 +33,8 @@ export const shell = {
   repository: {
     viewSource: "Ver o código no GitHub",
   },
-  seal: {
-    current: "Selo atual do workspace “{seal}”",
+  brand: {
+    tagline: "A última palavra é sua.",
   },
   rail: {
     expand: "Expandir navegação",

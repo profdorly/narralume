@@ -115,7 +115,6 @@ export function BibleWorkspace() {
     return (
       <div className="bible">
         <ProjectRequiredState
-          seal={t("bible.missing.seal")}
           title={t("bible.missing.title")}
           description={t("bible.missing.description")}
         />
