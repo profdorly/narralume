@@ -175,6 +175,25 @@ describe("Visão geral do projeto", () => {
     );
   });
 
+  it("pending strip marks each link with its kind so the CSS can tell findings from AI candidates", async () => {
+    const withPending = {
+      ...OVERVIEW,
+      pending: { ...OVERVIEW.pending, reviewIssues: 2, revisionProposals: 1 },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url === "/api/projects/p-1-tides/overview") return json(withPending);
+        throw new Error(`unexpected request ${url}`);
+      }),
+    );
+    renderOverview();
+
+    expect(await screen.findByRole("link", { name: "Pontos de revisão · 2" })).toHaveAttribute("data-kind", "issues");
+    expect(screen.getByRole("link", { name: "Propostas de reescrita · 1" })).toHaveAttribute("data-kind", "proposals");
+  });
+
   it("活跃任务卡只呈现任务协议字段并给出回到任务现场链接", async () => {
     const withTask = {
       ...OVERVIEW,

@@ -94,6 +94,11 @@ export function CanonChangeSetReview({
             <strong>
               {canonSummary(set.changes) ?? t("studio.canon.fallbackSummary")}
             </strong>
+            {set.status === "candidate" ? (
+              <small className="studio__proposal-state">
+                {t("studio.status.proposed")}
+              </small>
+            ) : null}
             {items.length > 0 ? (
               <ul className="studio__canon-items">
                 {items.map((item, index) => (

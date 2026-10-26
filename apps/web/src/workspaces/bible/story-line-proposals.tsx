@@ -24,7 +24,7 @@ export function StoryLineProposals({ bible }: { bible: StoryBible }) {
     {query.data?.map(set => <div key={set.id}>
       <h4>{bible.outline.find(node => node.id === set.scopeNodeId)?.title ?? t("bible.lines.unavailableScope")} · {formatTime(set.createdAt)}</h4>
       {set.stale && set.items.some(item => !item.decision) ? <p role="status">{t("bible.lineProposals.stale")}</p> : null}
-      {set.items.map(item => <article className="story-line" key={item.id}>
+      {set.items.map(item => <article className="story-line" data-decided={item.decision ? "true" : undefined} key={item.id}>
         <h4>{item.before.title}</h4><p>{item.rationale}</p>
         <div className="story-lines__grid">
           {(["before", "after"] as const).map(side => <div key={side}>

@@ -265,12 +265,12 @@ function PendingStrip({ projectId, pending, activeTask }: { projectId: string; p
   return (
     <section className="overview__pending" aria-label={t("overview.pending.aria")}>
       {items.map((item) => (
-        <Link key={item.key} className="overview__pending-item mono" to={item.href}>
+        <Link key={item.key} className="overview__pending-item mono" data-kind={item.key} to={item.href}>
           {item.label} · {item.count}
         </Link>
       ))}
       {resumeHint ? (
-        <Link className="overview__pending-item mono" to={taskHref(projectId, resumeHint.kind, resumeHint.taskId, { origin: resumeHint.origin ?? null, documentId: resumeHint.documentId ?? null })}>
+        <Link className="overview__pending-item mono" data-kind="resume" to={taskHref(projectId, resumeHint.kind, resumeHint.taskId, { origin: resumeHint.origin ?? null, documentId: resumeHint.documentId ?? null })}>
           {t("overview.pending.resume", { label: resumeHint.label })}
         </Link>
       ) : null}

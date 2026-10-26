@@ -476,9 +476,16 @@
   background: color-mix(in srgb, var(--paper) 58%, transparent);
 }
 
+/* Proposed action awaiting confirmation: dashed pencil border, label and goal in graphite.
+   The confirm button keeps the accent. */
 .assistant-activity[data-status="proposed"] {
-  border-color: var(--pencil-hairline);
-  background: var(--pencil-soft);
+  border: var(--candidate-border);
+  background: var(--paper);
+}
+
+.assistant-activity[data-status="proposed"] h3,
+.assistant-activity[data-status="proposed"] .assistant-activity__body > header .mono {
+  color: var(--pencil);
 }
 
 .assistant-activity[data-status="failed"] {

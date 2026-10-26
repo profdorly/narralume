@@ -766,7 +766,7 @@
   border: 1px solid var(--pencil-hairline);
   border-left: 2px solid var(--pencil);
   border-radius: var(--radius-card);
-  background: var(--pencil-soft);
+  background: none;
   color: var(--pencil);
 }
 
@@ -961,12 +961,31 @@
 
 .bible-ai__diff del {
   color: var(--ink-faint);
-  text-decoration-color: var(--pencil-hairline);
+  text-decoration-color: var(--pencil);
 }
 
 .bible-ai__diff ins {
   color: var(--ink);
   text-decoration: none;
+}
+
+/* Open AI candidate sets: dashed pencil border; undecided items are written in graphite.
+   Decided items keep the ink rules above. */
+.bible-ai__set[data-status="candidate"],
+.bible-ai__set[data-status="partially_applied"] {
+  border: var(--candidate-border);
+  box-shadow: none;
+}
+
+.bible-ai__item:not([data-decided]) .bible-ai__item-title h5,
+.bible-ai__item:not([data-decided]) > p {
+  color: var(--pencil);
+}
+
+.bible-ai__item:not([data-decided]) .bible-ai__diff ins {
+  color: var(--pencil);
+  text-decoration: underline dashed var(--pencil) 1px;
+  text-underline-offset: 0.22em;
 }
 
 .bible-ai__impact {
@@ -1101,6 +1120,10 @@
 .story-lines__reviews details { padding: 1rem 0; border-bottom: 1px solid var(--hairline); }
 .story-lines__reviews summary { cursor: pointer; }
 .story-lines__reviews h4 { margin-bottom: .5rem; }
+/* Undecided story-line proposal: dashed pencil border, the proposed record in graphite. */
+.story-lines__reviews .story-line:not([data-decided]) { border: var(--candidate-border); }
+.story-lines__reviews .story-line:not([data-decided]) .story-lines__grid > div:last-child h5,
+.story-lines__reviews .story-line:not([data-decided]) .story-lines__grid > div:last-child dd { color: var(--pencil); }
 .story-line-form { border: 1px solid var(--ink); padding: 1.2rem; background: var(--paper); min-width: 0; }
 .story-line-form > fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .story-line-form__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }

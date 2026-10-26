@@ -297,7 +297,6 @@
   margin-top: 0.55rem;
 }
 .studio__task-progress p,
-.studio__task-note p,
 .studio__task-review > p,
 .studio__task-settlement {
   margin-top: 0.25rem;
@@ -305,15 +304,27 @@
   font-size: 0.78rem;
   line-height: 1.75;
 }
-.studio__task-note,
+/* The plan note is AI-written: graphite text inside a dashed pencil border. */
+.studio__task-note p {
+  margin-top: 0.25rem;
+  color: var(--pencil);
+  font-size: 0.78rem;
+  line-height: 1.75;
+}
 .studio__task-review {
   padding: 0.8rem 0.9rem;
   border: 1px solid var(--hairline-soft);
   border-radius: var(--radius-card);
   background: var(--paper);
 }
+.studio__task-note {
+  padding: 0.8rem 0.9rem;
+  border: var(--candidate-border);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+}
 .studio__candidate {
-  border: 1px solid var(--hairline);
+  border: var(--candidate-border);
   border-radius: var(--radius-card);
   background: var(--paper);
 }
@@ -329,7 +340,7 @@
 }
 .studio__candidate-body {
   padding: 1rem 1.05rem 1.15rem;
-  color: var(--ink);
+  color: var(--pencil);
   font-family: var(--font-serif);
   font-size: 0.96rem;
   line-height: 1.95;
@@ -1209,18 +1220,46 @@
   word-break: break-word;
 }
 .studio__proposal del {
-  background: color-mix(in srgb, var(--pencil) 8%, transparent);
+  color: var(--ink-soft);
+  background: none;
+  text-decoration: line-through var(--pencil) 1px;
 }
 .studio__proposal del::before {
   content: "− ";
   color: var(--pencil);
 }
+/* AI-written replacement: graphite with a dashed pencil underline; ink once accepted. */
 .studio__proposal ins {
-  background: color-mix(in srgb, var(--canon) 10%, transparent);
+  color: var(--pencil);
+  background: none;
+  text-decoration: underline dashed var(--pencil) 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
 }
 .studio__proposal ins::before {
   content: "+ ";
-  color: var(--canon);
+  color: var(--pencil);
+}
+.studio__proposal[data-status="accepted"] ins {
+  color: var(--ink);
+  text-decoration: none;
+}
+/* Pending candidates: dashed pencil border plus the "Aguardando decisão" label. */
+.studio__proposal[data-status="proposed"],
+.studio__proposal[data-status="candidate"] {
+  border: var(--candidate-border);
+}
+.studio__proposal .studio__proposal-state {
+  color: var(--pencil);
+}
+.studio__proposal[data-status="proposed"] .review__doc-body--desk {
+  border: var(--candidate-border);
+  color: var(--pencil);
+  box-shadow: none;
+}
+.studio__proposal[data-status="candidate"] .studio__canon-items span,
+.studio__proposal[data-status="candidate"] .studio__canon-items p {
+  color: var(--pencil);
 }
 .studio__proposal pre {
   max-height: 10rem;
@@ -1888,10 +1927,12 @@
   pointer-events: none;
 }
 
-.manuscript-editor__proposal,
-mark[data-ai-proposal] {
-  background: color-mix(in srgb, var(--pencil-soft) 70%, transparent);
-  border-bottom: 1px dashed var(--pencil-hairline);
+/* Inline range targeted by a rewrite proposal: author text stays ink. */
+.manuscript-editor .manuscript-proposal {
+  background: var(--pencil-soft);
+  text-decoration: underline dashed var(--pencil) 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
 }
 
 .manuscript-editor--focus .ProseMirror,

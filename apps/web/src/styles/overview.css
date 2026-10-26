@@ -248,16 +248,47 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/* Neutral base; each kind takes its state family. AI candidates (foundation,
+   proposals, canon) use the dashed pencil border; review issues use red pencil;
+   resuming a task uses the accent. */
 .overview__pending-item {
   padding: 0.35rem 0.7rem;
-  border: 1px solid var(--accent-hairline);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: none;
+  color: var(--ink-soft);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   transition: border-color 140ms ease;
 }
 .overview__pending-item:hover {
+  border-color: var(--ink-faint);
+}
+.overview__pending-item[data-kind="issues"] {
+  border-color: var(--review-hairline);
+  background: var(--review-soft);
+  color: var(--review-deep);
+}
+.overview__pending-item[data-kind="issues"]:hover {
+  border-color: var(--review);
+}
+.overview__pending-item[data-kind="foundation"],
+.overview__pending-item[data-kind="proposals"],
+.overview__pending-item[data-kind="canon"] {
+  border: var(--candidate-border);
+  background: transparent;
+  color: var(--pencil);
+}
+.overview__pending-item[data-kind="foundation"]:hover,
+.overview__pending-item[data-kind="proposals"]:hover,
+.overview__pending-item[data-kind="canon"]:hover {
+  border-color: var(--ink-soft);
+}
+.overview__pending-item[data-kind="resume"] {
+  border-color: var(--accent-hairline);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+.overview__pending-item[data-kind="resume"]:hover {
   border-color: var(--accent);
 }

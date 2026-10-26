@@ -1347,6 +1347,11 @@ function ProposalPanel({
             data-status={proposal.status}
           >
             <strong>{proposal.instruction}</strong>
+            {proposal.status === "proposed" ? (
+              <small className="studio__proposal-state">
+                {proposalStatusLabel(proposal.status)}
+              </small>
+            ) : null}
             <del>{proposal.originalText}</del>
             <ins>{proposal.replacementText}</ins>
             {proposal.status === "proposed" ? (

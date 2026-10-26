@@ -692,6 +692,14 @@
   line-height: 1.6;
   white-space: pre-wrap;
 }
+/* Pending foundation candidate: dashed pencil border, label and AI text in graphite. */
+.autopilot__candidate[data-status="pending"] {
+  border: var(--candidate-border);
+}
+.autopilot__candidate[data-status="pending"] > header span,
+.autopilot__candidate[data-status="pending"] .autopilot__candidate-summary dd {
+  color: var(--pencil);
+}
 .autopilot__candidate-advanced {
   border-top: 1px dashed var(--hairline-soft);
   padding-top: 0.4rem;
