@@ -1,5 +1,6 @@
-/* 项目协作侧栏：同一纸张系统里的窄幅工作卷。消息保持排印感，任务和确认点
-   使用细规则线区分；不复制聊天软件的彩色气泡，也不暴露内部 Recipe/Step。 */
+/* Project assistant sidebar: a narrow working scroll in the same paper system. Messages keep
+   their typesetting; tasks and confirmations are separated by fine rules. No colored chat
+   bubbles, and no internal Recipe/Step details. */
 
 .assistant-trigger {
   position: fixed;
@@ -14,11 +15,11 @@
   min-height: 2.6rem;
   justify-content: center;
   padding: 0.66rem 1.05rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: 999px;
   background: var(--paper-raised);
   box-shadow: var(--shadow-lift);
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   transition:
@@ -28,7 +29,7 @@
 }
 
 .assistant-trigger:hover {
-  color: var(--vera);
+  color: var(--accent);
   background: var(--paper);
   transform: translateY(-2px);
 }
@@ -39,7 +40,7 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: var(--vera);
+  background: var(--accent);
   color: var(--paper-raised);
   font-size: 0.58rem;
   letter-spacing: 0;
@@ -59,23 +60,12 @@
   flex-direction: column;
   border-left: 1px solid var(--hairline);
   background: var(--paper-raised);
-  box-shadow: -20px 0 56px -30px rgba(38, 33, 26, 0.38);
+  box-shadow: var(--shadow-panel);
   opacity: 0;
   transform: translateX(102%);
   transition:
     transform 340ms var(--ease-out-editorial),
     opacity 180ms ease;
-  pointer-events: none;
-}
-
-.assistant-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image: var(--paper-grain);
-  background-size: 240px 240px;
-  opacity: 0.025;
   pointer-events: none;
 }
 
@@ -97,7 +87,7 @@
 
 .assistant-panel__eyebrow {
   margin-bottom: 0.18rem;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.61rem;
   letter-spacing: 0.17em;
 }
@@ -111,13 +101,13 @@
   display: block;
 }
 
-/* 对话选择：自定义弹层，替代原生 select；进行中在上、已归档折叠到底。 */
+/* Conversation picker: a custom popover instead of a native select; active ones on top, archived ones folded at the bottom. */
 .assistant-conv {
   position: relative;
   display: block;
 }
 
-/* 重命名：临时替换触发器位置的内联编辑表单。 */
+/* Rename: inline edit form that temporarily replaces the trigger. */
 .assistant-conv__rename {
   display: flex;
   align-items: center;
@@ -137,15 +127,15 @@
 }
 .assistant-conv__rename input:focus-visible {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .assistant-conv__rename-save {
   flex-shrink: 0;
   padding: 0.3rem 0.65rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: 2px;
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
   font: inherit;
   font-size: 0.78rem;
   cursor: pointer;
@@ -225,11 +215,11 @@
 }
 .assistant-conv__item:hover,
 .assistant-conv__item:focus-visible {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 .assistant-conv__item[aria-selected="true"] {
-  color: var(--vera);
+  color: var(--accent);
   font-weight: var(--weight-display);
 }
 .assistant-conv__item--archived {
@@ -330,14 +320,14 @@
   border: 0;
   border-left: 1px solid var(--hairline);
   background: var(--paper-raised);
-  color: var(--vera);
+  color: var(--accent);
   font: inherit;
   cursor: pointer;
 }
 
 .assistant-context__scope:hover,
 .assistant-context__scope:focus-visible {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
@@ -382,7 +372,7 @@
   margin-left: 2.3rem;
   padding: 0.65rem 0.85rem;
   border: 1px solid var(--hairline);
-  border-right: 1.5px solid var(--vera);
+  border-right: 1.5px solid var(--accent);
   border-left-color: var(--hairline);
   background: color-mix(in srgb, var(--paper) 70%, transparent);
 }
@@ -405,7 +395,7 @@
 }
 
 .assistant-message[data-role="user"] header .mono {
-  color: var(--vera);
+  color: var(--accent);
 }
 
 .assistant-message p {
@@ -416,7 +406,7 @@
   overflow-wrap: anywhere;
 }
 
-/* 助手回复的受限 Markdown 排版：宋体正文、墨色层级、mono 代码、发丝线引用。 */
+/* Limited Markdown in assistant replies: serif body, ink hierarchy, mono code, hairline quotes. */
 .assistant-message__body {
   color: var(--ink);
   font-size: 0.88rem;
@@ -466,8 +456,8 @@
   color: var(--ink-soft);
 }
 .assistant-message__body a {
-  color: var(--vera-deep);
-  border-bottom: 1px solid var(--vera-hairline);
+  color: var(--accent-deep);
+  border-bottom: 1px solid var(--accent-hairline);
   text-decoration: none;
 }
 .assistant-message__body hr {
@@ -487,12 +477,12 @@
 }
 
 .assistant-activity[data-status="proposed"] {
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  border-color: var(--pencil-hairline);
+  background: var(--pencil-soft);
 }
 
 .assistant-activity[data-status="failed"] {
-  border-color: color-mix(in srgb, var(--conflict) 46%, transparent);
+  border-color: var(--review-hairline);
 }
 
 .assistant-activity__rail {
@@ -506,14 +496,17 @@
   color: var(--canon);
 }
 
-.assistant-activity[data-status="proposed"] .assistant-activity__rail,
+.assistant-activity[data-status="proposed"] .assistant-activity__rail {
+  color: var(--pencil);
+}
+
 .assistant-activity[data-status="running"] .assistant-activity__rail,
 .assistant-activity[data-status="queued"] .assistant-activity__rail {
-  color: var(--vera);
+  color: var(--accent);
 }
 
 .assistant-activity[data-status="failed"] .assistant-activity__rail {
-  color: var(--conflict);
+  color: var(--review);
 }
 
 .assistant-activity__body > header .mono {
@@ -525,10 +518,10 @@
 .assistant-activity__skill {
   margin-right: auto;
   padding: 0.08rem 0.42rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: 999px;
-  background: var(--vera-soft);
-  color: var(--vera);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
 }
@@ -556,8 +549,19 @@
   align-items: flex-start;
   gap: 0.4rem;
   margin-top: 0.55rem;
-  color: var(--conflict);
+  color: var(--accent);
   font-size: 0.74rem;
+}
+
+/* Stops caused by a finding or a failure read in red; every other reason
+   waits on the author and stays in the blue pen. */
+.assistant-activity__reason[data-reason="critical_review_unresolved"],
+.assistant-activity__reason[data-reason="quality_gate_blocked"],
+.assistant-activity__reason[data-reason="semantic_review_blocked"],
+.assistant-activity__reason[data-reason="settlement_conflict_requires_resolution"],
+.assistant-activity__reason[data-reason="child.fatal"],
+.assistant-activity__reason[data-reason="request_start_timeout"] {
+  color: var(--review);
 }
 
 .assistant-activity__reason svg {
@@ -590,14 +594,14 @@
 }
 
 .assistant-activity__decisions .assistant-activity__confirm {
-  border-color: var(--vera);
-  background: var(--vera);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--paper-raised);
 }
 
 .assistant-activity__decisions .assistant-activity__confirm:hover {
-  border-color: var(--vera-deep);
-  background: var(--vera-deep);
+  border-color: var(--accent-deep);
+  background: var(--accent-deep);
   color: var(--paper-raised);
 }
 
@@ -611,12 +615,12 @@
   align-items: center;
   gap: 0.35rem;
   margin-top: 0.65rem;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.73rem;
 }
 
 .assistant-activity__link:hover {
-  color: var(--vera);
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 0.22em;
 }
@@ -663,7 +667,7 @@
 }
 
 .assistant-trace__row--error {
-  color: var(--danger, #b3402e);
+  color: var(--review);
 }
 
 .assistant-trace__label {
@@ -681,11 +685,11 @@
 }
 
 .assistant-trace__artifacts a {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
 }
 
 .assistant-trace__artifacts a:hover {
-  color: var(--vera);
+  color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 0.22em;
 }
@@ -704,15 +708,15 @@
   display: grid;
   place-items: center;
   margin-bottom: 1rem;
-  border: 1px solid var(--vera);
+  border: 1px solid var(--accent);
   border-radius: 8% 11% 9% 12%;
-  color: var(--vera);
+  color: var(--accent);
   transform: rotate(-2deg);
 }
 
 .assistant-welcome__eyebrow {
   margin-bottom: 0.35rem;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.6rem;
   letter-spacing: 0.16em;
 }
@@ -755,7 +759,7 @@
 
 .assistant-welcome__prompts button:hover {
   padding-left: 0.35rem;
-  color: var(--vera);
+  color: var(--accent);
 }
 
 .assistant-welcome__prompts svg {
@@ -791,8 +795,8 @@
 }
 
 .assistant-composer__field:focus-within {
-  border-color: var(--vera-hairline);
-  box-shadow: 0 0 0 2px var(--vera-soft);
+  border-color: var(--accent-hairline);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .assistant-composer__field textarea {
@@ -817,7 +821,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--vera);
+  background: var(--accent);
   color: var(--paper-raised);
   transition:
     transform 180ms var(--ease-out-editorial),
@@ -825,7 +829,7 @@
 }
 
 .assistant-composer__send:hover:not(:disabled) {
-  background: var(--vera-deep);
+  background: var(--accent-deep);
   transform: translateY(-1px);
 }
 
@@ -887,7 +891,7 @@
     left: auto;
     width: auto;
     min-height: 2rem;
-    border-right: 1px solid var(--vera-hairline);
+    border-right: 1px solid var(--accent-hairline);
     border-radius: var(--radius-card);
     padding: 0.45rem 0.6rem;
   }
@@ -933,7 +937,7 @@
   }
 }
 
-/* ---- 对话模型胶囊与弹层 -------------------------------------------------- */
+/* ---- Conversation model chip and popover ------------------------------- */
 
 .assistant-model {
   position: relative;
@@ -954,7 +958,7 @@
 }
 .assistant-model__trigger:hover:not(:disabled),
 .assistant-model__trigger:focus-visible {
-  border-color: var(--vera);
+  border-color: var(--accent);
   color: var(--ink);
 }
 .assistant-model__trigger:disabled {
@@ -1020,7 +1024,7 @@
   background: var(--hairline-soft);
 }
 .assistant-model__item[aria-selected="true"] {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-weight: 600;
 }
 .assistant-model__provider {
@@ -1045,11 +1049,11 @@
   font-size: 0.74rem;
 }
 .assistant-model__effort-option:hover {
-  border-color: var(--vera);
+  border-color: var(--accent);
 }
 .assistant-model__effort-option[aria-pressed="true"] {
-  border-color: var(--vera);
-  color: var(--vera-deep);
+  border-color: var(--accent);
+  color: var(--accent-deep);
 }
 .assistant-model__note {
   margin: 0.3rem 0.35rem 0.15rem;

@@ -1,7 +1,8 @@
 /* ==========================================================================
-   写作台 v3（开卷即稿）。主屏 = 一张落在桌中央的稿纸：毛毛的纸页、
-   顶边有书签带；字数与版本节奏落在页边；批注是大头挂在页边的纸钉。
-   命中的文段带一点底片黄，朱红提手。
+   Writing desk (open to the draft). The main screen is a sheet of paper on
+   the center of the desk with a bookmark ribbon on its top edge; word count
+   and version rhythm sit in the margin; notes are pins on the margin.
+   Pending AI candidates are written in pencil until the author decides.
    ========================================================================== */
 
 .studio {
@@ -28,7 +29,7 @@
   min-height: 0;
 }
 
-/* ---- 左：文档目录 -------------------------------------------------------- */
+/* ---- Left: document list ----------------------------------------------- */
 
 .studio__docs {
   position: sticky;
@@ -92,8 +93,8 @@
   background: color-mix(in srgb, var(--paper-sunk) 45%, transparent);
 }
 .studio__doc-link[data-active="true"] {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 .studio__doc-link-title {
   font-weight: 550;
@@ -115,16 +116,16 @@
   letter-spacing: 0.04em;
 }
 .studio__quality-mark[data-quality="pass"] {
-  color: var(--success, #476b55);
+  color: var(--canon);
 }
 .studio__quality-mark[data-quality="revise"] {
-  color: #9a6a12;
+  color: var(--branch);
 }
 .studio__quality-mark[data-quality="block"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .studio__doc-link[data-active="true"] .studio__doc-link-meta {
-  color: var(--vera);
+  color: var(--accent);
   opacity: 0.75;
 }
 
@@ -136,16 +137,16 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
 }
 .studio__doc-new:hover {
-  border-bottom: 1px solid var(--vera-hairline);
+  border-bottom: 1px solid var(--accent-hairline);
   padding-bottom: 1px;
 }
 
-/* ---- 中央：稿纸 ----------------------------------------------------------- */
+/* ---- Center: the draft sheet ------------------------------------------- */
 
 .studio__desk {
   border: 1px solid var(--hairline);
@@ -169,18 +170,13 @@
   flex-wrap: wrap;
 }
 .studio__empty-actions a {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.78rem;
-  border-bottom: 1px solid var(--vera-hairline);
+  border-bottom: 1px solid var(--accent-hairline);
 }
 .studio__desk-bookmark {
   height: 4px;
-  background: linear-gradient(
-    to right,
-    var(--vera),
-    var(--vera-deep),
-    var(--vera)
-  );
+  background: var(--accent);
   flex-shrink: 0;
   position: relative;
 }
@@ -230,11 +226,9 @@
   gap: 0.9rem;
   margin: 1rem 1.3rem 0;
   padding: 1rem 1.05rem 1.1rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
-  background:
-    linear-gradient(135deg, var(--vera-soft), transparent 42%),
-    var(--paper-raised);
+  background: var(--paper-raised);
   box-shadow: var(--shadow-lift-soft);
 }
 .studio__task-head,
@@ -249,9 +243,12 @@
 .studio__candidate > header span,
 .studio__task-review > header span,
 .studio__task-note > span {
-  color: var(--vera);
+  color: var(--pencil);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
+}
+.studio__task-review > header span {
+  color: var(--review);
 }
 .studio__task-head h2 {
   margin-top: 0.12rem;
@@ -276,23 +273,23 @@
   gap: 0.7rem;
   align-items: flex-start;
   padding: 0.8rem 0.9rem;
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--pencil);
   background: color-mix(in srgb, var(--paper) 74%, transparent);
 }
 .studio__task-progress svg {
   flex: 0 0 auto;
   margin-top: 0.16rem;
-  color: var(--vera);
+  color: var(--pencil);
 }
 .studio__task-progress strong {
   font-family: var(--font-serif);
   font-weight: var(--weight-display);
 }
 .studio__task-progress[data-tone="failed"] {
-  border-left-color: var(--vera-deep);
+  border-left-color: var(--review-deep);
 }
 .studio__task-progress[data-tone="failed"] svg {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .studio__task-retry {
   display: flex;
@@ -348,7 +345,7 @@
   display: grid;
   gap: 0.16rem;
   padding-left: 0.7rem;
-  border-left: 2px solid var(--vera-hairline);
+  border-left: 2px solid var(--review-hairline);
   color: var(--ink-soft);
   font-size: 0.76rem;
   line-height: 1.65;
@@ -398,7 +395,7 @@
   font-size: 0.7rem;
 }
 .studio__task-evidence:hover {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
 }
 .studio__desk-editor {
   flex: 1;
@@ -412,14 +409,12 @@
   gap: 0.28rem;
   padding: 0.9rem 1rem 0.95rem;
   border: 1px solid var(--hairline-soft);
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--accent);
   border-radius: var(--radius-card);
-  background:
-    linear-gradient(110deg, var(--vera-soft), transparent 62%),
-    var(--paper);
+  background: var(--paper);
 }
 .studio__blank-page-note span {
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.58rem;
   letter-spacing: 0.16em;
 }
@@ -455,7 +450,7 @@
   font-size: 1rem;
 }
 
-/* 写作台加载时保留真实三栏轮廓，避免内容出现后整页重排。 */
+/* While the desk loads, keep the real three-column outline so the page does not reflow. */
 .studio__loading > * {
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
@@ -518,8 +513,8 @@
 }
 .studio__desk-textarea:focus {
   outline: none;
-  border-color: var(--vera-hairline);
-  box-shadow: inset 0 1px 0 var(--vera-soft);
+  border-color: var(--accent-hairline);
+  box-shadow: inset 0 1px 0 var(--accent-soft);
   background: color-mix(in srgb, var(--paper-raised) 92%, var(--paper));
 }
 .studio__desk-textarea::placeholder {
@@ -553,7 +548,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.42rem 0.85rem 0.44rem;
-  background: var(--vera);
+  background: var(--accent);
   color: var(--paper-raised);
   border-radius: var(--radius-card);
   font-size: 0.78rem;
@@ -565,7 +560,7 @@
     box-shadow 180ms ease;
 }
 .studio__save-btn:hover:not(:disabled) {
-  background: var(--vera-deep);
+  background: var(--accent-deep);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lift-soft);
 }
@@ -575,11 +570,11 @@
 }
 .studio__save-btn--ai {
   background: transparent;
-  color: var(--vera);
-  border: 1px solid var(--vera-hairline);
+  color: var(--accent);
+  border: 1px solid var(--accent-hairline);
 }
 .studio__save-btn--ai:hover:not(:disabled) {
-  background: var(--vera-soft);
+  background: var(--accent-soft);
   box-shadow: none;
 }
 .studio__desk-hint {
@@ -588,9 +583,9 @@
   letter-spacing: 0.08em;
 }
 .studio__desk-hint a {
-  color: var(--vera);
+  color: var(--accent);
   text-decoration: none;
-  border-bottom: 1px solid var(--vera-hairline);
+  border-bottom: 1px solid var(--accent-hairline);
 }
 .studio__proposal-base {
   color: var(--ink-faint);
@@ -609,14 +604,15 @@
   line-height: 1.8;
 }
 
-/* ---- 右侧：一次只展开一项的写作工具坞 ----------------------------------- */
+/* ---- Right: writing tool dock, one tool open at a time ----------------- */
 
 .studio__side {
   grid-column: 3;
   position: sticky;
   top: 1.2rem;
-  /* 侧栏内容（全展开的审稿报告）可能比视口高：sticky 钉住顶部后底部
-     永远滚不进来，改为侧栏自身限高、工具面板内部滚动。 */
+  /* Sidebar content (a fully expanded review report) can be taller than the
+     viewport: a sticky top would leave the bottom unreachable, so the sidebar
+     caps its own height and the tool panel scrolls inside. */
   max-height: calc(100vh - 2.4rem);
   display: flex;
   flex-direction: column;
@@ -628,8 +624,9 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
-  /* 工具坞限高后，高度赤字必须全部由下方 tool-panel 吸收，
-     否则两行导航会被压扁裁掉第二行。 */
+  /* With the dock height capped, the tool panel below must absorb the whole
+     shortfall, otherwise the two-row navigation is squeezed and its second
+     row is clipped. */
   flex-shrink: 0;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
@@ -658,8 +655,8 @@
   background: color-mix(in srgb, var(--paper-sunk) 42%, var(--paper-raised));
 }
 .studio__tool-nav button[aria-selected="true"] {
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .studio__tool-nav button[aria-selected="true"]::after {
   content: "";
@@ -668,7 +665,7 @@
   bottom: 0;
   left: 0.55rem;
   height: 2px;
-  background: var(--vera);
+  background: var(--accent);
 }
 .studio__tool-nav svg {
   flex: 0 0 auto;
@@ -742,7 +739,7 @@
   width: fit-content;
 }
 .studio__review-stale {
-  color: #8a6118;
+  color: var(--branch);
   font-size: 0.74rem;
   line-height: 1.6;
 }
@@ -781,8 +778,9 @@
 }
 .studio__side .review__issues {
   display: grid;
-  /* 侧栏内容宽约 240px，290px 的最小轨道会把卡片顶出面板边框；
-     收窄到容器宽以下，窄栏自动单列。 */
+  /* The sidebar content is about 240px wide; a 290px minimum track would push
+     cards past the panel border, so the track shrinks below the container
+     width and narrow columns fall back to one column. */
   grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr));
   gap: 0.65rem;
 }
@@ -822,7 +820,7 @@
     box-shadow 180ms ease;
 }
 .studio__pin::before {
-  /* 图钉：顶部一点小朱的圆心 + 影 */
+  /* Pin: a small blue-pen dot on top + shadow */
   content: "";
   position: absolute;
   left: -4px;
@@ -830,10 +828,10 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--vera);
+  background: var(--accent);
   box-shadow:
-    0 0 0 2px var(--vera-soft),
-    0 1px 2px rgba(38, 33, 26, 0.3);
+    0 0 0 2px var(--accent-soft),
+    var(--shadow-pin);
 }
 .studio__pin-body {
   flex: 1;
@@ -863,15 +861,15 @@
   font-size: 0.56rem;
 }
 .studio__pin-state[data-s="open"] {
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .studio__pin-state[data-s="resolved"] {
   color: var(--canon);
   background: color-mix(in srgb, var(--canon) 12%, transparent);
 }
 
-/* ---- 版本印记 ------------------------------------------------------------- */
+/* ---- Version marks ----------------------------------------------------- */
 
 .studio__version {
   display: flex;
@@ -883,7 +881,7 @@
   background: var(--paper);
 }
 .studio__version-no {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.1em;
@@ -901,7 +899,7 @@
   background: color-mix(in srgb, var(--canon) 8%, transparent);
 }
 
-/* ---- 空台/骨架 ------------------------------------------------------------ */
+/* ---- Empty desk / skeleton --------------------------------------------- */
 
 @media (max-width: 1250px) {
   .studio__layout {
@@ -916,22 +914,23 @@
     overflow-y: visible;
   }
 }
-/* ---- API 接入后补的小件：稿目注签、选区工具带、页边提案、共创沙盒。
-   控件统一取共享 .btn（次操作）/ .btn--primary（主操作），此处只补版面与质感。 */
+/* ---- Smaller pieces added with the API: document tags, selection tool strip,
+   margin proposals, co-creation sandbox. Controls use the shared .btn
+   (secondary) / .btn--primary (primary); this block only adds layout and texture. */
 
-/* 稿目：新建注签 + 内联表单 */
+/* Document list: new tag + inline form */
 .studio__text-button {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   transition: color 140ms ease;
 }
 .studio__text-button:hover {
-  color: var(--vera);
+  color: var(--accent);
 }
 
 .studio__recycle-card {
@@ -988,7 +987,7 @@
   line-height: 1.8;
 }
 
-/* 控件底：发丝描边 + 纸面，聚焦泛起一点朱 */
+/* Control base: hairline border + paper, focus brings in the blue pen */
 .studio__inline-form input,
 .studio__inline-form select,
 .studio__selection-tools textarea,
@@ -1014,8 +1013,8 @@
 .cocreate select:focus,
 .cocreate textarea:focus {
   outline: none;
-  border-color: var(--vera-hairline);
-  box-shadow: inset 0 1px 0 var(--vera-soft);
+  border-color: var(--accent-hairline);
+  box-shadow: inset 0 1px 0 var(--accent-soft);
 }
 .studio__inline-form input:disabled,
 .studio__inline-form select:disabled,
@@ -1029,11 +1028,11 @@
 .cocreate .btn:focus-visible,
 .studio__text-button:focus-visible,
 .studio__mode-switch button:focus-visible {
-  outline: 2px solid var(--vera-hairline);
+  outline: 2px solid var(--accent-hairline);
   outline-offset: 1px;
 }
 
-/* 选区工具：工具坞中的操作页 */
+/* Selection tools: the action page in the tool dock */
 .studio__selection-tools {
   display: grid;
   gap: 0.7rem;
@@ -1053,7 +1052,7 @@
   max-height: 8rem;
   overflow: auto;
   padding: 0.45rem 0.7rem;
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--accent);
   color: var(--ink-soft);
   font-family: var(--font-quote);
   font-size: 0.8rem;
@@ -1085,12 +1084,12 @@
   resize: vertical;
 }
 .studio__selection-tools a {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.76rem;
   letter-spacing: 0.03em;
 }
 .studio__selection-tools a:hover {
-  color: var(--vera);
+  color: var(--accent);
 }
 @media (max-width: 1100px) {
   .studio__layout {
@@ -1128,7 +1127,7 @@
   }
 }
 
-/* 页边小件：批注 / 版本印记 / 编辑提案 */
+/* Margin pieces: notes / version marks / edit proposals */
 .studio__pin,
 .studio__proposal {
   display: grid;
@@ -1183,7 +1182,7 @@
   line-height: 1.7;
 }
 .studio__settlement-status[data-tone="failed"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .studio__version {
   flex-wrap: wrap;
@@ -1210,11 +1209,11 @@
   word-break: break-word;
 }
 .studio__proposal del {
-  background: color-mix(in srgb, var(--vera) 8%, transparent);
+  background: color-mix(in srgb, var(--pencil) 8%, transparent);
 }
 .studio__proposal del::before {
   content: "− ";
-  color: var(--vera);
+  color: var(--pencil);
 }
 .studio__proposal ins {
   background: color-mix(in srgb, var(--canon) 10%, transparent);
@@ -1242,7 +1241,7 @@
   display: flex;
   gap: 0.45rem;
 }
-/* 模式开关：页首右侧的活页签。负边距让它不撑高页眉横带的行盒。 */
+/* Mode switch: tab on the right of the page header. Negative margins keep it from growing the page band's line box. */
 .studio__mode-switch {
   display: inline-flex;
   gap: 2px;
@@ -1268,11 +1267,11 @@
   color: var(--ink);
 }
 .studio__mode-switch button[aria-pressed="true"] {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 
-/* 作品内角色共创：房间导航、回合主区、在场与整理。 */
+/* In-book character co-creation: room navigation, main turn area, presence and tidy-up. */
 .cocreate {
   display: grid;
   grid-template-columns: minmax(210px, 260px) minmax(0, 1fr) minmax(250px, 310px);
@@ -1312,7 +1311,7 @@
 .cocreate__card header p,
 .cocreate__room > header p {
   margin-bottom: 0.12rem;
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.16em;
@@ -1349,7 +1348,7 @@
 .cocreate__session-list > button[data-active="true"],
 .cocreate__branch-nav > button[data-active="true"] {
   border-color: var(--hairline);
-  background: color-mix(in srgb, var(--vera-soft) 62%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
   color: var(--ink);
 }
 .cocreate__session-list strong {
@@ -1421,7 +1420,7 @@
 .cocreate__lore-form input[type="checkbox"],
 .cocreate__lore-bindings input[type="checkbox"] {
   width: auto;
-  accent-color: var(--vera);
+  accent-color: var(--accent);
 }
 .cocreate__lore-form > label:has(input[type="checkbox"]),
 .cocreate__lore-bindings > label:has(input[type="checkbox"]) {
@@ -1509,7 +1508,7 @@
 .cocreate fieldset input,
 .cocreate__participant-toggle input {
   width: auto;
-  accent-color: var(--vera);
+  accent-color: var(--accent);
 }
 .cocreate__create-intro,
 .cocreate__field-note {
@@ -1587,7 +1586,7 @@
     box-shadow 140ms ease;
 }
 .cocreate__turn:hover {
-  border-color: color-mix(in srgb, var(--vera) 30%, var(--hairline));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--hairline));
 }
 .cocreate__turn[data-selected="true"] {
   border-color: var(--canon);
@@ -1735,7 +1734,7 @@
 }
 .cocreate__talkativeness input {
   width: 100%;
-  accent-color: var(--vera);
+  accent-color: var(--accent);
 }
 .cocreate__participant-order {
   display: flex;
@@ -1767,7 +1766,7 @@
   border-left: 2px solid var(--canon);
 }
 .cocreate__adopt-warning {
-  color: var(--vera-deep) !important;
+  color: var(--review-deep) !important;
 }
 .cocreate__range-summary {
   display: flex;
@@ -1780,12 +1779,12 @@
   font-size: 0.72rem;
 }
 .cocreate__range-summary button {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.68rem;
 }
 .cocreate__run-link {
   justify-self: start;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.74rem;
 }
 .cocreate__mobile-tools,
@@ -1876,8 +1875,8 @@
 
 .manuscript-editor .ProseMirror:focus,
 .manuscript-editor__content:focus {
-  border-color: var(--vera-hairline);
-  box-shadow: inset 0 1px 0 var(--vera-soft);
+  border-color: var(--accent-hairline);
+  box-shadow: inset 0 1px 0 var(--accent-soft);
 }
 
 .manuscript-editor .ProseMirror p.is-editor-empty:first-child::before {
@@ -1891,8 +1890,8 @@
 
 .manuscript-editor__proposal,
 mark[data-ai-proposal] {
-  background: color-mix(in srgb, var(--vera-soft) 70%, transparent);
-  border-bottom: 1px dashed var(--vera-hairline);
+  background: color-mix(in srgb, var(--pencil-soft) 70%, transparent);
+  border-bottom: 1px dashed var(--pencil-hairline);
 }
 
 .manuscript-editor--focus .ProseMirror,

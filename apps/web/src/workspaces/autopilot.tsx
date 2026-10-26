@@ -522,14 +522,14 @@ function CompassCard({ detail, reports }: { detail: AutopilotSessionDetail | und
           <path
             d={describeArc(100, 100, 70, -Math.PI / 2, angle)}
             fill="none"
-            stroke="var(--vera)"
+            stroke="var(--accent)"
             strokeWidth="1.6"
             strokeLinecap="round"
           />
           {/* 指针 & 针心 */}
-          <line x1="100" y1="100" x2={needleX} y2={needleY} stroke="var(--vera)" strokeWidth="1.8" />
+          <line x1="100" y1="100" x2={needleX} y2={needleY} stroke="var(--accent)" strokeWidth="1.8" />
           <line x1="100" y1="100" x2={100 + 46 * Math.cos(angle + Math.PI)} y2={100 + 46 * Math.sin(angle + Math.PI)} stroke="var(--ink-soft)" strokeWidth="0.6" strokeDasharray="1 4" />
-          <circle cx="100" cy="100" r="5" fill="var(--vera)" />
+          <circle cx="100" cy="100" r="5" fill="var(--accent)" />
         </svg>
       </div>
       <div className="autopilot__compass-body">

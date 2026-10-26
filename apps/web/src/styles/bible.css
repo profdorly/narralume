@@ -1,6 +1,7 @@
 /* ==========================================================================
-   故事圣经 v4（单页 Canon Spread）。左侧书脊保留类目辑签，右侧每次
-   只摊开一个主题；阅读面与人工编辑在同一张纸幅上左右相邻。
+   Story bible (single-page canon spread). The left spine keeps the section
+   tabs; the right side opens one topic at a time, with the reading page and
+   the author's editing half side by side on the same sheet.
    ========================================================================== */
 
 .story-board { display: grid; gap: 1.25rem; min-width: 0; }
@@ -37,10 +38,10 @@
   gap: 1.4rem;
 }
 
-/* ---- 书目旗标：小 mono 编号 + 作品名 + 章节献纳 ------------------------- */
+/* ---- Book flag: small mono number + title + chapter line --------------- */
 
 
-/* ---- 对页布局 ----------------------------------------------------------- */
+/* ---- Spread layout ----------------------------------------------------- */
 
 .bible__spread {
   display: grid;
@@ -48,7 +49,7 @@
   gap: clamp(1rem, 2.4vw, 2rem);
 }
 
-/* 左栏：书脊旁的竖排辑签 */
+/* Left column: section tabs along the spine */
 .bible__rail {
   position: sticky;
   top: 1.4rem;
@@ -91,8 +92,8 @@
   background: color-mix(in srgb, var(--paper-sunk) 38%, transparent);
 }
 .bible__tab[data-active="true"] {
-  color: var(--vera);
-  background: var(--vera-soft);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 .bible__tab[data-active="true"]::before {
   content: "";
@@ -101,7 +102,7 @@
   top: 20%;
   bottom: 20%;
   width: 2px;
-  background: var(--vera);
+  background: var(--accent);
 }
 .bible__tab-short {
   width: 1.5rem;
@@ -121,11 +122,11 @@
   font-size: 0.62rem;
 }
 .bible__tab[data-active="true"] .bible__tab-count {
-  color: var(--vera);
+  color: var(--accent);
   opacity: 0.75;
 }
 
-/* ---- 主纸幅 ------------------------------------------------------------- */
+/* ---- Main sheet -------------------------------------------------------- */
 
 .bible__main {
   min-width: 0;
@@ -153,7 +154,7 @@
   height: 2px;
   background: linear-gradient(
     90deg,
-    var(--vera) 0 4.5rem,
+    var(--accent) 0 4.5rem,
     var(--hairline-soft) 4.5rem 100%
   );
 }
@@ -211,7 +212,7 @@
   flex-wrap: wrap;
 }
 .bible__section-no {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.22em;
@@ -240,7 +241,7 @@
   padding: 0;
 }
 
-/* ---- 意图：首语、主题带、锁栏 ------------------------------------------- */
+/* ---- Intent: opening line, theme band, lock column --------------------- */
 
 .bible__intent-promise {
   font-family: var(--font-serif);
@@ -299,12 +300,12 @@
 }
 .bible__lock {
   padding: 0.1rem 0.45rem 0.14rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: 2px;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  background: var(--vera-soft);
+  background: var(--accent-soft);
 }
 .bible__hint {
   color: var(--ink-faint);
@@ -316,7 +317,7 @@
   padding: 1rem 1.1rem;
 }
 
-/* ---- 大纲：缩进书目流 ---------------------------------------------------- */
+/* ---- Outline: indented table of contents ------------------------------- */
 
 .bible__outline {
   display: flex;
@@ -383,7 +384,7 @@
   color: var(--branch);
 }
 .bible__outline-status[data-status="drafting"] {
-  color: var(--vera);
+  color: var(--accent);
 }
 .bible__outline-shows-kicker {
   display: flex;
@@ -404,7 +405,7 @@
   margin-right: 0;
 }
 
-/* ---- 实体：册页格子 ------------------------------------------------------ */
+/* ---- Entities: card grid ----------------------------------------------- */
 
 .bible__cards {
   display: grid;
@@ -425,7 +426,7 @@
     box-shadow 180ms ease;
 }
 .bible__card:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lift-soft);
 }
@@ -461,7 +462,7 @@
   font-size: 0.6rem;
 }
 
-/* ---- 正典：事实清单 ------------------------------------------------------ */
+/* ---- Canon: fact list -------------------------------------------------- */
 
 .bible__facts {
   display: flex;
@@ -476,7 +477,7 @@
   transition: background-color 140ms ease;
 }
 .bible__facts-row:hover {
-  background: color-mix(in srgb, var(--vera-soft) 42%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
 }
 .bible__facts-row:first-child {
   border-top: none;
@@ -489,7 +490,7 @@
   letter-spacing: 0.1em;
 }
 .bible__facts-authority[data-a="locked"] {
-  color: var(--vera);
+  color: var(--accent);
 }
 .bible__facts-authority[data-a="confirmed"] {
   color: var(--canon);
@@ -517,7 +518,7 @@
   font-weight: 550;
 }
 
-/* ---- 关系 / 时间线：纵向谱系 ------------------------------------------- */
+/* ---- Relations / timeline: vertical lineage ---------------------------- */
 
 .bible__ledger {
   display: flex;
@@ -574,12 +575,12 @@
   font-size: 0.6rem;
 }
 .bible__badge[data-on="true"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  border-color: var(--accent-hairline);
+  background: var(--accent-soft);
 }
 
-/* ---- 伏笔：状态彩带 ------------------------------------------------------ */
+/* ---- Foreshadowing: status ribbons ------------------------------------- */
 
 .bible__foreshadows {
   display: grid;
@@ -603,7 +604,7 @@
 }
 .bible__foreshadow-card[data-s="developing"],
 .bible__foreshadow-card[data-s="planted"] {
-  border-top-color: var(--vera);
+  border-top-color: var(--accent);
 }
 .bible__foreshadow-card[data-s="abandoned"] {
   opacity: 0.52;
@@ -620,7 +621,7 @@
   letter-spacing: 0.1em;
 }
 .bible__foreshadow-pin {
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
 }
@@ -642,7 +643,7 @@
   letter-spacing: 0.06em;
 }
 
-/* ---- 其余板块共用工具 ---------------------------------------------------- */
+/* ---- Shared helpers for the other sections ----------------------------- */
 
 .bible__foot {
   margin-top: 0.4rem;
@@ -656,7 +657,7 @@
   letter-spacing: 0.05em;
 }
 .bible__blockquote {
-  border-left: 2px solid var(--vera-hairline);
+  border-left: 2px solid var(--accent-hairline);
   color: var(--ink-soft);
   font-family: var(--font-quote);
   font-size: 0.85rem;
@@ -664,7 +665,7 @@
   padding: 0.1rem 0 0.1rem 0.75rem;
 }
 
-/* ---- 当前分页面内的 AI 候选工作台 ------------------------------------------ */
+/* ---- AI candidate desk inside the current page (pencil until decided) ---- */
 
 .bible-ai {
   position: relative;
@@ -673,13 +674,7 @@
   gap: 0.9rem;
   padding: 1.15rem 1.1rem 1.3rem;
   border-top: 1px solid var(--hairline);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--vera-soft) 58%, transparent),
-      transparent 42%
-    ),
-    color-mix(in srgb, var(--paper-raised) 74%, transparent);
+  background: var(--paper-raised);
 }
 
 .bible-ai::before {
@@ -689,7 +684,7 @@
   left: 1.1rem;
   width: 3.2rem;
   height: 2px;
-  background: var(--vera);
+  background: var(--pencil);
 }
 
 .bible-ai__head {
@@ -704,14 +699,14 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--pencil-hairline);
   border-radius: 50%;
-  color: var(--vera);
+  color: var(--pencil);
   background: var(--paper-raised);
 }
 
 .bible-ai__eyebrow {
-  color: var(--vera);
+  color: var(--pencil);
   font-size: 0.58rem;
   letter-spacing: 0.16em;
 }
@@ -754,8 +749,8 @@
 
 .bible-ai__composer textarea:focus {
   outline: none;
-  border-color: var(--vera-hairline);
-  box-shadow: 0 0 0 2px var(--vera-soft);
+  border-color: var(--accent-hairline);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .bible-ai__composer .btn {
@@ -768,11 +763,11 @@
   align-items: center;
   gap: 0.65rem;
   padding: 0.7rem 0.75rem;
-  border: 1px solid var(--vera-hairline);
-  border-left: 2px solid var(--vera);
+  border: 1px solid var(--pencil-hairline);
+  border-left: 2px solid var(--pencil);
   border-radius: var(--radius-card);
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--pencil-soft);
+  color: var(--pencil);
 }
 
 .bible-ai__running div {
@@ -807,7 +802,7 @@
 
 .bible-ai__running a:hover,
 .bible-ai__set > header a:hover {
-  color: var(--vera);
+  color: var(--accent);
   background: var(--paper-raised);
 }
 
@@ -849,7 +844,7 @@
 }
 
 .bible-ai__set > header span {
-  color: var(--vera);
+  color: var(--pencil);
   font-size: 0.56rem;
   letter-spacing: 0.12em;
 }
@@ -875,9 +870,9 @@
   gap: 0.4rem;
   margin: 0.65rem 0.8rem 0;
   padding: 0.48rem 0.55rem;
-  color: var(--vera-deep);
-  border-left: 2px solid var(--vera);
-  background: var(--vera-soft);
+  color: var(--review-deep);
+  border-left: 2px solid var(--review);
+  background: var(--review-soft);
   font-size: 0.64rem;
   line-height: 1.55;
 }
@@ -914,7 +909,7 @@
 
 .bible-ai__item-title span {
   flex: 0 0 auto;
-  color: var(--vera);
+  color: var(--pencil);
   font-size: 0.55rem;
   letter-spacing: 0.12em;
 }
@@ -966,7 +961,7 @@
 
 .bible-ai__diff del {
   color: var(--ink-faint);
-  text-decoration-color: var(--vera-hairline);
+  text-decoration-color: var(--pencil-hairline);
 }
 
 .bible-ai__diff ins {
@@ -1006,9 +1001,9 @@
 
 .bible-ai__locked-note {
   padding: 0.45rem 0.55rem;
-  border-left: 2px solid var(--vera);
-  background: var(--vera-soft);
-  color: var(--vera-deep) !important;
+  border-left: 2px solid var(--review);
+  background: var(--review-soft);
+  color: var(--review-deep) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

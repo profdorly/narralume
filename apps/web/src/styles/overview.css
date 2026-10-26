@@ -1,7 +1,8 @@
 /* ==========================================================================
-   项目概览：进入作品后的默认页。刊头（书名 / 卷首语 / 进度注记）+ 当前章节
-   卡 + 下一步入口三联。构图用编辑纸幅手势：发丝线分区、mono 注记、暖朱
-   只落在当前相位与主按钮上。
+   Project overview: the default page after opening a book. Masthead (title
+   / epigraph / progress note) + current chapter card + three next-step
+   entries. Editorial sheet: hairline sections, mono notes, and the blue pen
+   only on the current phase and the primary entry.
    ========================================================================== */
 
 .overview {
@@ -14,7 +15,7 @@
   gap: 1.4rem;
 }
 
-/* ---- 版面 ---------------------------------------------------------------- */
+/* ---- Layout ------------------------------------------------------------ */
 
 .overview__board {
   display: flex;
@@ -22,7 +23,7 @@
   gap: clamp(1.4rem, 3vh, 2.2rem);
 }
 
-/* 刊头 */
+/* Masthead */
 .overview__masthead {
   display: flex;
   flex-direction: column;
@@ -54,7 +55,7 @@
   color: var(--ink-faint);
 }
 .overview__masthead-phase {
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.78rem;
   letter-spacing: 0.12em;
 }
@@ -62,7 +63,7 @@
   letter-spacing: 0.14em;
 }
 
-/* ---- 当前章节 ------------------------------------------------------------- */
+/* ---- Current chapter --------------------------------------------------- */
 
 .overview__current {
   display: flex;
@@ -103,7 +104,7 @@
 }
 .overview__chapter-status {
   align-self: flex-start;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -130,7 +131,7 @@
   margin-top: 0.4rem;
 }
 
-/* ---- 本书文风 -------------------------------------------------------------- */
+/* ---- Book style -------------------------------------------------------- */
 
 .overview__style {
   display: flex;
@@ -170,7 +171,7 @@
   margin-top: 0.3rem;
 }
 
-/* ---- 下一步入口 ----------------------------------------------------------- */
+/* ---- Next-step entries ------------------------------------------------- */
 
 .overview__entries {
   display: grid;
@@ -198,18 +199,20 @@
     box-shadow 140ms ease;
 }
 .overview__entry:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lift-soft);
 }
+/* Flat blue-pen tint: a single-color layer composites --accent-soft over
+   the raised paper. */
 .overview__entry[data-primary="true"] {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   background:
-    linear-gradient(135deg, var(--vera-soft), transparent 55%),
+    linear-gradient(var(--accent-soft), var(--accent-soft)),
     var(--paper-raised);
 }
 .overview__entry[data-primary="true"] .overview__entry-label {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
 }
 .overview__entry-label {
   font-weight: var(--weight-display);
@@ -222,7 +225,7 @@
   line-height: 1.7;
 }
 
-/* ---- 活动任务协议字段 ----------------------------------------------------- */
+/* ---- Active task fields ------------------------------------------------ */
 
 .overview__task-actions {
   display: flex;
@@ -238,7 +241,7 @@
   letter-spacing: 0.08em;
 }
 
-/* ---- 待办汇总条 ------------------------------------------------------------ */
+/* ---- Pending summary strip --------------------------------------------- */
 
 .overview__pending {
   display: flex;
@@ -247,14 +250,14 @@
 }
 .overview__pending-item {
   padding: 0.35rem 0.7rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: var(--radius-card);
-  background: var(--vera-soft);
-  color: var(--vera);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   transition: border-color 140ms ease;
 }
 .overview__pending-item:hover {
-  border-color: var(--vera);
+  border-color: var(--accent);
 }

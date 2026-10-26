@@ -227,7 +227,10 @@ export function ActivityEntry({
           </p>
         ) : null}
         {activity.waitingReason ? (
-          <p className="assistant-activity__reason">
+          <p
+            className="assistant-activity__reason"
+            data-reason={activity.waitingReason}
+          >
             <CircleAlert size={13} strokeWidth={1.5} aria-hidden="true" />
             {stopReasonLabel(activity.waitingReason)}
           </p>

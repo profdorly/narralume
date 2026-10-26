@@ -1,6 +1,7 @@
 /* ==========================================================================
-   设置 v3：默认生成模型与岗位继承 + Provider/模型 + 高级工具 + 系统备份档。
-   版面手势同 supply 的三栏 ledger；顶部新增 GEN/ADV/DISASTER 三段 header。
+   Settings: default generation model and role inheritance + provider/model
+   + advanced tools + system backups. Same three-column ledger as supply,
+   with a GEN/ADV/DISASTER header on top.
    ========================================================================== */
 
 .settings {
@@ -30,7 +31,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.82rem;
 }
 
@@ -66,7 +67,7 @@
   line-height: 1.8;
 }
 
-/* 岗位继承区：四卡一排 */
+/* Role inheritance: four cards in a row */
 .settings__roles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -90,7 +91,7 @@
   line-height: 1.65;
 }
 
-/* 渠道连接细节属于高级管理；普通首屏只呈现模型选择。 */
+/* Channel connection details are advanced management; the first screen only shows model choice. */
 .settings__channel-management {
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
@@ -122,7 +123,7 @@
   grid-row: 1 / span 2;
   align-self: start;
   padding-top: 0.2rem;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.6rem;
   letter-spacing: 0.14em;
 }
@@ -151,7 +152,7 @@
 }
 .settings__channel-management[open] > summary > svg {
   transform: rotate(180deg);
-  color: var(--vera);
+  color: var(--accent);
 }
 .settings__channel-note {
   margin: 0;
@@ -177,7 +178,7 @@
   }
 }
 
-/* 高级工具链接卡 */
+/* Advanced tool link cards */
 .settings__tools-links {
   display: flex;
   flex-wrap: wrap;
@@ -192,13 +193,13 @@
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   background: var(--paper-raised);
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.82rem;
   box-shadow: var(--shadow-lift-soft);
   transition: border-color 140ms ease;
 }
 .settings__tool-link:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .settings__project-pick {
   margin-left: auto;
@@ -223,7 +224,7 @@
 }
 .settings__language-option {
   padding: 0.35rem 1rem;
-  border: 1px solid var(--line, #8884);
+  border: 1px solid var(--hairline);
   border-radius: 999px;
   background: transparent;
   color: inherit;
@@ -235,19 +236,19 @@
   color: var(--canon);
 }
 
-/* ---- 提示词模板 ---------------------------------------------------------- */
+/* ---- Prompt templates -------------------------------------------------- */
 .settings__prompts {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 .settings__prompt-card {
-  border: 1px solid var(--line, #8884);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   background: transparent;
 }
 .settings__prompt-card[data-modified='true'] {
-  border-color: var(--canon, #a78);
+  border-color: var(--canon);
 }
 .settings__prompt-card > summary {
   display: flex;
@@ -268,7 +269,7 @@
   min-width: 0;
 }
 .settings__prompt-description {
-  color: var(--ink-soft, #888);
+  color: var(--ink-soft);
   font-size: 0.82rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -278,12 +279,12 @@
   font-size: 0.78rem;
   padding: 0.1rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid var(--line, #8884);
+  border: 1px solid var(--hairline);
   white-space: nowrap;
 }
 .settings__prompt-card[data-modified='true'] .settings__prompt-state {
-  border-color: var(--canon, #a78);
-  color: var(--canon, #a78);
+  border-color: var(--canon);
+  color: var(--canon);
 }
 .settings__prompt-body {
   display: flex;
@@ -293,7 +294,7 @@
 }
 .settings__prompt-invariants {
   font-size: 0.8rem;
-  color: var(--ink-soft, #888);
+  color: var(--ink-soft);
   margin: 0;
 }
 .settings__prompt-field {
@@ -308,7 +309,7 @@
   font-family: inherit;
   line-height: 1.6;
   padding: 0.5rem 0.7rem;
-  border: 1px solid var(--line, #8884);
+  border: 1px solid var(--hairline);
   border-radius: 8px;
   background: transparent;
   color: inherit;

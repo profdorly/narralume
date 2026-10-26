@@ -1,7 +1,7 @@
 /* ==========================================================================
-   模型供给 v3（规格生产册 / specimen 栏）。三个纵栏走在一条接线：
-   Provider 卡带（Plug → Model 数)→ Model 条（规格与上下文）→
-   Assignment 五岗（五问及究竟是哪一个 model 接得起）。
+   Model supply (specimen ledger). Three columns read as one wire:
+   provider cards (connection -> model count) -> model rows (specs and
+   context) -> the five role assignments (which model can serve each).
    ========================================================================== */
 
 .supply {
@@ -33,7 +33,7 @@
   font-size: 0.8rem;
 }
 
-/* 栏头新建钮（紧凑次操作） */
+/* Column header "new" button (compact secondary action) */
 .supply__mini-action {
   display: inline-flex;
   align-items: center;
@@ -53,16 +53,16 @@
     background-color 140ms ease;
 }
 .supply__mini-action:hover:not(:disabled) {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .supply__mini-action:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* Provider 卡连体壳：卡片本体按钮 + 右下浮起的编辑/删除图标钮 */
+/* Provider card shell: the card button + edit/delete icon buttons raised at the bottom right */
 .supply__provider-wrap {
   position: relative;
 }
@@ -98,21 +98,21 @@
     background-color 140ms ease;
 }
 .supply__icon-action:hover:not(:disabled) {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .supply__icon-action:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* 编辑表单（嵌在栏体里的活页） */
+/* Edit form (an insert sheet inside the column) */
 .supply__editor {
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem 1rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--accent-hairline);
   border-radius: var(--radius-card);
   background: var(--paper);
   box-shadow: var(--shadow-lift-soft);
@@ -145,7 +145,7 @@
 .supply__editor input:focus,
 .supply__editor select:focus {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .supply__editor input::placeholder {
   color: var(--ink-faint);
@@ -160,7 +160,7 @@
 .supply__editor .supply__check input {
   width: 14px;
   height: 14px;
-  accent-color: var(--vera);
+  accent-color: var(--accent);
 }
 .supply__editor-actions {
   display: flex;
@@ -170,11 +170,11 @@
 }
 
 .supply__local-error {
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.8rem;
 }
 .supply__warn {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 
 .supply__role-empty {
@@ -193,7 +193,7 @@
   letter-spacing: 0.03em;
 }
 
-/* ---- Provider 栏 ------------------------------------------------------------- */
+/* ---- Provider column --------------------------------------------------- */
 
 .supply__column {
   border: 1px solid var(--hairline);
@@ -213,7 +213,7 @@
   gap: 0.55rem;
 }
 .supply__column-eyebrow {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.14em;
@@ -240,7 +240,7 @@
   gap: 0.4rem;
 }
 
-/* Provider 卡（英雄物） */
+/* Provider card (hero object) */
 
 .supply__provider {
   display: flex;
@@ -258,13 +258,13 @@
     box-shadow 180ms ease;
 }
 .supply__provider:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lift-soft);
 }
 .supply__provider-wrap[data-active="true"] .supply__provider {
-  border-color: var(--vera);
-  background: color-mix(in srgb, var(--vera-soft) 30%, transparent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
 }
 .supply__provider-name {
   font-weight: var(--weight-display);
@@ -308,7 +308,7 @@
   color: var(--ink-faint);
 }
 
-/* Model 条（规格 row） */
+/* Model row (spec row) */
 
 .supply__model {
   padding: 0.6rem 0.7rem;
@@ -341,9 +341,9 @@
   color: var(--ink-faint);
 }
 .supply__model-task[data-t="writing"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  border-color: var(--accent-hairline);
+  background: var(--accent-soft);
 }
 .supply__model-task[data-t="planning"],
 .supply__model-task[data-t="review"] {
@@ -368,12 +368,12 @@
 }
 .supply__model-missing {
   padding: 0.36rem 0.6rem 0.4rem;
-  border: 1px dashed var(--vera-hairline);
+  border: 1px solid var(--review-hairline);
   border-radius: 2px;
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.78rem;
   letter-spacing: 0.03em;
-  background: color-mix(in srgb, var(--vera-soft) 60%, transparent);
+  background: color-mix(in srgb, var(--review-soft) 60%, transparent);
 }
 .supply__field-hint {
   display: block;
@@ -383,7 +383,7 @@
   line-height: 1.55;
 }
 
-/* Assignment：五岗 */
+/* Assignment: five roles */
 
 .supply__role {
   padding: 0.7rem 0.85rem;
@@ -415,7 +415,7 @@
   color: var(--canon);
 }
 .supply__role-status[data-ready="false"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .supply__role-description {
   color: var(--ink-faint);
@@ -458,16 +458,16 @@
     color 140ms ease;
 }
 .supply__role-assign-btn:hover:not(:disabled) {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .supply__role-assign-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
-/* Supply：探测散开区 */
+/* Supply: probe results */
 
 .supply__probe {
   border: 1px solid var(--hairline);
@@ -511,7 +511,7 @@
   color: var(--canon);
 }
 .supply__probe-status[data-s="failed"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .supply__probe-status[data-s="unsupported"],
 .supply__probe-status[data-s="skipped"] {

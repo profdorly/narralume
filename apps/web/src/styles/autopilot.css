@@ -1,7 +1,7 @@
 /* ==========================================================================
-   自动驾驶 v3（航海日志 / 航次手册）。主屏 = 一出去的船：左侧 index 是
-   罗盘（每一笔进全向南的指针），右侧是航次手、指令口（你写你导）、
-   与备选排水影响的航次手帐。
+   Autopilot (logbook). The left index is a progress dial that points at
+   the current leg; the right side holds the voyage log, the steering input
+   (the author writes, the AI follows) and the optional actions.
    ========================================================================== */
 
 .autopilot {
@@ -23,7 +23,7 @@
   flex: 1;
 }
 
-/* ---- 左侧：罗盘区 ------------------------------------------------------- */
+/* ---- Left: progress dial ----------------------------------------------- */
 
 .autopilot__compass {
   position: relative;
@@ -117,10 +117,10 @@
   font-weight: var(--weight-display);
 }
 .autopilot__quality [data-quality="revise"] strong {
-  color: #9a6a12;
+  color: var(--branch);
 }
 .autopilot__quality [data-quality="block"] strong {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .autopilot__quality [data-quality="missing"] strong {
   color: var(--ink-soft);
@@ -137,7 +137,7 @@
   border-left-color: var(--branch);
 }
 .autopilot__leg[data-role="chapter"] {
-  border-left-color: var(--vera);
+  border-left-color: var(--accent);
 }
 .autopilot__leg[data-role="closing-review"] {
   border-left-color: var(--canon);
@@ -162,20 +162,20 @@
   letter-spacing: 0.08em;
 }
 .autopilot__leg[data-state="running"] .autopilot__leg-state {
-  color: var(--vera);
+  color: var(--accent);
 }
 .autopilot__leg[data-state="failed"] .autopilot__leg-state {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .autopilot__leg[data-state="cancelled"] .autopilot__leg-state {
   color: var(--ink-faint);
   text-decoration: line-through;
 }
 .autopilot__leg[data-state="failed"] {
-  border-left-color: var(--vera-deep);
+  border-left-color: var(--review-deep);
 }
 
-/* ---- 指挥台：航次 + 指令 + 可选操作 --------------------------------------- */
+/* ---- Control desk: session + steering + optional actions --------------- */
 
 .autopilot__stack {
   display: flex;
@@ -231,8 +231,8 @@
   background: color-mix(in srgb, var(--paper-sunk) 40%, transparent);
 }
 .autopilot__session[data-active="true"] {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 .autopilot__session-no {
   font-family: var(--font-mono);
@@ -261,10 +261,10 @@
   letter-spacing: 0.08em;
 }
 .autopilot__session[data-active="true"] .autopilot__session-status {
-  color: var(--vera);
+  color: var(--accent);
 }
 
-/* ---- 指令口 -------------------------------------------------------------- */
+/* ---- Steering input ---------------------------------------------------- */
 
 .autopilot__steer {
   border: 1px solid var(--hairline);
@@ -331,7 +331,7 @@
 }
 .autopilot__revision textarea:focus {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .autopilot__revision > small {
   color: var(--ink-faint);
@@ -345,9 +345,9 @@
   display: grid;
   gap: 0.65rem;
   padding: 0.9rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--review-hairline);
   border-radius: var(--radius-card);
-  background: var(--vera-soft);
+  background: var(--review-soft);
 }
 .autopilot__blocking-review h3 {
   font-family: var(--font-serif);
@@ -371,10 +371,10 @@
   display: grid;
   gap: 0.25rem;
   padding-left: 0.65rem;
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--review);
 }
 .autopilot__blocking-review li strong {
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.68rem;
 }
 .autopilot__blocking-summary {
@@ -382,12 +382,12 @@
 }
 .autopilot__steer-input:focus {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .autopilot__steer-btn {
   align-self: flex-end;
   padding: 0.45rem 1rem;
-  background: var(--vera);
+  background: var(--accent);
   color: var(--paper-raised);
   border-radius: var(--radius-card);
   font-size: 0.78rem;
@@ -400,14 +400,14 @@
     transform 180ms var(--ease-out-editorial);
 }
 .autopilot__steer-btn:hover:not(:disabled) {
-  background: var(--vera-deep);
+  background: var(--accent-deep);
   transform: translateY(-1px);
 }
 .autopilot__steer-btn:disabled {
   opacity: 0.6;
 }
 
-/* ---- 航次手帐（可选步骤） ------------------------------------------------- */
+/* ---- Voyage log (optional steps) --------------------------------------- */
 
 .autopilot__notes,
 .autopilot__reviews {
@@ -438,7 +438,7 @@
   list-style: none;
 }
 
-/* ---- 航表小手钮 ------------------------------------------------------------- */
+/* ---- Small log action buttons ------------------------------------------ */
 
 .autopilot__actions {
   display: grid;
@@ -461,9 +461,9 @@
     background-color 140ms ease;
 }
 .autopilot__action-btn:hover:not(:disabled) {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .autopilot__action-btn:disabled {
   opacity: 0.5;
@@ -478,7 +478,7 @@
     grid-template-columns: 1fr;
   }
 }
-/* ---- 起帆设置：建书候选 / 指南针 / 新航次（mono 眉题 + 宋体题） ------------ */
+/* ---- Setup: book foundation candidates / goal / new session (mono eyebrow + serif title) ---- */
 
 .autopilot__setup {
   grid-column: 1 / -1;
@@ -504,7 +504,7 @@
   border-bottom: 1px solid var(--hairline-soft);
 }
 .autopilot__setup-card header .mono {
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -549,7 +549,7 @@
 .autopilot__setup-card input:focus,
 .autopilot__setup-card select:focus {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   background: var(--paper-raised);
 }
 .autopilot__setup-card > .btn {
@@ -566,15 +566,15 @@
   grid-column: 1 / -1;
   justify-self: start;
   align-self: flex-start;
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.78rem;
   text-decoration: none;
-  border-bottom: 1px solid var(--vera-hairline);
+  border-bottom: 1px solid var(--accent-hairline);
   padding-bottom: 1px;
 }
 .autopilot__setup-link:hover {
-  color: var(--vera-deep);
-  border-bottom-color: var(--vera-deep);
+  color: var(--accent-deep);
+  border-bottom-color: var(--accent-deep);
 }
 .autopilot__foundation-run {
   display: grid;
@@ -584,7 +584,7 @@
   background: var(--paper-raised);
 }
 .autopilot__foundation-run[data-status="failed_recoverable"] {
-  border-color: var(--vera-hairline);
+  border-color: var(--review-hairline);
 }
 .autopilot__foundation-run strong {
   color: var(--ink);
@@ -623,7 +623,7 @@
   gap: 0.55rem;
 }
 
-/* 候选套（向 LLM 生成的建书原料过称） */
+/* Candidate set: AI-generated book foundation awaiting the author's decision */
 .autopilot__candidate-set {
   display: flex;
   flex-direction: column;
@@ -703,7 +703,7 @@
   line-height: 1.6;
 }
 .autopilot__candidate > p[role="alert"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.76rem;
   line-height: 1.6;
 }
@@ -719,7 +719,7 @@
   letter-spacing: 0.04em;
 }
 
-/* 航次簿内的注记 / 空态 */
+/* Notes and empty states inside the session log */
 .autopilot__list-note {
   padding: 1rem;
 }
@@ -731,7 +731,7 @@
   line-height: 1.8;
 }
 
-/* 失败处置（承 .autopilot__actions 的虚线分隔底） */
+/* Failure handling (reuses the dashed separator under .autopilot__actions) */
 .autopilot__failure-actions {
   display: flex;
   flex-wrap: wrap;
@@ -748,23 +748,23 @@
   line-height: 1.6;
 }
 
-/* 航线注记 */
+/* Leg notes */
 .autopilot__legs-empty {
   color: var(--ink-faint);
   font-weight: var(--weight-meta);
   font-size: 0.8rem;
 }
 .autopilot__leg a {
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.72rem;
   text-decoration: none;
-  border-bottom: 1px solid var(--vera-hairline);
+  border-bottom: 1px solid var(--accent-hairline);
   padding-bottom: 1px;
   white-space: nowrap;
 }
 .autopilot__notes-error {
   font-size: 0.8rem;
-  color: var(--vera-deep);
+  color: var(--review-deep);
   line-height: 1.7;
 }
 

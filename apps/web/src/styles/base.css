@@ -1,5 +1,6 @@
 /* ==========================================================================
-   基座：reset + 纸面（米纸底、400% 采样不到的克制纸纹、中文排印基调）。
+   Base: reset + the plain paper page (Pólen cream, no texture) and the
+   default typesetting.
    ========================================================================== */
 
 *,
@@ -35,25 +36,6 @@ body {
     color 240ms ease;
 }
 
-/* 纸纹层：整张纸上的纤维噪点。浅色 multiply、夜灯 screen，都不抢戏。 */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  pointer-events: none;
-  background-image: var(--paper-grain);
-  background-size: 240px 240px;
-  opacity: 0.04;
-  mix-blend-mode: multiply;
-}
-
-[data-theme="dark"] body::after,
-body[data-theme="dark"]::after {
-  opacity: 0.05;
-  mix-blend-mode: screen;
-}
-
 img,
 svg,
 canvas,
@@ -83,17 +65,17 @@ a {
 }
 
 ::selection {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 
 :focus-visible {
-  outline: 1.5px solid var(--vera);
+  outline: 1.5px solid var(--accent);
   outline-offset: 2px;
   border-radius: 1px;
 }
 
-/* 数字与编号一律等宽注记 */
+/* Numbers and indexes always use the monospaced note face */
 .mono {
   font-family: var(--font-mono);
   font-size: 0.72rem;

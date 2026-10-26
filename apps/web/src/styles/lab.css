@@ -1,7 +1,8 @@
 /* ==========================================================================
-   长篇推演 v3（实验记录本 / loom）。主屏 = 一本在拍摄中必经原面的都是
-   「记录面」：左侧是「检索实验腔」（你一个问题、一页被撤回的片搭），
-   右侧是预测农业 + 记忆盐度 + 干跑手感墙。
+   Long-form lab (experiment notebook). The main screen is a record page:
+   the left column is the retrieval bench (one question, the passages it
+   pulled back), the right column holds predictions, memory layers and the
+   dry-run safety checks.
    ========================================================================== */
 
 .lab {
@@ -29,7 +30,7 @@
   min-width: 0;
 }
 
-/* ---- 弱注记与瞬时回响 ----------------------------------------------------- */
+/* ---- Faint notes and transient status ---------------------------------- */
 
 .lab__note {
   color: var(--ink-faint);
@@ -38,12 +39,12 @@
   line-height: 1.7;
 }
 .lab__flash {
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.72rem;
   letter-spacing: 0.05em;
 }
 
-/* ---- 左：检索实验腔 ------------------------------------------------------ */
+/* ---- Left: retrieval bench --------------------------------------------- */
 
 .lab__search {
   border: 1px solid var(--hairline);
@@ -94,7 +95,7 @@
 }
 .lab__search-btn {
   padding: 0.5rem 1rem;
-  background: var(--vera);
+  background: var(--accent);
   color: var(--paper-raised);
   border-radius: var(--radius-card);
   font-size: 0.82rem;
@@ -107,7 +108,7 @@
     transform 180ms var(--ease-out-editorial);
 }
 .lab__search-btn:hover:not(:disabled) {
-  background: var(--vera-deep);
+  background: var(--accent-deep);
   transform: translateY(-1px);
 }
 .lab__search-btn:disabled {
@@ -142,7 +143,7 @@
     box-shadow 180ms ease;
 }
 .lab__hit:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   transform: translateY(-1px);
   box-shadow: var(--shadow-lift-soft);
 }
@@ -174,7 +175,7 @@
 }
 .lab__hit-score {
   font-family: var(--font-mono);
-  color: var(--vera);
+  color: var(--accent);
   font-size: 0.66rem;
   letter-spacing: 0.06em;
 }
@@ -202,12 +203,12 @@
   border-radius: 2px;
 }
 .lab__hit-flag[data-on="true"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  border-color: var(--accent-hairline);
+  background: var(--accent-soft);
 }
 
-/* ---- 右：推测面板 + 干跑 --------------------------------------------------- */
+/* ---- Right: predictions + dry run -------------------------------------- */
 
 .lab__panel {
   border: 1px solid var(--hairline);
@@ -266,7 +267,7 @@
 .lab__prediction-horizon {
   font-family: var(--font-mono);
   font-size: 0.6rem;
-  color: var(--vera);
+  color: var(--accent);
   letter-spacing: 0.08em;
 }
 .lab__prediction-title {
@@ -299,8 +300,8 @@
   transition: all 140ms ease;
 }
 .lab__prediction-btn:hover:not(:disabled) {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
 }
 .lab__prediction-btn[data-on="adopted"] {
   background: var(--canon);
@@ -316,7 +317,7 @@
   cursor: not-allowed;
 }
 
-/* ---- 记忆盐度小叠 --------------------------------------------------------- */
+/* ---- Memory layer stack ------------------------------------------------ */
 
 .lab__memories {
   border-top: 1px dashed var(--hairline);
@@ -343,7 +344,7 @@
 .lab__memory-layer {
   font-family: var(--font-mono);
   font-size: 0.62rem;
-  color: var(--vera);
+  color: var(--accent);
   letter-spacing: 0.1em;
 }
 .lab__memory-title {
@@ -358,7 +359,7 @@
   line-height: 1.65;
 }
 
-/* ---- 干跑 -------------------------------------------------------------- */
+/* ---- Dry run ----------------------------------------------------------- */
 
 .lab__dryrun {
   display: flex;
@@ -380,7 +381,7 @@
   transition: border-color 140ms ease;
 }
 .lab__dryrun-input:focus {
-  border-color: var(--vera);
+  border-color: var(--accent);
 }
 .lab__dryrun-btn {
   align-self: flex-start;
@@ -403,7 +404,7 @@
   color: var(--canon);
 }
 .lab__dryrun-safe[data-safe="false"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .lab__finding {
   padding: 0.5rem 0.7rem;
@@ -414,8 +415,8 @@
   line-height: 1.7;
 }
 .lab__finding[data-severity="warning"] {
-  border-left: 2px solid var(--vera);
-  background: var(--vera-soft);
+  border-left: 2px solid var(--review);
+  background: var(--review-soft);
 }
 .lab__finding-detail {
   margin: 0.3rem 0 0;
@@ -431,7 +432,7 @@
     grid-template-columns: 1fr;
   }
 }
-/* ---- 显式维护卡：生成预测 + 记忆整理 --------------------------------------- */
+/* ---- Explicit maintenance cards: generate predictions + tidy memory ---- */
 
 .lab__actions {
   border: 1px solid var(--hairline);
@@ -473,7 +474,7 @@
 }
 .lab__field input:focus,
 .lab__field textarea:focus {
-  border-color: var(--vera);
+  border-color: var(--accent);
 }
 .lab__field textarea {
   min-height: 4.5rem;

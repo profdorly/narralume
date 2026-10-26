@@ -1,6 +1,6 @@
-/* Canon Spread 的编辑半页。它与阅读面共用同一个外框，不再作为独立台面。 */
+/* Editing half of the canon spread. It shares the reading page's frame and is no longer a separate desk. */
 
-/* 页眉：和左侧阅读页共享基线，但保持编辑语义。 */
+/* Header: shares the baseline of the reading page on the left but keeps the editing role. */
 .bible-actions__head {
   display: grid;
   gap: 0.42rem;
@@ -8,7 +8,7 @@
   border-bottom: 1px solid var(--hairline-soft);
 }
 .bible-actions__eyebrow {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.22em;
@@ -29,7 +29,7 @@
   line-height: 1.65;
 }
 
-/* 面板与表单 */
+/* Panels and forms */
 .bible-actions__panel {
   padding: 1rem 1.15rem 1.15rem;
 }
@@ -74,7 +74,7 @@
 .bible-actions__field select:focus,
 .bible-actions__field textarea:focus,
 .bible-actions__buttons select:focus {
-  border-color: var(--vera);
+  border-color: var(--accent);
 }
 .bible-actions__field input:disabled,
 .bible-actions__field select:disabled,
@@ -89,7 +89,7 @@
   resize: vertical;
 }
 
-/* 提交行：次操作描边钮 + 主操作朱底钮（共享 .btn 体系） */
+/* Submit row: outlined secondary button + blue-pen primary button (shared .btn system) */
 .bible-actions__buttons {
   grid-column: 1 / -1;
   display: flex;
@@ -107,7 +107,7 @@
   font-size: 0.78rem;
 }
 
-/* 勾栏：实体范围这类成组 checkbox */
+/* Check group: grouped checkboxes such as entity scope */
 .bible-actions__checks {
   grid-column: 1 / -1;
   display: flex;
@@ -133,10 +133,10 @@
   font-size: 0.8rem;
 }
 .bible-actions__checks input {
-  accent-color: var(--vera);
+  accent-color: var(--accent);
 }
 
-/* 回执：写入成功注记 + 上下文收据 */
+/* Receipt: saved note + context summary */
 .bible-actions__notice {
   margin-top: 0.8rem;
   color: var(--canon);

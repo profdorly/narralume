@@ -1,7 +1,8 @@
 /* ==========================================================================
-   审稿室 v3（校样台）。核心手势：把「被审的正文」当成桌面中央的大物件、
-   审稿报告与待决 issue 则放在桌缘。二列：左正文（白色高亮证据位置）+
-   右栏（报告元信息 + issue 堆）。
+   Review room (proof desk). The reviewed text is the large object at the
+   center of the desk; the report and open findings sit at the edge. Two
+   columns: the text on the left (evidence highlighted in red pencil) and the
+   report metadata + finding stack on the right.
    ========================================================================== */
 
 .review {
@@ -23,7 +24,7 @@
   flex: 1;
 }
 
-/* ---- 左侧：被审正文 ------------------------------------------------------ */
+/* ---- Left: reviewed text ----------------------------------------------- */
 
 .review__doc {
   border: 1px solid var(--hairline);
@@ -53,17 +54,17 @@
   align-items: baseline;
   gap: 0.4rem;
   padding: 0.22rem 0.7rem 0.24rem;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--review-hairline);
   border-radius: 2px;
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  color: var(--review-deep);
+  background: var(--review-soft);
   font-size: 0.68rem;
   letter-spacing: 0.1em;
 }
 .review__verdict[data-v="blocked"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: color-mix(in srgb, var(--vera-soft) 70%, transparent);
+  color: var(--review-deep);
+  border-color: var(--review-hairline);
+  background: color-mix(in srgb, var(--review-soft) 70%, transparent);
 }
 .review__verdict[data-v="revise"] {
   color: var(--branch);
@@ -96,7 +97,7 @@
   color: var(--ink);
   word-break: break-word;
 }
-/* 写作台里的完整展开变体：与编辑稿同纸，永不截断 */
+/* Fully expanded variant in the writing desk: same paper as the draft, never truncated */
 .review__doc-body--desk {
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
@@ -107,16 +108,16 @@
   overflow: visible;
 }
 .review__doc-body--desk mark {
-  background: color-mix(in srgb, var(--vera-soft) 65%, transparent);
-  color: var(--vera-deep);
+  background: color-mix(in srgb, var(--review-soft) 65%, transparent);
+  color: var(--review-deep);
   padding: 0 0.1em;
 }
 .review__doc-body mark {
-  background: color-mix(in srgb, var(--vera-soft) 65%, transparent);
-  color: var(--vera-deep);
+  background: color-mix(in srgb, var(--review-soft) 65%, transparent);
+  color: var(--review-deep);
   padding: 0 0.1em;
   border-radius: 2px;
-  border-bottom: 1px solid color-mix(in srgb, var(--vera-hairline) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--review-hairline) 60%, transparent);
 }
 .review__doc-empty {
   padding: 2.4rem 1.5rem;
@@ -139,7 +140,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--vera-deep);
+  color: var(--accent-deep);
   font-size: 0.8rem;
   letter-spacing: 0.05em;
 }
@@ -161,7 +162,7 @@
   background: var(--paper);
 }
 
-/* ---- 右侧：报告 + issue 列 ------------------------------------------------ */
+/* ---- Right: report + finding list -------------------------------------- */
 
 .review__side {
   position: sticky;
@@ -236,7 +237,7 @@
     transform 180ms var(--ease-out-editorial);
 }
 .review__issue:hover {
-  border-left-color: var(--vera-hairline);
+  border-left-color: var(--review-hairline);
   box-shadow: var(--shadow-lift-soft);
   transform: translateY(-1px);
 }
@@ -258,9 +259,9 @@
   color: var(--ink-soft);
 }
 .review__issue-badge[data-s="critical"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  color: var(--review-deep);
+  border-color: var(--review-hairline);
+  background: var(--review-soft);
 }
 .review__issue-badge[data-s="major"] {
   color: var(--branch);
@@ -284,8 +285,8 @@
 .review__issue-evidence {
   margin-top: 0.45rem;
   padding: 0.4rem 0.55rem 0.45rem 0.7rem;
-  border-left: 2px solid color-mix(in srgb, var(--vera-hairline) 60%, transparent);
-  background: color-mix(in srgb, var(--vera-soft) 40%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--review-hairline) 60%, transparent);
+  background: color-mix(in srgb, var(--review-soft) 40%, transparent);
   color: var(--ink-soft);
   font-size: 0.76rem;
   line-height: 1.7;
@@ -319,9 +320,9 @@
 }
 .review__decision-chip[data-d="reject"],
 .review__decision-chip[data-d="false_positive"] {
-  color: var(--vera-deep);
-  border-color: var(--vera-hairline);
-  background: var(--vera-soft);
+  color: var(--review-deep);
+  border-color: var(--review-hairline);
+  background: var(--review-soft);
 }
 .review__decision-chip[data-d="intentional_keep"] {
   color: var(--branch);
@@ -353,9 +354,9 @@
     background-color 140ms ease;
 }
 .review__decider-btn:hover {
-  border-color: var(--vera-hairline);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent-hairline);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .review__decider-btn:disabled {
   opacity: 0.45;
@@ -367,12 +368,12 @@
   background: var(--paper);
 }
 .review__decider-btn[data-on="true"] {
-  border-color: var(--vera);
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 
-/* ---- 报告（verdict/scores) ------------------------------------------------- */
+/* ---- Report (verdict/scores) ------------------------------------------- */
 
 .review__report {
   border: 1px solid var(--hairline);
@@ -405,7 +406,7 @@
   color: var(--branch);
 }
 .review__report-verdict[data-v="block"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .review__report-summary {
   color: var(--ink);
@@ -437,7 +438,7 @@
   letter-spacing: 0.04em;
 }
 
-/* ---- 反馈 ---------------------------------------------------------------- */
+/* ---- Feedback ---------------------------------------------------------- */
 
 .review__flash {
   position: fixed;
@@ -467,7 +468,7 @@
   }
 }
 
-/* ---- 页眉报告切换 + 选中 issue + 提案 diff ------------------------------- */
+/* ---- Header report switch + selected finding + proposal diff ----------- */
 
 .review__report-picker {
   display: inline-flex;
@@ -488,7 +489,7 @@
   border: 1px solid var(--hairline);
   border-radius: 2px;
   background-color: var(--paper-raised);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235c554a' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%234a5263' stroke-width='1.2'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.55rem center;
   box-shadow: var(--shadow-lift-soft);
@@ -501,19 +502,23 @@
     border-color 140ms ease,
     box-shadow 160ms ease;
 }
+/* Data-URI icons cannot read tokens: the dark arrow repeats --ink-soft. */
+[data-theme="dark"] .review__report-picker select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23bdb8ac' stroke-width='1.2'/%3E%3C/svg%3E");
+}
 .review__report-picker select:hover {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .review__report-picker select:focus-visible {
-  outline: 1px solid var(--vera);
+  outline: 1px solid var(--accent);
   outline-offset: 1px;
-  border-color: var(--vera);
+  border-color: var(--accent);
 }
 
 .review__issue[data-selected="true"] {
-  border-color: var(--vera-hairline);
-  border-left-color: var(--vera);
-  background: color-mix(in srgb, var(--vera-soft) 45%, transparent);
+  border-color: var(--review-hairline);
+  border-left-color: var(--review);
+  background: color-mix(in srgb, var(--review-soft) 45%, transparent);
   box-shadow: var(--shadow-lift-soft);
 }
 .review__issue[data-selected="true"]:hover {

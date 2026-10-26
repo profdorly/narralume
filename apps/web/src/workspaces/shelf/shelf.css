@@ -1,6 +1,8 @@
 /* ==========================================================================
-   藏书室 v3：巨型刊头 + ghost 底字 + 编目索引行 + 行尾真书脊 + 右缘竖排卷首语。
-   构图纪律：张力全部来自字级、空间与一件纸造物（书脊），不动色。
+   Shelf: large masthead + ghost word + catalogue index rows + a real book
+   spine at the end of each row + epigraph on the right edge. Discipline:
+   all tension comes from type size, space and one paper object (the
+   spine); no extra color.
    ========================================================================== */
 
 .shelf {
@@ -10,7 +12,7 @@
   padding: clamp(1.6rem, 4.5vh, 3.2rem) clamp(1.4rem, 4.5vw, 4.5rem) 6rem;
 }
 
-/* --- 建书入口（右上角三枚细描边） -------------------------------------- */
+/* --- New book entries (three fine outlined buttons, top right) ------ */
 
 .shelf__cta {
   position: absolute;
@@ -43,20 +45,20 @@
   background: transparent;
 }
 .btn--outline:hover {
-  border-color: var(--vera-hairline);
-  color: var(--vera);
+  border-color: var(--accent-hairline);
+  color: var(--accent);
   background: var(--paper-raised);
   box-shadow: var(--shadow-lift-soft);
   transform: translateY(-1px);
 }
 .btn--primary {
-  border: 1px solid var(--vera);
-  background: var(--vera);
+  border: 1px solid var(--accent);
+  background: var(--accent);
   color: var(--paper-raised);
 }
 .btn--primary:hover {
-  background: var(--vera-deep);
-  border-color: var(--vera-deep);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
   box-shadow: var(--shadow-lift-soft);
   transform: translateY(-1px);
 }
@@ -68,7 +70,7 @@
   flex-shrink: 0;
 }
 
-/* --- 巨型刊头 + ghost 底字 --------------------------------------------- */
+/* --- Large masthead + ghost word ------------------------------------ */
 
 .shelf__masthead {
   position: relative;
@@ -117,11 +119,11 @@
   position: relative;
   z-index: 1;
   margin-top: 0.9rem;
-  color: var(--vera);
+  color: var(--accent);
   text-transform: uppercase;
 }
 
-/* --- 工具行：检索 / 归档开关 -------------------------------------------- */
+/* --- Tool row: search / archive toggle ------------------------------ */
 
 .shelf__toolbar {
   position: relative;
@@ -146,8 +148,8 @@
   transition: border-color 160ms ease;
 }
 .shelf__search:focus-within {
-  border-color: var(--vera);
-  color: var(--vera);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .shelf__search input {
   flex: 1;
@@ -176,8 +178,8 @@
   color: var(--ink);
 }
 .shelf__archive-toggle[aria-pressed="true"] {
-  color: var(--vera);
-  border-bottom-color: var(--vera-hairline);
+  color: var(--accent);
+  border-bottom-color: var(--accent-hairline);
 }
 
 .shelf__view-switch {
@@ -200,12 +202,12 @@
 }
 .shelf__view-switch button:hover { color: var(--ink); }
 .shelf__view-switch button[aria-pressed="true"] {
-  color: var(--vera);
+  color: var(--accent);
   background: var(--paper-raised);
   box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* --- 书架 --------------------------------------------------------------- */
+/* --- Shelf ---------------------------------------------------------- */
 
 .shelf__catalog {
   position: relative;
@@ -246,7 +248,7 @@
   border-radius: var(--radius-card);
   cursor: pointer;
 }
-.shelf-row__open:focus-visible { outline: 2px solid var(--vera); outline-offset: 3px; }
+.shelf-row__open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .shelf-row__no { display: flex; flex-direction: column; gap: 0.3rem; color: var(--ink-faint); }
 .shelf-row__no .mono:first-child { color: var(--ink-soft); }
 .shelf-row__id { font-size: 0.62rem; opacity: 0.75; }
@@ -274,7 +276,7 @@
   white-space: nowrap;
   transition: transform 320ms var(--ease-out-editorial);
 }
-.shelf-row:hover .shelf-row__title { color: var(--vera); transform: translateX(4px); }
+.shelf-row:hover .shelf-row__title { color: var(--accent); transform: translateX(4px); }
 .shelf-row:hover .shelf-row__premise { transform: translateX(8px); }
 .shelf-row__premise[data-empty="true"] { opacity: 0.6; }
 .shelf-row__meta {
@@ -287,7 +289,7 @@
   white-space: nowrap;
 }
 .shelf-row__phase { color: var(--ink-soft); }
-.shelf-row__archived-tag { padding: 0.05rem 0.4rem; border: 1px solid var(--vera-hairline); color: var(--vera); }
+.shelf-row__archived-tag { padding: 0.05rem 0.4rem; border: 1px solid var(--accent-hairline); color: var(--accent); }
 .shelf-row__menu { position: relative; z-index: 2; justify-self: end; }
 .shelf-row__menu-btn { opacity: 0; transition: opacity 150ms ease; }
 .shelf-row:hover .shelf-row__menu-btn,
@@ -363,13 +365,13 @@
 }
 .shelf-menu__item:hover,
 .shelf-menu__item:focus-visible {
-  background: var(--vera-soft);
-  color: var(--vera);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .shelf-menu__item--danger:hover,
 .shelf-menu__item--danger:focus-visible {
-  background: color-mix(in srgb, var(--conflict) 10%, transparent);
-  color: var(--conflict);
+  background: var(--review-soft);
+  color: var(--review);
 }
 .shelf-menu__divider {
   height: 1px;
@@ -382,7 +384,7 @@
   z-index: 25;
 }
 
-/* --- 空态 --------------------------------------------------------------- */
+/* --- Empty state ---------------------------------------------------- */
 
 .shelf__empty {
   display: flex;
@@ -406,7 +408,7 @@
   letter-spacing: 0.06em;
 }
 
-/* --- 对话框（建书 / 重命名 / 删除 / 导入） -------------------------------- */
+/* --- Dialogs (new book / rename / delete / import) ------------------ */
 
 .shelf-dialog-backdrop {
   position: fixed;
@@ -428,7 +430,7 @@
   box-shadow: var(--shadow-lift);
 }
 .shelf-dialog__eyebrow {
-  color: var(--vera);
+  color: var(--accent);
   text-transform: uppercase;
 }
 .shelf-dialog__title {
@@ -470,7 +472,7 @@
 }
 .shelf-dialog__input:focus,
 .shelf-dialog__textarea:focus {
-  border-bottom-color: var(--vera);
+  border-bottom-color: var(--accent);
 }
 .shelf-dialog__input::placeholder,
 .shelf-dialog__textarea::placeholder {
@@ -505,12 +507,12 @@
   font-size: 0.88rem;
 }
 .shelf-candidate input {
-  accent-color: var(--vera);
+  accent-color: var(--accent);
   width: 15px;
   height: 15px;
 }
 .shelf-candidate__kind {
-  color: var(--vera);
+  color: var(--accent);
   flex-shrink: 0;
 }
 .shelf-candidate__title {
@@ -519,7 +521,7 @@
   white-space: nowrap;
 }
 
-/* --- 响应折叠 ------------------------------------------------------------ */
+/* --- Responsive collapse -------------------------------------------- */
 
 @media (max-width: 1060px) {
   .shelf__cta {
@@ -571,13 +573,13 @@
   .shelf-row__menu-btn {
     opacity: 1;
   }
-  /* 280px 小屏，书与行都缩 */
+  /* 280px small screens: books and rows both shrink */
   .shelf-spine {
     height: 52px;
   }
 }
 
-/* --- R5 封面书架 ---------------------------------------------------------- */
+/* --- R5 cover shelf ------------------------------------------------- */
 .shelf__catalog-head {
   display: flex;
   align-items: center;
@@ -612,7 +614,7 @@
   cursor: pointer;
 }
 .shelf-book__open:focus-visible {
-  outline: 2px solid var(--vera);
+  outline: 2px solid var(--accent);
   outline-offset: 5px;
 }
 .shelf-book__cover-wrap {
@@ -653,7 +655,7 @@
   padding: 1.05rem 0.95rem 1rem;
   color: var(--paper-raised);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--vera) 22%, transparent), transparent 54%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent 54%),
     hsl(var(--book-hue) 30% 29%);
 }
 .book-cover__default strong {
@@ -731,7 +733,7 @@
 }
 .shelf-book__subtitle {
   margin-top: 0.18rem;
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-quote);
   font-size: 0.78rem;
 }
@@ -759,8 +761,8 @@
 .shelf-book__archived-tag {
   flex-shrink: 0;
   padding: 0.08rem 0.28rem;
-  border: 1px solid var(--vera-hairline);
-  color: var(--vera);
+  border: 1px solid var(--accent-hairline);
+  color: var(--accent);
 }
 .shelf-book__menu {
   position: absolute;
@@ -791,10 +793,10 @@
   color: var(--ink-faint);
   font-size: 0.72rem;
 }
-.book-edit__reset:hover { color: var(--vera); }
+.book-edit__reset:hover { color: var(--accent); }
 .book-edit__hint { margin-top: 0.6rem; color: var(--ink-faint); font-size: 0.74rem; line-height: 1.6; }
 
-/* 取景弹窗：react-easy-crop 舞台。固定高，3:4 框由库渲染，样式贴合纸面。 */
+/* Crop dialog: react-easy-crop stage. Fixed height, the 3:4 frame comes from the library, styled to sit on the paper. */
 .shelf-dialog--crop { width: min(30rem, 100%); }
 .cover-cropper__stage--dialog {
   position: relative;
@@ -807,7 +809,7 @@
   background: var(--paper-sunk);
 }
 .cover-cropper__stage--dialog .reactEasyCrop_CropArea {
-  border: 1.5px solid var(--vera);
+  border: 1.5px solid var(--accent);
   box-shadow: 0 0 0 9999px rgba(24, 18, 12, 0.42);
 }
 .shelf-recycle { display: grid; gap: 0.65rem; }

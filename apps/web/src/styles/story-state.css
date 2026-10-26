@@ -74,8 +74,8 @@
 }
 .story-state__belief[data-belief="false_belief"],
 .story-state__belief[data-belief="suspected"] {
-  color: var(--vera-deep);
-  background: var(--vera-soft);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 .story-state__evidence {
   display: flex;

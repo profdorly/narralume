@@ -1,6 +1,7 @@
 /* ==========================================================================
-   运行中心 v3（期号档案 / Document Journal 式）。主屏是一张档案管的目录页：
-   左侧卷期（ISSUE NO. 41 断号体）+ 右侧当期运行按时间线逐条排印。
+   Runs (issue archive, document-journal style). The main screen is an
+   archive index: issues on the left (ISSUE NO. 41 style numbers) and the
+   selected issue's runs typeset along a timeline on the right.
    ========================================================================== */
 
 .runs {
@@ -22,7 +23,7 @@
   flex: 1;
 }
 
-/* ---- 左：期号栏 ------------------------------------------------------------- */
+/* ---- Left: issue column ------------------------------------------------ */
 
 .runs__volumes {
   border: 1px solid var(--hairline);
@@ -76,8 +77,8 @@
   background: color-mix(in srgb, var(--paper-sunk) 40%, transparent);
 }
 .runs__volume[data-active="true"] {
-  background: var(--vera-soft);
-  color: var(--vera-deep);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
 }
 .runs__volume-no {
   font-family: var(--font-mono);
@@ -98,7 +99,7 @@
   margin-top: 0.2rem;
 }
 .runs__volume[data-active="true"] .runs__volume-sub {
-  color: var(--vera);
+  color: var(--accent);
 }
 
 .runs__empty-guide {
@@ -108,7 +109,7 @@
   line-height: 1.8;
 }
 
-/* ---- 右：期号号主档 -------------------------------------------------------- */
+/* ---- Right: selected issue --------------------------------------------- */
 
 .runs__sheet {
   border: 1px solid var(--hairline);
@@ -128,7 +129,7 @@
   flex-wrap: wrap;
 }
 .runs__sheet-kicker {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.66rem;
   letter-spacing: 0.18em;
@@ -177,7 +178,7 @@
   background: color-mix(in srgb, var(--paper-sunk) 30%, transparent);
 }
 .runs__row-seq {
-  color: var(--vera);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -206,10 +207,10 @@
 }
 .runs__row-status[data-s="failed"],
 .runs__row-status[data-s="failed_recoverable"] {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 .runs__row-status[data-s="running"] {
-  color: var(--vera);
+  color: var(--accent);
 }
 .runs__row-budget {
   color: var(--ink-faint);
@@ -236,10 +237,10 @@
   color: inherit;
 }
 .runs__row--button[data-active="true"] {
-  background: var(--vera-soft);
+  background: var(--accent-soft);
 }
 .runs__row-status[data-s="awaiting_user"] {
-  color: var(--vera);
+  color: var(--accent);
 }
 .runs__row-status[data-s="pending"],
 .runs__row-status[data-s="paused"] {
@@ -249,7 +250,7 @@
   color: var(--ink-faint);
 }
 
-/* 未选中运行时的虚线注记条 */
+/* Dashed note strip shown when no run is selected */
 .runs__select-hint {
   padding: 0.95rem 1.2rem;
   border: 1px dashed var(--hairline);
@@ -261,7 +262,7 @@
   text-align: center;
 }
 
-/* ---- 运行详情：mono 眉题 + 宋体题的续档 ------------------------------------ */
+/* ---- Run detail: mono eyebrow + serif title ---------------------------- */
 
 .run-detail {
   padding: clamp(1.1rem, 2.5vw, 1.6rem);
@@ -326,7 +327,7 @@
 }
 .run-detail__revision textarea:focus {
   outline: none;
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
 }
 .run-detail__notice {
   margin-bottom: 0.6rem;
@@ -348,7 +349,7 @@
   letter-spacing: 0.06em;
 }
 
-/* 详情分区：可折叠档案盒 */
+/* Detail sections: collapsible archive boxes */
 .run-detail__block {
   margin-top: 0.7rem;
   border: 1px solid var(--hairline-soft);
@@ -386,7 +387,7 @@
   background: var(--paper);
 }
 .run-detail__stream[data-status="interrupted"] {
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--review);
 }
 .run-detail__stream > header {
   display: flex;
@@ -398,7 +399,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-/* 正文流是稿件本体：宋体排印，按纸面速度读 */
+/* The text stream is the manuscript itself: serif type, read at page pace */
 .run-detail__stream pre {
   max-height: 26rem;
   overflow: auto;
@@ -414,7 +415,7 @@
 }
 .run-detail__warning {
   margin-top: 0.6rem;
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.78rem;
 }
 
@@ -437,7 +438,7 @@
   letter-spacing: 0.04em;
 }
 .run-detail__timeline p {
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-family: var(--font-mono);
   font-size: 0.72rem;
 }

@@ -64,7 +64,7 @@
 
 .choice-card:hover,
 .choice-card:focus-visible {
-  border-color: var(--vera-hairline);
+  border-color: var(--accent-hairline);
   outline: none;
 }
 

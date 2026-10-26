@@ -1,4 +1,4 @@
-/* 故事圣经页首：「从正文补全故事圣经」面板。 */
+/* Story bible header: the "fill the story bible from the manuscript" panel (AI provenance in pencil). */
 
 .bible-backfill {
   display: flex;
@@ -6,7 +6,7 @@
   gap: 0.9rem;
   padding: 0.95rem 1.1rem;
   border: 1px solid var(--hairline);
-  border-left: 2px solid var(--vera);
+  border-left: 2px solid var(--pencil);
   border-radius: var(--radius-card);
   background: var(--paper-raised);
   box-shadow: var(--shadow-lift);
@@ -24,9 +24,9 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid var(--vera-hairline);
+  border: 1px solid var(--pencil-hairline);
   border-radius: 50%;
-  color: var(--vera);
+  color: var(--pencil);
 }
 
 .bible-backfill__heading {
@@ -35,7 +35,7 @@
 }
 
 .bible-backfill__eyebrow {
-  color: var(--vera);
+  color: var(--pencil);
   font-size: 0.58rem;
   letter-spacing: 0.16em;
 }
@@ -48,7 +48,7 @@
 }
 
 .bible-backfill__heading h2:focus-visible {
-  outline: 2px solid var(--vera-soft);
+  outline: 2px solid var(--accent-soft);
   outline-offset: 2px;
 }
 
@@ -141,7 +141,7 @@
 .bible-backfill__bar span {
   display: block;
   height: 100%;
-  background: var(--vera);
+  background: var(--accent);
   transition: width 240ms ease;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .bible-backfill__stage[data-tone="attention"] {
-  border-color: var(--vera-hairline);
+  border-color: var(--review-hairline);
 }
 
 .bible-backfill__stage h3,
@@ -174,7 +174,7 @@
 }
 
 .bible-backfill__error-text {
-  color: var(--vera-deep);
+  color: var(--review-deep);
   font-size: 0.8rem;
   line-height: 1.7;
 }
@@ -207,7 +207,7 @@
 }
 
 .bible-backfill__items li[aria-current="step"] {
-  background: color-mix(in srgb, var(--vera-soft) 60%, transparent);
+  background: color-mix(in srgb, var(--accent-soft) 60%, transparent);
   color: var(--ink);
 }
 
@@ -216,7 +216,7 @@
 }
 
 .bible-backfill__items li[data-status="failed"] svg {
-  color: var(--vera-deep);
+  color: var(--review-deep);
 }
 
 .bible-backfill__item-title {

@@ -1,6 +1,7 @@
 /* ==========================================================================
-   骨架样式：左栏 rail（212px，可折为 64px 图标轨）、朱印、状态灯、命令面板、
-   PaperEmpty 书名页。≤1100px 由 JS 层自动折叠，≤760px 换底部横排条。
+   Shell: the left rail (212px, collapses to a 64px icon rail), the brand
+   mark, status light, command palette and the PaperEmpty title page.
+   At <=1100px JS collapses the rail; at <=760px it becomes a bottom bar.
    ========================================================================== */
 
 .shell {
@@ -12,7 +13,7 @@
   --rail-current: var(--rail-width-slim);
 }
 
-/* --- 左栏 rail -------------------------------------------------------- */
+/* --- Left rail ------------------------------------------------------ */
 
 .rail {
   position: fixed;
@@ -27,7 +28,7 @@
   transition: width 240ms var(--ease-out-editorial);
 }
 
-/* 品牌区：当前工作区小印 + 缩注级品牌字 */
+/* Brand area: workspace mark + small brand text */
 .rail__brand {
   display: flex;
   align-items: center;
@@ -74,8 +75,8 @@
   background: var(--paper-raised);
 }
 .rail__item[aria-current="page"] {
-  color: var(--vera);
-  background: var(--vera-soft);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 .rail__item[aria-current="page"]::before {
   content: "";
@@ -84,7 +85,7 @@
   top: 22%;
   bottom: 22%;
   width: 1.5px;
-  background: var(--vera);
+  background: var(--accent);
 }
 .rail__item-icon {
   display: grid;
@@ -100,7 +101,7 @@
   letter-spacing: 0.1em;
 }
 .rail__item[aria-current="page"] .rail__item-index {
-  color: var(--vera);
+  color: var(--accent);
   opacity: 0.7;
 }
 
@@ -162,15 +163,15 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--canon) 18%, transparent);
 }
 .status-pill[data-online="false"] .status-pill__dot {
-  background: var(--conflict);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--conflict) 18%, transparent);
+  background: var(--review);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--review) 18%, transparent);
 }
 .status-pill[data-online="pending"] .status-pill__dot {
   background: var(--ink-faint);
   box-shadow: none;
 }
 
-/* --- 折叠态：64px 图标轨（悬停 tooltip 给中文名，点击仍跳转） -------------- */
+/* --- Collapsed: 64px icon rail (hover tooltip shows the name, click still navigates) ---- */
 
 .shell[data-rail-collapsed="true"] .rail {
   padding: 1.4rem 0.6rem 1rem;
@@ -249,7 +250,7 @@
   justify-content: center;
 }
 
-/* --- 主区 ------------------------------------------------------------ */
+/* --- Main area ------------------------------------------------------ */
 
 .shell__main {
   flex: 1;
@@ -266,7 +267,7 @@
   letter-spacing: 0.08em;
 }
 
-/* --- 命令面板 --------------------------------------------------------- */
+/* --- Command palette ------------------------------------------------ */
 
 .palette {
   position: fixed;
@@ -289,7 +290,7 @@
   padding-bottom: 0.8rem;
 }
 .palette__prompt-icon {
-  color: var(--vera);
+  color: var(--accent);
 }
 .palette__close {
   width: 2.25rem;
@@ -346,11 +347,11 @@
   color: var(--ink-faint);
 }
 .palette__command[data-active="true"] {
-  background: var(--vera-soft);
+  background: var(--accent-soft);
   color: var(--ink);
 }
 .palette__command[data-active="true"] .palette__command-icon {
-  color: var(--vera);
+  color: var(--accent);
 }
 .palette__none {
   margin-top: 1.4rem;
@@ -373,7 +374,7 @@
   font-size: 0.62rem;
 }
 
-/* --- 底栏（≤760px）：rail 落到视口底部成横排图标条 ---------------------- */
+/* --- Bottom bar (<=760px): the rail moves to the bottom of the viewport as a row of icons ---- */
 
 .shell__topbar {
   display: none;
