@@ -14,26 +14,6 @@
    data-URI icons, which cannot read variables.
    ========================================================================== */
 
-/* Noto Serif SC draws “ ” ‘ ’, – — and … as full-width CJK marks, which
-   leaves wide gaps in Portuguese and English ("use “Passar para a IA” na")
-   and centers the ellipsis dots. These faces take only those marks from a
-   Latin serif already on the system; without one, the CJK glyphs remain. */
-@font-face {
-  font-family: "NL Latin Punctuation";
-  font-weight: 100 549;
-  src: local("Georgia"), local("Times New Roman"), local("Noto Serif"),
-    local("DejaVu Serif"), local("Liberation Serif");
-  unicode-range: U+2013-2014, U+2018-201F, U+2026;
-}
-@font-face {
-  font-family: "NL Latin Punctuation";
-  font-weight: 550 900;
-  src: local("Georgia Bold"), local("Georgia-Bold"),
-    local("Times New Roman Bold"), local("Noto Serif Bold"),
-    local("DejaVu Serif Bold"), local("Liberation Serif Bold");
-  unicode-range: U+2013-2014, U+2018-201F, U+2026;
-}
-
 :root {
   color-scheme: light;
 
@@ -80,22 +60,24 @@
   --hairline: rgba(28, 36, 51, 0.14);
   --hairline-soft: rgba(28, 36, 51, 0.07);
 
-  /* Font families: body serif / quote serif / mono notes / sans fallback.
-     "NL Latin Punctuation" (below) supplies only quotes, dashes and the
-     ellipsis, which Noto Serif SC draws as full-width CJK marks. */
+  /* Font families: body serif (Alegreya) / quote serif (Alegreya italic,
+     see fonts/alegreya/index.css) / sans (Alegreya Sans) / mono notes
+     (Courier Prime). The self-hosted faces cover latin + latin-ext only;
+     CJK text falls through to the system fonts at the end of each stack. */
   --font-serif:
-    "NL Latin Punctuation", "Noto Serif SC Variable", "Songti SC",
-    "Noto Serif SC", "SimSun", serif;
-  --font-quote:
-    "NL Latin Punctuation", "Noto Serif SC Variable", "STFangsong",
-    "FangSong", serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
-  --font-sans: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    "Alegreya Variable", "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC",
+    "SimSun", serif;
+  --font-quote: "Alegreya Quote", "STFangsong", "FangSong", "Songti SC", serif;
+  --font-sans:
+    "Alegreya Sans", system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono:
+    "Courier Prime", ui-monospace, "SF Mono", "Cascadia Mono", Consolas,
+    "PingFang SC", monospace;
 
-  /* Three weights: display 700 / body 450 / meta and quotes 350 */
+  /* Weights: display 700 / body 400 / meta and quotes 400 */
   --weight-display: 700;
-  --weight-body: 450;
-  --weight-meta: 350;
+  --weight-body: 400;
+  --weight-meta: 400;
 
   /* Two-layer shadows: a crisp near edge plus a soft far spread */
   --shadow-lift:
