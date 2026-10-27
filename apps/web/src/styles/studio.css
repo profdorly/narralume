@@ -1927,8 +1927,10 @@
   pointer-events: none;
 }
 
-/* Inline range targeted by a rewrite proposal: author text stays ink. */
-.manuscript-editor .manuscript-proposal {
+/* Inline range targeted by a rewrite proposal: author text stays ink.
+   The decoration lives inside the editor root (.ProseMirror), in both the
+   desk and the focus-mode editor. */
+.ProseMirror .manuscript-proposal {
   background: var(--pencil-soft);
   text-decoration: underline dashed var(--pencil) 1px;
   text-underline-offset: 0.22em;
