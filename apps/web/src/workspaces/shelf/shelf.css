@@ -655,9 +655,12 @@
     hsl(var(--book-hue) 30% 29%);
 }
 .book-cover__default strong {
-  max-height: 7.2em;
+  /* Whole lines only, so the subtitle below always keeps its room. */
+  display: -webkit-box;
   overflow: hidden;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: var(--weight-display);
@@ -813,11 +816,13 @@
   .shelf-book__title { font-size: 1.08rem; }
   .shelf-book__menu-btn { opacity: 1; }
   .book-edit__layout { grid-template-columns: 7.2rem minmax(0, 1fr); gap: 0.8rem; }
+  .book-edit__preview .book-cover__default strong { font-size: 1rem; letter-spacing: 0.04em; }
   .shelf-recycle__item { align-items: flex-start; flex-direction: column; }
 }
 @media (max-width: 430px) {
   .shelf__bookshelf { grid-template-columns: 1fr 1fr; gap: 2rem 0.8rem; }
   .shelf-book__cover-wrap { width: min(100%, 8.6rem); }
+  .book-cover__default strong { font-size: 1rem; letter-spacing: 0.04em; }
   .shelf-book__premise { font-size: 0.7rem; }
   .book-edit__layout { grid-template-columns: 1fr; }
   .book-edit__preview { width: min(10rem, 58%); margin-inline: auto; }
