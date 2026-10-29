@@ -28,7 +28,7 @@
   --mark-size: 1.6rem;
 }
 /* The outlined "lapis" wordmark next to the rail mark. The viewBox includes the
-   descender of the "p" (97.91 units tall, 74.2 above the baseline), so 1.43rem
+   descender of the "p" (97.9 units tall, 74.2 above the baseline), so 1.43rem
    keeps the ascender at the same 1.1rem-scale size as a wordmark without one. */
 .lapis-wordmark {
   height: 1.43rem;

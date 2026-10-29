@@ -68,7 +68,18 @@ function loadFont() {
 
 function wordmarkAt(font, x, baseline, size) {
   const path = font.getPath(WORD, x, baseline, size);
-  return { d: path.toPathData(2), box: path.getBoundingBox() };
+  // opentype.js 2.0.0 prints values just above a whole number (for example
+  // 172.00000000000003) as "NaN" with two decimals, and browsers stop drawing
+  // a path at the first NaN. Rounding first avoids it.
+  for (const command of path.commands) {
+    for (const key of ["x", "y", "x1", "y1", "x2", "y2"]) {
+      if (key in command) command[key] = Math.round(command[key] * 100) / 100;
+    }
+  }
+  const d = path.toPathData(2);
+  if (d.includes("NaN"))
+    throw new Error(`wordmark path for "${WORD}" contains NaN`);
+  return { d, box: path.getBoundingBox() };
 }
 
 function markGroup(transform, colors, classes = {}) {
