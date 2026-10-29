@@ -79,9 +79,12 @@ export function followSystemTheme(): () => void {
 
   const media = window.matchMedia(SYSTEM_THEME_QUERY);
   const sync = (event?: MediaQueryListEvent) => {
+    // A saved choice wins over the system; it still has to be applied at startup.
     const preference = useTheme.getState().preference;
-    if (preference !== "system") return;
-    const theme = themeFor(event?.matches ?? media.matches);
+    const theme =
+      preference === "system"
+        ? themeFor(event?.matches ?? media.matches)
+        : preference;
     applyTheme(theme);
     useTheme.setState({ theme });
   };
