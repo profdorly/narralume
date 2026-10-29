@@ -446,6 +446,7 @@ export const bible = {
   },
   candidates: {
     ariaLabel: "Mudanças candidatas da IA",
+    eyebrow: "IA · MESA DE CANDIDATOS",
     title: "Mudanças candidatas",
     intro:
       "Descreva o que você quer acrescentar ou ajustar. A IA só propõe candidatos itemizados e não muda a Bíblia da história antes de você adotá-los.",

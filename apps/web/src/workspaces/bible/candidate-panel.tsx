@@ -142,7 +142,7 @@ function CanonCandidatePanelView({
           <Sparkles size={15} strokeWidth={1.45} />
         </span>
         <div>
-          <p className="bible-ai__eyebrow mono">AI · CANDIDATE DESK</p>
+          <p className="bible-ai__eyebrow mono">{t("bible.candidates.eyebrow")}</p>
           <h3>{t("bible.candidates.title")}</h3>
         </div>
       </header>

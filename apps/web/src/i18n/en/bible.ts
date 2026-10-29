@@ -447,6 +447,7 @@ export const bible: typeof biblePt = {
   },
   candidates: {
     ariaLabel: "AI candidate changes",
+    eyebrow: "AI · CANDIDATE DESK",
     title: "Candidate changes",
     intro:
       "Describe what you want to add or adjust. The AI only proposes itemized candidates and will not change the story bible before you adopt them.",
