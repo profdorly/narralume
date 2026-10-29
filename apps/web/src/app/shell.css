@@ -387,6 +387,7 @@
   .shell[data-rail-collapsed="true"],
   .shell[data-rail-collapsed="false"] {
     --rail-current: 100%;
+    --topbar-height: 3rem;
     flex-direction: column;
   }
   .rail {
@@ -461,14 +462,19 @@
   .shell__topbar {
     display: flex;
     position: fixed;
-    top: 0.7rem;
-    right: 0.9rem;
+    inset: 0 0 auto 0;
     z-index: 45;
+    height: calc(var(--topbar-height) + env(safe-area-inset-top, 0px));
     align-items: center;
+    justify-content: flex-end;
     gap: 0.35rem;
+    padding: env(safe-area-inset-top, 0px) max(0.9rem, env(safe-area-inset-right, 0px)) 0 max(0.9rem, env(safe-area-inset-left, 0px));
+    border-bottom: 1px solid var(--hairline);
+    background: var(--paper);
   }
   .shell__main {
     margin-left: 0;
+    padding-top: calc(var(--topbar-height) + env(safe-area-inset-top, 0px));
     padding-bottom: calc(4.7rem + env(safe-area-inset-bottom, 0px));
   }
   .palette {
