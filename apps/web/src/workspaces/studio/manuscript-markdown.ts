@@ -63,15 +63,18 @@ export function serializeDoc(doc: PmNode): OffsetMap {
   };
 
   doc.forEach((block, offset) => {
-    if (markdown) emit("\n\n", 0);
+    // `offset` is where the block starts; its text starts at `offset + 1`.
+    // The separator maps to the end of the previous block, so a selection
+    // that ends a paragraph stops right after its last character.
+    if (markdown) emit("\n\n", Math.max(1, offset - 1));
     const pos = offset + 1;
     if (block.type.name === "heading") {
       const level = Math.min(3, Math.max(1, Number(block.attrs.level ?? 1)));
-      emit(`${"#".repeat(level)} `, pos + 1);
-      emitInline(block, pos + 1, emit);
+      emit(`${"#".repeat(level)} `, pos);
+      emitInline(block, pos, emit);
       return;
     }
-    emitInline(block, pos + 1, emit);
+    emitInline(block, pos, emit);
   });
 
   return { markdown: markdown.replace(/\u00a0/g, " "), pmAt };
@@ -108,7 +111,9 @@ function emitInline(
 
 export function markdownOffsetToPm(map: OffsetMap, offset: number): number {
   if (map.pmAt.length === 0) return 1;
-  const index = Math.max(0, Math.min(offset, map.pmAt.length - 1));
+  // An offset at the end of the text points just after the last character.
+  if (offset >= map.pmAt.length) return (map.pmAt[map.pmAt.length - 1] ?? 0) + 1;
+  const index = Math.max(0, offset);
   return map.pmAt[index] ?? 1;
 }
 
