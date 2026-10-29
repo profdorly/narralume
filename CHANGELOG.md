@@ -6,7 +6,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Added
 
-- Identidade Lauda: a marca "L." (um L com ponto final), o logotipo "lauda" em Alegreya, o favicon e o logotipo do README em versões clara e escura. O gerador (`scripts/brand/build-logo.mjs`) refaz os arquivos a partir da fonte.
+- Identidade Lapis: a marca "L." (um L com ponto final), o logotipo "lapis" em Alegreya, o favicon e o logotipo do README em versões clara e escura. O gerador (`scripts/brand/build-logo.mjs`) refaz os arquivos a partir da fonte.
 - Fontes embutidas Alegreya (texto), Alegreya Sans (interface) e Courier Prime (código e números), sob a licença OFL-1.1, em `apps/web/public/fonts/` (420 kB no total).
 - Tratamento "tinta e lápis" das sugestões da IA: o que ainda espera decisão aparece em grafite (borda tracejada, rótulo de estado, texto proposto no editor sublinhado a lápis); o que foi aceito passa a ser tinta. Vale no estúdio, na Bíblia da história, no assistente, no piloto automático e na visão geral.
 - Busca do manuscrito por trechos: cada capítulo e cena vira trechos de ~380 tokens que não atravessam quebra de cena, ligados aos personagens, lugares e objetos que citam (migração 049 cria o índice por palavras). O índice se atualiza ao registrar versões, aceitar propostas (inclusive de revisão), importar e antes de cada tarefa de IA, que também cobre backups restaurados e bibliotecas antigas.
@@ -17,10 +17,10 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Changed
 
-- O nome visível passa a ser Lauda: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE e avisos de terceiros. Na fase 1, pacotes `@narralume/*`, variáveis `NARRALUME_*`, launchers, chaves do navegador e arquivos de dados mantêm o nome antigo.
+- O nome visível passa a ser Lapis: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE e avisos de terceiros. Na fase 1, pacotes `@narralume/*`, variáveis `NARRALUME_*`, launchers, chaves do navegador e arquivos de dados mantêm o nome antigo.
 - Paleta nova: azul de caneta para ações do autor, foco e links, grafite para sugestões pendentes e vermelho só para achados, erros e conflitos, nos temas claro e escuro.
-- Os metadados de EPUB e DOCX exportados (editora e autor do arquivo) dizem "Lauda".
-- O arquivo baixado da biblioteca no modo navegador se chama `lauda-<data>.sqlite`.
+- Os metadados de EPUB e DOCX exportados (editora e autor do arquivo) dizem "Lapis".
+- O arquivo baixado da biblioteca no modo navegador se chama `lapis-<data>.sqlite`.
 - A busca por palavras agora combina os termos da consulta (antes buscava a frase exata), ignora acentos, flexões comuns, palavras vazias e títulos de capítulo; texto em chinês continua no índice por caracteres.
 - A consulta do capítulo usa título, plano (resumo, objetivo, conflito, desfecho), personagens previstos e notas de direção, com o resumo do capítulo anterior quando o capítulo não tem plano.
 - O corte de semelhança vetorial passou a ser relativo ao melhor resultado (antes `> 0.04`, que deixava passar todo o livro); no máximo dois trechos por capítulo; o capítulo anterior, que já vai inteiro, não é recuperado de novo.
@@ -54,6 +54,12 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 - Frases repetidas em português e inglês são contadas por palavras (6 palavras repetidas 4 vezes), não por letras: nomes como "Lady Catherine" não disparam mais a revisão. Texto em chinês mantém a contagem por caracteres.
 - `scripts/docker-start.ps1` gravava o token aleatório no `.env.local`, que o Compose não usa para preencher `${NARRATIVE_AUTH_TOKEN}`; os dois contêineres ficavam com o token padrão `local-compose-token-change-me-24`. Agora o token vai para o `.env`, que o Compose lê.
 - A nota da seção de provedores em Configurações não cita mais o retransmissor removido, e a nota do papel "Embedding" diz o que acontece sem ele (a busca usa só palavras e personagens).
+- No editor, a marcação dos trechos propostos pela IA começava um caractere depois do lugar certo, e o trecho selecionado ia para a IA sem o último caractere.
+- Os exemplos "bons" do prompt de prosa usavam português de Portugal ("telemóvel", "Então trata tu."), que o modelo tende a imitar. Agora estão em português do Brasil.
+- O título "AI · CANDIDATE DESK" da Bíblia da história estava escrito direto no código, em inglês; agora é traduzido ("IA · MESA DE CANDIDATOS").
+- No celular, a barra de ícones do topo não tinha fundo e o conteúdo aparecia por trás dela ao rolar a tela.
+- No tema escuro, o título das capas padrão era escuro sobre fundo escuro.
+- O tema claro ou escuro escolhido não voltava ao recarregar a página; o app abria sempre no tema do sistema.
 
 ### Added (pt-BR e local-first)
 

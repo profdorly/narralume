@@ -470,7 +470,7 @@ export const studio: typeof studioPt = {
       creatorNotes: "Creator notes",
       sourceFormat: "Source format",
       importedAt: "Imported at",
-      sourceNative: "Lauda native",
+      sourceNative: "Lapis native",
       sourceCcv2: "Character Card V2",
       sourceCcv3: "Character Card V3",
       exportJson: "Export JSON",

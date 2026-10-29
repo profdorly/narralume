@@ -1,6 +1,6 @@
 /* ==========================================================================
    Shell: the left rail (212px, collapses to a 64px icon rail), the brand
-   ("L." mark, "lauda" wordmark and tagline), status light, command palette
+   ("L." mark, "lapis" wordmark and tagline), status light, command palette
    and the PaperEmpty title page.
    At <=1100px JS collapses the rail; at <=760px it becomes a bottom bar.
    ========================================================================== */
@@ -29,7 +29,7 @@
   transition: width 240ms var(--ease-out-editorial);
 }
 
-/* Brand area: the "L." mark + the "lauda" wordmark over the tagline */
+/* Brand area: the "L." mark + the "lapis" wordmark over the tagline */
 .rail__brand {
   display: flex;
   align-items: center;
@@ -185,7 +185,7 @@
 .shell[data-rail-collapsed="true"] .rail__brand-text {
   display: none;
 }
-.shell[data-rail-collapsed="true"] .lauda-mark--rail {
+.shell[data-rail-collapsed="true"] .lapis-mark--rail {
   --mark-size: 28px;
 }
 .shell[data-rail-collapsed="true"] .rail__nav {

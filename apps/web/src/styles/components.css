@@ -1,8 +1,8 @@
-/* Minimal component styles (LaudaMark / PageBand / Empty / ErrorNote / Skeleton / IconButton / ConfirmDialog). */
+/* Minimal component styles (LapisMark / PageBand / Empty / ErrorNote / Skeleton / IconButton / ConfirmDialog). */
 
 /* The "L." mark (rail, empty states, heroes, default covers): the same drawing,
    only the size changes. The full stop is the one red that is not a state. */
-.lauda-mark {
+.lapis-mark {
   --mark-size: 32px;
   width: var(--mark-size);
   height: var(--mark-size);
@@ -12,24 +12,26 @@
     width 240ms var(--ease-out-editorial),
     height 240ms var(--ease-out-editorial);
 }
-.lauda-mark__dot {
+.lapis-mark__dot {
   fill: var(--mark-dot);
 }
-.lauda-mark--rail {
+.lapis-mark--rail {
   --mark-size: 30px;
 }
-.lauda-mark--empty {
+.lapis-mark--empty {
   --mark-size: 48px;
 }
-.lauda-mark--hero {
+.lapis-mark--hero {
   --mark-size: clamp(64px, 6vw, 80px);
 }
-.lauda-mark--cover {
+.lapis-mark--cover {
   --mark-size: 1.6rem;
 }
-/* The outlined "lauda" wordmark next to the rail mark. */
-.lauda-wordmark {
-  height: 1.1rem;
+/* The outlined "lapis" wordmark next to the rail mark. The viewBox includes the
+   descender of the "p" (97.91 units tall, 74.2 above the baseline), so 1.43rem
+   keeps the ascender at the same 1.1rem-scale size as a wordmark without one. */
+.lapis-wordmark {
+  height: 1.43rem;
   width: auto;
   color: var(--ink);
 }
@@ -145,7 +147,7 @@
   .project-required > .empty {
     padding: clamp(4rem, 12vh, 6rem) 0.75rem 2rem;
   }
-  .project-required .lauda-mark--hero {
+  .project-required .lapis-mark--hero {
     --mark-size: 56px;
   }
   .project-required .empty__title {

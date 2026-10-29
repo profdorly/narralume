@@ -50,7 +50,7 @@ export async function renderEpub(
   });
   zip.file(
     "OEBPS/title.xhtml",
-    `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${escapeXml(project.language)}"><head><title>${escapeXml(titlePageLabel(project.language))}</title><link rel="stylesheet" href="styles.css" type="text/css"/></head><body class="title-page"><p class="publisher">Lauda</p><h1>${escapeXml(project.title)}</h1></body></html>`,
+    `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${escapeXml(project.language)}"><head><title>${escapeXml(titlePageLabel(project.language))}</title><link rel="stylesheet" href="styles.css" type="text/css"/></head><body class="title-page"><p class="publisher">Lapis</p><h1>${escapeXml(project.title)}</h1></body></html>`,
   );
   zip.file(
     "OEBPS/nav.xhtml",
@@ -62,7 +62,7 @@ export async function renderEpub(
   );
   zip.file(
     "OEBPS/content.opf",
-    `<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:uuid:${randomUuid()}</dc:identifier><dc:title>${escapeXml(project.title)}</dc:title><dc:language>${escapeXml(project.language)}</dc:language><dc:publisher>Lauda</dc:publisher><dc:creator>Lauda</dc:creator><meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d{3}Z$/u, "Z")}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="title" href="title.xhtml" media-type="application/xhtml+xml"/><item id="css" href="styles.css" media-type="text/css"/>${manifestItems.join("")}</manifest><spine><itemref idref="title"/>${spineItems.join("")}</spine></package>`,
+    `<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:uuid:${randomUuid()}</dc:identifier><dc:title>${escapeXml(project.title)}</dc:title><dc:language>${escapeXml(project.language)}</dc:language><dc:publisher>Lapis</dc:publisher><dc:creator>Lapis</dc:creator><meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d{3}Z$/u, "Z")}</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="title" href="title.xhtml" media-type="application/xhtml+xml"/><item id="css" href="styles.css" media-type="text/css"/>${manifestItems.join("")}</manifest><spine><itemref idref="title"/>${spineItems.join("")}</spine></package>`,
   );
   return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }
@@ -101,7 +101,7 @@ export async function renderDocx(
   const now = new Date().toISOString();
   zip.file(
     "docProps/core.xml",
-    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXml(project.title)}</dc:title><dc:creator>Lauda</dc:creator><dc:language>${escapeXml(project.language)}</dc:language><cp:category>Ficção</cp:category><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created></cp:coreProperties>`,
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXml(project.title)}</dc:title><dc:creator>Lapis</dc:creator><dc:language>${escapeXml(project.language)}</dc:language><cp:category>Ficção</cp:category><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created></cp:coreProperties>`,
   );
   return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }

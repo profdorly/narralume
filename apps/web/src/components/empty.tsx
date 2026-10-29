@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { LaudaMark } from "./lauda-mark";
+import { LapisMark } from "./lapis-mark";
 
 /* Shared empty state: the decorative "L." mark + a serif title + description + optional action. */
 
@@ -21,7 +21,7 @@ export function Empty({
 }: EmptyProps) {
   return (
     <div className="empty">
-      <LaudaMark variant={markVariant} />
+      <LapisMark variant={markVariant} />
       <Title className="empty__title">{title}</Title>
       {description ? <p className="empty__description">{description}</p> : null}
       {action ? <div className="empty__action">{action}</div> : null}

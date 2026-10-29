@@ -1,4 +1,4 @@
-// Builds the Lauda brand assets: the "L." mark, the outlined "lauda"
+// Builds the Lapis brand assets: the "L." mark, the outlined "lapis"
 // wordmark (Alegreya 500), the README logo (light and dark), the favicon and
 // the path constants used by the web app.
 //
@@ -33,7 +33,7 @@ const MARK_BOX = { x1: 7, y1: 5, x2: MARK_DOT.cx + MARK_DOT.r, y2: 28 };
 const MARK_L_TOP = 5;
 const MARK_L_BOTTOM = 27;
 
-const WORD = "lauda";
+const WORD = "lapis";
 // Font size of the wordmark constants used by the app (units of the viewBox).
 const WORDMARK_SIZE = 100;
 // Font size of the wordmark in the 960x420 README logo.
@@ -47,8 +47,8 @@ const COLORS = {
 };
 const FAVICON_BG = { light: "#f3efe2", dark: "#12161e" };
 
-const A11Y = 'role="img" aria-label="Lauda"';
-const TITLE = "<title>Lauda</title>";
+const A11Y = 'role="img" aria-label="Lapis"';
+const TITLE = "<title>Lapis</title>";
 
 // Two decimals, no trailing zeros, no "-0".
 function num(value) {
@@ -172,11 +172,11 @@ function logoPaths(font) {
 
 const font = loadFont();
 const outputs = [
-  ["assets/lauda-logo-wide.svg", wideLogo(font, COLORS.light)],
-  ["assets/lauda-logo-wide-dark.svg", wideLogo(font, COLORS.dark)],
-  ["assets/lauda-mark.svg", markSvg(COLORS.light)],
+  ["assets/lapis-logo-wide.svg", wideLogo(font, COLORS.light)],
+  ["assets/lapis-logo-wide-dark.svg", wideLogo(font, COLORS.dark)],
+  ["assets/lapis-mark.svg", markSvg(COLORS.light)],
   ["apps/web/public/favicon.svg", favicon()],
-  ["apps/web/src/components/lauda-logo-paths.ts", logoPaths(font)],
+  ["apps/web/src/components/lapis-logo-paths.ts", logoPaths(font)],
 ];
 
 for (const [file, content] of outputs) {

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 32 32" role="img" aria-label="Lapis">
+  <title>Lapis</title>
+  <path d="M7 5h4v18h11v4H7z" fill="#1c2433"/>
+  <circle cx="26" cy="25" r="3" fill="#b03a2e"/>
+</svg>

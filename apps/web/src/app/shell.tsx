@@ -20,7 +20,7 @@ import {
 } from "react-router";
 
 import { IconButton } from "../components/icon-button";
-import { BRAND_NAME, LaudaMark, LaudaWordmark } from "../components/lauda-mark";
+import { BRAND_NAME, LapisMark, LapisWordmark } from "../components/lapis-mark";
 import { getLocale, translate, useI18n, type MessageKey } from "../i18n";
 import { getHealth } from "../lib/api";
 import { CommandPalette } from "./command-palette";
@@ -314,9 +314,9 @@ function ShellFrame() {
     >
       <aside className="rail">
         <div className="rail__brand">
-          <LaudaMark variant="rail" label={BRAND_NAME} />
+          <LapisMark variant="rail" label={BRAND_NAME} />
           <div className="rail__brand-text">
-            <LaudaWordmark />
+            <LapisWordmark />
             <span className="rail__brand-tagline">{t("shell.brand.tagline")}</span>
           </div>
         </div>

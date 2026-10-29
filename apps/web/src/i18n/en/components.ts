@@ -12,7 +12,7 @@ export const components: typeof componentsPt = {
   },
   kernel: {
     lockBusy:
-      "The local kernel is in use by another tab. Close other Lauda pages and try again.",
+      "The local kernel is in use by another tab. Close other Lapis pages and try again.",
     deserializeFailed: "Failed to deserialize a kernel message",
     workerTerminated: "The kernel worker has terminated",
     bootTimeout:

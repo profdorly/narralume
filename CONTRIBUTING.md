@@ -1,6 +1,6 @@
 # Como contribuir
 
-Obrigado por melhorar a Lauda. Ao enviar uma contribuição você concorda com a licença Apache-2.0 e com o [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Vulnerabilidades não vão para Issue público: use [SECURITY.md](SECURITY.md).
+Obrigado por melhorar o Lapis. Ao enviar uma contribuição você concorda com a licença Apache-2.0 e com o [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Vulnerabilidades não vão para Issue público: use [SECURITY.md](SECURITY.md).
 
 ## Ambiente
 

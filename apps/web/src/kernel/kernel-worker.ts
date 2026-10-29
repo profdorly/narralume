@@ -344,7 +344,7 @@ async function boot(): Promise<void> {
       body: bytes,
       headers: {
         "content-type": "application/octet-stream",
-        "content-disposition": `attachment; filename="lauda-${stamp}.sqlite"`,
+        "content-disposition": `attachment; filename="lapis-${stamp}.sqlite"`,
       },
     };
   });

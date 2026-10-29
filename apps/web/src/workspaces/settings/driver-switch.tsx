@@ -64,7 +64,7 @@ export function DriverSwitch() {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = filename ?? "lauda.sqlite";
+      anchor.download = filename ?? "lapis.sqlite";
       anchor.click();
       URL.revokeObjectURL(url);
       const exportedAt = new Date().toISOString();

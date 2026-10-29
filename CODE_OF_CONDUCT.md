@@ -1,6 +1,6 @@
 # Código de conduta
 
-Nós nos comprometemos a manter a comunidade da Lauda aberta, acolhedora e livre de assédio para todas as pessoas.
+Nós nos comprometemos a manter a comunidade do Lapis aberta, acolhedora e livre de assédio para todas as pessoas.
 
 Comportamentos aceitáveis incluem respeitar pontos de vista diferentes, dar feedback construtivo, assumir os próprios erros e pensar no bem da comunidade como um todo. Comportamentos inaceitáveis incluem insultos, discriminação, assédio, ameaças, divulgação de informações privadas de outras pessoas e qualquer outra conduta inadequada em um ambiente profissional.
 

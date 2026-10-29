@@ -4,11 +4,11 @@ import {
   MARK_VIEWBOX,
   WORDMARK_PATH,
   WORDMARK_VIEWBOX,
-} from "./lauda-logo-paths";
+} from "./lapis-logo-paths";
 
-export const BRAND_NAME = "Lauda";
+export const BRAND_NAME = "Lapis";
 
-interface LaudaMarkProps {
+interface LapisMarkProps {
   variant: "rail" | "empty" | "hero" | "cover";
   /** Accessible name; without it the mark is decorative. */
   label?: string;
@@ -17,13 +17,13 @@ interface LaudaMarkProps {
 }
 
 /** The "L." mark: the same drawing in the rail, empty states, heroes and covers; only the size changes. */
-export function LaudaMark({ variant, label, mono }: LaudaMarkProps) {
+export function LapisMark({ variant, label, mono }: LapisMarkProps) {
   const a11y = label
     ? { role: "img", "aria-label": label }
     : { "aria-hidden": true as const };
   return (
     <svg
-      className={`lauda-mark lauda-mark--${variant}`}
+      className={`lapis-mark lapis-mark--${variant}`}
       viewBox={MARK_VIEWBOX}
       focusable="false"
       {...a11y}
@@ -33,18 +33,18 @@ export function LaudaMark({ variant, label, mono }: LaudaMarkProps) {
         cx={MARK_DOT.cx}
         cy={MARK_DOT.cy}
         r={MARK_DOT.r}
-        className={mono ? undefined : "lauda-mark__dot"}
+        className={mono ? undefined : "lapis-mark__dot"}
         fill="currentColor"
       />
     </svg>
   );
 }
 
-/** The outlined "lauda" wordmark (Alegreya 500); decorative, next to a labelled mark. */
-export function LaudaWordmark() {
+/** The outlined "lapis" wordmark (Alegreya 500); decorative, next to a labelled mark. */
+export function LapisWordmark() {
   return (
     <svg
-      className="lauda-wordmark"
+      className="lapis-wordmark"
       viewBox={WORDMARK_VIEWBOX}
       focusable="false"
       aria-hidden="true"

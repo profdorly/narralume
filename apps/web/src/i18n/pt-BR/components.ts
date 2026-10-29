@@ -10,7 +10,7 @@ export const components = {
   },
   kernel: {
     lockBusy:
-      "O núcleo local está em uso em outra aba. Feche as outras páginas da Lauda e tente de novo.",
+      "O núcleo local está em uso em outra aba. Feche as outras páginas do Lapis e tente de novo.",
     deserializeFailed: "Não foi possível ler uma mensagem do núcleo",
     workerTerminated: "O worker do núcleo foi encerrado",
     bootTimeout:

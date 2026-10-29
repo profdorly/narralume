@@ -683,7 +683,7 @@
   letter-spacing: 0.14em;
 }
 /* Monochrome "L." mark in the bottom-right corner of the default cover. */
-.book-cover__default .lauda-mark--cover {
+.book-cover__default .lapis-mark--cover {
   --mark-size: 1.6rem;
   position: absolute;
   right: 0.9rem;
