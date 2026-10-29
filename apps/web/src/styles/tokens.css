@@ -21,6 +21,8 @@
   --paper: #f3efe2;
   --paper-raised: #fcfaf5;
   --paper-sunk: #e8e2d2;
+  /* Text on the default book cover, which is dark in both themes */
+  --cover-ink: #fcfaf5;
 
   /* Ink: headings and author text / secondary text / meta text */
   --ink: #1c2433;
