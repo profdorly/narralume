@@ -17,6 +17,13 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Changed
 
+- Menos processamento e menos espaço:
+  - o texto que a IA escreve é gravado no banco uma vez por segundo, e não a cada pedaço recebido (um capítulo de 42 mil caracteres: de 194 ms para 1 ms de gravação);
+  - os vetores da busca passam de texto JSON para binário Float32 (migração 050, que converte os vetores existentes sem chamar o modelo de novo): cerca de 5 vezes menos espaço, e a busca lê só os vetores e o texto dos melhores resultados;
+  - a saída de cada etapa de tarefa deixa de ser gravada duas vezes (`run_artifacts` guarda só artefatos extras);
+  - uma única conexão de eventos por aba; os painéis que recebem eventos do servidor consultam a cada 15 s enquanto os eventos chegam, e não mais a cada 1,25–2,5 s;
+  - a Estante usa CSS para os efeitos de hover, sem `motion` nem `lenis` (o pacote da Estante caiu de 199 kB para 59 kB);
+  - 25 tipos da API na interface vêm de `@lapis/contracts` em vez de cópias feitas à mão.
 - O nome visível passa a ser Lapis: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE, avisos de terceiros e a documentação.
 - Launchers `Start-Lapis.*` e `UpdateAndStart-Lapis.*`; os pacotes de release se chamam `Lapis-<versão>-<plataforma>`. Numa cópia do repositório, `Start-NarraLume.*` e `UpdateAndStart-NarraLume.*` continuam como atalhos que avisam o nome novo e o executam.
 - Variáveis dos launchers `LAPIS_PORT`, `LAPIS_DATA_DIR`, `LAPIS_NODE_VERSION`, `LAPIS_FORCE_PORTABLE_NODE`, `LAPIS_FORCE_BUILD` e `LAPIS_NO_BROWSER`. Os nomes `NARRALUME_*` ainda valem quando o novo não está definido, com um aviso de obsoleto.
@@ -53,6 +60,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Removed
 
+- O teste de viabilidade do sqlite-wasm no navegador (spike) e os pesos 500 e 700 da Alegreya Sans, que o CSS não usava.
 - A cocriação (sala da história, swipes, lorebooks e cartões de personagem), que estava fora da v1 e sem acesso pela interface, saiu do código, junto com as rotas `/api/cocreate/*`, `/api/personas/*`, `/api/lorebooks/*`, `/api/lore-entries/*` e `/api/turns/*`. Bibliotecas, pacotes de obra e backups que já têm esses dados continuam abrindo e restaurando como antes, e os pacotes exportados continuam levando esses dados. Uma tarefa antiga de cocriação que ficou pendente termina como falha (`worker.missing`) em vez de rodar.
 - A fonte Noto Serif SC (6 MB), o ajuste "NL Latin Punctuation" para pontuação latina, a textura de papel de arroz e o selo vermelho 朱印.
 - `NARRATIVE_EMBEDDING_MODEL` saiu do `.env.example` e da documentação; o Server registra um aviso se a variável ainda estiver definida.
