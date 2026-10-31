@@ -7,13 +7,14 @@
 import {
   NarrativeDatabase,
   createOpfsSahpoolDriver,
+  OPFS_DATABASE_FILE,
 } from "@lapis/persistence/browser";
 
 async function runSpike(): Promise<Record<string, unknown>> {
   const results: Record<string, unknown> = {};
 
-  const driver = await createOpfsSahpoolDriver("narralume.sqlite");
-  const database = new NarrativeDatabase("narralume.sqlite", driver);
+  const driver = await createOpfsSahpoolDriver(OPFS_DATABASE_FILE);
+  const database = new NarrativeDatabase(OPFS_DATABASE_FILE, driver);
   results.migrationVersion = database.migrate();
 
   const journal = database.raw

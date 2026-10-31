@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { config as loadDotEnv } from "dotenv";
 import { z } from "zod";
 
+import { resolveDatabasePath } from "./database-file.js";
+
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 loadDotEnv({
@@ -74,7 +76,7 @@ export function readServerConfig(
   const dataDirectory = resolve(workingDirectory, parsed.NARRATIVE_DATA_DIR);
   return {
     dataDirectory,
-    databasePath: resolve(dataDirectory, "narralume.sqlite"),
+    databasePath: resolveDatabasePath(dataDirectory),
     ...(parsed.NARRATIVE_BACKUP_DIR
       ? {
           backupDirectory: resolve(

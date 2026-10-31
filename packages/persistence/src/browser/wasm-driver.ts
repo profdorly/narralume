@@ -9,12 +9,21 @@ import type { SqliteRawDatabase, SqliteStatement } from "../driver.js";
  * 限制）；sahpool 是单 origin 单连接模型，第二个标签页初始化会失败，
  * 多标签仲裁由内核层（Web Locks）处理，驱动不重试。
  */
+/**
+ * OPFS names from before the product was renamed to Lapis. Every browser
+ * library already lives under them, and a SAH pool cannot be renamed in place,
+ * so they stay. They are never shown to the author (the download is named
+ * lapis-<date>.sqlite).
+ */
+export const OPFS_DATABASE_FILE = "narralume.sqlite";
+export const OPFS_POOL_NAME = "narralume-pool";
+
 export async function createOpfsSahpoolDriver(
-  filename = "narralume.sqlite",
+  filename = OPFS_DATABASE_FILE,
 ): Promise<SqliteRawDatabase> {
   const sqlite3: Sqlite3Static = await sqlite3InitModule();
   const poolUtil = await sqlite3.installOpfsSAHPoolVfs({
-    name: "narralume-pool",
+    name: OPFS_POOL_NAME,
     initialCapacity: 12,
   });
   // 必须显式用 pool 的 DB/VFS——裸 oo1.DB 会落在 wasm 内存 FS，重载即丢。

@@ -3,6 +3,9 @@
  * Node 侧请用主入口的 NodeNarrativeDatabase。
  */
 export type { SqliteRawDatabase, SqliteStatement } from "./driver.js";
-export { createOpfsSahpoolDriver } from "./browser/wasm-driver.js";
+export {
+  createOpfsSahpoolDriver,
+  OPFS_DATABASE_FILE,
+} from "./browser/wasm-driver.js";
 export * from "./database.js";
 export * from "./repositories.js";

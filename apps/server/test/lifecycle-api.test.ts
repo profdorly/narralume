@@ -328,7 +328,7 @@ describe("product lifecycle API", () => {
 
   it("keeps the previous database when restored file installation fails", () => {
     workspace = mkdtempSync(join(tmpdir(), "narrative-restore-rollback-"));
-    const databasePath = join(workspace, "narralume.sqlite");
+    const databasePath = join(workspace, "lapis.sqlite");
     const replacementPath = join(workspace, "replacement.sqlite");
     writeFileSync(databasePath, "previous", "utf8");
     writeFileSync(replacementPath, "replacement", "utf8");
@@ -388,7 +388,7 @@ async function setup(retention = 10) {
   const dataDirectory = join(workspace, "data");
   const config: ServerConfig = {
     dataDirectory,
-    databasePath: join(dataDirectory, "narralume.sqlite"),
+    databasePath: join(dataDirectory, "lapis.sqlite"),
     backupDirectory: join(workspace, "external-backups"),
     backupRetention: retention,
     host: "127.0.0.1",

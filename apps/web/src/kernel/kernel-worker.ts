@@ -15,6 +15,7 @@ import { LAPIS_VERSION } from "@lapis/contracts";
 import {
   NarrativeDatabase,
   createOpfsSahpoolDriver,
+  OPFS_DATABASE_FILE,
 } from "@lapis/persistence/browser";
 import {
   SqliteAutomationRepository,
@@ -81,8 +82,8 @@ const noopLog = {
 };
 
 async function boot(): Promise<void> {
-  const driver = await createOpfsSahpoolDriver("narralume.sqlite");
-  const database = new NarrativeDatabase("narralume.sqlite", driver);
+  const driver = await createOpfsSahpoolDriver(OPFS_DATABASE_FILE);
+  const database = new NarrativeDatabase(OPFS_DATABASE_FILE, driver);
   database.migrate();
   const projects = new SqliteProjectRepository(database);
   const purgeExpiredProjects = () =>

@@ -14,7 +14,7 @@ const dataDirectory = join(workspace, "data");
 const port = Number(process.env.NARRATIVE_E2E_API_PORT ?? 14317);
 const config: ServerConfig = {
   dataDirectory,
-  databasePath: join(dataDirectory, "narralume.sqlite"),
+  databasePath: join(dataDirectory, "lapis.sqlite"),
   backupDirectory: join(workspace, "backups"),
   backupRetention: 4,
   host: "127.0.0.1",

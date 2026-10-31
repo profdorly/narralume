@@ -23,6 +23,8 @@ import {
 } from "@lapis/contracts";
 import type { NarrativeDatabase } from "@lapis/persistence";
 
+import { resolveDatabasePath } from "./database-file.js";
+
 export class DatabaseBackupService {
   readonly backupDirectory: string;
 
@@ -167,7 +169,7 @@ export class DatabaseBackupService {
       currentDirectory,
       realpathSync.native(this.backupDirectory),
     );
-    const databasePath = resolve(targetDirectory, "narralume.sqlite");
+    const databasePath = resolveDatabasePath(targetDirectory);
     if (existsSync(databasePath) && !overwrite)
       throw new DatabaseBackupError(
         "backup.restore.target_exists",
@@ -175,7 +177,7 @@ export class DatabaseBackupService {
       );
     const temporaryPath = resolve(
       targetDirectory,
-      `.narralume-${randomUUID()}.partial`,
+      `.lapis-${randomUUID()}.partial`,
     );
     const sourcePath = this.backupPath(preview.manifest.databaseFile);
     copyFileSync(sourcePath, temporaryPath);
