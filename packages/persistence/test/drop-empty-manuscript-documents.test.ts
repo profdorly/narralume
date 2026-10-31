@@ -3,8 +3,10 @@ import { NodeNarrativeDatabase } from "../src/node.js";
 
 import { migration036 } from "../src/migrations/036-drop-empty-manuscript-documents.js";
 
-/* migration 036：清理建书时代自动创建、从未写入版本的空「正文总稿」；
-   有版本历史（导入或手动写入过内容）的 manuscript 与其他 kind 不受影响。 */
+/* migration 036: removes the empty "full manuscript" documents created
+   automatically in the book-setup era and never given a version; manuscripts
+   with version history (imported or written by hand) and other kinds are not
+   affected. */
 
 describe("migration 036 (drop-empty-manuscript-documents)", () => {
   it("deletes version-less manuscript documents and keeps everything else", () => {
@@ -24,9 +26,9 @@ describe("migration 036 (drop-empty-manuscript-documents)", () => {
       `INSERT INTO document_versions(id, document_id, parent_version_id, content, content_hash, source, run_id, created_at)
        VALUES (?, ?, NULL, '潮水退去。', 'hash-1', 'manual', NULL, ?)`,
     );
-    // 空 manuscript（bootstrap 产物）：应被删除。
+    // Empty manuscript (bootstrap output): should be deleted.
     insertDocument.run("doc-empty", "manuscript", "正文总稿", null, now, now);
-    // 有版本的 manuscript（导入产物）：应保留。
+    // Manuscript with versions (import output): should be kept.
     insertDocument.run(
       "doc-imported",
       "manuscript",
@@ -41,7 +43,7 @@ describe("migration 036 (drop-empty-manuscript-documents)", () => {
         "UPDATE documents SET current_version_id = 'version-1' WHERE id = 'doc-imported'",
       )
       .run();
-    // 无版本的章节稿：kind 不同，应保留。
+    // Chapter draft without versions: different kind, should be kept.
     insertDocument.run("doc-chapter", "chapter", "第一章", null, now, now);
 
     database.raw.exec(migration036.sql);
@@ -56,7 +58,7 @@ describe("migration 036 (drop-empty-manuscript-documents)", () => {
     expect(database.raw.prepare("PRAGMA foreign_key_check").all()).toHaveLength(
       0,
     );
-    // 幂等：重复执行不报错、不误删。
+    // Idempotent: running again neither errors nor deletes by mistake.
     database.raw.exec(migration036.sql);
     expect(
       (

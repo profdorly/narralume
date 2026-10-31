@@ -1014,7 +1014,8 @@ describe("GatewayNarrativeModelClient B1 assignment runtime", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, init] = fetchMock.mock.calls[0]!;
     const headers = (init as RequestInit).headers as Record<string, string>;
-    // 浏览器端只持哑 key；中继剥掉它并注入真实 key（真实 key 不在库中）。
+    // The browser only holds a dummy key; the relay strips it and injects the
+    // real key (the real key is not in the library).
     expect(headers.authorization).toBe("Bearer relay:demo");
     database.close();
   });

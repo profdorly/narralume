@@ -162,7 +162,8 @@ describe("assistant reply contract", () => {
   });
 
   it("accepts repair as a final structured mode in the persisted artifact", () => {
-    // 修复通道成功时 result.mode === "repair"；stage 步骤解析该工件不得拒绝。
+    // When the repair channel succeeds, result.mode === "repair"; the stage
+    // step must not reject parsing that artifact.
     expect(
       AssistantReplyArtifactSchema.safeParse({
         reply: "先检查当前故事状态。",

@@ -24,9 +24,11 @@ import {
 } from "../src/index.js";
 
 /**
- * 「从正文补全故事圣经」逐章结算可以把导入时抽取、尚未锚定章节的时间线事件
- * 锚定到本章，而不是再新建一条：上下文列出这些事件，校验只接受仍未锚定、
- * 未作废的已有事件，并要求标题照抄。
+ * Per-chapter settlement in "Complete the story bible from the manuscript" can
+ * anchor a timeline event that was extracted at import and not yet anchored to
+ * a chapter to this chapter instead of creating a new one: the context lists
+ * those events, validation only accepts existing events that are still
+ * unanchored and not voided, and the title must be copied exactly.
  */
 
 const now = "2026-09-01T00:00:00.000Z";

@@ -431,7 +431,7 @@ describe("ChapterWorkerSuite", () => {
     expect(reviewPrompt).not.toContain("3200");
   });
 
-  it("结算输出把上下文标注前缀抄进 ID 时自动规范化并照常落盘", async () => {
+  it("normalizes IDs when the settlement output copies context annotation prefixes into them, and persists as usual", async () => {
     const manuscript =
       "雾从海面推上石阶。林昼推门进入灯塔，钟声第三下停了。\n\n父亲问她为何对着空椅子说话。";
     const model = scriptedModel(manuscript, {
@@ -473,8 +473,8 @@ describe("ChapterWorkerSuite", () => {
       new SqliteCanonRepository(database),
       new SqliteStoryRepository(database),
     );
-    // participantIds 的 entity: 前缀被剥掉，伏笔的 node: 前缀同理，
-    // 落盘的是裸 ID。
+    // The entity: prefix of participantIds is stripped, and likewise the node:
+    // prefix of foreshadowing, so bare IDs are persisted.
     expect(state.listTimeline("p1")[0]?.participants).toEqual(["hero"]);
     expect(state.listForeshadows("p1")[0]).toMatchObject({
       title: "灯塔熄灭的代价",
@@ -1444,7 +1444,10 @@ function scriptedModel(
     nearEvidence?: boolean;
     reviewVerdicts?: Array<"pass" | "revise" | "block">;
     revisionText?: string;
-    /** 模拟模型把上下文标注语法抄进 ID 值的常见失败形态。 */
+    /**
+     * Simulates the common failure where the model copies the context
+     * annotation syntax into ID values.
+     */
     taggedIds?: boolean;
   } = {},
 ) {

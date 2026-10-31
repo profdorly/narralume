@@ -53,7 +53,8 @@ describe("manuscript chapter headings", () => {
     "Capítulo 6 – Onde?",
     "Parte Segunda - O Inverno",
     "Capítulo 1: 1985",
-    // 问号、感叹号结尾的章名，以及 : – — - 之后以句号结尾的章名
+    // Chapter titles ending in a question or exclamation mark, and titles after
+    // : – — - that end in a period
     "Capítulo 5: Quem Matou Laura?",
     "Capítulo 12 — Onde Está o Corpo?",
     "Capítulo 3: E Agora, José?",
@@ -66,14 +67,15 @@ describe("manuscript chapter headings", () => {
     "Capítulo 4 Onde Está Laura?",
     "Capítulo 9. E Depois...",
     "Parte 3 - Tudo Acabou.",
-    // 序数标记与紧贴序号的 -
+    // Ordinal markers and a - right after the number
     "Capítulo 1º",
     "Capítulo 1ª",
     "Capítulo 1°",
     "CAPÍTULO 2º: O Rio",
     "Parte 2ª — O Inverno",
     "Capítulo 1- A Chegada",
-    // 欧洲葡语的序数写法：序号与序数标记之间有句点
+    // European Portuguese ordinal style: a period between the number and the
+    // ordinal marker
     "Capítulo 1.º",
     "Capítulo 2.ª Parte",
     "Capítulo 3.º: O Rio",
@@ -134,7 +136,7 @@ describe("manuscript chapter headings", () => {
     "## #",
     "# ***",
     "## ⁂",
-    // 分隔符后的标题部分像句子
+    // The title part after the separator looks like a sentence
     "Capítulo 3. Era a última página.",
     "Livro 1: leia antes de dormir.",
     "Capítulo 3 Ela saiu cedo.",
@@ -144,7 +146,8 @@ describe("manuscript chapter headings", () => {
     "**Capítulo 3. Era a última página.**",
     "Capítulo 4: e depois?",
     "Capítulo 6. Ela disse “adeus.”",
-    // 序号在词边界结束；连字符分隔符后须有空白
+    // The number ends at a word boundary; a hyphen separator must be followed
+    // by whitespace
     "Parte segunda-feira para Lisboa.",
     "Parte quinta-feira",
     "Parte sexta-feira, bem cedo",
@@ -383,7 +386,10 @@ describe("manuscript chapter headings", () => {
   });
 });
 
-/** main 上 delivery-service 的 splitIntoSections 原样副本，作为既有标题形式的行为基准。 */
+/**
+ * Verbatim copy of delivery-service's splitIntoSections on main, used as the
+ * behavior baseline for existing title forms.
+ */
 function mainSplitIntoSections(text: string, fallbackTitle: string) {
   const heading =
     /^(?:#{1,3}\s+(.+)|\s*((?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|Chapter\s+\d+)\s*[^\n]*))\s*$/gimu;
@@ -614,7 +620,7 @@ describe("DOCX heading styles", () => {
       ),
       null,
     );
-    // 套了标题样式的分隔符不加 # 前缀。
+    // A separator with a heading style applied gets no # prefix.
     expect(text).not.toMatch(/^#{1,3} (?:# # #|\*\*\*)$/mu);
     expect(splitManuscriptSections(text.trim(), "Book")).toEqual([
       {
@@ -664,7 +670,8 @@ describe("DOCX heading styles", () => {
 });
 
 describe("malformed markup stays linear", () => {
-  // 约 500 KB 正文；main 上的线性管线处理这类输入约 1 ms，平方级扫描需要数秒。
+  // About 500 KB of text; main's linear pipeline handles this kind of input in
+  // about 1 ms, a quadratic scan takes seconds.
   const prose = "Texto do capítulo. ".repeat(26_000);
   const BUDGET_MS = 500;
   const timed = <T>(run: () => T): T => {

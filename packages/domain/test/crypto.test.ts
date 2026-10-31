@@ -12,7 +12,8 @@ describe("runtime-agnostic crypto", () => {
   });
 
   it("matches node:crypto across length boundaries (padding paths)", () => {
-    // 55/56/63/64/111/128 字节覆盖 padding 与多块分支；中文字符覆盖多字节编码。
+    // 55/56/63/64/111/128 bytes cover padding and the multi-block branches;
+    // Chinese characters cover multi-byte encoding.
     for (const length of [1, 10, 55, 56, 63, 64, 65, 111, 128, 1000]) {
       const input = (
         "叙灯".repeat(Math.ceil(length / 2)) + "x".repeat(length)
@@ -24,7 +25,8 @@ describe("runtime-agnostic crypto", () => {
   });
 
   it("hashes raw bytes without UTF-8 re-encoding (sha256BytesHex)", () => {
-    // 128-255 区间的字节经 TextEncoder 会被重编码，字节入口必须绕开。
+    // Bytes in the 128-255 range would be re-encoded by TextEncoder, so the
+    // byte entry point must bypass it.
     const bytes = new Uint8Array([104, 105, 128, 200, 255, 0, 42]);
     expect(sha256BytesHex(bytes)).toBe(
       createHash("sha256").update(bytes).digest("hex"),

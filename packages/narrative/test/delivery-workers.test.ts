@@ -296,7 +296,8 @@ describe("DeliveryWorkerSuite", () => {
         .listImportCandidates("batch-1")
         .map((candidate) => candidate.title);
       expect(titles).toEqual(expect.arrayContaining([intentTitle, arcTitle]));
-      // 占位正文（AAAA…）检测不出语言，不加检测行。
+      // Placeholder text (AAAA…) has no detectable language, so no detection
+      // line is added.
       expect(chunk.content).not.toMatch(/detected|detectado|自动检测/u);
     },
   );
@@ -419,8 +420,9 @@ describe("DeliveryWorkerSuite", () => {
   });
 
   it("does not reuse a chunk analysis cached under the previous prompts", async () => {
-    // 旧版本的输入摘要只含来源哈希、分段序号与正文，不含提示词版本与语言。
-    // 分段正文由 importedText 拼成：“# 标题\n正文”。
+    // The old version's input digest only holds the source hash, section index
+    // and text, not the prompt version or language. Section text is built from
+    // importedText: "# Title\nText".
     delivery.upsertImportAnalysisArtifact({
       id: "batch-1:chunk:0:legacy",
       batchId: "batch-1",
@@ -470,7 +472,7 @@ describe("DeliveryWorkerSuite", () => {
         status: "failed",
         error: { retryable: true },
       });
-      // 三个分段与第一次合并已经缓存。
+      // The three sections and the first merge are already cached.
       expect(delivery.listImportAnalysisArtifacts("batch-1")).toHaveLength(4);
       if (switchLanguage)
         database.raw
@@ -589,7 +591,7 @@ describe("DeliveryWorkerSuite", () => {
       active: false,
       status: "active",
     });
-    // 提炼草稿不得挤掉作者已启用的档案。
+    // A distilled draft must not push out a profile the author already enabled.
     expect(
       profiles.find((profile) => profile.id === "style-existing"),
     ).toMatchObject({ active: true });

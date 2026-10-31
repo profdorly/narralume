@@ -16,8 +16,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ChapterWorkerSuite, type NarrativeModelClient } from "../src/index.js";
 
 /**
- * 章节结算的产出语言跟随章节正文（而非作品语言 / 指令语言）：
- * 指令追加语言不变量，检测出原稿语言时用户消息再加一行参考。
+ * The output language of chapter settlement follows the chapter text (not the
+ * book language / instruction language): the instructions append a language
+ * invariant, and when the source language is detected the user message adds one
+ * reference line.
  */
 
 const now = "2026-09-01T00:00:00.000Z";

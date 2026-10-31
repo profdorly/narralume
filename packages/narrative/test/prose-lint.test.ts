@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { proseLintIssues } from "../src/prose-lint.js";
 
-/** 干净段落：无命中词、密度正常，不应产生任何发现。 */
+/**
+ * A clean paragraph: no flagged words, normal density, so it should produce no
+ * findings.
+ */
 const CLEAN = [
   "太阳落下去，屋里的光变成橘色的。她把凉掉的茶倒掉，重新烧上水。",
   "“你疯了？”她把签好的合同抽回去，“行，你自己玩。”",

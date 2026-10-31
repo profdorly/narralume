@@ -13,8 +13,10 @@ import {
 } from "../src/index.js";
 
 /**
- * 「从正文补全故事圣经」逐章结算可锚定的事件按导入证据所在章节挑选，而不是
- * 按全书因果序号取最前面的一批：只被提及的前史不会永远占住列表。
+ * Per-chapter settlement in "Complete the story bible from the manuscript"
+ * picks the anchorable events by the chapter where their import evidence sits,
+ * not the first batch by whole-book causal order: backstory that is only
+ * mentioned never holds the list forever.
  */
 
 const now = "2026-09-01T00:00:00.000Z";
