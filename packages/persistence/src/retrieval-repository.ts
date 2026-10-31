@@ -2,6 +2,7 @@ import { sha256Hex } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { buildLexicalQuery } from "./lexical-query.js";
+import { decodeVector, dot, encodeVector } from "./vector.js";
 
 export type SegmentAuthority =
   "reference" | "draft" | "candidate" | "confirmed" | "locked";
@@ -117,7 +118,6 @@ interface SegmentRow {
   updated_at: string;
   lexical_rank?: number;
   entity_score?: number;
-  embedding_json?: string;
 }
 
 /* Vectors below this cosine similarity never count as a semantic match. */
@@ -186,7 +186,7 @@ export class SqliteRetrievalRepository {
       const contentHash = segmentContentHash(segment.title, segment.content);
       this.database.raw
         .prepare(
-          `DELETE FROM segment_embeddings
+          `DELETE FROM segment_vectors
            WHERE segment_id = ? AND content_hash != ?`,
         )
         .run(stored.id, contentHash);
@@ -211,13 +211,13 @@ export class SqliteRetrievalRepository {
     const embedding = normalizeEmbedding(input.embedding);
     this.database.raw
       .prepare(
-        `INSERT INTO segment_embeddings(
-           segment_id, model, dimensions, embedding_json, content_hash, updated_at
+        `INSERT INTO segment_vectors(
+           segment_id, model, dimensions, vector, content_hash, updated_at
          ) VALUES (?, ?, ?, ?, ?, ?)
          ON CONFLICT(segment_id) DO UPDATE SET
            model = excluded.model,
            dimensions = excluded.dimensions,
-           embedding_json = excluded.embedding_json,
+           vector = excluded.vector,
            content_hash = excluded.content_hash,
            updated_at = excluded.updated_at`,
       )
@@ -225,7 +225,7 @@ export class SqliteRetrievalRepository {
         input.segmentId,
         model,
         embedding.length,
-        JSON.stringify(embedding),
+        encodeVector(embedding),
         contentHash,
         input.updatedAt,
       );
@@ -285,7 +285,7 @@ export class SqliteRetrievalRepository {
       .prepare(
         `SELECT segment.id, segment.title, segment.content
          FROM text_segments segment
-         LEFT JOIN segment_embeddings embedding
+         LEFT JOIN segment_vectors embedding
            ON embedding.segment_id = segment.id
          WHERE segment.project_id = ?
            AND ${ACTIVE_SEGMENT_PREDICATE}
@@ -316,7 +316,7 @@ export class SqliteRetrievalRepository {
       .prepare(
         `SELECT COUNT(*) AS count
          FROM text_segments segment
-         LEFT JOIN segment_embeddings embedding
+         LEFT JOIN segment_vectors embedding
            ON embedding.segment_id = segment.id
          WHERE segment.project_id = ?
            AND ${ACTIVE_SEGMENT_PREDICATE}
@@ -333,7 +333,7 @@ export class SqliteRetrievalRepository {
   ): Set<string> {
     const embedded = new Set<string>();
     const lookup = this.database.raw.prepare(
-      "SELECT content_hash FROM segment_embeddings WHERE segment_id = ? AND model = ?",
+      "SELECT content_hash FROM segment_vectors WHERE segment_id = ? AND model = ?",
     );
     for (const segment of segments) {
       const row = lookup.get(segment.segmentId, model) as
@@ -407,7 +407,7 @@ export class SqliteRetrievalRepository {
       .prepare(
         `SELECT COUNT(*) AS segments, COUNT(embedding.segment_id) AS embedded
          FROM text_segments segment
-         LEFT JOIN segment_embeddings embedding
+         LEFT JOIN segment_vectors embedding
            ON embedding.segment_id = segment.id
          WHERE segment.project_id = ? ${sourceFilter}
            AND ${ACTIVE_SEGMENT_PREDICATE}`,
@@ -418,7 +418,7 @@ export class SqliteRetrievalRepository {
         `SELECT embedding.model AS model, embedding.dimensions AS dimensions,
                 COUNT(*) AS segments
          FROM text_segments segment
-         JOIN segment_embeddings embedding ON embedding.segment_id = segment.id
+         JOIN segment_vectors embedding ON embedding.segment_id = segment.id
          WHERE segment.project_id = ? ${sourceFilter}
            AND ${ACTIVE_SEGMENT_PREDICATE}
          GROUP BY embedding.model, embedding.dimensions
@@ -533,11 +533,12 @@ export class SqliteRetrievalRepository {
 
     if (options.queryEmbedding && options.queryEmbedding.length > 0) {
       const queryEmbedding = normalizeEmbedding(options.queryEmbedding);
+      // Scan only ids and vectors; segment text is read for the matches.
       const vectorRows = this.database.raw
         .prepare(
-          `SELECT segment.*, embedding.embedding_json
+          `SELECT segment.id, embedding.vector
            FROM text_segments segment
-           JOIN segment_embeddings embedding ON embedding.segment_id = segment.id
+           JOIN segment_vectors embedding ON embedding.segment_id = segment.id
            WHERE segment.project_id = ? AND embedding.dimensions = ?
              AND (? IS NULL OR embedding.model = ?)
              AND ${filter}`,
@@ -548,17 +549,23 @@ export class SqliteRetrievalRepository {
           options.embeddingModel ?? null,
           options.embeddingModel ?? null,
           ...excluded,
-        ) as unknown as SegmentRow[];
-      selectVectorMatches(
-        vectorRows.map((row) => ({
-          row,
-          similarity: cosineSimilarity(
-            queryEmbedding,
-            parseEmbedding(row.embedding_json),
-          ),
+        ) as unknown as { id: string; vector: Uint8Array }[];
+      const matches = selectVectorMatches(
+        vectorRows.map(({ id, vector }) => ({
+          id,
+          similarity: dot(queryEmbedding, decodeVector(vector)),
         })),
-      )
-        .slice(0, candidateLimit)
+      ).slice(0, candidateLimit);
+      const readSegment = this.database.raw.prepare(
+        "SELECT segment.* FROM text_segments segment WHERE segment.id = ?",
+      );
+      matches
+        .map(({ id, similarity }) => ({
+          row: (merged.has(id)
+            ? { id }
+            : readSegment.get(id)) as unknown as SegmentRow,
+          similarity,
+        }))
         .forEach(({ row, similarity }, index) => {
           const current = merged.get(row.id);
           if (current) {
@@ -817,17 +824,6 @@ function reciprocalRank(index: number): number {
   return 1 / (60 + index + 1);
 }
 
-function cosineSimilarity(
-  left: readonly number[],
-  right: readonly number[],
-): number {
-  if (left.length !== right.length || left.length === 0) return 0;
-  return left.reduce(
-    (sum, value, index) => sum + value * (right[index] ?? 0),
-    0,
-  );
-}
-
 function normalizeEmbedding(embedding: readonly number[]): number[] {
   if (embedding.length === 0 || embedding.length > 16_384)
     throw new Error("Embedding dimensions must be between 1 and 16384");
@@ -838,14 +834,6 @@ function normalizeEmbedding(embedding: readonly number[]): number[] {
   );
   if (magnitude === 0) throw new Error("Embedding cannot be a zero vector");
   return embedding.map((value) => value / magnitude);
-}
-
-function parseEmbedding(value: string | undefined): number[] {
-  if (!value) return [];
-  const parsed = JSON.parse(value) as unknown;
-  return Array.isArray(parsed)
-    ? parsed.filter((entry): entry is number => typeof entry === "number")
-    : [];
 }
 
 function addReason<T extends RetrievalHit["reasons"][number]>(

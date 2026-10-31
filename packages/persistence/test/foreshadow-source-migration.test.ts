@@ -65,8 +65,8 @@ describe("migration 047 (foreshadow-source)", () => {
       )
       .run(now, now);
 
-    expect(database.migrate()).toBe(49);
-    expect(database.migrate()).toBe(49);
+    expect(database.migrate()).toBe(50);
+    expect(database.migrate()).toBe(50);
 
     const state = repositories(database);
     expect(state.listForeshadows("p1")).toEqual([

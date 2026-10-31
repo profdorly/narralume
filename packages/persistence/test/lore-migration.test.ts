@@ -22,7 +22,7 @@ afterEach(() => {
 describe("migration 044 (lorebooks)", () => {
   it("installs strict tables, indexes, foreign keys, and project ownership checks", () => {
     const { database, creative, lore } = setup();
-    expect(database.currentMigration()).toBe(49);
+    expect(database.currentMigration()).toBe(50);
 
     const indexes = database.raw
       .prepare(

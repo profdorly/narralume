@@ -50,6 +50,7 @@ import { migration046 } from "./migrations/046-bible-backfill.js";
 import { migration047 } from "./migrations/047-foreshadow-source.js";
 import { migration048 } from "./migrations/048-language-and-form.js";
 import { migration049 } from "./migrations/049-retrieval-word-index.js";
+import { migration050 } from "./migrations/050-binary-segment-vectors.js";
 
 export interface Migration {
   readonly version: number;
@@ -64,6 +65,12 @@ export interface Migration {
    * around the migration transaction.
    */
   readonly foreignKeysOff?: boolean;
+  /**
+   * Data conversion SQL cannot express, run after `sql` in the same
+   * transaction. The checksum covers `sql` only, so a migration that has
+   * one keeps its definition in `sql` and must not change it afterwards.
+   */
+  readonly transform?: (raw: SqliteRawDatabase) => void;
 }
 
 export interface MigrationRepair {
@@ -121,6 +128,7 @@ const MIGRATIONS: readonly Migration[] = [
   migration047,
   migration048,
   migration049,
+  migration050,
 ];
 
 interface MigrationRow {
@@ -237,6 +245,7 @@ export class NarrativeDatabase {
     try {
       this.transaction(() => {
         this.raw.exec(migration.sql);
+        migration.transform?.(this.raw);
         if (migration.foreignKeysOff) {
           const violations = this.raw.prepare("PRAGMA foreign_key_check").all();
           if (violations.length > 0) {

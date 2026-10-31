@@ -53,8 +53,8 @@ describe("migration 046 (bible-backfill)", () => {
     expect(database.migrate(legacyMigrations)).toBe(45);
     seedBook(database);
 
-    expect(database.migrate()).toBe(49);
-    expect(database.migrate()).toBe(49);
+    expect(database.migrate()).toBe(50);
+    expect(database.migrate()).toBe(50);
 
     const documents = new SqliteDocumentRepository(database);
     expect(documents.get("p1", "doc-1")).toMatchObject({

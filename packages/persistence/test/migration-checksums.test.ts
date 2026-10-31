@@ -260,6 +260,11 @@ const SHIPPED: readonly (readonly [number, string, string])[] = [
     "retrieval-word-index",
     "5a4d43e472fc8318942a4d7422cbcd514e21d11f16b746e75dfdcc2a3faea023",
   ],
+  [
+    50,
+    "binary-segment-vectors",
+    "d7e295c2d3e4766314954f02ffa904b1ae50b5091a48847acaaa49390a0a6ebb",
+  ],
 ];
 
 const databases: NodeNarrativeDatabase[] = [];
