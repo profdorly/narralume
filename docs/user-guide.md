@@ -2,7 +2,7 @@
 
 # Guia do usuário
 
-Este guia apresenta o NarraLume na ordem do processo de escrita. Não é preciso lê-lo de ponta a ponta: comece pela Estante e leia cada parte quando chegar a ela. Os nomes de botões da interface aparecem entre aspas.
+Este guia apresenta o Lapis na ordem do processo de escrita. Não é preciso lê-lo de ponta a ponta: comece pela Estante e leia cada parte quando chegar a ela. Os nomes de botões da interface aparecem entre aspas.
 
 ## Três coisas para saber primeiro
 
@@ -48,7 +48,7 @@ A busca procura no título, na premissa e no ID. A barra de ferramentas alterna 
 
 ### Criar uma obra
 
-Com a Estante vazia, o NarraLume pergunta se você tem uma ideia ou um manuscrito: "Só uma ideia" abre o livro com a IA, "Já tenho um manuscrito" abre a importação e "Criar um livro" abre um livro em branco.
+Com a Estante vazia, o Lapis pergunta se você tem uma ideia ou um manuscrito: "Só uma ideia" abre o livro com a IA, "Já tenho um manuscrito" abre a importação e "Criar um livro" abre um livro em branco.
 
 Clique em "Livro em branco", preencha o título, escolha o idioma da prosa e a forma (conto, novela ou romance) e clique em "Criar e colocar na estante"; a obra abre na visão geral. A premissa é opcional e pode ser preenchida depois em "Editar livro e capa", na Estante.
 
@@ -56,13 +56,13 @@ Se você só tem uma ideia, clique em "Livro com a IA", escreva a premissa e o q
 
 ### Importar um manuscrito
 
-Clique em "Importar manuscrito" e escolha Markdown, texto simples, DOCX, HTML, EPUB ou um pacote de projeto do NarraLume (`.json`). O arquivo é dividido em candidatos na hora, sem modelo, e nada é gravado ainda:
+Clique em "Importar manuscrito" e escolha Markdown, texto simples, DOCX, HTML, EPUB ou um pacote de projeto do Lapis (`.json`). O arquivo é dividido em candidatos na hora, sem modelo, e nada é gravado ainda:
 
 1. Na janela de revisão, confira o tipo e o título de cada candidato e desmarque o que não precisar.
 2. Clique no botão que coloca os itens marcados na estante, ou em "Agora não" para fechar a janela sem importar.
 3. Para importar numa obra que já existe, ou para a IA analisar um manuscrito em personagens, relações, linha do tempo, estilo e candidatos parecidos, use o "Gerenciador de importação" nas Configurações: envie o arquivo, clique em "Analisar com IA", revise os candidatos e aplique os marcados ou clique em "Descartar lote". "Ver execução da análise" abre a análise na Central de execuções.
 
-Um pacote de projeto serve para migrar uma obra já organizada no NarraLume; Markdown, texto simples, DOCX, HTML e EPUB servem para importar prosa ou rascunhos antigos. Importações nunca trazem chaves de modelo.
+Um pacote de projeto serve para migrar uma obra já organizada no Lapis; Markdown, texto simples, DOCX, HTML e EPUB servem para importar prosa ou rascunhos antigos. Importações nunca trazem chaves de modelo.
 
 A prosa é dividida em capítulos nos títulos reconhecidos:
 
@@ -74,7 +74,7 @@ Um título que só tem a palavra-chave e o número, como `Capítulo 1` ou `Chapt
 
 O texto antes do primeiro título (folha de rosto, epígrafe e afins) vira uma seção própria, chamada `卷首` em manuscritos chineses e em outros manuscritos CJK e, nos demais, com o nome da obra. Uma seção que só contém um número de página (um sumário no começo do livro) é descartada apenas sob títulos com palavra-chave em português, espanhol e inglês escritos como linhas simples, como `Capítulo 1 — A Chegada` ou `Chapter One — Arrival`. Linhas que começam com `Chapter` seguido de algarismos (`Chapter 1 — Arrival`) e títulos chineses mantêm o comportamento anterior, e títulos de Markdown, DOCX, HTML e EPUB também não são filtrados: um sumário sob eles ainda é importado como seções curtas de número de página, que você pode desmarcar antes de aplicar. Uma linha só com `#`, `# # #`, `***`, `* * *` ou `⁂` é uma quebra de cena e fica no texto em qualquer formato, mesmo com estilo ou marcação de título. Quando nenhum título é reconhecido, o texto inteiro é importado como um único manuscrito.
 
-A análise por IA ("Analisar com IA" no Gerenciador de importação) é instruída a escrever os candidatos no idioma do próprio manuscrito. Para manuscritos em português, espanhol, inglês e chinês, o pedido também informa o idioma detectado pelas palavras mais comuns ou pelo sistema de escrita. As duas coisas são feitas na base do melhor esforço, então confira os candidatos antes de aplicá-los. Os rótulos que o próprio NarraLume acrescenta, como o título do candidato de intenção da autoria e os cabeçalhos das notas importadas, seguem o idioma do projeto. O candidato de estilo estatístico, calculado sem IA, vem em chinês para manuscritos CJK, em português para manuscritos detectados como português e em inglês para todos os outros, inclusive o espanhol; o candidato de estilo da IA segue o idioma do manuscrito.
+A análise por IA ("Analisar com IA" no Gerenciador de importação) é instruída a escrever os candidatos no idioma do próprio manuscrito. Para manuscritos em português, espanhol, inglês e chinês, o pedido também informa o idioma detectado pelas palavras mais comuns ou pelo sistema de escrita. As duas coisas são feitas na base do melhor esforço, então confira os candidatos antes de aplicá-los. Os rótulos que o próprio Lapis acrescenta, como o título do candidato de intenção da autoria e os cabeçalhos das notas importadas, seguem o idioma do projeto. O candidato de estilo estatístico, calculado sem IA, vem em chinês para manuscritos CJK, em português para manuscritos detectados como português e em inglês para todos os outros, inclusive o espanhol; o candidato de estilo da IA segue o idioma do manuscrito.
 
 ### Completar a Bíblia da história a partir do manuscrito
 
@@ -316,7 +316,7 @@ Em "Especificações de publicação (controles de qualidade)", a página Entreg
 - Texto simples: bom quando só o conteúdo da prosa importa;
 - DOCX: bom para entregar a quem usa o Word e vai continuar a diagramação;
 - EPUB: bom para pré-visualizar como e-book;
-- Pacote da história: o material de uma obra visível à autoria, bom para migrar para outro ambiente do NarraLume.
+- Pacote da história: o material de uma obra visível à autoria, bom para migrar para outro ambiente do Lapis.
 
 ### Instantâneos do conteúdo do projeto
 

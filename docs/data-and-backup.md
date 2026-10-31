@@ -4,13 +4,13 @@
 
 As propostas de progresso das linhas da história e a decisão sobre cada item ficam na biblioteca atual e entram no backup SQLite completo. O pacote da história e os instantâneos do conteúdo guardam a bússola da história com as mudanças já aceitas, mas não levam o histórico de propostas e decisões. Para guardar o processo inteiro, faça um backup SQLite completo.
 
-O NarraLume não tem sincronização na nuvem. Onde a obra fica de fato depende de como você o usa: no kernel local do navegador, com um Server local ou com o Docker. Entrar com a mesma conta no navegador não faz esses dados se comunicarem.
+O Lapis não tem sincronização na nuvem. Onde a obra fica de fato depende de como você o usa: no kernel local do navegador, com um Server local ou com o Docker. Entrar com a mesma conta no navegador não faz esses dados se comunicarem.
 
 Primeiro, diferencie os três tipos de arquivo e as formas de recuperação:
 
 | Objeto                  | Alcance                                        | Indicado para                                                                            | Contém chaves de modelo? |
 | ----------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------ |
-| Pacote da história      | Uma obra                                       | Levar uma obra para outra instalação do NarraLume ou entregá-la a quem colabora com você | Não                      |
+| Pacote da história      | Uma obra                                       | Levar uma obra para outra instalação do Lapis ou entregá-la a quem colabora com você     | Não                      |
 | Instantâneo do conteúdo | Uma obra, guardada dentro da biblioteca atual  | Marcar uma etapa que você pode restaurar depois como projeto novo                        | Não                      |
 | Backup SQLite completo  | A biblioteca inteira e as configurações locais | Recuperação de desastre antes de atualizar, trocar de máquina ou apagar os dados do site | Pode conter              |
 
@@ -29,9 +29,9 @@ Nesse modo, as obras, a bússola da história, o histórico de execuções e as 
 
 ## Server local e launchers de release
 
-Por padrão, o banco fica em `data/narralume.sqlite` e os backups consistentes vão para `data/backups/`. Quando você inicia o Server por conta própria (por exemplo, com `npm run dev`), `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR`, no ambiente ou no `.env.local`, mudam essas pastas; sem `NARRATIVE_BACKUP_DIR`, os backups vão para `backups/` dentro da pasta de dados. Os próprios launchers definem essas duas variáveis: a pasta de dados vem de `NARRALUME_DATA_DIR` e os backups ficam em `backups/` dentro dela. Só o launcher de macOS/Linux também aceita `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR` definidos no shell.
+Por padrão, o banco fica em `data/lapis.sqlite` e os backups consistentes vão para `data/backups/`. Bibliotecas criadas antes da troca de nome para Lapis continuam no arquivo `narralume.sqlite`: se a pasta de dados só tem esse arquivo, o Server segue usando ele e não cria um banco novo ao lado. Quando você inicia o Server por conta própria (por exemplo, com `npm run dev`), `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR`, no ambiente ou no `.env.local`, mudam essas pastas; sem `NARRATIVE_BACKUP_DIR`, os backups vão para `backups/` dentro da pasta de dados. Os próprios launchers definem essas duas variáveis: a pasta de dados vem de `LAPIS_DATA_DIR` e os backups ficam em `backups/` dentro dela. Só o launcher de macOS/Linux também aceita `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR` definidos no shell.
 
-Enquanto roda (também no Docker), o Server faz um backup automático a cada 6 horas (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, padrão `360`) e mais um ao iniciar, se `NARRATIVE_BACKUP_ON_STARTUP=true`. A cada backup novo, a pasta mantém só os 10 mais recentes (`NARRATIVE_BACKUP_RETENTION`), contando os automáticos e os feitos à mão; copie para outro lugar os que precisar guardar por mais tempo. Deixe nessa pasta só o que o NarraLume criou: um `.sqlite` sem manifesto ou um `.partial` esquecido faz a listagem e a criação de backups darem erro.
+Enquanto roda (também no Docker), o Server faz um backup automático a cada 6 horas (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, padrão `360`) e mais um ao iniciar, se `NARRATIVE_BACKUP_ON_STARTUP=true`. A cada backup novo, a pasta mantém só os 10 mais recentes (`NARRATIVE_BACKUP_RETENTION`), contando os automáticos e os feitos à mão; copie para outro lugar os que precisar guardar por mais tempo. Deixe nessa pasta só o que o Lapis criou: um `.sqlite` sem manifesto ou um `.partial` esquecido faz a listagem e a criação de backups darem erro.
 
 Não copie o arquivo principal do SQLite com o serviço rodando. Use o botão "Fazer backup agora" (em Configurações, seção "Arquivos de backup do sistema"), `scripts/backup.ps1` no Windows, `scripts/backup.sh` no macOS/Linux ou a API de backup do Server (`POST /api/system/backups`); o botão "Baixar minha biblioteca (.sqlite)" só funciona no kernel do navegador. O backup do Server é gravado primeiro num arquivo temporário (`.partial`), passa pelas checagens de integridade e de chaves estrangeiras do SQLite e só então recebe o nome final, ao lado de um manifesto (`.manifest.json`) que registra o SHA-256; a prévia e a restauração conferem esse hash. Assim, um arquivo pela metade nunca é tomado por backup recuperável.
 
@@ -43,7 +43,7 @@ No pacote de release dos launchers:
 
 ## Volumes do Docker
 
-O Compose põe o banco no volume `narralume-data` e monta os backups à parte, na pasta do host `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`. Para mudar essa pasta, defina `NARRATIVE_BACKUP_HOST_DIR` no shell ou num arquivo `.env` na raiz do repositório; no `.env.local` ela não tem efeito. O volume em si não é backup, e a pasta de backups não deve ficar no mesmo disco frágil que guarda a única cópia do banco.
+O Compose põe o banco no volume `narralume-data` (o nome vem de antes da troca para Lapis e foi mantido para não deixar as obras num volume antigo) e monta os backups à parte, na pasta do host `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`. Para mudar essa pasta, defina `NARRATIVE_BACKUP_HOST_DIR` no shell ou num arquivo `.env` na raiz do repositório; no `.env.local` ela não tem efeito. O volume em si não é backup, e a pasta de backups não deve ficar no mesmo disco frágil que guarda a única cópia do banco.
 
 Crie um backup consistente com o serviço rodando:
 
@@ -84,7 +84,7 @@ Indicado antes de apagar os dados do site no navegador, antes de atualizar um pa
 3. Nos backups do Server, clique em "Prévia" em "Arquivos de backup do sistema" e confira se "Checagem de hash" mostra "Coincide", "Integridade" mostra `ok` e "Violações de chave estrangeira" está em 0.
 4. Para recuperar, prepare uma pasta de destino nova; nunca sobrescreva o banco da instância em execução. Na prévia, clique em "Restaurar em um diretório novo", informe o "Diretório de destino no servidor" e confirme em "Restaurar no diretório de destino". O Server confere o hash e a integridade da cópia e recusa a pasta de dados atual, a pasta de backups e uma pasta que já tenha um banco.
 5. Inicie uma instância de teste apontando para a pasta restaurada e confira a quantidade de obras, as versões mais recentes do manuscrito, a bússola da história, a estrutura, os comentários, o histórico de execuções e os instantâneos do conteúdo.
-6. Só depois que o teste passar, pare a instância principal e aponte `NARRATIVE_DATA_DIR` (ou `NARRALUME_DATA_DIR`, nos launchers) para a pasta restaurada; mantenha a pasta antiga até a nova instância rodar de forma estável.
+6. Só depois que o teste passar, pare a instância principal e aponte `NARRATIVE_DATA_DIR` (ou `LAPIS_DATA_DIR`, nos launchers) para a pasta restaurada; mantenha a pasta antiga até a nova instância rodar de forma estável.
 
 ## Como confirmar que um backup funciona de verdade
 

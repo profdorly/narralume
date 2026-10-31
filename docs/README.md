@@ -2,14 +2,14 @@
 
 # Documentação
 
-Este índice é para quem usa o NarraLume, hospeda a própria instância ou contribui com o projeto.
+Este índice é para quem usa o Lapis, hospeda a própria instância ou contribui com o projeto.
 
 ## Primeiros passos
 
 | Documento                                         | Para quem                                                                                                                     |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | [Guia de uso](user-guide.md)                      | Conhecer em detalhe a estante, a história, a escrita, a colaboração com IA e a entrega.                                       |
-| [Início rápido](quick-start.md)                   | Rodar o NarraLume pela primeira vez com um pacote de release para desktop ou a partir do código-fonte.                        |
+| [Início rápido](quick-start.md)                   | Rodar o Lapis pela primeira vez com um pacote de release para desktop ou a partir do código-fonte.                            |
 | [Configuração](configuration.md)                  | Configurar provedores e modelos, papéis, Server, Docker, embeddings e reordenação da busca.                                   |
 | [Dados, privacidade e backup](data-and-backup.md) | Entender o armazenamento no navegador, os instantâneos do projeto, os pacotes da obra e a restauração da biblioteca completa. |
 

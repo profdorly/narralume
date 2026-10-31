@@ -64,7 +64,7 @@ O `.env.local` nunca deve ir para o Git. Variáveis comuns:
 | `NARRATIVE_AUTH_TOKEN`                                             | Vazio                        | Token de acesso remoto, com pelo menos 24 caracteres                                     |
 | `NARRATIVE_STATIC_DIR`                                             | Vazio                        | Pasta dos arquivos estáticos da Web no modo de produção                                  |
 
-Os launchers de release têm mais três variáveis, que só afetam o launcher: `NARRALUME_PORT` muda a porta local, `NARRALUME_DATA_DIR` muda a pasta de dados e `NARRALUME_NODE_VERSION` escolhe a versão portátil do Node.js. Elas não são variáveis gerais do Server; os launchers de Windows, macOS e Linux repassam os valores finais ao Server. No uso normal, só as duas primeiras costumam ser necessárias.
+Os launchers de release têm mais três variáveis, que só afetam o launcher: `LAPIS_PORT` muda a porta local, `LAPIS_DATA_DIR` muda a pasta de dados e `LAPIS_NODE_VERSION` escolhe a versão portátil do Node.js. Elas não são variáveis gerais do Server; os launchers de Windows, macOS e Linux repassam os valores finais ao Server. No uso normal, só as duas primeiras costumam ser necessárias. Os nomes anteriores à troca para Lapis (`NARRALUME_PORT`, `NARRALUME_DATA_DIR` etc.) ainda funcionam quando o nome novo não está definido; o launcher avisa que estão obsoletos.
 
 ## Variáveis específicas do Docker
 
@@ -78,7 +78,7 @@ Dentro do contêiner, o Server escuta em `0.0.0.0` com o modo remoto ligado, com
 
 ## Busca semântica e embeddings
 
-Quando a IA escreve um capítulo (inclusive na Criação rápida com IA), o NarraLume procura no manuscrito anterior os trechos mais relacionados à tarefa e os acrescenta ao contexto do modelo, ao lado do outline, da Bíblia da História e do capítulo anterior.
+Quando a IA escreve um capítulo (inclusive na Criação rápida com IA), o Lapis procura no manuscrito anterior os trechos mais relacionados à tarefa e os acrescenta ao contexto do modelo, ao lado do outline, da Bíblia da História e do capítulo anterior.
 
 - **Índice**: cada capítulo e cena ligado ao outline é dividido em trechos de cerca de 380 tokens que nunca atravessam uma quebra de cena (`* * *`). Cada trecho é ligado aos personagens, lugares e objetos da Bíblia da História que ele cita. O índice é atualizado ao registrar uma versão, aceitar uma proposta ou importar um manuscrito, e antes de toda tarefa de IA (o que também cobre backups restaurados e bibliotecas antigas).
 - **Sinais**: a busca combina palavras (um índice de texto completo que ignora acentos e flexões comuns; texto em chinês mantém o índice por caracteres), os personagens previstos no plano do capítulo e, quando há um modelo de embedding atribuído, a semelhança entre vetores. São usados no máximo dois trechos por capítulo, e o capítulo anterior nunca é recuperado porque já está inteiro no contexto. A consulta do capítulo usa o título, o plano (resumo, objetivo, conflito, desfecho), os personagens previstos e as notas de direção; um capítulo sem plano usa o resumo do capítulo anterior. Preencha o resumo no outline para melhores resultados.

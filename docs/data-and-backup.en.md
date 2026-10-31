@@ -4,15 +4,15 @@
 
 Story line progress proposals and the decision on each item are stored in the current library and preserved by full SQLite backups. Story bundles and content snapshots keep the story compass with the accepted changes, but exclude the proposal and decision history. Make a full SQLite backup to retain the complete process.
 
-NarraLume does not provide cloud sync. Where your work actually lives depends on whether you use the browser local kernel, a local Server, or Docker; signing into the same browser account does not make this data interoperate automatically.
+Lapis does not provide cloud sync. Where your work actually lives depends on whether you use the browser local kernel, a local Server, or Docker; signing into the same browser account does not make this data interoperate automatically.
 
 Start by telling the three file types and recovery paths apart:
 
-| Object             | Scope                                       | Best for                                                                         | Contains model keys? |
-| ------------------ | ------------------------------------------- | -------------------------------------------------------------------------------- | -------------------- |
-| Story bundle       | One work                                    | Importing a work into another NarraLume instance or handing it to a collaborator | No                   |
-| Content snapshot   | One work, stored inside the current library | Marking a milestone you can later restore as a new project                       | No                   |
-| Full SQLite backup | The entire library and local settings       | Disaster recovery before upgrades, machine migration, or clearing site data      | Possibly             |
+| Object             | Scope                                       | Best for                                                                     | Contains model keys? |
+| ------------------ | ------------------------------------------- | ---------------------------------------------------------------------------- | -------------------- |
+| Story bundle       | One work                                    | Importing a work into another Lapis instance or handing it to a collaborator | No                   |
+| Content snapshot   | One work, stored inside the current library | Marking a milestone you can later restore as a new project                   | No                   |
+| Full SQLite backup | The entire library and local settings       | Disaster recovery before upgrades, machine migration, or clearing site data  | Possibly             |
 
 A practical habit: create a content snapshot after finishing important chapters, make full backups regularly, and make one more full backup — plus a trial restore into a new directory — before any upgrade or migration. A synced drive can hold backup files, but syncing itself is not a recoverable backup.
 
@@ -29,9 +29,9 @@ In this mode, works, the story compass, run history, and any bring-your-own mode
 
 ## Local Server and release launchers
 
-By default the database is `data/narralume.sqlite`, and consistency backups are written to `data/backups/`. When you start the Server yourself (for example with `npm run dev`), `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR`, from the environment or from `.env.local`, change these directories; without `NARRATIVE_BACKUP_DIR`, backups go to `backups/` inside the data directory. The launchers set both variables themselves: the data directory comes from `NARRALUME_DATA_DIR`, and backups go to `backups/` inside it. Only the macOS/Linux launcher also honors `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR` set in the shell.
+By default the database is `data/lapis.sqlite`, and consistency backups are written to `data/backups/`. Libraries created before the rename to Lapis stay in `narralume.sqlite`: when the data directory only has that file, the Server keeps using it and does not create a new database next to it. When you start the Server yourself (for example with `npm run dev`), `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR`, from the environment or from `.env.local`, change these directories; without `NARRATIVE_BACKUP_DIR`, backups go to `backups/` inside the data directory. The launchers set both variables themselves: the data directory comes from `LAPIS_DATA_DIR`, and backups go to `backups/` inside it. Only the macOS/Linux launcher also honors `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR` set in the shell.
 
-While the Server runs (Docker included), it makes an automatic backup every 6 hours (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, default `360`), plus one at startup when `NARRATIVE_BACKUP_ON_STARTUP=true`. After each new backup, the directory keeps only the 10 most recent (`NARRATIVE_BACKUP_RETENTION`), counting both automatic and manual backups; copy any backup you need to keep longer somewhere else. Keep only files NarraLume created in that directory: a `.sqlite` without a manifest or a leftover `.partial` makes listing and creating backups fail.
+While the Server runs (Docker included), it makes an automatic backup every 6 hours (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, default `360`), plus one at startup when `NARRATIVE_BACKUP_ON_STARTUP=true`. After each new backup, the directory keeps only the 10 most recent (`NARRATIVE_BACKUP_RETENTION`), counting both automatic and manual backups; copy any backup you need to keep longer somewhere else. Keep only files Lapis created in that directory: a `.sqlite` without a manifest or a leftover `.partial` makes listing and creating backups fail.
 
 Do not copy the live SQLite main file while the service is running. Use "Back up now" under "System backup archives" in Settings, `scripts/backup.ps1` on Windows, `scripts/backup.sh` on macOS/Linux, or the Server's backup API (`POST /api/system/backups`); "Download my library (.sqlite)" only works with the browser local kernel. A Server backup is first written to a temporary file (`.partial`), passes SQLite's integrity and foreign-key checks, and only then gets its final name, next to a manifest (`.manifest.json`) that records its SHA-256; preview and restore verify that hash. A half-finished file is therefore never mistaken for a recoverable backup.
 
@@ -43,7 +43,7 @@ In a launcher release package:
 
 ## Docker volumes
 
-Compose places the database on the `narralume-data` volume and mounts backups separately to `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}` on the host. To change that directory, set `NARRATIVE_BACKUP_HOST_DIR` in the shell or in a `.env` file at the repository root; it has no effect in `.env.local`. The volume itself is not a backup, and the backup directory must not sit on the same fragile disk as the only copy of the database.
+Compose places the database on the `narralume-data` volume (the name predates the rename to Lapis and is kept so existing works are not left behind in an old volume) and mounts backups separately to `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}` on the host. To change that directory, set `NARRATIVE_BACKUP_HOST_DIR` in the shell or in a `.env` file at the repository root; it has no effect in `.env.local`. The volume itself is not a backup, and the backup directory must not sit on the same fragile disk as the only copy of the database.
 
 Create an online backup:
 
@@ -84,7 +84,7 @@ Fit for before clearing browser site data, before upgrading a release package, b
 3. For Server backups, click "Preview" under "System backup archives" and confirm that "Hash check" shows "Match", "Integrity" shows `ok`, and "Foreign key violations" is 0.
 4. For recovery, prepare a brand-new target directory; never overwrite the database of the running instance. In the preview, click "Restore to a new directory", enter the "Server target directory", and confirm with "Restore to target directory". The Server verifies the copy's hash and integrity, and refuses the current data directory, the backup directory, and any directory that already holds a database.
 5. Start a test instance against the restored directory and check work count, latest manuscript versions, story compass, outline, comments, run history, and content snapshots.
-6. Only after the drill passes, stop the production instance and point `NARRATIVE_DATA_DIR` (or `NARRALUME_DATA_DIR` for the launchers) at the restored directory; keep the old directory until the new instance runs stably.
+6. Only after the drill passes, stop the production instance and point `NARRATIVE_DATA_DIR` (or `LAPIS_DATA_DIR` for the launchers) at the restored directory; keep the old directory until the new instance runs stably.
 
 ## How to confirm a backup is really usable
 

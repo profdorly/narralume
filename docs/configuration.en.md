@@ -64,7 +64,7 @@ cp .env.example .env.local
 | `NARRATIVE_AUTH_TOKEN`                                             | Empty                        | Remote access token, at least 24 characters                                                    |
 | `NARRATIVE_STATIC_DIR`                                             | Empty                        | Directory for serving Web static files in production mode                                      |
 
-The release launchers have three more variables that affect only the launcher: `NARRALUME_PORT` changes the local listen port, `NARRALUME_DATA_DIR` changes the data directory, and `NARRALUME_NODE_VERSION` selects the portable Node.js version. They are not general Server environment variables; the Windows, macOS, and Linux launchers pass their final values to the Server. Normal use usually only needs the first two.
+The release launchers have three more variables that affect only the launcher: `LAPIS_PORT` changes the local listen port, `LAPIS_DATA_DIR` changes the data directory, and `LAPIS_NODE_VERSION` selects the portable Node.js version. They are not general Server environment variables; the Windows, macOS, and Linux launchers pass their final values to the Server. Normal use usually only needs the first two. The names from before the rename to Lapis (`NARRALUME_PORT`, `NARRALUME_DATA_DIR`, and so on) still work when the new name is not set; the launcher warns that they are deprecated.
 
 ## Docker-specific variables
 
@@ -78,7 +78,7 @@ The Docker Server listens on `0.0.0.0` inside the container with remote mode ena
 
 ## Semantic search and embeddings
 
-When the AI writes a chapter (including in AI quick creation), NarraLume searches the earlier manuscript for the passages most related to the task and adds them to the model's context, next to the outline, the Story Bible, and the previous chapter.
+When the AI writes a chapter (including in AI quick creation), Lapis searches the earlier manuscript for the passages most related to the task and adds them to the model's context, next to the outline, the Story Bible, and the previous chapter.
 
 - **Index**: every chapter and scene bound to the outline is split into passages of about 380 tokens that never cross a scene break (`* * *`). Each passage is linked to the Story Bible characters, places, and items it names. The index is updated when a version is committed, a proposal is accepted, or a manuscript is imported, and before every AI task (which also covers restored backups and older libraries).
 - **Signals**: search combines words (a full-text index that ignores accents and common inflections; Chinese text keeps its character index), the characters named in the chapter plan, and, when an embedding model is assigned, vector similarity. At most two passages per chapter are used, and the previous chapter is never retrieved because it is already in the context in full. The chapter query uses the title, the plan (summary, goal, conflict, outcome), the planned characters, and the director notes; a chapter without a plan uses the summary of the previous chapter instead, so fill in the outline summary for better results.

@@ -2,7 +2,7 @@
 
 # User Guide
 
-This guide introduces NarraLume in the order of the writing process. You do not have to read it end to end: start from the Shelf, and read each page as you reach it. Button names in the interface appear in quotes throughout.
+This guide introduces Lapis in the order of the writing process. You do not have to read it end to end: start from the Shelf, and read each page as you reach it. Button names in the interface appear in quotes throughout.
 
 ## Three things to know first
 
@@ -48,7 +48,7 @@ The search box matches titles, premises, and IDs. The toolbar switches between t
 
 ### Create a work
 
-On an empty Shelf, NarraLume asks whether you have an idea or a manuscript: "Just an idea" opens the AI-guided book, "I already have a manuscript" opens the import, and "Create a book" opens a blank book.
+On an empty Shelf, Lapis asks whether you have an idea or a manuscript: "Just an idea" opens the AI-guided book, "I already have a manuscript" opens the import, and "Create a book" opens a blank book.
 
 Click "Blank book", fill in the title, choose the writing language and the form (short story, novella, or novel), then click "Create and shelve"; the work opens on its overview. The premise is optional and can be filled in later with "Edit book & cover" on the Shelf.
 
@@ -56,13 +56,13 @@ If you only have an idea, click "AI-guided book", write the premise and any idea
 
 ### Import an existing manuscript
 
-Click "Import manuscript" and choose Markdown, plain text, DOCX, HTML, EPUB, or a NarraLume project bundle (`.json`). The file is split into candidates right away, without a model, and nothing is written yet:
+Click "Import manuscript" and choose Markdown, plain text, DOCX, HTML, EPUB, or a Lapis project bundle (`.json`). The file is split into candidates right away, without a model, and nothing is written yet:
 
 1. In the review dialog, check each candidate's type and title, and deselect items you do not need.
 2. Click the button that shelves the selected items, or "Not now" to close the dialog without importing.
 3. To import into an existing work, or to have the AI analyze a manuscript into characters, relations, timeline, style, and similar candidates, use "Import manager" in Settings: upload the file, click "AI analyze", review the candidates, then apply the selected ones or click "Discard batch". "View analysis run" opens the analysis in the Run Center.
 
-A project bundle suits migrating a work already organized in NarraLume; Markdown, plain text, DOCX, HTML, and EPUB suit importing prose or older drafts. Imports never carry model keys.
+A project bundle suits migrating a work already organized in Lapis; Markdown, plain text, DOCX, HTML, and EPUB suit importing prose or older drafts. Imports never carry model keys.
 
 Prose is split into chapters at recognized headings:
 
@@ -74,7 +74,7 @@ A heading that holds only a keyword and a number, such as `Capítulo 1` or `Chap
 
 Text before the first heading (title page, epigraph, and similar) becomes its own section, named `卷首` in Chinese and other CJK manuscripts and after the work otherwise. A section whose only content is a page number (a table of contents at the start of the book) is dropped only under Portuguese, Spanish, and English keyword headings written as plain lines, such as `Capítulo 1 — A Chegada` or `Chapter One — Arrival`. Lines starting with `Chapter` plus digits (`Chapter 1 — Arrival`) and Chinese headings keep the previous behavior, and Markdown, DOCX, HTML, and EPUB headings are not filtered either: a table of contents under them still imports as short page-number sections, which you can deselect before applying. A line holding only `#`, `# # #`, `***`, `* * *`, or `⁂` is a scene break and stays in the text in every format, even when it uses a heading style or heading markup. When no heading is recognized, the whole text is imported as one manuscript.
 
-AI analysis ("AI analyze" in the Import manager) is asked to write its candidates in the manuscript's own language. For Portuguese, Spanish, English, and Chinese manuscripts, the request also states the language detected from common words or the writing system. Both are best effort, so check the candidates before applying them. The labels NarraLume adds itself, such as the author-intent candidate title and the headings of imported notes, follow the project language. The statistical style candidate, computed without AI, is written in Chinese for CJK manuscripts, in Portuguese for manuscripts detected as Portuguese, and in English for all others, including Spanish; the AI style candidate follows the manuscript language.
+AI analysis ("AI analyze" in the Import manager) is asked to write its candidates in the manuscript's own language. For Portuguese, Spanish, English, and Chinese manuscripts, the request also states the language detected from common words or the writing system. Both are best effort, so check the candidates before applying them. The labels Lapis adds itself, such as the author-intent candidate title and the headings of imported notes, follow the project language. The statistical style candidate, computed without AI, is written in Chinese for CJK manuscripts, in Portuguese for manuscripts detected as Portuguese, and in English for all others, including Spanish; the AI style candidate follows the manuscript language.
 
 ### Complete the Story Bible from the manuscript
 
@@ -316,7 +316,7 @@ Under "Press specs (quality gates)", the Delivery page checks the premise and th
 - Plain text: good when only the prose content is needed;
 - DOCX: good for handing to Word users for further layout;
 - EPUB: good for e-book preview;
-- Story bundle: one work's author-visible material, good for migrating to another NarraLume environment.
+- Story bundle: one work's author-visible material, good for migrating to another Lapis environment.
 
 ### Project content snapshots
 
