@@ -93,7 +93,8 @@ export class DatabaseBackupService {
     const databasePath = this.backupPath(databaseFile);
     const temporaryPath = `${databasePath}.partial`;
     if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
-    // 本服务只在 Node 服务端实例化；进程内驱动恒为 node:sqlite。
+    // This service is only instantiated on the Node server, so the in-process
+    // driver is always node:sqlite.
     await sqliteBackup(this.database.raw as DatabaseSync, temporaryPath, {
       rate: 256,
     });

@@ -417,7 +417,8 @@ export async function buildApp(
   );
 
   if (enableBackgroundWorker) {
-    // 刷新/重启恢复：接管所有活动复合任务，按当前持久状态继续推进。
+    // Refresh/restart recovery: take over all active composite tasks and
+    // continue from their current persisted state.
     longGoalCoordinator.reconcileAll();
     coordinator.wake();
     autopilotCoordinator.wake();
@@ -437,8 +438,9 @@ export async function buildApp(
   }
 
   if (options.config.staticDirectory) {
-    // M4 生产本地模式：一条命令托管 web 静态产物（NARRATIVE_STATIC_DIR 指向
-    // apps/web/dist）。/api 之外的未命中路径回落 index.html（SPA 路由）。
+    // M4 production local mode: one command serves the web static build
+    // (NARRATIVE_STATIC_DIR points to apps/web/dist). Unmatched paths outside
+    // /api fall back to index.html (SPA routing).
     const { default: fastifyStatic } = await import("@fastify/static");
     await app.register(fastifyStatic, {
       root: options.config.staticDirectory,
@@ -463,8 +465,9 @@ export async function buildApp(
 
   app.setErrorHandler(async (error, request, reply) => {
     const requestId = request.id;
-    // 与浏览器内核共用同一份错误映射（services/route-error-mapper），
-    // Fastify 侧额外携带 requestId 与 ZodError 原始日志。
+    // Shares the same error mapping with the browser kernel
+    // (services/route-error-mapper); the Fastify side additionally carries the
+    // requestId and logs the raw ZodError.
     const mapped = mapRouteError(error, (payload, message) =>
       request.log.error({ err: payload, requestId }, message),
     );

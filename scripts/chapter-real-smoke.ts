@@ -202,11 +202,13 @@ try {
       policy: resolveEffectivePolicy({
         requestStartTimeoutMs: 45_000,
         maxRetries: 1,
-        // 小模型审稿引文需要多一轮带反馈的修复机会（M6 实测）
+        // Small models need one more repair round with feedback for review
+        // citations (observed in M6).
         maxRepairAttempts: 2,
         contextWindow: 128_000,
-        // 推理模型会将 reasoning token 计入输出预算；
-        // 结构化/修订调用预算过低会截断 JSON（M5 基线发现）。
+        // Reasoning models count reasoning tokens against the output budget; a
+        // structured/revision call budget that is too low truncates the JSON
+        // (found in the M5 baseline).
         draftMaxOutputTokens: 32_000,
         reviewMaxOutputTokens: 24_000,
         settlementMaxOutputTokens: 24_000,
@@ -228,9 +230,10 @@ try {
       );
       tracker.diff(runId);
       if (!processed) {
-        // M3 起步骤重试带退避：job 的 available_at 在未来时 processRun
-        // 返回 false。运行仍处于 failed_recoverable/running 时等待退避
-        // 窗口后继续驱动，而不是误判为停滞退出。
+        // Since M3, step retries use backoff: processRun returns false while
+        // the job's available_at is in the future. While the run is still
+        // failed_recoverable/running, wait out the backoff window and keep
+        // driving instead of mistaking it for a stall and exiting.
         const current = runs.getRun(runId)?.status;
         if (current === "failed_recoverable" || current === "running") {
           await new Promise((resolve) => setTimeout(resolve, 500));
