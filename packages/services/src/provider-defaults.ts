@@ -1,6 +1,7 @@
 /**
- * 兜底 provider 配置：仅使用通用的 NARRATIVE_LLM_* 环境变量。
- * 浏览器内核注入的 environment 通常为空，走显式 provider 配置。
+ * Fallback provider configuration: uses only the generic NARRATIVE_LLM_*
+ * environment variables. The environment injected by the browser kernel is
+ * usually empty, so it relies on explicit provider configuration.
  */
 export function resolveProviderDefaults(
   environment: Readonly<Record<string, string | undefined>>,

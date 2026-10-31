@@ -943,7 +943,10 @@ function toSessionResponse(session: AutopilotSession) {
   });
 }
 
-/** 读取候选生成时保存的基线值；缺失时返回 null（等价于“生成时尚不存在”）。 */
+/**
+ * Read the baseline value saved when the candidate was generated; returns null
+ * when missing (equivalent to "did not exist at generation time").
+ */
 
 function requireProject(projects: SqliteProjectRepository, projectId: string) {
   const project = projects.get(projectId);

@@ -4,9 +4,11 @@ const IdSchema = z.string().trim().min(1).max(300);
 const TimestampSchema = z.string().min(1);
 
 /**
- * Agent Skill：代码所有的任务编排声明，与 Writing Skill（写作提示层）分离。
- * Skill 只声明触发范围、所需上下文、允许的既有领域能力、输出类型和停靠点；
- * 不能注册新工具、不能直写数据库。专业角色（Writer/Reviewer）只作为内部步骤。
+ * Agent Skill: a code-owned task orchestration declaration, separate from
+ * Writing Skills (the writing prompt layer). A Skill only declares its trigger
+ * scope, required context, allowed existing domain capabilities, output type
+ * and stopping points; it cannot register new tools or write to the database
+ * directly. Specialist roles (Writer/Reviewer) exist only as internal steps.
  */
 export const AgentSkillOutputKindSchema = z.enum([
   "answer",
@@ -37,10 +39,13 @@ export const AgentSkillSchema = z.object({
 export type AgentSkillDto = z.infer<typeof AgentSkillSchema>;
 
 /**
- * 导入的 Agent Skill（R9）：与内置注册表同形，但 builtin=false，
- * 额外携带来源与内容哈希，并按项目启停。包格式只允许声明名称、版本、
- * 触发说明、指令、参考资料、能力白名单、输出契约和停靠策略；不允许脚本、
- * Shell、网络插件、数据库写入或动态注册新工具。首期只允许只读和候选型能力。
+ * Imported Agent Skill (R9): same shape as the built-in registry, but with
+ * builtin=false, plus its source and content hash, and enabled per project.
+ * The package format may only declare name, version, trigger description,
+ * instructions, references, capability allowlist, output contract and stopping
+ * policy; scripts, shell, network plugins, database writes and dynamic tool
+ * registration are not allowed. The first phase only allows read-only and
+ * candidate-type capabilities.
  */
 export const ImportedAgentSkillSchema = z.object({
   id: IdSchema,
@@ -79,10 +84,13 @@ export type ImportAgentSkillPackageRequest = z.infer<
 >;
 
 /**
- * 首期导入 Skill 只允许的能力：只读查询（story/review.inspect）与候选型
- * 能力（outline/canon/selection 候选生成、task.control 任务控制）。
- * 推进正式状态或消耗大额写作预算的 confirm 级能力（foundation/chapter/
- * autopilot/long_goal）不对导入包开放，仍由系统内置裁定接口完成。
+ * The only capabilities first-phase imported Skills may use: read-only queries
+ * (story/review.inspect) and candidate-type capabilities
+ * (outline/canon/selection candidate generation, task.control task control).
+ * Confirm-level capabilities that advance official state or spend a large
+ * writing budget (foundation/chapter/autopilot/long_goal) are not open to
+ * imported packages; they still go through the system's built-in decision
+ * endpoints.
  */
 export const IMPORTABLE_AGENT_SKILL_CAPABILITIES: readonly string[] = [
   "story.inspect",

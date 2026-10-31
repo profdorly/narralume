@@ -111,8 +111,9 @@ export interface BibleBackfillActionResult {
 }
 
 /**
- * 「从正文补全故事圣经」任务的作者侧入口：建任务、读进度、暂停/继续/
- * 取消/跳过/重试。逐章推进由 BibleBackfillCoordinator 负责。
+ * Author-side entry for "Fill in the story bible from the manuscript" jobs:
+ * create a job, read progress, pause/resume/cancel/skip/retry. The
+ * chapter-by-chapter advance is handled by BibleBackfillCoordinator.
  */
 export class BibleBackfillService {
   private readonly backfills: SqliteBibleBackfillRepository;

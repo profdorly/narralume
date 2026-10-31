@@ -111,10 +111,12 @@ export class DeliveryWorkerSuite {
     );
     const locator = new ParagraphLocator(documents);
     const chunks = splitImportParagraphs(locator, chunkCharacters);
-    // 整部原稿检测一次，各分段使用同一个语言参考。
+    // Detect once for the whole manuscript; every segment uses the same
+    // language reference.
     const manuscriptLanguage = detectManuscriptLanguage(documents);
-    // 缓存的分段与合并结果只在同一版提示词、同一提示语言下复用：重试前升级了
-    // 提示词或改了作品语言时，旧产物必须重新生成。
+    // Cached segment and merge results are reused only for the same prompt
+    // version and prompt language: if the prompt was upgraded or the project
+    // language changed before a retry, old outputs must be regenerated.
     const promptKey = `${IMPORT_ANALYSIS_PROMPT_VERSION}\0${promptLanguageOf(project.language)}`;
     const chunkResults = await concurrentMap(
       chunks,
@@ -433,8 +435,10 @@ export class DeliveryWorkerSuite {
     );
   }
 
-  /** 贴样文提炼风格档案：产物是一条未启用的 style profile 草稿，作者审核后启用。
-   *  以 source=extract:{runId} 落库，重放已完成的 run 时直接返回已有草稿。 */
+  /** Extract a style profile from sample text: the output is a disabled style
+   *  profile draft the author reviews and enables. Saved with
+   *  source=extract:{runId}; replaying a completed run returns the existing
+   *  draft. */
   private async extractStyle(
     snapshot: RunSnapshot,
     step: NarrativeRunStep,
@@ -513,8 +517,10 @@ export class DeliveryWorkerSuite {
   }
 }
 
-/** 拆书提示词（分段分析与合并）的版本，参与缓存产物的输入摘要。
- *  修改这两类提示词的指令或消息格式时递增，使旧提示词产出的缓存分析不再被复用。 */
+/** Version of the book-analysis prompts (segment analysis and merge), part of
+ *  the input digest of cached outputs. Bump it when changing the instructions
+ *  or message format of either prompt, so cached analyses from old prompts are
+ *  no longer reused. */
 const IMPORT_ANALYSIS_PROMPT_VERSION = "import-analysis-prompt-4";
 
 /** Candidate language follows the source manuscript, not the instruction
@@ -526,7 +532,11 @@ const IMPORT_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
   en: "Language invariant: write every natural-language field (title, synopsis, themes, audience, tone, boundaries, entity descriptions, relationships, timeline, foreshadowing, character arcs, scenes, style profile, and Skill texts) in the same language as the source manuscript text, even when it differs from the language of these instructions; keep character, place, and other proper names exactly as written in the source, never translated. Field names and enum values stay as defined by the schema.",
 };
 
-/** 合并步骤看不到原稿，只能沿用输入分析的语言；指令与用户消息都明确要求这一点。 */
+/**
+ * The merge step cannot see the manuscript and can only keep the language of
+ * the input analyses; both the instructions and the user message say so
+ * explicitly.
+ */
 const IMPORT_SYNTHESIS_LANGUAGE_INVARIANT: Record<ProjectLanguage, string> = {
   "pt-BR":
     "Invariante de idioma: mantenha o idioma das análises de entrada. Todos os campos em linguagem natural do resultado mesclado permanecem no mesmo idioma do manuscrito original das análises de entrada; nunca traduza para o idioma destas instruções; nomes próprios permanecem exatamente como no original. Nomes de campos e valores de enum permanecem como definidos pelo esquema.",
@@ -550,8 +560,9 @@ const IMPORT_STAGE_LABELS: Record<
   en: { intent: "Author intent candidate", characterArc: "Character arc" },
 };
 
-/** 分段分析的用户消息。检测到原稿语言时加一行参考（尽力而为的启发式检测）；
- *  指令中的语言不变量仍要求跟随正文本身。 */
+/** User message for segment analysis. When the manuscript language is detected,
+ *  add a reference line (best-effort heuristic detection); the language
+ *  invariant in the instructions still requires following the text itself. */
 function importAnalysisMessage(input: {
   language: string | null;
   projectTitle: string;
@@ -887,7 +898,10 @@ function styleExtractionRequest(input: {
   };
 }
 
-/** 提炼稿与既有档案重名时追加序号，保证单次提取总能落库。 */
+/**
+ * When the extracted profile's name clashes with an existing profile, append a
+ * number so a single extraction can always be saved.
+ */
 function uniqueStyleName(
   existing: ReadonlyArray<{ name: string }>,
   name: string,

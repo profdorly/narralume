@@ -27,19 +27,27 @@ export function apiErrorMessage(error: unknown): string {
   return translate(getLocale(), "errors.message.requestFailed");
 }
 
-/** 按错误码查字典给出本地化文案；字典里没有该码时返回 null。 */
+/**
+ * Look up localized text in the dictionary by error code; returns null when the
+ * dictionary has no entry for the code.
+ */
 export function knownApiErrorMessage(code: string): string | null {
   const key = errorLookupKey(`message.${errorCodeKey(code)}`);
   return key ? translate(getLocale(), key) : null;
 }
 
-/** 后端错误码（request.unknown_field、assignment.model_limits.required 等）转字典键的 camelCase。 */
+/**
+ * Convert a backend error code (request.unknown_field,
+ * assignment.model_limits.required, etc.) to a camelCase dictionary key.
+ */
 function errorCodeKey(code: string): string {
   return code.replace(/[._-](\w)/g, (_sep, ch: string) => ch.toUpperCase());
 }
 
-/* 错误提示统一查 errors 字典（zh 为结构真相）；运行期按 code 拼键，先校验存在再翻译，
-   避免未知 code 落入 translate 的 missing-key 告警。 */
+/* Error messages are all looked up in the errors dictionary (pt-BR is the
+   structural source of truth); keys are built from the code at runtime, so
+   check existence before translating, to keep unknown codes from triggering
+   translate's missing-key warning. */
 function errorLookupKey(path: string): MessageKey | null {
   let node: unknown = catalogErrors;
   for (const part of path.split(".")) {
@@ -49,7 +57,10 @@ function errorLookupKey(path: string): MessageKey | null {
   return typeof node === "string" ? (`errors.${path}` as MessageKey) : null;
 }
 
-/** 按后端错误码给出可读补充提示（探测失败阶段等由 details 另行渲染）。 */
+/**
+ * Readable extra hint for a backend error code (probe failure stages etc. are
+ * rendered separately from details).
+ */
 export function apiErrorHint(error: unknown): string | null {
   if (!(error instanceof ApiError)) return null;
   if (error.code === "policy.unknown_field") {
@@ -100,8 +111,10 @@ export function jsonRequest(
 }
 
 /*
- * 底层助手经双驱动传输分发：server 模式相对路径 fetch（原行为），
- * local 模式转成 HTTP 形状送进浏览器内核。所有上层导出函数签名不变。
+ * The low-level helpers dispatch through the dual-driver transport: server mode
+ * uses a relative fetch (original behavior), local mode converts the request to
+ * an HTTP shape for the browser kernel. The signatures of all exported
+ * functions are unchanged.
  */
 
 async function transportRequest(
@@ -147,8 +160,9 @@ function transportError(
       : translate(getLocale(), "errors.message.httpFailed", { status });
   let details: unknown = envelope?.details;
   if (details === undefined && envelope) {
-    // 后端有时把附加信息直接放进 error 包（如 fields:string[]），
-    // 没有 details 字段时原样保留这些余量键。
+    // The backend sometimes puts extra information directly in the error
+    // envelope (e.g. fields:string[]); when there is no details field, keep
+    // those remaining keys as they are.
     const rest: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(envelope)) {
       if (key !== "code" && key !== "message" && key !== "requestId") {
@@ -173,7 +187,10 @@ export async function requestVoid(input: string, init: RequestInit): Promise<voi
     throw transportError(response.status, response.body);
 }
 
-/** 裸二进制下载（导出 / 技能包）：local 模式把内核 Uint8Array 转 Blob。 */
+/**
+ * Raw binary download (export / skill package): in local mode, turn the
+ * kernel's Uint8Array into a Blob.
+ */
 export async function requestBlob(
   input: string,
   init: RequestInit = {},

@@ -189,7 +189,8 @@ function errorInfo(error: unknown): CallSample["error"] {
   };
 }
 
-// llm.timing 事件直接写 JSONL，保留基线专用的紧凑输出结构。
+// llm.timing events are written straight to JSONL, keeping the compact output
+// structure specific to the baseline.
 function logSample(sample: CallSample): void {
   appendFileSync(
     workspace.jsonlPath,
@@ -386,8 +387,9 @@ async function runScenario(
       };
     }
     if (scenarioName === "structured-repair") {
-      // preferPrompt 让首轮走 prompt 档；校验器第一次必败，迫使管线恰好
-      // 进入一次 repair 轮（attempts=2, mode=repair）。
+      // preferPrompt makes the first round use the prompt tier; the validator
+      // always fails the first time, forcing the pipeline into exactly one
+      // repair round (attempts=2, mode=repair).
       const attemptLog: AttemptLogEntry[] = [];
       let calls = 0;
       const result = await gateway.generateStructured<TinySchemaValue>(
@@ -595,13 +597,15 @@ for (const definition of definitions) {
     baseUrlOrigin: originOf(baseUrl),
   });
 
-  // 首个 trivial 探针：协议级错误（404/invalid/model_not_found/protocol）
-  // 判定为 unsupported，跳过该协议其余矩阵，不让整个基线运行失败。
+  // First trivial probe: protocol-level errors
+  // (404/invalid/model_not_found/protocol) mark the protocol as unsupported and
+  // skip the rest of its matrix instead of failing the whole baseline run.
   const probe = await runScenario(gateway, model, "probe", 0);
   result.samples.push(probe);
   logSample(probe);
   if (!probe.ok) {
-    // probe 的错误已序列化，按类别/状态判断是否协议级错误。
+    // The probe error is already serialized; decide by category/status whether
+    // it is protocol-level.
     const category = probe.error?.category ?? "unknown";
     const status = probe.error?.status ?? null;
     const protocolLevel =
@@ -641,7 +645,8 @@ for (const definition of definitions) {
     }
   }
 
-  // cold-warm：同一 tiny-nonstream 请求连续 3 次，按顺序标记 cold/warm-1/warm-2。
+  // cold-warm: the same tiny-nonstream request 3 times in a row, labeled
+  // cold/warm-1/warm-2 in order.
   const coldWarmLabels = ["cold", "warm-1", "warm-2"];
   for (let index = 0; index < coldWarmLabels.length; index += 1) {
     const sample = await runScenario(
@@ -656,7 +661,7 @@ for (const definition of definitions) {
   }
 }
 
-// ---- 汇总 ----
+// ---- Summary ----
 
 interface ProtocolSummary {
   status: ProtocolResult["status"];
@@ -713,8 +718,9 @@ for (const result of results) {
   };
 }
 
-// SLO 候选：共创首 token 取 tiny-stream 的 TTFT；单章估算 = chapter-prompt
-// p50 + 2 × structured-small p50（规划/评审各一次结构化调用的粗略组合）。
+// SLO candidates: co-writing first token uses the TTFT of tiny-stream;
+// single-chapter estimate = chapter-prompt p50 + 2 × structured-small p50 (a
+// rough sum of one structured call each for planning and review).
 const sloCandidates: Record<string, unknown> = {};
 for (const result of results) {
   if (result.status !== "ok") continue;
@@ -741,7 +747,8 @@ for (const result of results) {
 
 const anyOk = results.some((result) => result.status === "ok");
 
-// repair 放大倍数 = structured-repair p50 / structured-small p50（按协议）。
+// Repair amplification = structured-repair p50 / structured-small p50 (per
+// protocol).
 const repairAmplification: Record<string, number | null> = {};
 for (const result of results) {
   const summary = perProtocol[result.protocol];
@@ -766,7 +773,8 @@ const latencySummary = {
   repairAmplification,
   sloCandidates,
 };
-// 直接写 latency-summary.json，保留基线专用的统计结构。
+// Write latency-summary.json directly, keeping the statistics structure
+// specific to the baseline.
 const latencySummaryPath = join(workspace.dir, "latency-summary.json");
 writeFileSync(
   latencySummaryPath,

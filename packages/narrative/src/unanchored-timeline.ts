@@ -91,8 +91,10 @@ export function selectAnchorableTimeline(
   };
 }
 
-/* 「从正文补全故事圣经」逐章结算可锚定的事件列表：先列导入证据落在本章的
-   未锚定事件，再列无法定位到章节的事件；未列出的数量单独说明。 */
+/* Events the per-chapter settlement of "Fill in the story bible from the
+   manuscript" can anchor: first the unanchored events whose import evidence
+   falls in this chapter, then events that cannot be located in any chapter; the
+   count left unlisted is stated separately. */
 export function unanchoredTimelineBlock(
   anchorable: AnchorableTimeline,
   entities: readonly CanonEntity[],

@@ -33,7 +33,8 @@ export async function downloadLibraryDatabase(): Promise<{
 }
 
 /* ==========================================================================
-   Agent Skill 导入（R9）：受约束的项目级助手技能，只读 + 候选型能力白名单
+   Agent Skill import (R9): constrained project-level assistant skills, with an
+   allowlist of read-only + candidate capabilities
    ========================================================================== */
 
 export async function getAgentSkills(
@@ -74,7 +75,7 @@ export async function deleteAgentSkill(skillId: string): Promise<void> {
 }
 
 /* ==========================================================================
-   旧稿导入 / 交付 / 备份
+   Manuscript import / delivery / backup
    ========================================================================== */
 
 async function previewStoryImport(input: {

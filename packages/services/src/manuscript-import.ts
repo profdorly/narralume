@@ -1,5 +1,7 @@
-/** 导入正文的结构识别：章节标题、DOCX 标题样式、HTML/EPUB 标题与统计风格。
- *  这里只做纯文本变换；容器解析与安全上限由 delivery-service 负责。 */
+/** Structure detection for imported manuscripts: chapter headings, DOCX heading
+ *  styles, HTML/EPUB headings and statistics style. Only pure text
+ *  transformations happen here; container parsing and safety limits belong to
+ *  delivery-service. */
 
 import { detectManuscriptLanguage } from "@lapis/narrative";
 
@@ -8,29 +10,44 @@ interface ManuscriptSection {
   content: string;
 }
 
-/** 关键词标题行（pt / es / en 与强调包裹形式）的长度上限（按码点）；超过即视为正文段落。
- *  既有的“第 N 章”与“Chapter + 数字”形式不受此限。 */
+/** Length limit (in code points) for keyword heading lines (pt / es / en, and
+ *  emphasis-wrapped forms); longer lines count as body paragraphs. The existing
+ *  Chinese "Chapter N" (di N zhang) and "Chapter + number" forms are not
+ *  subject to this limit. */
 export const HEADING_MAX_CHARACTERS = 80;
 /** Paragraph style written on the exported title page so re-import can skip it. */
 export const DOCX_TITLE_PAGE_STYLE = "LapisTitlePage";
 /** Title page style of DOCX files exported before the rename. */
 const LEGACY_DOCX_TITLE_PAGE_STYLE = "NarraLumeTitlePage";
 
-// 标题捕获用贪婪的 (\S.*)$ 再去尾部空白：惰性的 (\S.*?)\s*$ 在长空白串上是平方级。
+// Heading capture uses a greedy (\S.*)$ and then trims trailing whitespace: the
+// lazy (\S.*?)\s*$ is quadratic on long whitespace runs.
 const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*)$/u;
-/** 既有标题形式，行为与引入关键词语法前一致：“第 N 章 / 节 / 卷 / 部 / 回”与
- *  “Chapter + 阿拉伯数字”（不区分大小写），不限长度，整行（去首尾空白）作为标题，
- *  也不识别强调包裹（**第一章** 仍是正文）。 */
+/** The existing heading forms, behaving as before the keyword syntax was
+ *  introduced: the Chinese "di N zhang / jie / juan / bu / hui" (chapter /
+ *  section / volume / part / episode) headings and "Chapter + Arabic number"
+ *  (case-insensitive), with no length limit; the whole line (trimmed) is the
+ *  heading, and emphasis wrapping is not recognized (a bold Chinese "Chapter
+ *  One" is still body text). */
 const LEGACY_HEADING =
   /^\s*(?:第[零〇一二三四五六七八九十百千万两\d]+[章节卷部回]|chapter\s+\d)/iu;
 const EMPHASIS_WRAPPED = /^(\*{1,2}|_{1,2})(\S(?:.*\S)?)\1$/u;
-/** 独占一段的场景分隔符（#、###、# # #、***、* * *、⁂）。它们是正文，不是标题。 */
+/**
+ * Scene breaks on a paragraph of their own (#, ###, # # #, ***, * * *, ⁂). They
+ * are body text, not headings.
+ */
 const SCENE_BREAK = /^(?:(?:#[ \t]*)+|(?:\*[ \t]*){3,}|⁂)$/u;
 
-/** 首个标题之前文字的固定称谓；仅用于以 CJK 为主的原稿，与既有行为一致。 */
+/**
+ * Fixed label for text before the first heading; used only for mostly-CJK
+ * manuscripts, matching existing behavior.
+ */
 const CJK_FRONT_MATTER_TITLE = "卷首";
 
-/** 必须带序号的分部关键词（pt / es / en）。按去除变音符后的小写形式书写。 */
+/**
+ * Part keywords that require a number (pt / es / en). Written in lowercase with
+ * diacritics removed.
+ */
 const NUMBERED_KEYWORDS = [
   "capitulo",
   "chapter",
@@ -41,7 +58,7 @@ const NUMBERED_KEYWORDS = [
   "book",
 ];
 
-/** 可以不带序号的分部关键词（pt / es / en）。 */
+/** Part keywords that may appear without a number (pt / es / en). */
 const STANDALONE_KEYWORDS = [
   "prologo",
   "prologue",
@@ -51,8 +68,9 @@ const STANDALONE_KEYWORDS = [
   "interlude",
 ];
 
-/** 拼写序号：pt / es / en 的基数 1–20、整十与 pt / es 的序数 1–10。
- *  复合数（vinte e um、twenty-one、treinta y dos）由连接符组合。 */
+/** Spelled-out numbers: pt / es / en cardinals 1–20 and tens, and pt / es
+ *  ordinals 1–10. Compound numbers (vinte e um, twenty-one, treinta y dos) are
+ *  combined with connectors. */
 const NUMBER_WORDS = [
   // pt
   "um",
@@ -191,15 +209,19 @@ function alternation(words: readonly string[]): string {
 
 const NUMBER_WORD = `(?:${alternation(NUMBER_WORDS)})(?:(?:\\s*-\\s*|\\s+(?:e|y|and)\\s+|\\s+)(?:${alternation(NUMBER_WORDS)}))?`;
 
-/** 序号必须在词边界结束；连字符连着字母或数字仍属同一个词，
- *  因此 “segunda-feira” 不会被读成序号 segunda 加分隔符 “-feira”，“2-3” 也不是序号 2。 */
+/** A number must end at a word boundary; a hyphen joined to letters or digits
+ *  is still part of the same word, so "segunda-feira" is not read as the number
+ *  segunda plus the separator "-feira", and "2-3" is not the number 2. */
 const NUMBER_END = "(?![\\p{L}\\p{N}]|-[\\p{L}\\p{N}])";
 
-/** 关键词 + 可选序号 + 可选标题。阿拉伯数字后可带序数标记（1º、1ª、1°），
- *  也可带欧洲葡语写法的句点（1.º、2.ª）；有序数标记时不回退成“序号 1 + 分隔符 .”，
- *  因此 “Capítulo 1.º” 不会被读成标题为 “º” 的章节。
- *  标题可用分隔符（: . – — 或后面带空白的 -）接在序号后，也可只用空白（Chapter 12 The Storm）；
- *  分隔符记在 separator 组，供句子判断区分。 */
+/** Keyword + optional number + optional title. An Arabic number may carry an
+ *  ordinal marker (1º, 1ª, 1°), or the European Portuguese period form
+ *  (1.º, 2.ª); with an ordinal marker it does not fall back to
+ *  "number 1 + separator .", so "Capítulo 1.º" is not read as a chapter titled
+ *  "º". The title may follow the number after a separator (: . – — or -
+ *  followed by whitespace), or after whitespace alone (Chapter 12 The Storm);
+ *  the separator is captured in the separator group, used to tell sentences
+ *  apart. */
 const KEYWORD_HEADING = new RegExp(
   `^(?:(?<numbered>${alternation(NUMBERED_KEYWORDS)})|(?<standalone>${alternation(STANDALONE_KEYWORDS)}))` +
     `(?:\\s+(?<number>\\d{1,4}(?:\\.?[ºª°]|(?!\\.?[ºª°]))|${ROMAN_NUMERAL}|${NUMBER_WORD})${NUMBER_END})?` +
@@ -207,16 +229,23 @@ const KEYWORD_HEADING = new RegExp(
   "iu",
 );
 
-/** 标题部分至少这么多个词、又以句号结尾时，按正文句子处理。 */
+/**
+ * When the title part has at least this many words and ends with a period, it
+ * is treated as a body sentence.
+ */
 const SENTENCE_MIN_WORDS = 3;
 
-/** 以单个句号结尾（可带收尾引号、括号）；? ! … 与 ... 是常见的标题结尾，不算。 */
+/**
+ * Ends with a single period (optionally followed by closing quotes or
+ * brackets); ? ! … and ... are common heading endings and do not count.
+ */
 const FINAL_PERIOD = /(?<!\.)\.["'”’»)\]]*$/u;
 
-/** 序号后的标题部分读起来像句子。任何分隔符后，首个字母小写都是正文
- *  （“leia antes de dormir.”、“e então ela partiu”）。只有 . 或空白分隔时，
- *  多个词并以单个句号结尾才是正文（“Era a última página.”）；: – — - 之后是标题
- *  （“Quem Matou Laura?”、“O Fim do Mundo.”）。 */
+/** The title part after the number reads like a sentence. After any separator,
+ *  a lowercase first letter means body text ("leia antes de dormir.", "e então
+ *  ela partiu"). Only with a . or whitespace separator is a multi-word part
+ *  ending in a single period body text ("Era a última página."); after : – — -
+ *  it is a title ("Quem Matou Laura?", "O Fim do Mundo."). */
 function looksLikeSentence(
   remainder: string,
   separator: string | undefined,
@@ -234,8 +263,9 @@ function withoutDiacritics(value: string): string {
   return value.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-/** 按关键词语法解析一行；不是关键词标题时返回 null。
- *  number 为序号（可能为空），title 为序号后的标题部分（可能为空）。 */
+/** Parse a line with the keyword syntax; returns null when it is not a keyword
+ *  heading. number is the number (may be empty), title is the title part after
+ *  the number (may be empty). */
 function parseKeywordHeading(
   line: string,
 ): { number: string | undefined; title: string } | null {
@@ -244,18 +274,21 @@ function parseKeywordHeading(
   if (!groups) return null;
   const number = groups.number;
   if (groups.numbered && !number) return null;
-  // 罗马数字只接受大写，避免 "Book I read" 之类的英文句子。
+  // Roman numerals are accepted only in uppercase, to avoid English sentences
+  // such as "Book I read".
   if (
     number &&
     /^[mdclxvi]+$/iu.test(number) &&
     number !== number.toUpperCase()
   )
     return null;
-  // 只用空白接标题时必须先有序号（“Prólogo de uma vida” 是句子）。
+  // A title joined only by whitespace requires a number first ("Prólogo de uma
+  // vida" is a sentence).
   if (groups.loose !== undefined && !number) return null;
   const title = groups.separated ?? groups.loose ?? "";
-  // 标题部分像句子时，这一行是正文：“Capítulo 3 do livro anterior…”、
-  // “Capítulo 3. Era a última página.”、“Livro 1: leia antes de dormir.”
+  // When the title part looks like a sentence, the line is body text:
+  // "Capítulo 3 do livro anterior…", "Capítulo 3. Era a última página.",
+  // "Livro 1: leia antes de dormir."
   if (looksLikeSentence(title, groups.separator)) return null;
   return { number, title: title.trim() };
 }
@@ -266,9 +299,11 @@ function exceedsCodePoints(value: string, limit: number): boolean {
   return [...value].length > limit;
 }
 
-/** Markdown 标题的章名只保留文字：去掉整体包裹的 ** / __ / * / _ 强调，以及
- *  导出工具重复写入的标题标记（“# **Chapter 4**” → “Chapter 4”）。
- *  只清理标题文字，不影响正文；清理后为空时保留原文。 */
+/** Keep only the text of a Markdown heading's chapter title: remove ** / __ / *
+ *  / _ emphasis wrapping the whole title, and heading markers repeated by
+ *  export tools ("# **Chapter 4**" → "Chapter 4"). Only the heading text is
+ *  cleaned, never the body; if nothing remains after cleaning, the original is
+ *  kept. */
 function cleanMarkdownHeadingTitle(title: string): string {
   let current = title;
   for (let pass = 0; pass < 4; pass += 1) {
@@ -281,16 +316,21 @@ function cleanMarkdownHeadingTitle(title: string): string {
   return current || title;
 }
 
-/** 关键词标题的候选文本：超过长度上限时为 null，否则去掉 ** / _ 强调包裹。 */
+/**
+ * Candidate text of a keyword heading: null when over the length limit,
+ * otherwise with ** / _ emphasis wrapping removed.
+ */
 function keywordCandidate(trimmed: string): string | null {
   if (exceedsCodePoints(trimmed, HEADING_MAX_CHARACTERS)) return null;
   return EMPHASIS_WRAPPED.exec(trimmed)?.[2] ?? trimmed;
 }
 
-/** 判断一行是否为章节标题。keyword 为 true 表示由新增的 pt / es / en 关键词语法识别。
- *  场景分隔符（#、# # #、***、* * *、⁂）在任何格式下都不是标题，最先排除；
- *  既有形式（Markdown、第 N 章、Chapter + 数字）先于长度上限判断，保持原有切分；
- *  长度上限、强调包裹与关键词语法只作用于新增的标题形式。 */
+/** Decide whether a line is a chapter heading. keyword = true means it was
+ *  recognized by the new pt / es / en keyword syntax. Scene breaks (#, # # #,
+ *  ***, * * *, ⁂) are never headings in any format and are excluded first; the
+ *  existing forms (Markdown, Chinese "Chapter N", Chapter + number) are checked
+ *  before the length limit, keeping the original splitting; the length limit,
+ *  emphasis wrapping and keyword syntax apply only to the new heading forms. */
 function classifyHeading(
   line: string,
 ): { title: string; keyword: boolean } | null {
@@ -299,7 +339,8 @@ function classifyHeading(
   const markdown = MARKDOWN_HEADING.exec(line);
   if (markdown) {
     const raw = markdown[1]!.trimEnd();
-    // “# ***”“## ⁂” 是套了标题标记的场景分隔符，同样按正文保留。
+    // "# ***" and "## ⁂" are scene breaks wrapped in heading markers; they are
+    // also kept as body text.
     return SCENE_BREAK.test(raw)
       ? null
       : { title: cleanMarkdownHeadingTitle(raw), keyword: false };
@@ -311,29 +352,39 @@ function classifyHeading(
     : null;
 }
 
-/** 标题文本本身是章节标题（第 N 章、Chapter + 数字或关键词语法），而不是章名。 */
+/**
+ * The heading text itself is a chapter heading (Chinese "Chapter N", Chapter +
+ * number, or keyword syntax), not a chapter title.
+ */
 function isChapterTitle(title: string): boolean {
   if (LEGACY_HEADING.test(title)) return true;
   const candidate = keywordCandidate(title.trim());
   return candidate !== null && parseKeywordHeading(candidate) !== null;
 }
 
-/** 只有关键词与序号、没有章名的标题，如 “Capítulo 1”“Chapter 1”“Parte II”。
- *  中文“第 N 章”不在此列，保持既有行为。 */
+/** A heading with only a keyword and number and no chapter title, such as
+ *  "Capítulo 1", "Chapter 1", "Parte II". The Chinese "Chapter N" form is not
+ *  included, keeping the existing behavior. */
 function isBareNumberedTitle(title: string): boolean {
   const candidate = keywordCandidate(title.trim());
   const parsed = candidate === null ? null : parseKeywordHeading(candidate);
   return Boolean(parsed?.number) && !parsed!.title;
 }
 
-/** 判断一行是否为章节标题，返回标题文本；否则返回 null。 */
+/**
+ * Decide whether a line is a chapter heading and return the heading text;
+ * otherwise return null.
+ */
 export function manuscriptHeadingTitle(line: string): string | null {
   return classifyHeading(line)?.title ?? null;
 }
 
 const PAGE_NUMBER = new RegExp(`^(?:\\d{1,5}|${ROMAN_NUMERAL})$`, "iu");
 
-/** 内容只有页码（阿拉伯数字或罗马数字，可含空白）：目录条目，而不是章节正文。 */
+/**
+ * Content that is only a page number (Arabic or Roman numerals, whitespace
+ * allowed): a table of contents entry, not chapter text.
+ */
 function isPageNumberOnly(content: string): boolean {
   return (
     content.length <= 64 &&
@@ -343,12 +394,17 @@ function isPageNumberOnly(content: string): boolean {
   );
 }
 
-/** 按章节标题切分正文。首个标题前的文字（扉页、题记等）在以 CJK 为主的原稿中
- *  沿用“卷首”，其他文字的原稿以作品标题命名；没有标题时整部正文作为一个分段。
- *  关键词标题下只有页码的分段是正文前的目录（常见于 PDF 转出的纯文本），直接丢弃；
- *  既有标题形式保持原有行为，不做此过滤。
- *  只有关键词与序号的标题（Capítulo 1）后面紧接一个章名标题（A Chegada）、中间没有正文时，
- *  两者合为一章，标题为 “Capítulo 1 — A Chegada”；EPUB 与 Word 常把序号与章名分成 H1 + H2。 */
+/** Split the text by chapter headings. Text before the first heading (title
+ *  page, epigraph, etc.) keeps the fixed CJK front-matter label in mostly-CJK
+ *  manuscripts and is named after the work's title in other manuscripts;
+ *  without headings the whole text is one segment. Segments under keyword
+ *  headings that contain only page numbers are a table of contents before the
+ *  text (common in plain text converted from PDF) and are dropped; the existing
+ *  heading forms keep their original behavior, without this filter. When a
+ *  heading with only a keyword and number (Capítulo 1) is directly followed by
+ *  a chapter-title heading (A Chegada) with no text in between, the two merge
+ *  into one chapter titled "Capítulo 1 — A Chegada"; EPUB and Word often split
+ *  number and title into H1 + H2. */
 export function splitManuscriptSections(
   text: string,
   fallbackTitle: string,
@@ -387,7 +443,9 @@ export function splitManuscriptSections(
       isBareNumberedTitle(heading.title) &&
       !isChapterTitle(next.title)
     ) {
-      // 章名标题继承序号标题的识别方式，目录过滤因此与单独一行的序号标题一致。
+      // The chapter-title heading inherits how the number heading was
+      // recognized, so the TOC filter matches that of a number heading on its
+      // own line.
       headings[index + 1] = {
         ...next,
         title:
@@ -412,16 +470,20 @@ interface DocxStyle {
   outlineLevel: string | null;
 }
 
-/* ---- 线性标记扫描 ----
- * 导入的 XML / HTML 可能含未闭合标签。惰性正则（<a>[\s\S]*?</a>、[^>]*）在找不到
- * 闭合标记时会从每个起点扫描到文末，成本随“出现次数 × 长度”增长；DOCX 压缩后
- * 几 KB 即可展开成这样的输入。下面的扫描只向前推进，并缓存“之后没有闭合标记”，
- * 总成本与输入长度成线性。 */
+/* ---- Linear markup scanning ----
+ * Imported XML / HTML may contain unclosed tags. Lazy regexes (<a>[\s\S]*?</a>,
+ * [^>]*) scan from every start position to the end of the text when the closing
+ * markup is missing, so the cost grows as "occurrences × length"; a DOCX of a
+ * few KB compressed can expand into such input. The scans below only move
+ * forward and cache "no closing markup after this point", so the total cost is
+ * linear in the input length. */
 
 type Finder = (from: number) => RegExpExecArray | null;
 
-/** 在 text 中从 from 起查找 pattern（须带 g 标志）的首个匹配，并缓存结果：
- *  起点单调不减时，每段文本至多扫描一次；一旦找不到，之后的查询直接返回 null。 */
+/** Find the first match of pattern (must have the g flag) in text starting at
+ *  from, caching the result: as long as the start position never decreases,
+ *  each text is scanned at most once; once nothing is found, later queries
+ *  return null directly. */
 function forwardFinder(text: string, pattern: RegExp): Finder {
   const regex = new RegExp(pattern.source, pattern.flags);
   let searchedFrom = -1;
@@ -441,13 +503,25 @@ function forwardFinder(text: string, pattern: RegExp): Finder {
 }
 
 interface ElementPattern {
-  /** 匹配 "<name"（须带 g 标志与词边界），不含属性与 ">"。 */
+  /**
+   * Matches "<name" (must have the g flag and a word boundary), without
+   * attributes or ">".
+   */
   open: RegExp;
-  /** 该开始标签对应的结束标签（须带 g 标志）；同一种结束标签须返回同一对象。 */
+  /**
+   * The end tag matching this start tag (must have the g flag); the same kind
+   * of end tag must return the same object.
+   */
   close: (open: RegExpExecArray) => RegExp;
-  /** true 时跳过自闭合开始标签；false 与旧正则的 <name[^>]*> 一致，视作开始标签。 */
+  /**
+   * When true, skip self-closing start tags; false matches the old regex
+   * <name[^>]*>, treating them as start tags.
+   */
   skipSelfClosing: boolean;
-  /** 元素体的最大长度（UTF-16 码元）；超过时不视为元素，留给后续按普通标签处理。 */
+  /**
+   * Maximum element body length (UTF-16 code units); longer ones are not
+   * treated as elements and are left for later processing as plain tags.
+   */
   maxBody?: number;
 }
 
@@ -455,14 +529,16 @@ interface MarkupElement {
   start: number;
   end: number;
   open: RegExpExecArray;
-  /** "<name" 与 ">" 之间的属性文本。 */
+  /** Attribute text between "<name" and ">". */
   attributes: string;
   body: string;
 }
 
-/** 依次产出不重叠的 <name …>body</name> 元素，语义同惰性正则的逐个匹配：
- *  开始标签到其后第一个 ">"，元素体到其后第一个结束标签。缺少 ">" 或结束标签时，
- *  该处及之后同类元素都不再匹配，文本原样保留。 */
+/** Yields non-overlapping <name …>body</name> elements in sequence, with the
+ *  same semantics as successive lazy-regex matches: the start tag runs to the
+ *  first following ">", the body to the first following end tag. When the ">"
+ *  or the end tag is missing, neither that element nor any later one of the
+ *  same kind matches, and the text is kept as is. */
 function* markupElements(
   text: string,
   pattern: ElementPattern,
@@ -516,8 +592,10 @@ function replaceElements(
   return parts.join("");
 }
 
-/** "<" 之后是字母、/、!、? 时才开始一个标签（同 HTML 分词规则），否则按文本保留，
- *  例如未转义的 "a < b"。# 只用于 DOCX 转换内部的标题标记。 */
+/** A tag starts only when "<" is followed by a letter, /, ! or ? (as in HTML
+ *  tokenization); otherwise it is kept as text, for example an unescaped
+ *  "a < b". # is used only for the internal heading marker of the DOCX
+ *  conversion. */
 function startsTag(text: string, index: number): boolean {
   const next = text.charCodeAt(index + 1);
   return (
@@ -530,8 +608,9 @@ function startsTag(text: string, index: number): boolean {
   );
 }
 
-/** 把标记切成文本与标签：标签从 "<" 到其后第一个 ">"（同 /<[^>]+>/）。
- *  之后再没有 ">" 时，余下内容全部按文本处理。 */
+/** Split markup into text and tags: a tag runs from "<" to the first following
+ *  ">" (as /<[^>]+>/). When no ">" follows, all remaining content is treated as
+ *  text. */
 function forEachMarkupToken(
   text: string,
   onText: (value: string) => void,
@@ -572,8 +651,9 @@ function isWordCharacter(char: string | undefined): boolean {
   return char !== undefined && /[A-Za-z0-9_]/u.test(char);
 }
 
-/** 读取 name="value" 或 name='value'。值在与开引号相同的引号处结束，
- *  因此 alt="Sant'Ana" 与 alt='O "Farol"' 保留完整文字。 */
+/** Read name="value" or name='value'. The value ends at the same kind of quote
+ *  that opened it, so alt="Sant'Ana" and alt='O "Farol"' keep their full text.
+ */
 function attributeValue(source: string, name: string): string | null {
   const needle = `${name}=`;
   for (
@@ -586,13 +666,17 @@ function attributeValue(source: string, name: string): string | null {
     if (quote !== '"' && quote !== "'") continue;
     const valueStart = at + needle.length + 1;
     const valueEnd = source.indexOf(quote, valueStart);
-    // 其后再没有同样的引号时，值一直未闭合，后面的同名属性都在值里面。
+    // When the same quote never appears again, the value is unclosed and all
+    // later attributes of the same name are inside it.
     return valueEnd < 0 ? null : source.slice(valueStart, valueEnd);
   }
   return null;
 }
 
-/** 第一个带 w:val 的 <tag …> 的值，语义同 /<tag\b[^>]*?\bw:val=(["'])(.*?)\1/。 */
+/**
+ * The value of the first <tag …> carrying w:val, with the same semantics as
+ * /<tag\b[^>]*?\bw:val=(["'])(.*?)\1/.
+ */
 function xmlValue(xml: string, tag: string): string | null {
   const needle = `<${tag}`;
   let at = xml.indexOf(needle);
@@ -609,7 +693,8 @@ function xmlValue(xml: string, tag: string): string | null {
     );
     if (value !== null) return value;
     if (tagEnd < 0) return null;
-    // 同一 ">" 之前的后续开始标签只是本标签属性文本的后缀，不会有新的匹配。
+    // Later start tags before the same ">" are only a suffix of this tag's
+    // attribute text, so they cannot produce new matches.
     at = xml.indexOf(needle, tagEnd + 1);
   }
   return null;
@@ -638,14 +723,18 @@ function parseDocxStyles(stylesXml: string | null): Map<string, DocxStyle> {
   return styles;
 }
 
-/** 大纲级别 0–2 对应 # 到 ###；更深的级别和正文级别（9）不切章。 */
+/**
+ * Outline levels 0–2 map to # through ###; deeper levels and the body text
+ * level (9) do not split chapters.
+ */
 function outlineHeadingLevel(value: string): number | null {
   const level = Number(value);
   return Number.isInteger(level) && level >= 0 && level <= 2 ? level + 1 : null;
 }
 
-/** Word 内置样式名在 styles.xml 中始终是英文（heading 1、Title），
- *  本地化版本只改 styleId（如葡语的 Ttulo1）。缺少 styles.xml 时按 styleId 判断。 */
+/** Word's built-in style names in styles.xml are always English (heading 1,
+ *  Title); localized versions only change the styleId (e.g. Portuguese Ttulo1).
+ *  Without styles.xml, decide by styleId. */
 function builtInHeadingLevel(nameOrId: string): number | null {
   const normalized = nameOrId.toLowerCase().replace(/\s+/gu, "");
   if (normalized === "title") return 1;
@@ -681,7 +770,10 @@ function paragraphHeadingLevel(
 
 const DOCX_PPR_CHANGE_CLOSE = /<\/w:pPrChange>/gu;
 const DOCX_PPR_CLOSE = /<\/w:pPr>/gu;
-/** 段落属性的修订记录保存的是旧属性：先整体移除，避免其中嵌套的 <w:pPr> 被当作现行属性。 */
+/**
+ * Paragraph property revision records hold the old properties: remove them
+ * entirely first, so a nested <w:pPr> is not taken as the current properties.
+ */
 const DOCX_PPR_CHANGE: ElementPattern = {
   open: /<w:pPrChange\b/gu,
   close: () => DOCX_PPR_CHANGE_CLOSE,
@@ -692,12 +784,16 @@ const DOCX_PPR: ElementPattern = {
   close: () => DOCX_PPR_CLOSE,
   skipSelfClosing: true,
 };
-/** 标题段落在属性位置留下的内部标记。XML 名称不能以 # 开头，合法文档里不会出现。 */
+/**
+ * Internal marker a heading paragraph leaves in the property position. XML
+ * names cannot start with #, so it never occurs in a valid document.
+ */
 const DOCX_HEADING_MARK = /^<#([1-3])>$/u;
 const DOCX_TITLE_PAGE_MARK = "<#t>";
 
 function docxTagText(tag: string): string {
-  // 先按首字符分流，绝大多数标签（w:r、w:t、w:rPr…）不必逐个正则比较。
+  // Branch on the first character first, so most tags (w:r, w:t, w:rPr…) need
+  // no regex comparison one by one.
   const first = tag[1] === "/" ? tag[4] : tag[3];
   if (first === "t" || first === "T") {
     if (/^<w:tab\b[^>]*\/>$/iu.test(tag)) return "\t";
@@ -711,9 +807,11 @@ function docxTagText(tag: string): string {
   return "";
 }
 
-/** 把 DOCX 正文转为纯文本；标题样式或大纲级别 0–2 的段落加 Markdown 标题前缀。
- *  前缀在段落结束时才决定：空标题段落不加前缀，套了标题样式的场景分隔符
- *  （#、***、* * *、⁂）按正文保留。作者自己的 # 段落从不删除。 */
+/** Convert DOCX body text to plain text; paragraphs with a heading style or
+ *  outline level 0–2 get a Markdown heading prefix. The prefix is decided only
+ *  when the paragraph ends: empty heading paragraphs get no prefix, and scene
+ *  breaks with a heading style (#, ***, * * *, ⁂) are kept as body text. The
+ *  author's own # paragraphs are never removed. */
 export function docxDocumentText(
   documentXml: string,
   stylesXml: string | null,
@@ -782,7 +880,10 @@ export function docxDocumentText(
 const HTML_HEAD_CLOSE = /<\/head>/giu;
 const HTML_SCRIPT_CLOSE = /<\/script>/giu;
 const HTML_STYLE_CLOSE = /<\/style>/giu;
-/** 与各自开始标签配对移除的元素：文档头（含 <title>）、脚本与样式。 */
+/**
+ * Elements removed together with their start tags: the document head (including
+ * <title>), scripts and styles.
+ */
 const HTML_REMOVED_ELEMENTS: readonly ElementPattern[] = [
   { open: /<head\b/giu, close: () => HTML_HEAD_CLOSE, skipSelfClosing: false },
   {
@@ -801,21 +902,25 @@ const HTML_HEADING_CLOSE = [
   /<\/h2\s*>/giu,
   /<\/h3\s*>/giu,
 ] as const;
-/** 标题标记内容上限。超长或未闭合的标题不作标题处理：开始标签只断段，
- *  其中文字作为普通段落保留（独占一行的关键词标题仍会被逐行识别）。 */
+/** Content limit of heading markup. Overlong or unclosed headings are not
+ *  treated as headings: the start tag only breaks the paragraph, and its text
+ *  is kept as a regular paragraph (a keyword heading on its own line is still
+ *  recognized line by line). */
 const HTML_HEADING: ElementPattern = {
   open: /<h([1-3])\b/giu,
   close: (open) => HTML_HEADING_CLOSE[Number(open[1]) - 1]!,
   skipSelfClosing: false,
   maxBody: 2000,
 };
-/** 只有图片、图片又没有 alt 文字的标题（常见于 EPUB 的图片章首）使用的中性标题，
- *  以保留章节边界；它不属于任何语言，作者可在预览后改名。 */
+/** Neutral title used for headings that contain only an image without alt text
+ *  (common for EPUB image chapter openers), to keep the chapter boundary; it
+ *  belongs to no language, and the author can rename it after the preview. */
 export const UNTITLED_HTML_HEADING = "§";
 const HTML_IMAGE_TAG = /^<(?:img|image|svg)\b/iu;
 
 function htmlTagText(tag: string): string {
-  // 先按首字符分流，多数标签不必逐个正则比较。
+  // Branch on the first character first, so most tags need no regex comparison
+  // one by one.
   const first = tag[1];
   if (first === "/") {
     if (/^<\/(?:h[1-6]|p|div|li|blockquote)>$/iu.test(tag)) return "\n\n";
@@ -826,8 +931,9 @@ function htmlTagText(tag: string): string {
   return "";
 }
 
-/** 标题元素的标题文字：可见文字优先；没有文字时用其中图片的 alt；
- *  只有无 alt 的图片时用中性标题；什么都没有时返回空串。 */
+/** Title text of a heading element: visible text first; without text, the alt
+ *  of an image inside it; with only images lacking alt, the neutral title; with
+ *  nothing at all, an empty string. */
 function htmlHeadingTitle(body: string): string {
   const alts: string[] = [];
   let hasImage = false;
@@ -854,15 +960,17 @@ export function htmlToText(html: string): string {
   text = replaceElements(text, HTML_HEADING, ({ open, body }) => {
     const title = htmlHeadingTitle(body);
     if (!title) return "";
-    // 套了标题标记的场景分隔符（* * *、⁂）按正文段落保留。
+    // Scene breaks wrapped in heading markup (* * *, ⁂) are kept as body
+    // paragraphs.
     if (SCENE_BREAK.test(decodeXml(title))) return `\n\n${title}\n\n`;
     return `\n\n${"#".repeat(Number(open[1]))} ${title}\n\n`;
   });
   return decodeXml(mapTags(text, htmlTagText));
 }
 
-/** 去掉每行行尾的空格与制表符。逐行从尾部回扫，线性时间；
- *  /[ \t]+$/gm 在长空白串上会从每个起点重扫，是平方级。 */
+/** Remove trailing spaces and tabs from every line. Scans back from the end of
+ *  each line in linear time; /[ \t]+$/gm rescans from every start position on
+ *  long whitespace runs, which is quadratic. */
 export function trimLineEnds(text: string): string {
   return text
     .split("\n")
@@ -895,7 +1003,10 @@ const CJK_CHARACTER =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu;
 const SCRIPT_SAMPLE_CHARACTERS = 200_000;
 
-/** 以正文前 20 万字符取样：CJK 字符占字母类字符多数时按“字”统计。 */
+/**
+ * Samples the first 200,000 characters of the text: when CJK characters are the
+ * majority of letter characters, count by character.
+ */
 function isCjkManuscript(text: string): boolean {
   const sample = text.slice(0, SCRIPT_SAMPLE_CHARACTERS);
   const letters = sample.match(/\p{L}/gu)?.length ?? 0;
@@ -962,7 +1073,8 @@ export function inferStylePayload(text: string): StatisticalStylePayload {
     .split(/[.!?…。！？]+/u)
     .filter((item) => /[\p{L}\p{N}]/u.test(item));
   const totalWords = words(text);
-  // 引号对话与葡语 / 西语行首破折号（travessão / raya）对话。
+  // Quoted dialogue and Portuguese / Spanish line-initial dash (travessão /
+  // raya) dialogue.
   const dialogueMarks =
     (text.match(/["“”«»]/gu)?.length ?? 0) +
     (text.match(/^[ \t]*[—–]/gmu)?.length ?? 0);

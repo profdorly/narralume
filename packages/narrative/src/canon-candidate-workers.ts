@@ -49,7 +49,10 @@ interface CanonContextArtifact extends Readonly<Record<string, unknown>> {
   baseFingerprint: string;
   current: CanonSpreadState["value"];
   prompt: string;
-  /** 从近期正文与章节摘要检测出的作品语言；早于此字段的产物读作 unknown。 */
+  /**
+   * Project language detected from recent text and chapter summaries; outputs
+   * older than this field read it as unknown.
+   */
   manuscriptLanguage: DetectedManuscriptLanguage;
 }
 
@@ -233,7 +236,9 @@ export class CanonCandidateWorkerSuite {
     );
     const language =
       this.projects.get(snapshot.run.projectId)?.language ?? null;
-    // 候选文字跟随作品正文的语言（指令里的语言不变量）；检测出语言时再加一行参考。
+    // Candidate text follows the language of the project's text (the language
+    // invariant in the instructions); when a language is detected, add a
+    // reference line.
     const languageHint = manuscriptLanguageHint(
       promptLanguageOf(language),
       context.manuscriptLanguage,

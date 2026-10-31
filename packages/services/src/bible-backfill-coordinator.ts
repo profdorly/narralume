@@ -67,10 +67,13 @@ export function bibleBackfillRunId(
 }
 
 /**
- * 「从正文补全故事圣经」协调器：与 AutopilotCoordinator 同构的 wake/drain
- * 循环。每次推进在一个事务里完成一个持久化状态转移；逐章严格串行——
- * 第 N 章的结算 Run 只在第 N-1 章的变更集被裁定（或确认为空）之后才创建，
- * 因为结算校验引用的是当前正典的稳定 ID，时间线序号也在应用时分配。
+ * "Fill in the story bible from the manuscript" coordinator: a wake/drain loop
+ * with the same structure as AutopilotCoordinator. Each advance completes one
+ * persisted state transition in one transaction, strictly one chapter at a
+ * time: chapter N's settlement Run is created only after chapter N-1's change
+ * set has been decided (or confirmed empty), because settlement validation
+ * references the stable IDs of the current canon and timeline positions are
+ * also assigned on apply.
  */
 export class BibleBackfillCoordinator {
   private readonly backfills: SqliteBibleBackfillRepository;

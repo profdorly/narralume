@@ -431,8 +431,10 @@ export function registerRunRoutes(
           422,
         );
       }
-      // 确定性 ID：同一 (源 run, requestId) 的重试永远回到同一个新 run。
-      // 幂等回放先于活跃检查——重复点击命中已建的重试 run 时直接返回。
+      // Deterministic ID: retries of the same (source run, requestId) always
+      // return the same new run. Idempotent replay comes before the active
+      // check: a repeated click that hits the already created retry run returns
+      // it directly.
       const retryRunId = deterministicRequestId(
         "chapter-run",
         input.projectId,

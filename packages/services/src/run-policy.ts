@@ -78,7 +78,8 @@ export function runProductProjection(
     ) {
       availableActions = ["request_revision", "cancel"];
     } else {
-      // 未知等待原因一律允许恢复：等待本身已持久化，resume 只是解除停靠。
+      // Unknown wait reasons always allow resuming: the wait itself is
+      // persisted, and resume only lifts the parking.
       availableActions =
         reason === "planning_entities_require_decision"
           ? ["cancel"]
@@ -97,9 +98,10 @@ export function runProductProjection(
         ]
       : ["cancel"];
   } else if (snapshot.run.status === "failed") {
-    // 终态 failed 没有可恢复的步骤语义；章节任务的重开入口 = 新建同章节
-    // run（与写作台「重试本章」同一语义），其余配方的现场留在运行中心
-    // 排查，不给误导性按钮。
+    // Terminal failed has no resumable step semantics; for chapter tasks the
+    // reopen entry = create a new run for the same chapter (the same semantics
+    // as "Retry chapter" at the writing desk); for other recipes the scene
+    // stays in the run center for investigation, with no misleading button.
     availableActions =
       snapshot.run.recipe === "chapter-production" &&
       snapshot.run.targetOutlineNodeId !== null &&

@@ -10,7 +10,10 @@ interface ProjectRequiredStateProps {
   description: string;
 }
 
-/** 项目级页面的统一未选作品状态；页面内部的无内容状态仍使用 Empty。 */
+/**
+ * Shared "no work selected" state for project-level pages; empty states inside
+ * a page still use Empty.
+ */
 export function ProjectRequiredState({
   title,
   description,

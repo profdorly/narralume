@@ -160,9 +160,10 @@ export class NarrativeDatabase {
   readonly #runEventListeners = new Set<(event: DatabaseRunEvent) => void>();
 
   /**
-   * 运行时无关的库实例：驱动由调用方提供。
-   * Node 用 NodeNarrativeDatabase（node:sqlite），浏览器先初始化
-   * OPFS sahpool 驱动再 new（见 @lapis/persistence/browser）。
+   * Runtime-independent database instance: the driver is supplied by the
+   * caller. Node uses NodeNarrativeDatabase (node:sqlite); the browser first
+   * initializes the OPFS sahpool driver and then calls new (see
+   * @lapis/persistence/browser).
    */
   constructor(path: string, driver: SqliteRawDatabase) {
     this.path = path;

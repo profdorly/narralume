@@ -41,8 +41,9 @@ export function buildChapterRecipe(
   maxRevisionCycles = 2,
 ): ChapterRecipe {
   const boundedCycles = Math.max(0, Math.min(maxRevisionCycles, 5));
-  /* 模型调用步骤统一 5 次尝试（transport 层不重试，重试只归 Harness）；
-     纯落库/确定性步骤保持 1-2 次。 */
+  /* Model-call steps get 5 attempts across the board (the transport layer does
+     not retry; retries belong to the Harness); pure persistence/deterministic
+     steps keep 1-2. */
   const steps: RunStepSeed[] = [];
   const append = (
     key: string,
@@ -110,8 +111,10 @@ export function buildRequestedRevisionRecipe(
   return { name: "chapter-candidate-revision", version: 1, steps };
 }
 
-/* 手动结算复用章节链的 settle/commit 步骤语义：正文来自已存在的文档版本
-   （policy.documentVersionId），commit 不再追加版本，只落候选变更集。 */
+/* Manual settlement reuses the settle/commit step semantics of the chapter
+   chain: the text comes from an existing document version
+   (policy.documentVersionId), and commit adds no version, only persists the
+   candidate change set. */
 export function buildManualSettlementRecipe(
   runId: string,
 ): ManualSettlementRecipe {

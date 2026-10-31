@@ -199,7 +199,8 @@ export class HarnessSupervisor {
       },
       Math.max(250, Math.floor(leaseMs / 3)),
     );
-    // Node：unref 让进程不被心跳计时器拖住；Worker 无此方法。
+    // Node: unref so the heartbeat timer does not keep the process alive;
+    // Workers have no such method.
     heartbeat.unref?.();
     try {
       const snapshot = this.store.getSnapshot(lease.runId);

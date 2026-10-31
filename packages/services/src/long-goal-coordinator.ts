@@ -27,10 +27,13 @@ export interface LongGoalCoordinatorOptions {
 }
 
 /**
- * 复合长期目标协调器：把“整理大纲 → 建立章节 → 连续创作指定章节数”
- * 串行为一项父活动。它不新建任务引擎——每个阶段仍然复用既有
- * foundation Run / 规划 Session / 快速创作 Session；协调器只做事件驱动的
- * 幂等推进（读取当前状态、缺什么补什么）。同项目同时刻只允许一条活动目标。
+ * Composite long-term goal coordinator: runs "organize the outline → set up
+ * chapters → continuously write the given number of chapters" in sequence as
+ * one parent activity. It does not create a new task engine: each stage still
+ * reuses the existing foundation Run / planning Session / quick create Session;
+ * the coordinator only advances idempotently, driven by events (read the
+ * current state, fill in whatever is missing). Only one active goal per project
+ * at a time.
  */
 export class LongGoalCoordinator {
   private readonly goals: SqliteAssistantLongGoalRepository;
@@ -74,9 +77,11 @@ export class LongGoalCoordinator {
         409,
       );
     }
-    // 父活动先行落盘：assistant_long_goals.activity_id 外键指向
-    // assistant_activities，goal 必须在活动之后插入。两者同事务，
-    // goal 插入失败时活动一起回滚，不会产生孤儿行。
+    // The parent activity is persisted first: the
+    // assistant_long_goals.activity_id foreign key points to
+    // assistant_activities, so the goal must be inserted after the activity.
+    // Both are in one transaction, so if the goal insert fails the activity
+    // rolls back too, leaving no orphan rows.
     this.database.transaction(() => {
       this.assistants.insertActivity({
         id: input.activityId,
@@ -124,20 +129,25 @@ export class LongGoalCoordinator {
     return this.goals.requireGoal(input.goalId);
   }
 
-  /** 只读查询：供幂等重放与投影使用。 */
+  /** Read-only query, used by idempotent replay and projections. */
   getGoal(goalId: string): AssistantLongGoal | null {
     return this.goals.getGoal(goalId);
   }
 
-  /** 事件驱动幂等推进：每次调用都基于当前持久状态决定下一步。 */
+  /**
+   * Event-driven idempotent advance: every call decides the next step from the
+   * current persisted state.
+   */
   advance(goalId: string): void {
     const goal = this.goals.getGoal(goalId);
     if (!goal || goal.status !== "active") return;
     const currentHash = this.computeBaselineHash(goal.projectId);
     if (currentHash !== goal.baselineHash) {
-      // 本目标自己的阶段产出（建书候选完成、规划会话补齐章节）必然改变
-      // 基线；这些变化不是外部漂移，直接吸收后继续推进。其余情况（作者
-      // 在任务进行中编辑正文/大纲/Canon）才停靠等待确认。
+      // This goal's own stage outputs (book-setup candidates completed,
+      // planning session filling in chapters) necessarily change the baseline;
+      // these changes are not external drift and are absorbed before
+      // continuing. In any other case (the author editing text/outline/Canon
+      // while the task runs) it parks and waits for confirmation.
       const outlineStatus = goal.outlineSessionId
         ? (this.automation.getSession(goal.outlineSessionId)?.status ?? null)
         : null;
@@ -175,13 +185,14 @@ export class LongGoalCoordinator {
     }
   }
 
-  /** 服务启动或恢复时接管所有活动目标。 */
+  /** Take over all active goals when the service starts or recovers. */
   reconcileAll(): void {
     for (const goal of this.goals.listActionableGoals()) {
       try {
         this.advance(goal.id);
       } catch {
-        // 单个目标推进失败不阻塞其他目标；错误会在下次事件时重试。
+        // A failure to advance one goal does not block the others; the error is
+        // retried on the next event.
       }
     }
   }
@@ -302,7 +313,8 @@ export class LongGoalCoordinator {
       return;
     }
     if (run.status === "completed") {
-      // 候选已生成；作者采纳后即存在 intent/compass，下次 advance 推进。
+      // Candidates are generated; once the author accepts them, intent/compass
+      // exist and the next advance moves on.
       if (intent && compass) {
         this.transition(goal, { phase: "outline", now });
         this.advance(goal.id);

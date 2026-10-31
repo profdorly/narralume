@@ -25,10 +25,12 @@ export class StoryServiceError extends ServiceError {
 }
 
 /**
- * 作品软删除的业务规则：必须已归档、乐观锁前提、确认标题；删除必须
- * 真正阻止后续写入——活动 Run 直接置 cancelled（终态路由是 no-op，
- * 残留租约不会再推进），活动自动驾驶会话一并取消。返回需 interrupt
- * 的 run id 列表。
+ * Business rules for soft-deleting a work: it must be archived, pass the
+ * optimistic lock precondition and have its title confirmed; deletion must
+ * actually stop further writes. Active Runs are set to cancelled directly (the
+ * terminal route is a no-op, so leftover leases advance nothing more), and
+ * active autopilot sessions are cancelled as well. Returns the list of run ids
+ * that need an interrupt.
  */
 export function softDeleteProject(
   database: NarrativeDatabase,
@@ -88,7 +90,11 @@ export function softDeleteProject(
   return { recycled, activeRunIds: activeRuns.map((run) => run.id) };
 }
 
-/** 事实仍为当前生效正典（未被修订/撤回替代）——修订与提升权威的共同前提。 */
+/**
+ * The fact is still current effective canon (not superseded by a
+ * revision/retraction): the shared precondition of revising and raising
+ * authority.
+ */
 function requireEffectiveFact(
   canon: SqliteCanonRepository,
   projectId: string,
@@ -103,9 +109,10 @@ function requireEffectiveFact(
 }
 
 /**
- * 事实修订：真实并发前提是事实仍为当前生效正典，否则两个修订会在同
- * 一 supersedesFactId 下分叉；locked 事实需要显式确认。返回新事实与
- * 冲突列表。
+ * Fact revision: the real concurrency precondition is that the fact is still
+ * current effective canon, otherwise two revisions would fork under the same
+ * supersedesFactId; locked facts need explicit confirmation. Returns the new
+ * fact and the conflict list.
  */
 export function reviseCanonFact(
   database: NarrativeDatabase,
@@ -165,7 +172,10 @@ export function reviseCanonFact(
   return { revised, conflicts };
 }
 
-/** 事实撤回：只有当前生效的事实可以撤回；locked 需要显式确认。 */
+/**
+ * Fact retraction: only currently effective facts can be retracted; locked ones
+ * need explicit confirmation.
+ */
 export function withdrawCanonFact(
   database: NarrativeDatabase,
   input: {
@@ -199,7 +209,7 @@ export function withdrawCanonFact(
   });
 }
 
-/** 事实提升权威：已被替代的事实不允许提升。 */
+/** Raise a fact's authority: superseded facts cannot be raised. */
 export function promoteCanonFact(
   database: NarrativeDatabase,
   input: {
@@ -227,8 +237,9 @@ export function promoteCanonFact(
 }
 
 /**
- * 正文正式提交的副作用链：追加版本 → 删草稿 → 检索段更新 → 大纲置
- * committed →（可选）自动开手动结算。restore 走同一条链。
+ * Side-effect chain of formally committing text: append version → delete
+ * draft → update retrieval chunks → set outline to committed → (optionally)
+ * auto-start a manual settlement. restore goes through the same chain.
  */
 export function commitDocumentVersion(
   database: NarrativeDatabase,
@@ -281,8 +292,9 @@ export function commitDocumentVersion(
       now,
     );
   }
-  /* 正式提交（source=manual）自动开手动结算；批注存档点、选区基线等
-     隐式版本不触发。 */
+  /* A formal commit (source=manual) auto-starts a manual settlement; implicit
+     versions such as annotation checkpoints and selection baselines do not
+     trigger it. */
   if (input.triggerSettlement) {
     startManualSettlementRun({
       database,
@@ -303,8 +315,10 @@ export function commitDocumentVersion(
 const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
 /**
- * 在作品更新事务内应用封面变更；校验失败会回滚资料修改。base64 解码
- * 用纯实现（浏览器/Node 通用），magic bytes 校验媒体类型一致性。
+ * Apply the cover change inside the work update transaction; a validation
+ * failure rolls back the details change. base64 decoding uses a pure
+ * implementation (works in browser and Node), and magic bytes check that the
+ * media type matches.
  */
 export function applyCoverMutation(
   database: NarrativeDatabase,
@@ -363,7 +377,9 @@ export function applyCoverMutation(
 const BASE64_ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/** 纯 base64 解码（Uint8Array 输出），避免 Node Buffer 依赖。 */
+/**
+ * Pure base64 decoding (Uint8Array output), avoiding a Node Buffer dependency.
+ */
 function decodeBase64(source: string): Uint8Array {
   const clean = source.replace(/=+$/u, "");
   const bytes = new Uint8Array(Math.floor((clean.length * 3) / 4));

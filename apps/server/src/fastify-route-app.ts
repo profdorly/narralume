@@ -13,9 +13,9 @@ import {
 } from "@lapis/services";
 
 /**
- * RouteApp → Fastify 适配器：同一份 register*Routes 在 HTTP 宿主注册。
- * 处理器返回的 RouteResponse（含 Uint8Array body 与 headers）翻译成
- * reply.code/header/send。
+ * RouteApp → Fastify adapter: the same register*Routes functions register on
+ * the HTTP host. The RouteResponse a handler returns (including a Uint8Array
+ * body and headers) is translated into reply.code/header/send.
  */
 export function fastifyRouteApp(app: FastifyInstance): RouteApp {
   return {

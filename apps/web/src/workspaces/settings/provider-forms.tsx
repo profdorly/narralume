@@ -21,7 +21,8 @@ import {
 } from "../../lib/labels";
 import { TASK_TYPES, WIRE_APIS } from "./constants";
 
-/* ---- Provider / 模型管理（从供给迁入） --------------------------------------- */
+/* ---- Provider / model management (moved from supply)
+   --------------------------------------- */
 
 export function ProviderForm({ provider, pending, error, onCancel, onSubmit }: {
   provider: PublicProviderDto | null;

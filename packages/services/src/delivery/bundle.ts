@@ -610,7 +610,8 @@ export function restoreBundle(
   let restoredActivities = 0;
   let restoredLongGoals = 0;
   let restoredCover = 0;
-  // issueMap 保留 issue 旧 ID → 新 ID 的映射，便于后续扩展（如裁定回指）。
+  // issueMap keeps the old issue ID → new ID mapping, for future extensions
+  // (e.g. pointing decisions back).
   const orderedOutline = [...bundle.outline].sort(
     (a, b) => numberField(a, "depth") - numberField(b, "depth"),
   );
@@ -949,8 +950,9 @@ export function restoreBundle(
     if (item.draft) {
       const draftBaseVersionId =
         versionMap.get(stringField(item.draft, "baseVersionId") ?? "") ?? null;
-      // 在版本追加之后写回草稿；appendVersion 会清掉过期草稿，因此草稿
-      // 恢复必须放在版本循环之后。
+      // The draft is written back after the versions are appended;
+      // appendVersion clears stale drafts, so draft restoration must come after
+      // the version loop.
       ctx.documents.upsertDraft(projectId, documentId, {
         baseVersionId: draftBaseVersionId,
         content: stringField(item.draft, "content") ?? "",

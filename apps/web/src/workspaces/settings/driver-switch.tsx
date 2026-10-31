@@ -14,7 +14,8 @@ import {
   type DriverMode,
 } from "../../kernel/transport";
 
-/* ---- 运行驱动（M3：server API / 浏览器本地内核） ----------------------------- */
+/* ---- Run driver (M3: server API / local browser kernel)
+   ----------------------------- */
 
 export function useDriverMode(): DriverMode {
   const [mode, setMode] = useState(currentDriverMode());
@@ -59,7 +60,8 @@ export function DriverSwitch() {
   }, [effective]);
   const downloadMutation = useMutation({
     mutationFn: async () => {
-      // 下载我的库（D6）：local 驱动从内核取 bytes；server 驱动提示用系统备份。
+      // Download my library (D6): the local driver gets the bytes from the
+      // kernel; the server driver points to system backups.
       const { blob, filename } = await downloadLibraryDatabase();
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");

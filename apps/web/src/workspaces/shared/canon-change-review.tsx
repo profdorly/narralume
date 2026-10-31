@@ -1,5 +1,7 @@
-/* 故事变化（canon change set）裁定卡片：写作台「故事变化」面板与故事圣经
-   「从正文补全」面板共用。负责条目渲染、采纳 / 暂缓、冲突展示与强制采纳确认。 */
+/* Story change (canon change set) decision card: shared by the writing desk's
+   "Story changes" panel and the story bible's "Fill in from the manuscript"
+   panel. Renders items, accept / defer, conflict display and forced-accept
+   confirmation. */
 
 import "../../styles/studio.css";
 
@@ -23,7 +25,10 @@ interface CanonChangeReviewLabels {
   defer?: string;
 }
 
-/** 候选变更集列表 + 裁定按钮；成功裁定后回调 onDecided。 */
+/**
+ * Candidate change set list + decision buttons; calls onDecided after a
+ * successful decision.
+ */
 export function CanonChangeSetReview({
   projectId,
   sets,
@@ -37,7 +42,10 @@ export function CanonChangeSetReview({
   sets: CanonChangeSetView[];
   entityNames: Map<string, string>;
   labels?: CanonChangeReviewLabels;
-  /** 调用方已知冲突可强制覆盖（例如补全任务停机原因）时，直接提供强制采纳。 */
+  /**
+   * When the caller already knows the conflict can be force-overridden (e.g. a
+   * fill-in job's stop reason), offer forced accept directly.
+   */
   forceAllowed?: boolean;
   disabled?: boolean;
   onDecided?: (
@@ -179,7 +187,10 @@ export function CanonChangeSetReview({
   );
 }
 
-/** 冲突清单：原因 · 路径 · 当前记录，附可否强制覆盖的说明。 */
+/**
+ * Conflict list: reason · path · current record, with a note on whether a
+ * forced override is possible.
+ */
 export function SettlementConflictNote({
   conflict,
 }: {
@@ -217,7 +228,9 @@ interface SettlementConflictDetails {
   forceAllowed: boolean;
 }
 
-/** 从裁定接口的 409 settlement.conflict 读出冲突清单。 */
+/**
+ * Read the conflict list from the decision endpoint's 409 settlement.conflict.
+ */
 function settlementConflictDetails(
   error: unknown,
 ): SettlementConflictDetails | null {
@@ -226,7 +239,10 @@ function settlementConflictDetails(
   return parseSettlementConflicts(error.details);
 }
 
-/** 解析 { conflicts, forceAllowed } 载荷（接口错误 details 或任务停机原因）。 */
+/**
+ * Parse a { conflicts, forceAllowed } payload (endpoint error details or a job
+ * stop reason).
+ */
 export function parseSettlementConflicts(
   details: unknown,
 ): SettlementConflictDetails | null {

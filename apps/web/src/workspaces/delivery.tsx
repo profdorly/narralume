@@ -1,5 +1,6 @@
-/* 交付：印务校样。质量门（装印规格）+ 五格式出厂 + 创作内容快照。
-   系统备份档、生产资产与供给管理已迁入设置。 */
+/* Delivery: the print proof. Quality gate (print specs) + five export formats +
+   creative content snapshot. System backups, production assets and supply
+   management have moved to Settings. */
 
 import "../styles/delivery.css";
 
@@ -43,7 +44,8 @@ import { exportFormatLabel } from "../lib/labels";
 import { useProjectId } from "../lib/project-route";
 import { projectWorkspacePath } from "../lib/project-route";
 
-/* 五格式按「成书近 → 数据远」的顺序排 */
+/* The five formats are ordered from "closest to a finished book" to "closest to
+   raw data" */
 const EXPORT_FORMATS: ExportFormat[] = [
   "markdown",
   "text",
@@ -198,7 +200,7 @@ export function DeliveryWorkspace() {
       />
 
       <div className="delivery__spread">
-        {/* 左：装印规格（质量门）与五格式出厂 */}
+        {/* Left: print specs (quality gate) and the five export formats */}
         <section className="delivery__ledger">
           <div className="delivery__section delivery__section--gates">
             <header className="delivery__section-head">
@@ -326,7 +328,7 @@ export function DeliveryWorkspace() {
           </div>
         </section>
 
-        {/* 右：备份档 */}
+        {/* Right: backups */}
         <section className="delivery__rights">
           <div className="delivery__section delivery__section--backups">
             <header className="delivery__section-head">
@@ -354,7 +356,10 @@ export function DeliveryWorkspace() {
   );
 }
 
-/** 备份计数清单的紧凑展示：只列出非零项，保持墨色 mono 风格。 */
+/**
+ * Compact view of the backup count checklist: lists only non-zero items,
+ * keeping the ink mono style.
+ */
 function summarizeBackupCounts(counts: Record<string, number>) {
   const locale = getLocale();
   const labels: [keyof BundleCounts, MessageKey][] = [

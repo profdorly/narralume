@@ -1,7 +1,10 @@
 import type { AssistantActivity } from "@lapis/persistence";
 import type { AssistantActivityTextDto } from "@lapis/contracts";
 
-/** 展示文案描述符构造器：key 由前端标签表渲染，服务端不产出自然语言。 */
+/**
+ * Display text descriptor builder: the key is rendered by the frontend label
+ * table; the server produces no natural language.
+ */
 export function activityText(
   key: string,
   params: Record<string, string | number> = {},
@@ -13,7 +16,10 @@ export function activityProgress(completed: number, target: number): string {
   return `${completed}/${target}`;
 }
 
-/** 工具活动 goal 的插值参数，从落库的 tool input 提取。 */
+/**
+ * Interpolation parameters for a tool activity goal, extracted from the
+ * persisted tool input.
+ */
 export function toolGoalParams(
   activity: AssistantActivity,
 ): Record<string, string | number> {
@@ -29,7 +35,10 @@ export function toolGoalParams(
   return params;
 }
 
-/** 工具活动卡片的阶段行（按 status / executionMode 取机码）。 */
+/**
+ * Stage line of a tool activity card (machine code chosen by status /
+ * executionMode).
+ */
 export function toolStage(
   activity: AssistantActivity,
 ): AssistantActivityTextDto {
@@ -52,7 +61,7 @@ export function toolStage(
   return activityText("activity.stage.toolFailed");
 }
 
-/** 工具活动完成/拒绝后的摘要行。 */
+/** Summary line after a tool activity completes or is rejected. */
 export function toolResultSummary(
   activity: AssistantActivity,
 ): AssistantActivityTextDto | null {

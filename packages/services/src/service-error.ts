@@ -1,7 +1,9 @@
 /**
- * 服务层领域错误：code 供 API 消费方编程判断，statusCode 由 HTTP 层翻译。
- * 服务层不认识 Fastify；这里保留状态码是路由错误形状的延续，避免
- * app.ts 错误映射的 25 个分支再各配一张表。
+ * Service-layer domain error: code lets API consumers branch programmatically,
+ * statusCode is translated by the HTTP layer. The service layer knows nothing
+ * about Fastify; the status code is kept here as a continuation of the route
+ * error shape, so the app.ts error mapping does not need a separate table for
+ * each of its 25 branches.
  */
 export class ServiceError extends Error {
   constructor(

@@ -24,7 +24,9 @@ interface AssistantContextShape {
   selection?: { start: number; end: number } | null;
 }
 
-/** 助手消息上下文的存在性与选区方向校验。 */
+/**
+ * Existence and selection direction checks for the assistant message context.
+ */
 export function validateAssistantContext(
   projectId: string,
   context: AssistantContextShape,
@@ -77,7 +79,10 @@ interface AssistantModelDeps {
   providers: SqliteProviderRepository;
 }
 
-/** 对话指定的模型必须存在且启用（模型或 provider 停用都算失效）。 */
+/**
+ * The model a conversation specifies must exist and be enabled (a disabled
+ * model or provider counts as invalid).
+ */
 export function requireAliveAssistantModel(
   modelId: string,
   deps: AssistantModelDeps,
@@ -94,8 +99,10 @@ export function requireAliveAssistantModel(
 }
 
 /**
- * 对话内换模型只允许在当前生效模型（对话覆盖 ?? 全局 writing 分配）的
- * 同协议家族内进行：跨协议模型在设置页改默认分配后再用。
+ * Switching models within a conversation is only allowed inside the protocol
+ * family of the current effective model (conversation override ?? global
+ * writing assignment): for a model of another protocol, change the default
+ * assignment in Settings first.
  */
 export function requireSwitchableAssistantModel(
   conversation: Pick<AssistantConversationDto, "settings">,

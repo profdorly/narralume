@@ -88,7 +88,9 @@ export async function settleChapter(
       deps.story.listOutline(snapshot.run.projectId).map((node) => node.id),
     ),
   };
-  // 结算产出跟随章节正文的语言（指令里的语言不变量）；检测出语言时再加一行参考。
+  // Settlement output follows the language of the chapter text (the language
+  // invariant in the instructions); when a language is detected, add a
+  // reference line.
   const languageHint = manuscriptLanguageHint(
     promptLanguageOf(projectLanguage(deps, snapshot.run.projectId)),
     detectManuscriptLanguage(content),

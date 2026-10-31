@@ -78,7 +78,10 @@ export async function decideReviewIssue(
   );
 }
 
-/** 修订提案裁定：apply 把 revisedContent 落成文档新版本，reject 仅记决策。 */
+/**
+ * Revision proposal decision: apply saves revisedContent as a new document
+ * version; reject only records the decision.
+ */
 export async function decideRevisionProposal(
   projectId: string,
   proposalId: string,
@@ -115,7 +118,10 @@ export async function getCanonChangeSets(
   return response.changeSets;
 }
 
-/** 故事变化裁定：整组 apply（可显式 force）或整组 reject。 */
+/**
+ * Story change decision: apply the whole set (optionally with force) or reject
+ * the whole set.
+ */
 export async function decideCanonChangeSet(
   projectId: string,
   changeSetId: string,
@@ -262,7 +268,9 @@ export async function createSelectionEdit(
     selectionStart: number;
     selectionEnd: number;
     instruction: string;
-    /** 稀疏覆盖；模型由服务端 assignment 解析。 */
+    /**
+     * Sparse override; the model is resolved from the server-side assignment.
+     */
     policy?: ModelExecutionPolicy;
   },
 ): Promise<RunSnapshot> {
@@ -286,7 +294,7 @@ export async function decideEditProposal(
 }
 
 /* ==========================================================================
-   风格 / 写作 Skill
+   Style / Writing Skill
    ========================================================================== */
 
 export async function getStyleProfiles(
@@ -343,8 +351,9 @@ export async function updateStyleProfile(
   );
 }
 
-/** 贴样文提炼风格档案：202 返回后台 run，完成后新增一条
- *  source=extract:{runId} 的未启用草稿，轮询 run 状态后刷新 styles 列表。 */
+/** Extract a style profile from pasted sample text: returns a background run
+ *  (202); when it completes a disabled draft with source=extract:{runId} is
+ *  added. Poll the run status, then refresh the styles list. */
 export async function extractStyleProfile(
   projectId: string,
   input: { requestId: string; text: string },
@@ -464,7 +473,7 @@ export async function previewDryRun(
 }
 
 /* ==========================================================================
-   Prompt / Recipe 工坊
+   Prompt / Recipe workshop
    ========================================================================== */
 
 export async function getHarnessTemplates(

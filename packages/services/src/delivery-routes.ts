@@ -138,8 +138,10 @@ export function registerDeliveryRoutes(
     );
   });
 
-  // 贴样文提炼风格档案：202 返回后台 run，完成后落一条未启用的 style profile
-  // 草稿（source=extract:{runId}），作者在 StyleManager 里审核编辑后启用。
+  // Extract a style profile from pasted sample text: returns a background run
+  // (202); when it completes, a disabled style profile draft is saved
+  // (source=extract:{runId}), which the author reviews and edits in
+  // StyleManager before enabling it.
   app.route(
     "POST",
     "/api/projects/:projectId/styles/extract",

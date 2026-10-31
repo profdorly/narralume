@@ -1,6 +1,8 @@
-/* 任务台账：记录作者发起的后台任务（单章 run / 快速创作航次 / foundation 建书），
-   供项目概览在服务端真相之外补一条「回到任务现场」的恢复入口。
-   台账只存导航线索，不解析任务内部 Step；真相永远以服务端 overview 为准。 */
+/* Task ledger: records background tasks the author started (single-chapter run
+   / quick create voyage / foundation book setup), so the project overview can
+   offer a "back to the task" recovery entry alongside the server's source of
+   truth. The ledger stores only navigation hints and never parses a task's
+   internal Steps; the server overview is always authoritative. */
 
 import { projectWorkspacePath } from "./project-route";
 
@@ -22,8 +24,10 @@ interface TaskNavigationContext {
   documentId?: string | null;
 }
 
-/** 任务现场由产品来源推导：写作任务回写作台，连续创作回快速创作；
- *  只有没有产品来源的后台任务才退到高级运行页。 */
+/** The task's location is derived from its product origin: writing tasks go
+ *  back to the writing desk, continuous creation to quick create; only
+ *  background tasks without a product origin fall back to the advanced runs
+ *  page. */
 export function taskHref(
   projectId: string,
   kind: TaskLedgerEntry["kind"] | string,
@@ -76,23 +80,28 @@ function writeLedger(entries: TaskLedgerEntry[]): void {
   try {
     window.localStorage.setItem(LEDGER_KEY, JSON.stringify(entries));
   } catch {
-    /* 私密模式下放弃持久化 */
+    /* In private browsing, give up persistence */
   }
 }
 
-/** 记录一条刚发起的任务；同一 taskId 视为同一条（幂等重试不产生重复条目）。 */
+/**
+ * Record a task that was just started; the same taskId counts as one entry
+ * (idempotent retries add no duplicates).
+ */
 export function rememberTask(entry: TaskLedgerEntry): void {
   const rest = readLedger().filter((item) => item.taskId !== entry.taskId);
   writeLedger([entry, ...rest].slice(0, LEDGER_CAP));
 }
 
-/** 某一项目仍在台账上的任务（新→旧）。 */
+/** Tasks of one project still in the ledger (newest first). */
 export function rememberedTasks(projectId: string): TaskLedgerEntry[] {
   return readLedger().filter((item) => item.projectId === projectId);
 }
 
-/** 与服务端真相对账时把活动任务提到最前，但保留最近的终态任务，
- *  让完成结果仍能从项目概览回到原页面消费。容量上限负责清理旧记录。 */
+/** When reconciling with the server's source of truth, move active tasks to the
+ *  front but keep the latest terminal ones, so finished results can still be
+ *  consumed by returning from the project overview. The capacity limit prunes
+ *  old records. */
 export function reconcileTasks(projectId: string, keeperTaskIds: string[]): void {
   const keepers = new Set(keeperTaskIds);
   const entries = readLedger();

@@ -392,8 +392,9 @@ export interface RunSnapshot {
   } | null;
 }
 
-/** B1 运行详情：在快照之外带 effectivePolicy / contextReceipts /
- *  modelSnapshots / llmCalls / reviews / streams，直接复用合约 DTO。 */
+/** B1 run detail: besides the snapshot, carries effectivePolicy /
+ *  contextReceipts / modelSnapshots / llmCalls / reviews / streams, reusing the
+ *  contract DTOs directly. */
 export type RunDetail = RunDetailDto;
 
 export type ReviewIssueStatus = "open" | "accepted" | "rejected" | "resolved";
@@ -444,21 +445,23 @@ export interface FoundationCandidate {
 
 export type FoundationCandidateSet = FoundationCandidateSetDto;
 
-/** 自动驾驶会话 / 舵令 / 详情：直接复用合约 DTO，与后端保持同一份形状。
- *  契约里 session 同时携带 mode、approvalMode 与 origin。 */
+/** Autopilot session / steering command / detail: reuse the contract DTOs
+ *  directly, keeping the same shape as the backend. In the contract, a session
+ *  carries mode, approvalMode and origin. */
 export type AutopilotSession = AutopilotSessionDto;
 export type StorySteer = StorySteerDto;
 export type AutopilotSessionDetail = AutopilotSessionDetailDto;
 
 export interface RunOriginInput {
-  /** zod 契约里 documentId/selection 有 default，但从 z.infer 推导出的类型上
-   *  它们是必填；请求侧允许只给 surface，故此处全部可选。 */
+  /** In the zod contract documentId/selection have defaults, but the type
+   *  inferred with z.infer makes them required; the request side may send only
+   *  surface, so all are optional here. */
   surface: string;
   documentId?: string | null;
   selection?: { start: number; end: number } | null;
 }
 
-/** 后台任务的统一动作枚举（RunAvailableAction）。 */
+/** Unified action enum of background tasks (RunAvailableAction). */
 export type RunAction =
   | "pause"
   | "resume"
@@ -472,7 +475,7 @@ export type RunAction =
   | "regenerate"
   | "retry_chapter";
 
-/** POST /api/runs/:runId/actions 的请求体（RunActionRequest）。 */
+/** Request body of POST /api/runs/:runId/actions (RunActionRequest). */
 export type RunActionRequest =
   | {
       action:
@@ -487,7 +490,10 @@ export type RunActionRequest =
   | { action: "request_revision"; requestId: string; instruction?: string }
   | { action: "retry_chapter"; requestId: string };
 
-/** POST /api/autopilot/sessions/:sessionId/actions 的请求体（SessionActionRequest）。 */
+/**
+ * Request body of POST /api/autopilot/sessions/:sessionId/actions
+ * (SessionActionRequest).
+ */
 export type SessionActionRequest =
   | {
       action: "pause" | "resume" | "cancel";
@@ -498,7 +504,10 @@ export type SessionActionRequest =
     }
   | { action: "request_revision"; requestId: string; instruction?: string };
 
-/** 后台任务的产物投影（RunProductResult）。不参与内部 Step 解析。 */
+/**
+ * Product projection of a background task (RunProductResult). Takes no part in
+ * parsing internal Steps.
+ */
 export interface RunProductResult {
   planCandidate: Record<string, unknown> | null;
   manuscriptCandidate: Record<string, unknown> | null;
@@ -522,7 +531,10 @@ export interface RunProductResult {
   } | null;
 }
 
-/** 202 接收的后台任务：运行快照 + 产物投影 + 当前可执行动作（BackgroundRunCreated）。 */
+/**
+ * Background task accepted with 202: run snapshot + product projection +
+ * currently available actions (BackgroundRunCreated).
+ */
 export interface BackgroundRunCreated extends RunSnapshot {
   origin: RunOrigin | null;
   result: RunProductResult;
@@ -537,7 +549,10 @@ export interface ProjectOverviewChapter {
   documentVersionId: string | null;
 }
 
-/** 项目概览的主创作任务（快速创作 / 单章 / AI 建书）。 */
+/**
+ * Main creative task of the project overview (quick create / single chapter /
+ * AI book setup).
+ */
 export interface ProjectOverviewActiveTask {
   kind: "quick_creation" | "chapter" | "foundation";
   id: string;

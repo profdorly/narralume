@@ -185,7 +185,8 @@ try {
         // Multi-chapter context includes prior summaries/canon/state and can
         // exceed the single-chapter 16k smoke window by chapter three.
         contextWindow: 128_000,
-        // 推理模型 reasoning token 计入输出预算，结构化预算需留足（M5 基线）
+        // Reasoning models count reasoning tokens against the output budget, so
+        // leave enough structured budget (M5 baseline).
         draftMaxOutputTokens: 32_000,
         reviewMaxOutputTokens: 24_000,
         settlementMaxOutputTokens: 24_000,

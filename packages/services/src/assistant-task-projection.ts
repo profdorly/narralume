@@ -58,7 +58,8 @@ export class AssistantTaskProjectionService {
     const runActivities = this.runs
       .listRuns(projectId)
       .map((run) => this.runActivity(this.runs.getSnapshot(run.id)))
-      // 快速创作的子 run 已由会话卡吸收（同一等待只出一张卡），不再单独成卡。
+      // Quick create's child runs are absorbed by the session card (one card
+      // per wait), so they get no card of their own.
       .filter(
         (activity) =>
           activity.conversationId === conversationId &&
@@ -315,7 +316,10 @@ export class AssistantTaskProjectionService {
   }
 }
 
-/** 长任务标题的机码：两条创建路径（工具确认 / 直接路由）都存此键。 */
+/**
+ * Machine code for long-task titles: both creation paths (tool confirmation /
+ * direct route) store this key.
+ */
 const LONG_GOAL_TITLE_KEY = "tool.goal.long_goal.start";
 
 function runStatus(

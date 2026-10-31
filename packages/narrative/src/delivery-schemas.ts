@@ -25,7 +25,10 @@ export const StyleSchema = z.object({
 
 export type StyleProfileDraft = z.infer<typeof StyleSchema>;
 
-/** 贴样文提炼风格档案的结构化契约（与导入分析中的 style 子契约同构）。 */
+/**
+ * Structured contract for extracting a style profile from sample text (same
+ * shape as the style sub-contract of import analysis).
+ */
 export const STYLE_PROFILE_CONTRACT: JsonSchemaContract = {
   name: "style_profile",
   description:

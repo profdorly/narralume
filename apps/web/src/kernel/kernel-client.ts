@@ -1,10 +1,12 @@
 /**
- * M3 内核主线程客户端：懒加载 kernel-worker，把 HTTP 形状的请求
- * （method + path + query + body）经 postMessage 送进内核，等待同 id
- * 响应；事件帧（type:"sse"）以回调集合分发，供 sse.ts 的 local 分支复用。
+ * M3 kernel main-thread client: lazily loads kernel-worker, sends HTTP-shaped
+ * requests (method + path + query + body) into the kernel via postMessage and
+ * waits for the response with the same id. Event frames (type:"sse") are
+ * dispatched to a set of callbacks, reused by the local branch of sse.ts.
  *
- * 协议见 kernel-worker.ts 头注释。单例——Worker 与 OPFS sahpool 连接
- * 每 origin 只允许一个。
+ * The protocol is described in the header comment of kernel-worker.ts.
+ * Singleton: only one Worker and one OPFS sahpool connection are allowed per
+ * origin.
  */
 
 import { getLocale, translate } from "../i18n";
@@ -98,7 +100,7 @@ function ensureWorker(): Worker {
         try {
           listener(frame.frame);
         } catch {
-          // 单个订阅者异常不应中断其他订阅者。
+          // An exception in one subscriber must not stop the others.
         }
       }
       return;
@@ -110,7 +112,7 @@ function ensureWorker(): Worker {
       entry.resolve(frame);
       return;
     }
-    // ready / fatal 在 bootPromise 里处理。
+    // ready / fatal are handled in bootPromise.
   });
   instance.addEventListener("messageerror", () =>
     failWorker(
@@ -131,13 +133,17 @@ function ensureWorker(): Worker {
   return instance;
 }
 
-/** 启动内核并等待 ready；失败（如 sahpool 被其他标签页占用）时 reject。 */
+/**
+ * Start the kernel and wait for ready; rejects on failure (e.g. sahpool held by
+ * another tab).
+ */
 function bootKernel(): Promise<void> {
   bootPromise ??= (async () => {
     await acquireKernelLock();
     await new Promise<void>((resolve, reject) => {
       const instance = ensureWorker();
-      // 模块级异常会让 Worker 静默死亡（error 事件都不发），用超时兜底。
+      // A module-level exception kills the Worker silently (not even an error
+      // event fires), so a timeout is the fallback.
       const timer = setTimeout(() => {
         failWorker(
           instance,
@@ -160,7 +166,7 @@ function bootKernel(): Promise<void> {
         }
         if (event.data?.type === "fatal") {
           if (String(event.data.message).startsWith("boot:")) {
-            // 临时启动阶段探针（诊断完成后移除）。
+            // Temporary boot-phase probe (remove once diagnosis is done).
             console.warn("[kernel]", event.data.message);
             return;
           }
@@ -207,7 +213,10 @@ if (typeof window !== "undefined") {
   window.addEventListener("pagehide", shutdownKernel);
 }
 
-/** 订阅内核事件帧（JSON 字符串，与 /api/events 的 SSE data 同构）。 */
+/**
+ * Subscribe to kernel event frames (JSON strings, same shape as the SSE data of
+ * /api/events).
+ */
 export function addKernelEventListener(
   listener: KernelEventListener,
 ): () => void {
@@ -223,7 +232,10 @@ interface KernelRequestInit {
   headers?: Record<string, string> | undefined;
 }
 
-/** 内核形状的 HTTP 错误（已由 mapRouteError 映射为 ApiError 形状）。 */
+/**
+ * A kernel-shaped HTTP error (already mapped to the ApiError shape by
+ * mapRouteError).
+ */
 class KernelApiError extends Error {
   constructor(readonly payload: KernelHttpError) {
     super(payload.message);
@@ -232,8 +244,9 @@ class KernelApiError extends Error {
 }
 
 /**
- * 向内核发起一次 HTTP 形状请求。path 可带 ?query（与 fetch 一致），
- * 返回 {status, headers, body}；非 2xx 抛 KernelApiError。
+ * Send one HTTP-shaped request to the kernel. path may carry a ?query (as with
+ * fetch). Returns {status, headers, body}; non-2xx responses throw
+ * KernelApiError.
  */
 export async function kernelRequest(init: KernelRequestInit): Promise<{
   status: number;

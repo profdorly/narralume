@@ -1,8 +1,12 @@
 /**
- * 「从正文补全故事圣经」任务：按章节顺序逐章走手动结算管线。
- * 每个项目同时最多一个未结束任务（部分唯一索引）；条目按 ordinal 严格串行，
- * 章节身份（大纲节点、文档、版本）在建任务时快照，处理时再校验。
- * note_json 记录条目上发生过的事：改投到新版本、沿用已有结算、取消时脱离。
+ * "Fill in the story bible from the manuscript" jobs: run the manual settlement
+ * pipeline chapter by chapter, in chapter order.
+ * Each project has at most one unfinished job at a time (partial unique index);
+ * items run strictly in ordinal order, and chapter identity (outline node,
+ * document, version) is snapshotted when the job is created and re-checked when
+ * the item is processed.
+ * note_json records what happened to an item: retargeted to a new version,
+ * reused an existing settlement, detached on cancel.
  */
 export const migration046 = {
   version: 46,

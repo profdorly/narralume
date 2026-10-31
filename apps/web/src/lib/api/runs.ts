@@ -33,19 +33,22 @@ export async function previewContext(
 }
 
 /* ==========================================================================
-   运行
+   Runs
    ========================================================================== */
 
 export async function createChapterRun(
   projectId: string,
   input: {
-    /** 同一次提交的幂等键；网络重试复用同一个 requestId，重新提交才换新。 */
+    /**
+     * Idempotency key of one submission; network retries reuse the same
+     * requestId, only a new submission gets a new one.
+     */
     requestId: string;
     targetOutlineNodeId: string;
     planningMode?: "auto" | "confirm";
     origin?: RunOriginInput | null;
     maxRevisionCycles: number;
-    /** 稀疏覆盖：只包含用户显式改过的字段。 */
+    /** Sparse override: contains only fields the user changed explicitly. */
     policy?: ModelExecutionPolicy;
   },
 ): Promise<ChapterRunCreatedDto> {
@@ -99,7 +102,10 @@ export async function discardRunStream(
   );
 }
 
-/** 以 partial 为前缀创建续写运行（202；runId 幂等）。 */
+/**
+ * Create a continuation run using partial as the prefix (202; runId is
+ * idempotent).
+ */
 export async function continueRunStream(
   projectId: string,
   runId: string,
@@ -111,7 +117,10 @@ export async function continueRunStream(
   );
 }
 
-/** 把 partial 追加进章节文档的不可变版本链（重复调用幂等回放）。 */
+/**
+ * Append partial to the chapter document's immutable version chain (repeated
+ * calls replay idempotently).
+ */
 export async function adoptRunStream(
   projectId: string,
   runId: string,
@@ -123,7 +132,7 @@ export async function adoptRunStream(
   );
 }
 
-/** 丢弃 partial 并推动 harness 重试来源步骤。 */
+/** Discard partial and make the harness retry the source step. */
 export async function regenerateRunStream(
   projectId: string,
   runId: string,

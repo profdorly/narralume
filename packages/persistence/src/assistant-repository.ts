@@ -158,7 +158,10 @@ export class SqliteAssistantRepository {
     return this.requireConversation(id);
   }
 
-  /** 合并式更新对话设置；未提供的字段保持原值。 */
+  /**
+   * Merge-style update of conversation settings; fields not provided keep their
+   * values.
+   */
   configureConversation(
     id: string,
     patch: {

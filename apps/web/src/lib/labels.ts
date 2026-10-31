@@ -19,13 +19,14 @@ import type {
 import { getLocale, translate, type MessageKey } from "../i18n";
 
 /* ==========================================================================
-   集中标签表：状态 / 步骤 / 角色 / 模式的中文名，从各旧视图去重搬入。
-   文案已抽取到 i18n 字典 labels 模块，这里只做键到字典的映射。
+   Central label table: display names for status / step / role / mode,
+   deduplicated from the old views. The text has been extracted to the labels
+   module of the i18n dictionary; this file only maps keys to the dictionary.
    ========================================================================== */
 
-/* --- 运行 -------------------------------------------------------------- */
+/* --- Runs ------------------------------------------------------------ */
 
-/** 面向列表的短版运行状态（无 recipe 语境）。 */
+/** Short run status for lists (no recipe context). */
 export function runStatusShortLabel(status: string): string {
   const keys: Record<string, MessageKey> = {
     pending: "labels.runStatusShort.pending",
@@ -41,7 +42,7 @@ export function runStatusShortLabel(status: string): string {
   return key ? translate(getLocale(), key) : status;
 }
 
-/* --- 模型供给：Provider / Model / Assignment ----------------------------- */
+/* --- Model supply: Provider / Model / Assignment ------------------------- */
 
 export function wireApiLabel(wireApi: WireApi): string {
   const keys: Record<WireApi, MessageKey> = {
@@ -107,7 +108,7 @@ export function probeStageStatusLabel(
   return translate(getLocale(), keys[status]);
 }
 
-/* --- 故事圣经 ----------------------------------------------------------- */
+/* --- Story bible ------------------------------------------------------- */
 
 export function projectPhaseLabel(phase: Project["phase"]): string {
   const keys: Record<Project["phase"], MessageKey> = {
@@ -177,7 +178,7 @@ export function foreshadowStatusLabel(status: Foreshadow["status"]): string {
   return translate(getLocale(), keys[status]);
 }
 
-/* --- 自动驾驶 / 建书候选 -------------------------------------------------- */
+/* --- Autopilot / book-setup candidates ------------------------------------ */
 
 export function autopilotLinkRoleLabel(
   role: AutopilotSessionDetail["links"][number]["role"],
@@ -252,7 +253,7 @@ export function foundationCandidateStatusLabel(
   return translate(getLocale(), keys[status]);
 }
 
-/* --- 审稿室 -------------------------------------------------------------- */
+/* --- Review room -------------------------------------------------------- */
 
 export function reviewCategoryLabel(category: string): string {
   const keys: Record<string, MessageKey> = {
@@ -304,7 +305,7 @@ export function reviewVerdictLabel(
   return translate(getLocale(), keys[verdict]);
 }
 
-/* --- 交付 / 导入 / 体检 --------------------------------------------------- */
+/* --- Delivery / import / checkup ----------------------------------------- */
 
 export function importCandidateKindLabel(kind: string): string {
   const keys: Record<string, MessageKey> = {
@@ -336,7 +337,7 @@ export function exportFormatLabel(format: ExportFormat): string {
   return translate(getLocale(), keys[format]);
 }
 
-/* --- 写作台 --------------------------------------------------------------- */
+/* --- Writing desk -------------------------------------------------------- */
 
 export function documentKindLabel(kind: StoryDocument["kind"]): string {
   const keys: Record<StoryDocument["kind"], MessageKey> = {
@@ -351,9 +352,13 @@ export function documentKindLabel(kind: StoryDocument["kind"]): string {
   return translate(getLocale(), keys[kind]);
 }
 
-/* --- 任务协议（origin / stopReason / availableActions / nextAction） --------- */
+/* --- Task protocol (origin / stopReason / availableActions / nextAction)
+   --------- */
 
-/** 后台任务可执行动作的中文名（RunAvailableAction + 航次失败处置）。 */
+/**
+ * Display names of actions available on background tasks (RunAvailableAction +
+ * voyage failure handling).
+ */
 export function taskActionLabel(action: string): string {
   const keys: Record<string, MessageKey> = {
     pause: "labels.taskAction.pause",
@@ -394,7 +399,7 @@ export function taskStatusLabel(status: string): string {
   return key ? translate(getLocale(), key) : status;
 }
 
-/** 活动任务的种类名（ProjectOverview.activeTask.kind）。 */
+/** Kind names of active tasks (ProjectOverview.activeTask.kind). */
 export function taskKindLabel(kind: string): string {
   const keys: Record<string, MessageKey> = {
     quick_creation: "labels.taskKind.quickCreation",
@@ -405,8 +410,9 @@ export function taskKindLabel(kind: string): string {
   return key ? translate(getLocale(), key) : kind;
 }
 
-/** 全站唯一的等待/停止原因文案表：服务端各投影只传机器码，
- *  侧栏、概览、快速创作都从这里渲染。 */
+/** The single site-wide table of waiting/stop reason texts: server projections
+ *  send only machine codes, and the sidebar, overview and quick create all
+ *  render from here. */
 export function stopReasonLabel(reason: string): string {
   const keys: Record<string, MessageKey> = {
     chapter_commit_approval_required:
@@ -432,7 +438,10 @@ export function stopReasonLabel(reason: string): string {
     : translate(getLocale(), "labels.stopReason.unknown");
 }
 
-/** 项目概览 suggested 下一步（ProjectOverview.nextAction.kind）。 */
+/**
+ * Suggested next step of the project overview
+ * (ProjectOverview.nextAction.kind).
+ */
 export function nextActionKindLabel(kind: string): string {
   const keys: Record<string, MessageKey> = {
     continue_task: "labels.nextActionKind.continueTask",
@@ -447,17 +456,23 @@ export function nextActionKindLabel(kind: string): string {
   return key ? translate(getLocale(), key) : kind;
 }
 
-/* --- 助手活动卡片（AssistantActivityDto） ------------------------------- */
+/* --- Assistant activity cards (AssistantActivityDto)
+   ------------------------------- */
 
-/* 服务端只发机码描述符；字典路径直接镜像机码（labels.<key> 的嵌套结构），
-   因此这里不需要逐键对照表。未知机码原样回显，便于发现漏配。 */
+/* The server sends only machine-code descriptors; dictionary paths mirror the
+   codes directly (the nested structure of labels.<key>), so no per-key mapping
+   table is needed here. Unknown codes are echoed back as is, which makes
+   missing entries easy to spot. */
 function renderActivityMessage(message: AssistantActivityTextDto): string {
   const key = `labels.${message.key}` as MessageKey;
   const rendered = translate(getLocale(), key, message.params);
   return rendered === key ? message.key : rendered;
 }
 
-/** 活动卡标题：机码描述符查字典渲染；原文字符串（用户自拟标题）原样返回。 */
+/**
+ * Activity card title: machine-code descriptors are rendered from the
+ * dictionary; raw strings (user-written titles) are returned as is.
+ */
 export function activityGoalLabel(
   goal: string | AssistantActivityTextDto,
 ): string {
@@ -465,19 +480,25 @@ export function activityGoalLabel(
   return renderActivityMessage(goal);
 }
 
-/** 活动卡阶段行：运行状态或当前步骤的进行中文案。 */
+/**
+ * Activity card stage line: in-progress text for the run status or current
+ * step.
+ */
 export function activityStageLabel(stage: AssistantActivityTextDto): string {
   return renderActivityMessage(stage);
 }
 
-/** 活动卡摘要行。 */
+/** Activity card summary line. */
 export function activitySummaryLabel(
   summary: AssistantActivityTextDto | null,
 ): string | null {
   return summary ? renderActivityMessage(summary) : null;
 }
 
-/** 活动卡工件名：已知 kind 走字典，未知回退服务端 label。 */
+/**
+ * Activity card artifact name: known kinds use the dictionary; unknown ones
+ * fall back to the server label.
+ */
 export function artifactKindLabel(kind: string, fallback: string): string {
   const keys: Record<string, MessageKey> = {
     foundation_candidate_set: "labels.artifactKind.foundationCandidateSet",
@@ -493,7 +514,10 @@ export function artifactKindLabel(kind: string, fallback: string): string {
   return key ? translate(getLocale(), key) : fallback;
 }
 
-/** 内置技能名：按 skillId 查字典（服务端不再下发技能展示文案）。 */
+/**
+ * Built-in skill name: looked up in the dictionary by skillId (the server no
+ * longer sends skill display text).
+ */
 export function assistantSkillLabel(skillId: string): string {
   const keys: Record<string, MessageKey> = {
     "story.query": "labels.assistantSkill.storyQuery",

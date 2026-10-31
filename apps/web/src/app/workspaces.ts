@@ -14,10 +14,12 @@ import {
 
 import type { MessageKey } from "../i18n";
 
-/* 主导航收敛为五个创作面：书架 / 项目概览 / 故事 / 写作 / 交付。
-   其余工作区（审稿、自动驾驶、运行账本、长篇推演、模型供给）暂挂「高级工具」组，
-   随写作台合并与设置迁移逐步并入或退役。
-   label / blurb 是 i18n 字典键，展示侧用 t() / translate() 解析。 */
+/* Main navigation is reduced to five creative surfaces: shelf / project
+   overview / story / writing / delivery. The other workspaces (review,
+   autopilot, run ledger, long-form simulation, model supply) sit in the
+   "Advanced tools" group for now, to be merged in or retired as the writing
+   desk merge and the settings migration progress. label / blurb are i18n
+   dictionary keys, resolved on display with t() / translate(). */
 
 export interface WorkspaceDef {
   id: string;
@@ -83,7 +85,10 @@ export const WORKSPACES: WorkspaceDef[] = [
   },
 ];
 
-/** 连续创作是普通产品入口，但与五个稳定工作面分组展示。 */
+/**
+ * Continuous creation is a regular product entry, but shown in a separate group
+ * from the five stable workspaces.
+ */
 export const QUICK_WORKSPACES: WorkspaceDef[] = [
   {
     id: "autopilot",
@@ -97,7 +102,8 @@ export const QUICK_WORKSPACES: WorkspaceDef[] = [
   },
 ];
 
-/* 高级工具组：只放诊断、推演与全局配置，不承载普通创作主链。 */
+/* Advanced tools group: only diagnostics, simulation and global configuration,
+   never the main creative flow. */
 export const ADVANCED_WORKSPACES: WorkspaceDef[] = [
   {
     id: "runs",

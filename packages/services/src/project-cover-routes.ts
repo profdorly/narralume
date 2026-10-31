@@ -16,8 +16,9 @@ const ProjectCoverParamsSchema = z.object({
 });
 
 /**
- * 封面图片的读取端点。封面变更不走独立端点：资料与封面的修改通过
- * PUT /api/projects/:projectId 在同一事务提交（CR-83）。
+ * Read endpoint for cover images. Cover changes have no endpoint of their own:
+ * details and cover changes are committed in one transaction through
+ * PUT /api/projects/:projectId (CR-83).
  */
 export function registerProjectCoverRoutes(
   app: RouteApp,

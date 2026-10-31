@@ -24,7 +24,10 @@ export interface RegisterBibleBackfillRouteOptions {
   environment: Readonly<Record<string, string | undefined>>;
 }
 
-/** 「从正文补全故事圣经」：建任务、读进度、作者控制。 */
+/**
+ * "Fill in the story bible from the manuscript": create a job, read progress,
+ * author controls.
+ */
 export function registerBibleBackfillRoutes(
   app: RouteApp,
   database: NarrativeDatabase,

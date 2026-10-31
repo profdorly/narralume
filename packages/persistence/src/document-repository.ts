@@ -252,8 +252,9 @@ export class SqliteDocumentRepository {
           "UPDATE documents SET current_version_id = ?, updated_at = ? WHERE project_id = ? AND id = ?",
         )
         .run(version.id, input.now, projectId, documentId);
-      // 正式版本推进后，任何不基于新版本的草稿都已过期，必须清除；
-      // 否则旧草稿会遮住新正式正文（各写入路径统一在此处理）。
+      // Once the official version advances, any draft not based on the new
+      // version is stale and must be cleared; otherwise the old draft would
+      // hide the new official text (handled here for every write path).
       this.database.raw
         .prepare(
           `DELETE FROM document_drafts

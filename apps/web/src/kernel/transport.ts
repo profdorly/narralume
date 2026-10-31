@@ -1,11 +1,12 @@
 /**
- * M3 双驱动传输层：api.ts 的三个底层助手（requestJson / requestVoid /
- * 裸 fetch）经此分发——server 模式走相对路径 fetch（现状不变），local
- * 模式走内核 kernelRequest。驱动在首次真正需要分发时探测 /api/health
- * 并缓存，localStorage("lapis:driver") 可显式覆盖。
+ * M3 dual-driver transport: the three low-level helpers in api.ts (requestJson
+ * / requestVoid / raw fetch) dispatch through here. Server mode uses a relative
+ * fetch (unchanged); local mode uses the kernel's kernelRequest. The driver is
+ * detected by probing /api/health the first time a dispatch actually needs it,
+ * then cached; localStorage("lapis:driver") can override it explicitly.
  *
- * 探测有意懒执行：单元测试（jsdom stub fetch）与首屏渲染都不应被
- * 一次主动探测打扰。
+ * Detection is deliberately lazy: unit tests (jsdom with a stubbed fetch) and
+ * the first render should not be disturbed by an eager probe.
  */
 
 export type DriverMode = "server" | "local" | "pending";
@@ -33,7 +34,10 @@ function setMode(next: DriverMode): void {
   for (const listener of modeListeners) listener(mode);
 }
 
-/** 探测：显式覆盖优先，否则 fetch /api/health（1.5s 超时）判定。 */
+/**
+ * Detection: an explicit override wins; otherwise fetch /api/health (1.5 s
+ * timeout) to decide.
+ */
 export function resolveDriverMode(): Promise<DriverMode> {
   probe ??= (async () => {
     const override = readOverride();
@@ -42,7 +46,8 @@ export function resolveDriverMode(): Promise<DriverMode> {
       return override;
     }
     if (typeof Worker === "undefined") {
-      // 无 Worker 的宿主（旧浏览器 / 测试环境）跑不了本地内核，直接 server。
+      // Hosts without Worker support (old browsers / test environments) cannot
+      // run the local kernel; use server directly.
       setMode("server");
       return "server";
     }
@@ -65,20 +70,23 @@ export function resolveDriverMode(): Promise<DriverMode> {
   return probe;
 }
 
-/** 显式切换（设置页入口）；清除则恢复自动探测。 */
+/**
+ * Explicit switch (settings page entry); clearing it restores automatic
+ * detection.
+ */
 export function setDriverOverride(next: "server" | "local" | null): void {
   if (next === null) {
     try {
       localStorage.removeItem(DRIVER_KEY);
     } catch {
-      // localStorage 不可用时忽略——下次探测仍会执行。
+      // Ignore when localStorage is unavailable; the next detection still runs.
     }
     return;
   }
   try {
     localStorage.setItem(DRIVER_KEY, next);
   } catch {
-    // 同上。
+    // Same as above.
   }
 }
 
@@ -91,15 +99,18 @@ function readOverride(): "server" | "local" | null {
     const value = localStorage.getItem(DRIVER_KEY);
     if (value === "server" || value === "local") return value;
   } catch {
-    // 隐私模式等场景 localStorage 可能不可用，退回探测。
+    // localStorage may be unavailable (e.g. private browsing); fall back to
+    // detection.
   }
   return null;
 }
 
 /**
- * 分发前必须拿到的确定模式：探测完成后返回缓存值；探测进行中则等待
- * （请求场景天然异步，等待是正确语义）。无浏览器宿主（SSR/测试未触发
- * 过探测）时退回 server——与既有相对路径 fetch 行为一致。
+ * The resolved mode every dispatch needs: returns the cached value once
+ * detection has finished, and waits while detection is in flight (requests are
+ * asynchronous anyway, so waiting is the right semantics). With no browser host
+ * (SSR, or tests that never triggered detection) it falls back to server,
+ * matching the existing relative-path fetch behavior.
  */
 export async function requireResolvedMode(): Promise<"server" | "local"> {
   const resolved = await resolveDriverMode();

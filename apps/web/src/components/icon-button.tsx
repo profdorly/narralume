@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes } from "react";
 
-/* 方形细描边图标按钮：统一 32px 触控面积，hover 浮出发丝线。 */
+/* Square icon button with a thin outline: uniform 32px touch area, a hairline
+   appears on hover. */
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: LucideIcon;

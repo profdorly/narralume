@@ -13,7 +13,8 @@ const CHAPTER_TEMPLATE_ORDER = [
   "chapter.commit",
 ] as const;
 
-/* 与各配方的步数预算保持一致：模型调用步骤 5 次尝试，落库/确定性步骤 1-2 次。 */
+/* Matches each recipe's step budget: model-call steps get 5 attempts,
+   persistence/deterministic steps 1-2. */
 const DEFAULT_ATTEMPTS: Readonly<Record<RunStepKind, number>> = {
   "context.compile": 2,
   "scene.plan": 5,

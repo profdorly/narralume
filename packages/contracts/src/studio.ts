@@ -74,7 +74,10 @@ export const DocumentDraftSchema = z.object({
 });
 export const SaveDocumentDraftRequestSchema = z.object({
   baseVersionId: IdSchema.nullable(),
-  /** 客户端最近一次见到的草稿 updatedAt；null 断言当前没有草稿。 */
+  /**
+   * The draft updatedAt the client last saw; null asserts there is currently no
+   * draft.
+   */
   expectedDraftUpdatedAt: TimestampSchema.nullable(),
   content: z.string().max(5_000_000),
 });

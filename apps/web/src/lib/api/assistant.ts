@@ -58,7 +58,10 @@ export async function renameAssistantConversation(
   );
 }
 
-/** 对话级模型/思考档设置；modelId=null 清除覆盖回到全局默认。 */
+/**
+ * Conversation-level model/reasoning tier settings; modelId=null clears the
+ * override and returns to the global default.
+ */
 export async function configureAssistantConversation(
   conversationId: string,
   input: { modelId?: string | null; reasoningEffort?: string | null },

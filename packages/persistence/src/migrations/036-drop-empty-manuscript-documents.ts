@@ -1,6 +1,8 @@
-/* 建项目不再自动创建空的「正文总稿」：它没有任何功能入口，只让交付页
-   常驻「仍是空稿」警告。清理存量中从未写入过任何版本的 manuscript 文档；
-   导入或手动创建过内容的 manuscript（有版本历史）保留。 */
+/* Creating a project no longer auto-creates an empty "full manuscript"
+   document: it had no feature entry and only kept a permanent "still empty"
+   warning on the delivery page. Remove existing manuscript documents that never
+   had any version written; manuscripts with imported or manually created
+   content (with version history) are kept. */
 export const migration036 = {
   version: 36,
   name: "drop-empty-manuscript-documents",

@@ -1,4 +1,4 @@
-/* 骨架行：纸面呼吸块。lines 为行数。 */
+/* Skeleton rows: breathing blocks on the paper. lines is the number of rows. */
 
 interface SkeletonProps {
   lines?: number;

@@ -11,9 +11,12 @@ export interface AssistantToolPolicy {
  * Server-owned execution policy for assistant tools. The narrative package
  * (assistant stage worker) cannot import the app-level registry, so the
  * access grading is declared here and shared by both:
- * - read：只读查询，材料已在助手上下文中，stage 直接落盘完成，不产生活动卡片。
- * - auto：候选生成或任务控制，用户明确要求后直接执行，不再追加确认。
- * - confirm：推进作品正式状态或消耗大额写作预算，先进入待确认卡片。
+ * - read: read-only queries; the material is already in the assistant context,
+ *   so the stage persists the result directly and no activity card is produced.
+ * - auto: candidate generation or task control; runs directly once the user
+ *   asks for it, with no extra confirmation.
+ * - confirm: advances the work's official state or spends a large writing
+ *   budget; goes to a pending-confirmation card first.
  */
 export const ASSISTANT_TOOL_POLICIES: readonly AssistantToolPolicy[] = [
   { name: "story.inspect", access: "read" },

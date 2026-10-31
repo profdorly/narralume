@@ -5,8 +5,9 @@ import {
 } from "@lapis/services";
 
 /**
- * 路由层领域错误：与共享服务层的 RunServiceError 同构，继承它使得
- * app.ts 的错误映射一个 instanceof 分支同时覆盖两层抛出的错误。
+ * Route-layer domain error: same shape as RunServiceError of the shared service
+ * layer. Extending it lets a single instanceof branch in the app.ts error
+ * mapping cover errors thrown by both layers.
  */
 export class RunRouteError extends RunServiceError {
   constructor(code: string, message: string, statusCode: number) {
@@ -15,7 +16,7 @@ export class RunRouteError extends RunServiceError {
   }
 }
 
-/** studio 路由域错误：与 StudioServiceError 同构。 */
+/** Studio route domain error: same shape as StudioServiceError. */
 export class StudioRouteError extends StudioServiceError {
   constructor(code: string, message: string, statusCode: number) {
     super(code, message, statusCode);
@@ -23,7 +24,7 @@ export class StudioRouteError extends StudioServiceError {
   }
 }
 
-/** automation 路由域错误：与 AutomationServiceError 同构。 */
+/** Automation route domain error: same shape as AutomationServiceError. */
 export class AutomationRouteError extends AutomationServiceError {
   constructor(code: string, message: string, statusCode: number) {
     super(code, message, statusCode);

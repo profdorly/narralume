@@ -48,7 +48,10 @@ export interface ProbeStage {
   status: "passed" | "failed" | "unsupported" | "skipped";
   latencyMs: number;
   detail: string;
-  /** 仅 structured-output 阶段返回：native | json-mode | prompt | none */
+  /**
+   * Returned only by the structured-output stage: native | json-mode | prompt |
+   * none
+   */
   capability?: string;
   /**
    * Set only on the text stage once the provider accepted a request, even

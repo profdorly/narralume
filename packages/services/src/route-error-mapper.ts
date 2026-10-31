@@ -42,7 +42,10 @@ import {
   deliveryErrorStatus,
 } from "./index.js";
 
-/** ApiError 形状的错误响应（HTTP 宿主与内核宿主共用）。 */
+/**
+ * Error response in the ApiError shape (shared by the HTTP host and the kernel
+ * host).
+ */
 export interface ApiErrorPayload {
   status: number;
   code: string;
@@ -52,8 +55,10 @@ export interface ApiErrorPayload {
 }
 
 /**
- * 与原 app.ts setErrorHandler 同一优先级的错误映射。Fastify 宿主把结果
- * 写进 reply；内核宿主把它作为 RPC 错误响应。requestId 由调用方注入。
+ * Error mapping with the same precedence as the original app.ts
+ * setErrorHandler. The Fastify host writes the result into reply; the kernel
+ * host returns it as an RPC error response. requestId is injected by the
+ * caller.
  */
 export function mapRouteError(
   error: unknown,
@@ -118,7 +123,7 @@ export function mapRouteError(
     error instanceof CanonCandidateRouteError ||
     error instanceof AssistantPersistenceError ||
     error instanceof StoryRouteError ||
-    error instanceof ServiceError || // 覆盖 RouteError 与 *ServiceError 两层
+    error instanceof ServiceError || // Covers both RouteError and *ServiceError
     error instanceof ReviewRouteError ||
     error instanceof RunRouteError ||
     error instanceof StudioRouteError ||
@@ -145,7 +150,8 @@ export function mapRouteError(
       message: error.message,
     };
   }
-  // narrative 层的 CanonCandidateError 与 services 无依赖环，按同构形状识别。
+  // The narrative layer's CanonCandidateError has no dependency cycle with
+  // services; it is recognized by its shape.
   if (isStatusCodeError(error)) {
     return {
       status: error.statusCode,

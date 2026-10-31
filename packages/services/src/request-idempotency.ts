@@ -4,7 +4,10 @@ export function hashRequest(value: unknown): string {
   return sha256Hex(stableJson(value));
 }
 
-/** 把任意种子串映射为稳定的 UUID 形状（v4 段位伪装，仅作全局唯一 ID）。 */
+/**
+ * Map any seed string to a stable UUID shape (v4 segment layout as a disguise;
+ * only used as a globally unique ID).
+ */
 export function deterministicUuid(seed: string): string {
   const hex = sha256Hex(seed);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;

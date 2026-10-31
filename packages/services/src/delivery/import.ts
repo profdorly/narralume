@@ -922,7 +922,8 @@ async function extractDocx(bytes: Uint8Array) {
       "import.docx.document_too_large",
       "The expanded DOCX content exceeds the safety limit",
     );
-  // 样式表可选；用于识别本地化 Word 的标题样式（如葡语 Ttulo1 → heading 1）。
+  // The stylesheet is optional; it is used to recognize the heading styles of
+  // localized Word (e.g. Portuguese Ttulo1 → heading 1).
   const stylesXml =
     (await zip.file("word/styles.xml")?.async("string")) ?? null;
   if (documentXml.length + (stylesXml?.length ?? 0) > 100 * 1024 * 1024)

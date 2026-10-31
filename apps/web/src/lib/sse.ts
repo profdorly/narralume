@@ -10,7 +10,8 @@ import {
 } from "../kernel/transport";
 
 /* ==========================================================================
-   /api/events 的 EventSource 封装（从旧 run-center / studio-view 搬入）。
+   EventSource wrapper for /api/events (moved from the old run-center /
+   studio-view).
    ========================================================================== */
 
 function parseServerEvent(text: string): ServerEvent | null {
@@ -23,7 +24,7 @@ function parseServerEvent(text: string): ServerEvent | null {
   }
 }
 
-/** model.event 载荷中最常用的 text.delta 形状。 */
+/** The most common text.delta shape in a model.event payload. */
 interface TextDeltaPayload {
   type: string;
   text?: string;
@@ -51,7 +52,10 @@ interface ServerEventHandlers {
     eventType: string,
     payload: Record<string, unknown>,
   ) => void;
-  /** 「从正文补全故事圣经」协调器每次状态迁移。 */
+  /**
+   * Every state transition of the "Fill in the story bible from the manuscript"
+   * coordinator.
+   */
   onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
 }
 
@@ -168,8 +172,8 @@ function subscribeServerEvents(handlers: ServerEventHandlers): () => void {
 }
 
 /**
- * React 侧订阅：handlers 只需随引用变化（内部用 ref 稳定），连接只在
- * 挂载时建立一次。
+ * React-side subscription: handlers may change by reference (kept stable with a
+ * ref internally); the connection is established only once, on mount.
  */
 export function useServerEvents(
   handlers: ServerEventHandlers,
@@ -194,8 +198,9 @@ export function useServerEvents(
 }
 
 /**
- * 累积指定运行的 text.delta 实时正文（配合运行详情里已持久化的 streams 使用，
- * 持久化正文由调用方自行拼接兜底）。
+ * Accumulate the live text.delta prose of a given run (used together with the
+ * streams persisted in the run detail; the caller concatenates the persisted
+ * text as a fallback).
  */
 export function useRunLiveText(
   runId: string | null,

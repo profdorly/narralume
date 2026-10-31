@@ -9,9 +9,11 @@ import {
 } from "./route-app.js";
 
 /**
- * 内核路由表：RouteApp 的收集实现。register*Routes 把处理器注册进来，
- * dispatch 按 method+path 匹配（:param 提取），供浏览器内核 RPC 用。
- * 与 Fastify 宿主共用同一批注册函数，行为天然一致。
+ * Kernel route table: the collecting implementation of RouteApp.
+ * register*Routes register their handlers here, and dispatch matches by
+ * method+path (extracting :param), for the browser kernel RPC. It shares the
+ * same registration functions with the Fastify host, so behavior is identical
+ * by construction.
  */
 export class RouteTable implements RouteApp {
   readonly #routes: {

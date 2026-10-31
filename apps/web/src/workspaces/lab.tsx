@@ -1,4 +1,5 @@
-/* 长篇推演：语义检索、剧情预测、故事记忆与变更影响预演。 */
+/* Long-form simulation: semantic search, plot prediction, story memory and
+   change impact preview. */
 
 import "../styles/lab.css";
 
@@ -282,7 +283,8 @@ function LabActions({
   );
 }
 
-/* ---- 左：语义检索 -------------------------------------------------------- */
+/* ---- Left: semantic search
+   -------------------------------------------------------- */
 
 function SearchChamber({
   searchInput,
@@ -488,7 +490,8 @@ function RetrievalIndexPanel({ projectId }: { projectId: string }) {
   );
 }
 
-/* ---- 右：剧情预测 + 故事记忆 --------------------------------------------- */
+/* ---- Right: plot prediction + story memory
+   --------------------------------------------- */
 
 function Predictions({
   predictions,
@@ -610,7 +613,8 @@ function Predictions({
   );
 }
 
-/* ---- 影响预演 ------------------------------------------------------------- */
+/* ---- Impact preview
+   ------------------------------------------------------------- */
 
 function DryRun({
   input,

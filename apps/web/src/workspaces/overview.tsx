@@ -40,9 +40,11 @@ import {
   taskHref,
 } from "../lib/task-ledger";
 
-/* 项目概览：进入作品后的默认页面。数据源是服务端 overview 聚合：
-   进度、当前章节、活动任务（origin / stopReason / availableActions）、
-   待办计数与下一步。任务内部 Step 不在此解析；恢复走任务台账与深度链接。 */
+/* Project overview: the default page after opening a work. Its data source is
+   the server overview aggregate: progress, current chapter, active task (origin
+   / stopReason / availableActions), pending counts and next step. A task's
+   internal Steps are not parsed here; recovery uses the task ledger and deep
+   links. */
 
 export function OverviewWorkspace() {
   const { t } = useI18n();
@@ -56,7 +58,9 @@ export function OverviewWorkspace() {
   });
   const overview = overviewQuery.data ?? null;
 
-  /* 离页恢复对账：服务端真相是唯一权威；活跃任务收进台账，失踪任务清掉。 */
+  /* Reconcile on returning to the page: the server's source of truth is the
+     only authority; active tasks go into the ledger, missing tasks are cleared.
+     */
   useEffect(() => {
     if (!projectId || !overviewQuery.data) return;
     const active = overviewQuery.data.activeTask;
@@ -120,7 +124,8 @@ function OverviewBoard({ overview }: { overview: ProjectOverview }) {
         </div>
       </header>
 
-      {/* 按任务 id 重挂载：轮询切到别的任务时，取消确认与 mutation 状态不跨任务残留。 */}
+      {/* Remount per task id: when polling switches to another task, the cancel
+         confirmation and mutation state do not carry over between tasks. */}
       {activeTask ? <ActiveTaskCard key={activeTask.id} projectId={overview.project.id} task={activeTask} /> : null}
 
       {!activeTask && currentChapter ? (
@@ -158,8 +163,9 @@ function OverviewBoard({ overview }: { overview: ProjectOverview }) {
   );
 }
 
-/** 活动任务卡：只展示任务协议字段（kind / status / stopReason / availableActions），
- *  并提供「回到任务现场」的恢复链接；不展开任务内部步骤。 */
+/** Active task card: shows only task protocol fields (kind / status /
+ *  stopReason / availableActions), and offers a "back to the task" recovery
+ *  link; it does not expand the task's internal steps. */
 function ActiveTaskCard({ projectId, task }: { projectId: string; task: ProjectOverviewActiveTask }) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -216,8 +222,10 @@ function ActiveTaskCard({ projectId, task }: { projectId: string; task: ProjectO
   );
 }
 
-/** 本书文风卡：当前启用风格的摘要 + 管理入口；写清与写作法模板的两层分工。
- *  风格数据加载失败时静默隐藏，不打扰概览主信息流。 */
+/** This book's style card: a summary of the enabled style + a management entry;
+ *  spells out how it divides work with the writing method templates. When style
+ *  data fails to load it hides silently, so as not to disturb the overview's
+ *  main information flow. */
 function StyleCard({ projectId }: { projectId: string }) {
   const { t } = useI18n();
   const stylesQuery = useQuery({
@@ -250,7 +258,10 @@ function StyleCard({ projectId }: { projectId: string }) {
   );
 }
 
-/** 待办汇总：四项计数大于零才显形；各连到裁定位置。 */
+/**
+ * Pending summary: each of the four counts appears only when greater than zero;
+ * each links to where it is decided.
+ */
 function PendingStrip({ projectId, pending, activeTask }: { projectId: string; pending: ProjectOverview["pending"]; activeTask: ProjectOverviewActiveTask | null }) {
   const { t } = useI18n();
   const resumeHint = activeTask === null ? rememberedTasks(projectId)[0] : null;
