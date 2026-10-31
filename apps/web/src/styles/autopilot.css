@@ -67,12 +67,6 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-
-.autopilot__current {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
 .autopilot__current-title {
   font-family: var(--font-serif);
   font-weight: var(--weight-display);

@@ -122,14 +122,6 @@
   font-size: 0.62rem;
   letter-spacing: 0.16em;
 }
-.rail__item--tool {
-  padding: 0.38rem 0.6rem;
-  color: var(--ink-faint);
-  font-size: 0.8rem;
-}
-.rail__item--tool:hover {
-  color: var(--ink);
-}
 
 .rail__tools {
   display: flex;
