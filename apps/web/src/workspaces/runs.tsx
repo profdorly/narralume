@@ -1,5 +1,6 @@
 import "../styles/runs.css";
 
+import { MIN_VIABLE_PARTIAL_CHARACTERS } from "@lapis/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -13,7 +14,6 @@ import { ProjectRequiredState } from "../components/project-required-state";
 import { Skeleton } from "../components/skeleton";
 import { useI18n } from "../i18n";
 import {
-  MIN_VIABLE_PARTIAL_CHARACTERS,
   adoptRunStream,
   continueRunStream,
   controlRun,

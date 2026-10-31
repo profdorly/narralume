@@ -1,4 +1,5 @@
-export { MIN_VIABLE_PARTIAL_CHARACTERS } from "@lapis/contracts";
+// Value exports from @lapis/contracts would pull its zod schemas into the shell
+// bundle; import contract constants from "@lapis/contracts" where they are used.
 export type {
   ProjectLanguage,
   AssistantActivityDto,

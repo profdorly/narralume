@@ -23,12 +23,11 @@ import { IconButton } from "../components/icon-button";
 import { BRAND_NAME, LapisMark, LapisWordmark } from "../components/lapis-mark";
 import { getLocale, translate, useI18n, type MessageKey } from "../i18n";
 import { getHealth } from "../lib/api";
-import { CommandPalette } from "./command-palette";
 import {
   subscribeAssistantContext,
   type AssistantContextPatch,
 } from "./assistant-page-context";
-import { ProjectAssistant } from "./assistant";
+import { AssistantTrigger } from "./assistant-trigger";
 import { useTheme } from "./theme";
 import {
   ADVANCED_WORKSPACES,
@@ -72,6 +71,11 @@ const AutopilotWorkspace = lazy(() => import("../workspaces/autopilot").then((mo
 const RunsWorkspace = lazy(() => import("../workspaces/runs").then((module) => ({ default: module.RunsWorkspace })));
 const LabWorkspace = lazy(() => import("../workspaces/lab").then((module) => ({ default: module.LabWorkspace })));
 const SettingsWorkspace = lazy(() => import("../workspaces/settings").then((module) => ({ default: module.SettingsWorkspace })));
+
+/* Not needed for the first paint: the palette loads on its first open, the assistant
+   panel (with its CSS) on its first open or when it was left open last time. */
+const CommandPalette = lazy(() => import("./command-palette").then((module) => ({ default: module.CommandPalette })));
+const ProjectAssistant = lazy(() => import("./assistant").then((module) => ({ default: module.ProjectAssistant })));
 
 /* 左栏折叠态有两层来源：宽屏记忆（localStorage）与窄屏（≤1100px）自动折叠。
    窄屏里的手动收 / 展是会话级覆盖、不写记忆；重新回到宽屏即落回记忆态。 */
@@ -239,6 +243,10 @@ function ShellFrame() {
   }));
   const assistantOpen =
     assistantState.open && (!mobileLayout || assistantState.route === currentPath);
+  // Latches on the first open: from then on ProjectAssistant renders the launcher
+  // itself (with the live activity count) and stays loaded when closed.
+  const [assistantLoaded, setAssistantLoaded] = useState(false);
+  if (assistantOpen && !assistantLoaded) setAssistantLoaded(true);
   const assistantScope = assistantContextScope(
     location.pathname,
     location.search,
@@ -406,20 +414,28 @@ function ShellFrame() {
         </Suspense>
       </main>
       {paletteOpen ? (
-        <CommandPalette
-          projectId={projectId}
-          onClose={() => setPaletteOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <CommandPalette
+            projectId={projectId}
+            onClose={() => setPaletteOpen(false)}
+          />
+        </Suspense>
       ) : null}
       {projectId ? (
-        <ProjectAssistant
-          key={projectId}
-          projectId={projectId}
-          context={assistantContext}
-          open={assistantOpen}
-          onOpen={() => setProjectAssistantOpen(true)}
-          onClose={() => setProjectAssistantOpen(false)}
-        />
+        assistantLoaded ? (
+          <Suspense fallback={null}>
+            <ProjectAssistant
+              key={projectId}
+              projectId={projectId}
+              context={assistantContext}
+              open={assistantOpen}
+              onOpen={() => setProjectAssistantOpen(true)}
+              onClose={() => setProjectAssistantOpen(false)}
+            />
+          </Suspense>
+        ) : (
+          <AssistantTrigger onOpen={() => setProjectAssistantOpen(true)} />
+        )
       ) : null}
     </div>
   );
