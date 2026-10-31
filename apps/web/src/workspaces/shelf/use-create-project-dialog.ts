@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import { AUTOMATION_DEFAULTS } from "@lapis/contracts";
 import { useRef, useState, type FormEvent } from "react";
 
 import { useI18n } from "../../i18n";
@@ -39,6 +38,9 @@ export function useCreateProjectDialog(
       /* 空白建书走纯项目创建（无模型也可用）；AI 引导建书一次立项并发起
          foundation 后台任务，requestId 即本次提交的幂等键。 */
       if (mode === "ai" && input.premise) {
+        // Loaded on submit: @lapis/contracts carries the zod schemas, which the
+        // shelf does not need to render.
+        const { AUTOMATION_DEFAULTS } = await import("@lapis/contracts");
         const request = {
           title: input.title,
           premise: input.premise,
