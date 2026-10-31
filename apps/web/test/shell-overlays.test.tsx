@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "../src/app/shell";
@@ -99,6 +99,27 @@ describe("壳层的协作侧栏与命令面板", () => {
     expect(screen.queryByRole("complementary", { name: "Colaboração no projeto" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Abrir colaboração no projeto" })).toBeInTheDocument();
     expect(window.localStorage.getItem("lapis:assistant-open")).toBe("0");
+  });
+
+  it("项目已有协作会话时预先加载侧栏数据，入口仍是关闭态（显示进行中任务数）", async () => {
+    window.localStorage.setItem(
+      "lapis:assistant-conversation:project-1",
+      CONVERSATION.id,
+    );
+    renderShell();
+    expect(await screen.findByText("overview")).toBeInTheDocument();
+
+    expect(
+      await screen.findByRole("button", { name: "Abrir colaboração no projeto" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("complementary", { name: "Colaboração no projeto" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(assistantRequests()).toContain(
+        `/api/assistant/conversations/${CONVERSATION.id}`,
+      ),
+    );
   });
 
   it("上次保持打开时，载入后直接显示侧栏", async () => {

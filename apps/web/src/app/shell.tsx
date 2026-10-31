@@ -79,6 +79,19 @@ const SettingsWorkspace = lazy(() => import("../workspaces/settings").then((modu
 const CommandPalette = lazy(() => import("./command-palette").then((module) => ({ default: module.CommandPalette })));
 const ProjectAssistant = lazy(() => import("./assistant").then((module) => ({ default: module.ProjectAssistant })));
 
+/** Whether this browser remembers an assistant conversation for the project
+ *  (the key ProjectAssistant writes when a conversation is selected). */
+function hasAssistantConversation(projectId: string): boolean {
+  try {
+    return (
+      window.localStorage.getItem(`lapis:assistant-conversation:${projectId}`) !==
+      null
+    );
+  } catch {
+    return false;
+  }
+}
+
 /* The rail's collapsed state has two sources: the wide-screen memory
    (localStorage) and automatic collapse on narrow screens (≤1100px). A manual
    collapse / expand on a narrow screen is a session-level override and is not
@@ -248,9 +261,16 @@ function ShellFrame() {
   const assistantOpen =
     assistantState.open && (!mobileLayout || assistantState.route === currentPath);
   // Latches on the first open: from then on ProjectAssistant renders the launcher
-  // itself (with the live activity count) and stays loaded when closed.
+  // itself (with the live activity count) and stays loaded when closed. A
+  // project that already has an assistant conversation loads it right away, so
+  // the launcher shows that conversation's running tasks; a project that never
+  // used the assistant has none to count.
   const [assistantLoaded, setAssistantLoaded] = useState(false);
-  if (assistantOpen && !assistantLoaded) setAssistantLoaded(true);
+  if (
+    !assistantLoaded &&
+    (assistantOpen || (projectId && hasAssistantConversation(projectId)))
+  )
+    setAssistantLoaded(true);
   const assistantScope = assistantContextScope(
     location.pathname,
     location.search,
