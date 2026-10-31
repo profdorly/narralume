@@ -23,7 +23,6 @@ export function ShelfDialog({
   return (
     <div
       className="shelf-dialog-backdrop"
-      data-lenis-prevent
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -34,7 +33,6 @@ export function ShelfDialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        data-lenis-prevent
       >
         <p className="shelf-dialog__eyebrow mono">{eyebrow}</p>
         <h2 className="shelf-dialog__title">{title}</h2>

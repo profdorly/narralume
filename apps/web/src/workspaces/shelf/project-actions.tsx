@@ -103,7 +103,6 @@ export function ProjectActions({
             ref={menuRef}
             className="shelf-menu"
             role="menu"
-            data-lenis-prevent
             onKeyDown={handleMenuKeyDown}
           >
             <button

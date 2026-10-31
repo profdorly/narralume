@@ -64,7 +64,6 @@ function CoverCropDialog({
   return (
     <div
       className="shelf-dialog-backdrop"
-      data-lenis-prevent
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -75,7 +74,6 @@ function CoverCropDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t("shelf.crop.title")}
-        data-lenis-prevent
       >
         <p className="shelf-dialog__eyebrow mono">COVER CROP</p>
         <h2 className="shelf-dialog__title">{t("shelf.crop.title")}</h2>

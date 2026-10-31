@@ -10,9 +10,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import Lenis from "lenis";
-import { motion, useReducedMotion, type MotionStyle } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router";
 
 import { Empty } from "../../components/empty";
@@ -35,29 +33,12 @@ import { chapterCount, useShelfProjects } from "./use-shelf-projects";
 import type { CreateBookMode } from "./use-create-project-dialog";
 
 /* ==========================================================================
-   藏书室：作品编目与建书入口。本页是唯一允许挂 Lenis 平滑滚动的工作区。
+   Shelf: the catalogue of works and the entry points for new books.
    ========================================================================== */
 
 export function ShelfWorkspace() {
   const navigate = useNavigate();
-  const reduceMotion = useReducedMotion();
   const { t } = useI18n();
-  const lenisReady = reduceMotion !== true;
-  useEffect(() => {
-    if (!lenisReady) return;
-    const lenis = new Lenis({ lerp: 0.11 });
-    let frame = 0;
-    const loop = (time: number) => {
-      lenis.raf(time);
-      frame = requestAnimationFrame(loop);
-    };
-    frame = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(frame);
-      lenis.destroy();
-    };
-  }, [lenisReady]);
-
   const [createMode, setCreateMode] = useState<CreateBookMode | null>(null);
   const [editTarget, setEditTarget] = useState<Project | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
@@ -242,26 +223,13 @@ export function ShelfWorkspace() {
           {view === "covers" ? (
             <div className="shelf__bookshelf">
               {rows.map((project) => (
-                <motion.article
+                <article
                   key={project.id}
                   className="shelf-book"
                   data-archived={project.archivedAt ? "true" : "false"}
                   data-menu-open={menuFor === project.id ? "true" : "false"}
-                  {...(reduceMotion
-                    ? {}
-                    : {
-                        whileHover: "shelf-book-hover",
-                        variants: { "shelf-book-hover": { y: -5 } },
-                        transition: {
-                          type: "spring",
-                          stiffness: 360,
-                          damping: 28,
-                        },
-                      })}
                   style={
-                    {
-                      "--book-hue": coverHue(project.id),
-                    } as unknown as MotionStyle
+                    { "--book-hue": coverHue(project.id) } as CSSProperties
                   }
                 >
                   <button
@@ -323,7 +291,7 @@ export function ShelfWorkspace() {
                     onArchive={() => archiveMutation.mutate(project)}
                     onDelete={() => setDeleteTarget(project)}
                   />
-                </motion.article>
+                </article>
               ))}
             </div>
           ) : (
@@ -336,23 +304,11 @@ export function ShelfWorkspace() {
                 <span />
               </div>
               {rows.map((project, index) => (
-                <motion.article
+                <article
                   key={project.id}
                   className="shelf-row"
                   data-archived={project.archivedAt ? "true" : "false"}
                   data-menu-open={menuFor === project.id ? "true" : "false"}
-                  {...(reduceMotion
-                    ? {}
-                    : {
-                        whileHover: "shelf-row-hover",
-                        variants: { "shelf-row-hover": { x: 4 } },
-                        transition: {
-                          type: "spring",
-                          stiffness: 420,
-                          damping: 30,
-                        },
-                      })}
-                  style={{ transformStyle: "preserve-3d" }}
                 >
                   <button
                     type="button"
@@ -411,32 +367,12 @@ export function ShelfWorkspace() {
                     onArchive={() => archiveMutation.mutate(project)}
                     onDelete={() => setDeleteTarget(project)}
                   />
-                  <motion.span
+                  <span
                     className="shelf-spine"
                     aria-hidden="true"
                     style={
-                      {
-                        "--spine-hue": coverHue(project.id),
-                      } as MotionStyle
+                      { "--spine-hue": coverHue(project.id) } as CSSProperties
                     }
-                    {...(reduceMotion
-                      ? {}
-                      : {
-                          variants: {
-                            "shelf-row-hover": {
-                              y: -2,
-                              rotateY: 8,
-                              rotate: -2,
-                              transformPerspective: 180,
-                            },
-                          },
-                          transition: {
-                            type: "spring",
-                            stiffness: 420,
-                            damping: 24,
-                          },
-                        })}
-                    initial={{ rotate: -2 }}
                   >
                     <span className="shelf-spine__cap" />
                     <span className="shelf-spine__band" />
@@ -444,8 +380,8 @@ export function ShelfWorkspace() {
                       <span className="shelf-spine__emboss" />
                       <span className="shelf-spine__emboss shelf-spine__emboss--second" />
                     </span>
-                  </motion.span>
-                </motion.article>
+                  </span>
+                </article>
               ))}
             </div>
           )}

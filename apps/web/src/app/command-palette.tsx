@@ -81,7 +81,6 @@ export function CommandPalette({ projectId, onClose }: CommandPaletteProps) {
       aria-modal="true"
       aria-label={t("shell.palette.title")}
       tabIndex={-1}
-      data-lenis-prevent
     >
       <div className="palette__frame">
         <div className="palette__prompt">

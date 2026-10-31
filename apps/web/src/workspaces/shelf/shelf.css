@@ -234,7 +234,9 @@
   border-bottom: 1px solid var(--hairline-soft);
   text-align: left;
   outline-offset: 4px;
+  transition: transform 200ms var(--ease-out-editorial);
 }
+.shelf-row:hover { transform: translateX(4px); }
 .shelf-row[data-menu-open="true"] { z-index: 40; }
 .shelf-row[data-archived="true"] .shelf-row__body { opacity: 0.5; }
 .shelf-row__open {
@@ -304,6 +306,10 @@
   transform: rotate(-2deg);
   transform-origin: bottom;
   pointer-events: none;
+  transition: transform 200ms var(--ease-out-editorial);
+}
+.shelf-row:hover .shelf-spine {
+  transform: perspective(180px) translateY(-2px) rotateY(8deg) rotate(-2deg);
 }
 .shelf-spine__cap {
   height: 4px;
@@ -601,7 +607,9 @@
   padding-bottom: 1.4rem;
   border-bottom: 1px solid var(--hairline);
   isolation: isolate;
+  transition: transform 240ms var(--ease-out-editorial);
 }
+.shelf-book:hover { transform: translateY(-5px); }
 .shelf-book__open {
   position: absolute;
   inset: 0;
