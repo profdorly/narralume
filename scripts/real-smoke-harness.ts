@@ -45,7 +45,7 @@ export function configureSmokeModelTarget(
   return { model, provider };
 }
 
-export interface RealSmokeArgs {
+interface RealSmokeArgs {
   protocols: string[];
   diagnostic: boolean;
   chapters: number | null;

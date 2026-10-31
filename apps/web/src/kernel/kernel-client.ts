@@ -9,7 +9,7 @@
 
 import { getLocale, translate } from "../i18n";
 
-export type KernelEventListener = (frame: string) => void;
+type KernelEventListener = (frame: string) => void;
 
 interface KernelResponseFrame {
   type: "response";
@@ -27,7 +27,7 @@ type KernelFrame =
   | { type: "fatal"; message: string }
   | { type: "sse"; frame: string };
 
-export interface KernelHttpError {
+interface KernelHttpError {
   status: number;
   code: string;
   message: string;
@@ -215,7 +215,7 @@ export function addKernelEventListener(
   return () => listeners.delete(listener);
 }
 
-export interface KernelRequestInit {
+interface KernelRequestInit {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   query?: Record<string, string> | undefined;

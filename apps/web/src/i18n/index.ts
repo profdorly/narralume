@@ -39,7 +39,7 @@ type FlattenKeys<T> = {
 /** 全部合法字典键（点路径），如 "common.action.save"。 */
 export type MessageKey = FlattenKeys<Messages>;
 
-export type MessageVars = Record<string, string | number>;
+type MessageVars = Record<string, string | number>;
 
 function lookup(locale: Locale, key: string): string | null {
   let node: unknown = MESSAGES[locale];
@@ -181,7 +181,7 @@ if (typeof document !== "undefined") {
   document.documentElement.lang = currentLocale;
 }
 
-export interface I18n {
+interface I18n {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: MessageKey, vars?: MessageVars) => string;

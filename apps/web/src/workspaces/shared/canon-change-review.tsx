@@ -15,9 +15,9 @@ import {
   type CanonChangeSetView,
 } from "../../lib/api";
 
-export type CanonChangeDecision = "apply" | "reject";
+type CanonChangeDecision = "apply" | "reject";
 
-export interface CanonChangeReviewLabels {
+interface CanonChangeReviewLabels {
   apply?: string;
   forceApply?: string;
   defer?: string;
@@ -212,7 +212,7 @@ export function SettlementConflictNote({
   );
 }
 
-export interface SettlementConflictDetails {
+interface SettlementConflictDetails {
   conflicts: Array<{ path: string; existingIds: string[]; reason: string }>;
   forceAllowed: boolean;
 }

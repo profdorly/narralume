@@ -7,7 +7,7 @@ import { projectWorkspacePath } from "./project-route";
 const LEDGER_KEY = "lapis:task-ledger";
 const LEDGER_CAP = 20;
 
-export interface TaskLedgerEntry {
+interface TaskLedgerEntry {
   projectId: string;
   kind: "quick_creation" | "chapter" | "foundation";
   taskId: string;
@@ -17,7 +17,7 @@ export interface TaskLedgerEntry {
   documentId?: string | null;
 }
 
-export interface TaskNavigationContext {
+interface TaskNavigationContext {
   origin?: Record<string, unknown> | null;
   documentId?: string | null;
 }

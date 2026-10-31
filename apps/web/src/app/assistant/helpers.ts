@@ -9,7 +9,7 @@ import type {
 } from "../../lib/api";
 import { projectWorkspacePath } from "../../lib/project-route";
 
-export type TimelineEntry =
+type TimelineEntry =
   | { type: "message"; at: string; id: string; message: AssistantMessageDto }
   | {
       type: "activity";

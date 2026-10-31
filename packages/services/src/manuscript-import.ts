@@ -3,7 +3,7 @@
 
 import { detectManuscriptLanguage } from "@lapis/narrative";
 
-export interface ManuscriptSection {
+interface ManuscriptSection {
   title: string;
   content: string;
 }
@@ -903,7 +903,7 @@ function isCjkManuscript(text: string): boolean {
   return letters === 0 || cjk * 2 >= letters;
 }
 
-export type StatisticalStylePayload = {
+type StatisticalStylePayload = {
   name: string;
   description: string;
   rules: string[];

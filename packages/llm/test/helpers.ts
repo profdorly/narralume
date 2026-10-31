@@ -1,6 +1,6 @@
 import type { FetchLike } from "../src/index.js";
 
-export interface CapturedRequest {
+interface CapturedRequest {
   url: string;
   init: RequestInit | undefined;
   body: Record<string, unknown>;

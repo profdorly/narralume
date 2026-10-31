@@ -24,7 +24,7 @@ function parseServerEvent(text: string): ServerEvent | null {
 }
 
 /** model.event 载荷中最常用的 text.delta 形状。 */
-export interface TextDeltaPayload {
+interface TextDeltaPayload {
   type: string;
   text?: string;
 }
@@ -41,7 +41,7 @@ function isTextDelta(event: unknown): event is {
   );
 }
 
-export interface ServerEventHandlers {
+interface ServerEventHandlers {
   onModelEvent?: (runId: string, event: unknown) => void;
   onRunStatus?: (runId: string, status: string) => void;
   onRunEvent?: (
@@ -55,7 +55,7 @@ export interface ServerEventHandlers {
   onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
 }
 
-export interface BibleBackfillStatusEvent {
+interface BibleBackfillStatusEvent {
   projectId: string;
   jobId: string;
   status: string;

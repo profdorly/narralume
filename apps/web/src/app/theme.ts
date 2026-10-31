@@ -2,8 +2,8 @@ import { create } from "zustand";
 
 /* 默认跟随系统；用户可临时反转昼夜，再次点击即可恢复系统跟随。 */
 
-export type Theme = "light" | "dark";
-export type ThemePreference = "system" | Theme;
+type Theme = "light" | "dark";
+type ThemePreference = "system" | Theme;
 
 const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 const THEME_PREFERENCE_KEY = "lapis:theme-preference";

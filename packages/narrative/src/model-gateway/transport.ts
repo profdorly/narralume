@@ -267,7 +267,7 @@ export interface PhysicalAttemptCounter {
   count: number;
 }
 
-export interface LogicalCallScope {
+interface LogicalCallScope {
   signal: AbortSignal;
   dispose(): void;
   normalizeError(error: unknown, callerSignal: AbortSignal): unknown;

@@ -51,7 +51,7 @@ export function budgetUsage(
   };
 }
 
-export interface ModelPricing {
+interface ModelPricing {
   input: number;
   output: number;
   cachedInput: number;

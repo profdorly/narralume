@@ -1,6 +1,6 @@
 import type { SystemBackupManifestDto } from "@lapis/contracts";
 
-export interface ScheduledBackupService {
+interface ScheduledBackupService {
   create(label: string, now: string): Promise<SystemBackupManifestDto>;
 }
 

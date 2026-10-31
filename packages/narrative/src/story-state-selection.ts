@@ -41,7 +41,7 @@ export interface OutlineScope {
   targetChapterOrder: number | null;
 }
 
-export interface StoryStateSelection {
+interface StoryStateSelection {
   scope: OutlineScope;
   access: CanonAccess;
   entities: CanonEntity[];

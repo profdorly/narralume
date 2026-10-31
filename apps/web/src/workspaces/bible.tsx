@@ -40,7 +40,7 @@ const INTENT_FIELD_LABELS: Record<string, MessageKey> = {
   currentFocus: "bible.fields.currentFocus",
 };
 
-export type BibleSectionId = BibleEditorSection;
+type BibleSectionId = BibleEditorSection;
 
 const SECTION_TABS: { id: BibleSectionId; en: string }[] = [
   { id: "intent", en: "INTENÇÃO" },

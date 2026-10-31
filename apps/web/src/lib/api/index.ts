@@ -15,7 +15,6 @@ export type {
   ModelTaskType,
   PublicProviderDto,
   ProjectCoverMutation,
-  QualityPreset,
   UpsertModelRequest,
   UpsertProviderRequest,
   WireApi,
