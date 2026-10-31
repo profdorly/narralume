@@ -54,7 +54,7 @@ describe("server API", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       status: "ok",
-      service: "narralume",
+      service: "lapis",
       database: { status: "ready", migration: 49 },
     });
   });

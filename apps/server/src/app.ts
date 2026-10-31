@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import cors from "@fastify/cors";
-import { HealthResponseSchema, NARRALUME_VERSION } from "@lapis/contracts";
+import { HealthResponseSchema, LAPIS_VERSION } from "@lapis/contracts";
 import {
   SqliteAutomationRepository,
   SqliteLlmCallRepository,
@@ -305,8 +305,8 @@ export async function buildApp(
   app.get("/api/health", async () =>
     HealthResponseSchema.parse({
       status: "ok",
-      service: "narralume",
-      version: NARRALUME_VERSION,
+      service: "lapis",
+      version: LAPIS_VERSION,
       database: { status: "ready", migration: database.currentMigration() },
       now: new Date().toISOString(),
     }),
