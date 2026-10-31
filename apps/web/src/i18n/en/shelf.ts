@@ -3,8 +3,6 @@ import type { shelf as shelfPt } from "../pt-BR/shelf";
 export const shelf: typeof shelfPt = {
   title: "The Stacks",
   ghost: "STACKS",
-  trialNote:
-    "Online trial: data is stored only in this device's browser and is wiped when site data is cleared — do not store real works here. The built-in model creates at most 3 consecutive chapters per run; you can connect your own model service in Settings; for backups, download your library in Runs.",
   error: {
     action: "The action didn't go through",
     load: "The shelf can't be loaded right now",

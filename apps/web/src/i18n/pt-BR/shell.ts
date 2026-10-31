@@ -62,15 +62,4 @@ export const shell = {
     footerRun: "Executar",
     hintAdvanced: "Avançado",
   },
-  trial: {
-    title: "Entrar na sessão",
-    configMissing: "A verificação desta sessão ainda não foi configurada.",
-    checking: "Confirmando sua sessão…",
-    challenge: "Conclua a verificação humana.",
-    timeout: "O serviço de verificação esgotou o tempo. Recarregue a verificação.",
-    rejected: "A verificação falhou. Tente de novo.",
-    unavailable: "O componente de verificação está indisponível no momento. Recarregue a verificação.",
-    loadFailed: "Não foi possível carregar a verificação. Confira a rede ou o bloqueio de conteúdo e tente de novo.",
-    reload: "Recarregar verificação",
-  },
 };

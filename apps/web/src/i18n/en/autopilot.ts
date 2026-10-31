@@ -107,8 +107,6 @@ export const autopilot: typeof autopilotPt = {
   sessionStart: {
     stepTitle: "Start serial creation",
     hint: "By default AI completes multiple chapters in a row and saves the manuscript and story state after each; you can pause or add instructions anytime. If you only need one draft for the current chapter, use “Hand to AI” in the studio instead.",
-    trialHint:
-      "You are using the built-in trial model: up to {count} chapters per session. Switch to a default model with your own API key for the full limit.",
     approvalMode: "Creation mode",
     approvalContinuous: "Continuous (recommended)",
     approvalPerChapter: "Wait for my confirmation after each chapter",

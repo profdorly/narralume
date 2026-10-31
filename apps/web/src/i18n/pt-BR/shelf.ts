@@ -1,8 +1,6 @@
 export const shelf = {
   title: "A Estante",
   ghost: "ESTANTE",
-  trialNote:
-    "Os dados ficam só no navegador deste aparelho e somem se você limpar os dados do site — não guarde obras definitivas aqui. O modelo integrado escreve no máximo 3 capítulos seguidos por execução; em Configurações você liga o próprio serviço de modelo. Para backup, baixe a biblioteca em Execuções.",
   error: {
     action: "A ação não foi concluída",
     load: "Não foi possível carregar a estante agora",
