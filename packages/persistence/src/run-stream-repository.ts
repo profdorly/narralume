@@ -102,9 +102,20 @@ export class SqliteRunStreamRepository {
     }
   }
 
-  /** Writes every buffered delta. Readers and status changes call it. */
+  /**
+   * Writes every buffered delta. Readers and status changes call it. Every
+   * entry is attempted; the first error is rethrown after the others ran.
+   */
   flush(): void {
-    for (const key of [...this.pending.keys()]) this.flushEntry(key);
+    let failure: unknown = null;
+    for (const key of [...this.pending.keys()]) {
+      try {
+        this.flushEntry(key);
+      } catch (error) {
+        failure ??= error;
+      }
+    }
+    if (failure) throw failure;
   }
 
   private flushEntry(key: string): void {
