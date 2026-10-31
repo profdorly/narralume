@@ -951,7 +951,7 @@ function IssueCard({
         <div className="review__issue-evidence">
           {issue.evidence.map((entry, index) => (
             <span key={index}>
-              「{entry.quote}」
+              “{entry.quote}”
               {index < issue.evidence.length - 1 ? " · " : ""}
             </span>
           ))}

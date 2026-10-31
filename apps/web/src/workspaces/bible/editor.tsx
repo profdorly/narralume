@@ -156,10 +156,10 @@ function IntentForm({ bible, pending, onSubmit }: { bible: StoryBible; pending: 
   const { t } = useI18n();
   const intent = bible.intent;
   const [promise, setPromise] = useState(intent?.promise ?? "");
-  const [themes, setThemes] = useState(intent?.themes.join("，") ?? "");
+  const [themes, setThemes] = useState(intent?.themes.join(", ") ?? "");
   const [audience, setAudience] = useState(intent?.audience ?? "");
   const [tone, setTone] = useState(intent?.tone ?? "");
-  const [boundaries, setBoundaries] = useState(intent?.boundaries.join("，") ?? "");
+  const [boundaries, setBoundaries] = useState(intent?.boundaries.join(", ") ?? "");
   const [endingDirection, setEndingDirection] = useState(intent?.endingDirection ?? "");
   const [currentFocus, setCurrentFocus] = useState(intent?.currentFocus ?? "");
   return <form className="bible-actions__form" onSubmit={(event) => { event.preventDefault(); onSubmit({ promise, themes: comma(themes), audience, tone, boundaries: comma(boundaries), endingDirection, currentFocus, lockedFields: intent?.lockedFields ?? [] }); }}>
@@ -237,7 +237,7 @@ function EntityForm({ projectId, bible, pending, onSave }: { projectId: string; 
 }
 function EntityFields({ projectId, bible, selected, pending, onSave, onSelect }: { projectId: string; bible: StoryBible; selected: CanonEntity | undefined; pending: boolean; onSave: (work: () => Promise<unknown>) => void; onSelect: (id: string) => void }) {
   const { t } = useI18n();
-  const [type, setType] = useState<CanonEntity["type"]>(selected?.type ?? "character"); const [name, setName] = useState(selected?.name ?? ""); const [aliases, setAliases] = useState(selected?.aliases.join("，") ?? ""); const [description, setDescription] = useState(selected?.description ?? ""); const [status, setStatus] = useState<CanonEntity["status"]>(selected?.status ?? "active");
+  const [type, setType] = useState<CanonEntity["type"]>(selected?.type ?? "character"); const [name, setName] = useState(selected?.name ?? ""); const [aliases, setAliases] = useState(selected?.aliases.join(", ") ?? ""); const [description, setDescription] = useState(selected?.description ?? ""); const [status, setStatus] = useState<CanonEntity["status"]>(selected?.status ?? "active");
   return <form className="bible-actions__form" onSubmit={(event) => { event.preventDefault(); onSave(() => selected ? updateCanonEntity(projectId, selected.id, { name, aliases: comma(aliases), description: description || null, attributes: selected.attributes, status, expectedUpdatedAt: selected.updatedAt }) : createCanonEntity(projectId, { type, name, aliases: comma(aliases), description: description || null, attributes: {} })); }}>
     <Field label={t("bible.fields.editTarget")}><select value={selected?.id ?? "new"} onChange={(event) => onSelect(event.target.value)}><option value="new">{t("bible.editor.newEntity")}</option>{bible.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></Field>
     {!selected ? <Field label={t("bible.fields.type")}><select value={type} onChange={(event) => { const option = ENTITY_TYPE_OPTIONS.find((item) => item.value === event.target.value); if (option) setType(option.value); }}>{ENTITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{t(`bible.entityType.${option.value}`)}</option>)}</select></Field> : null}
