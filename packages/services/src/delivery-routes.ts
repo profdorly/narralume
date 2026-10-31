@@ -41,10 +41,7 @@ import {
 } from "@lapis/persistence";
 import { z } from "zod";
 
-import {
-  DeliveryService,
-  type DeliveryServiceError,
-} from "@lapis/services";
+import { DeliveryService, type DeliveryServiceError } from "@lapis/services";
 import type { RunCoordinator, RouteApp } from "@lapis/services";
 import {
   deterministicRequestId,

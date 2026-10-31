@@ -42,10 +42,7 @@ import {
   promptLanguageOf,
   workCraftLayer,
 } from "../prompt-language.js";
-import {
-  promptDefaultInstructions,
-  promptInvariants,
-} from "@lapis/harness";
+import { promptDefaultInstructions, promptInvariants } from "@lapis/harness";
 import {
   importEvidenceDocuments,
   importSourceText,

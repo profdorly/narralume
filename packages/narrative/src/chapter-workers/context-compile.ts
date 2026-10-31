@@ -1,9 +1,6 @@
 import { outlineStructureFingerprint } from "../outline-baseline.js";
 
-import {
-  type ContextCompileError,
-  type ContextSource,
-} from "@lapis/context";
+import { type ContextCompileError, type ContextSource } from "@lapis/context";
 import { type NarrativeRunStep, type RunSnapshot } from "@lapis/domain";
 import type { StepExecutionResult } from "@lapis/harness";
 

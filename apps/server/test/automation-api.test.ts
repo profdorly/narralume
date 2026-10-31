@@ -435,9 +435,7 @@ describe("automation API", () => {
   });
 
   it("resumes two planning windows across database reopenings without replaying completed reviews or chapters", async () => {
-    const directory = mkdtempSync(
-      join(tmpdir(), "lapis-autopilot-recovery-"),
-    );
+    const directory = mkdtempSync(join(tmpdir(), "lapis-autopilot-recovery-"));
     recoveryDirectories.push(directory);
     const databasePath = join(directory, "story.sqlite");
     const calls: string[] = [];

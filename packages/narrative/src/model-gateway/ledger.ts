@@ -1,10 +1,6 @@
 import { sha256Hex } from "@lapis/domain";
 import { estimateTokens } from "@lapis/context";
-import type {
-  NarrativeRun,
-  RunBudgetUsage,
-  RunStepError,
-} from "@lapis/domain";
+import type { NarrativeRun, RunBudgetUsage, RunStepError } from "@lapis/domain";
 import {
   ModelError,
   StructuredOutputError,

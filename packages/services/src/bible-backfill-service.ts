@@ -8,11 +8,7 @@ import {
   type BibleBackfillUsageDto,
   type CreateBibleBackfillRequest,
 } from "@lapis/contracts";
-import type {
-  DocumentVersion,
-  NarrativeRun,
-  RunSnapshot,
-} from "@lapis/domain";
+import type { DocumentVersion, NarrativeRun, RunSnapshot } from "@lapis/domain";
 import { classifyStepError } from "@lapis/harness";
 import {
   SqliteBibleBackfillRepository,

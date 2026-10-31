@@ -4,10 +4,7 @@ import {
   createOutlineNode,
   createProject,
 } from "@lapis/domain";
-import {
-  buildManualSettlementRecipe,
-  HarnessSupervisor,
-} from "@lapis/harness";
+import { buildManualSettlementRecipe, HarnessSupervisor } from "@lapis/harness";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,

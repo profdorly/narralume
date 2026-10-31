@@ -1,7 +1,4 @@
-import {
-  CanonCandidateItemSchema,
-  CanonSpreadSchema,
-} from "@lapis/contracts";
+import { CanonCandidateItemSchema, CanonSpreadSchema } from "@lapis/contracts";
 import type { JsonSchemaContract, StructuredValidator } from "@lapis/llm";
 import { z } from "zod";
 

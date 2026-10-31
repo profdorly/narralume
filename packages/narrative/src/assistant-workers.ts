@@ -3,10 +3,7 @@ import type {
   RunBudgetUsage,
   RunSnapshot,
 } from "@lapis/domain";
-import {
-  assistantToolAccess,
-  type AssistantToolName,
-} from "@lapis/contracts";
+import { assistantToolAccess, type AssistantToolName } from "@lapis/contracts";
 import type {
   StepExecutionResult,
   StepWorker,

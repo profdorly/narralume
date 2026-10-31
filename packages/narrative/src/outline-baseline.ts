@@ -1,8 +1,4 @@
-import {
-  sha256Hex,
-  type OutlineNode,
-  type RunSnapshot,
-} from "@lapis/domain";
+import { sha256Hex, type OutlineNode, type RunSnapshot } from "@lapis/domain";
 import {
   SqliteStoryRepository,
   type NarrativeDatabase,

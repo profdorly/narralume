@@ -22,10 +22,7 @@ import type {
   StepWorker,
   WorkerRegistry,
 } from "@lapis/harness";
-import {
-  promptDefaultInstructions,
-  promptInvariants,
-} from "@lapis/harness";
+import { promptDefaultInstructions, promptInvariants } from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,

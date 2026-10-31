@@ -1,9 +1,6 @@
 import { sha256Hex } from "@lapis/domain";
 
-import {
-  AUTOMATION_DEFAULTS,
-  resolveEffectivePolicy,
-} from "@lapis/contracts";
+import { AUTOMATION_DEFAULTS, resolveEffectivePolicy } from "@lapis/contracts";
 import {
   SqliteAssistantLongGoalRepository,
   SqliteAssistantRepository,

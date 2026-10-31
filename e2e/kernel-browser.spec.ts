@@ -10,9 +10,7 @@ const KERNEL_READY_TIMEOUT = 40_000;
  * → 运行中心可访问。
  */
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() =>
-    localStorage.setItem("lapis:driver", "local"),
-  );
+  await page.addInitScript(() => localStorage.setItem("lapis:driver", "local"));
 });
 
 test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 → 运行中心", async ({
