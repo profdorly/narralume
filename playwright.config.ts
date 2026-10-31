@@ -9,10 +9,8 @@ const viewports = [
 
 const apiPort = Number(process.env.NARRATIVE_E2E_API_PORT ?? 14317);
 const webPort = Number(process.env.NARRATIVE_E2E_WEB_PORT ?? 14318);
-const spikePort = Number(process.env.NARRATIVE_E2E_SPIKE_PORT ?? 14319);
 const apiUrl = `http://127.0.0.1:${apiPort}`;
 const webUrl = `http://127.0.0.1:${webPort}`;
-const spikeUrl = `http://127.0.0.1:${spikePort}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -45,12 +43,6 @@ export default defineConfig({
       command: `npm run preview -w @lapis/web -- --host 127.0.0.1 --port ${webPort} --strictPort`,
       url: webUrl,
       env: { NARRATIVE_API_PROXY: apiUrl },
-      reuseExistingServer: false,
-      timeout: 30_000,
-    },
-    {
-      command: `npm run preview:spike -w @lapis/web -- --host 127.0.0.1 --port ${spikePort} --strictPort`,
-      url: `${spikeUrl}/spike.html`,
       reuseExistingServer: false,
       timeout: 30_000,
     },

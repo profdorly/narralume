@@ -6,10 +6,8 @@
   "scripts": {
     "build": "tsc -b && vite build",
     "bundle": "vite build",
-    "bundle:spike": "vite build --config vite.spike.config.ts",
     "dev": "vite --host 127.0.0.1 --port 4318",
     "preview": "vite preview --host 127.0.0.1 --port 4318",
-    "preview:spike": "vite preview --config vite.spike.config.ts --host 127.0.0.1 --port 4319",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {

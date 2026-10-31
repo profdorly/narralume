@@ -7,7 +7,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 ### Added
 
 - Identidade Lapis: a marca "L." (um L com ponto final), o logotipo "lapis" em Alegreya, o favicon e o logotipo do README em versões clara e escura. O gerador (`scripts/brand/build-logo.mjs`) refaz os arquivos a partir da fonte.
-- Fontes embutidas Alegreya (texto), Alegreya Sans (interface) e Courier Prime (código e números), sob a licença OFL-1.1, em `apps/web/public/fonts/` (420 kB no total).
+- Fontes embutidas Alegreya (texto), Alegreya Sans (interface) e Courier Prime (código e números), sob a licença OFL-1.1, em `apps/web/public/fonts/` (cerca de 330 kB no total; da Alegreya Sans só vai o peso 400, o único que o CSS usa).
 - Tratamento "tinta e lápis" das sugestões da IA: o que ainda espera decisão aparece em grafite (borda tracejada, rótulo de estado, texto proposto no editor sublinhado a lápis); o que foi aceito passa a ser tinta. Vale no estúdio, na Bíblia da história, no assistente, no piloto automático e na visão geral.
 - Busca do manuscrito por trechos: cada capítulo e cena vira trechos de ~380 tokens que não atravessam quebra de cena, ligados aos personagens, lugares e objetos que citam (migração 049 cria o índice por palavras). O índice se atualiza ao registrar versões, aceitar propostas (inclusive de revisão), importar e antes de cada tarefa de IA, que também cobre backups restaurados e bibliotecas antigas.
 - Vetores por trecho: só os trechos cujo texto mudou ganham embedding novo; trechos sem vetor do modelo atribuído (importação, troca de modelo) são preenchidos no início da próxima escrita de capítulo por IA, até 512 por tarefa.

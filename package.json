@@ -24,7 +24,7 @@
     "licenses:check": "node scripts/check-licenses.mjs --check",
     "licenses:update": "node scripts/check-licenses.mjs --write",
     "test": "vitest run",
-    "pretest:e2e": "npm run build && npm run bundle:spike -w @lapis/web",
+    "pretest:e2e": "npm run build",
     "test:e2e": "playwright test",
     "test:golden": "vitest run packages/persistence/test/long-novel-golden.test.ts",
     "test:evidence": "tsx scripts/evidence-protocol-eval.ts",
