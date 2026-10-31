@@ -1,81 +1,39 @@
 import type {
+  AuthorIntentDto,
   AutopilotSessionDetailDto,
   AutopilotSessionDto,
+  CanonEntityDto,
+  CanonFactDto,
+  DryRunResultDto,
+  FoundationCandidateSetDto,
+  HarnessTemplateDto,
+  ImportBatchDetailDto,
+  NarrativeMemoryDto,
+  OutlineNodeDto,
+  PlotPredictionDto,
   ProjectCoverDto,
   ProjectLanguage,
+  RetrievalHitDto,
+  ReviewWorkspaceDto,
   RunDetailDto,
   RunOrigin,
   StoryCompassDto,
   StoryDevelopmentReviewDto,
   StoryLongLineDto,
   StorySteerDto,
+  StyleProfileDto,
+  SystemBackupManifestDto,
+  SystemBackupPreviewDto,
+  WritingSkillDto,
 } from "@lapis/contracts";
 
-export interface RetrievalHit {
-  id: string;
-  projectId: string;
-  sourceType: string;
-  sourceId: string;
-  title: string;
-  content: string;
-  authority: "reference" | "draft" | "candidate" | "confirmed" | "locked";
-  metadata: Record<string, unknown>;
-  entityIds: string[];
-  createdAt: string;
-  updatedAt: string;
-  lexicalRank: number | null;
-  vectorRank: number | null;
-  entityScore: number;
-  vectorScore: number;
-  rerankScore: number | null;
-  score: number;
-  reasons: ("fts" | "entity" | "vector" | "rerank")[];
-}
+export type RetrievalHit = RetrievalHitDto;
 
-export interface NarrativeMemory {
-  id: string;
-  projectId: string;
-  layer: "working" | "episodic" | "semantic";
-  scopeType: string;
-  scopeId: string;
-  title: string;
-  content: string;
-  stateDelta: Record<string, unknown>;
-  sourceHash: string;
-  status: "active" | "stale" | "retired";
-  refreshedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type NarrativeMemory = NarrativeMemoryDto;
 
-export interface PlotPrediction {
-  id: string;
-  projectId: string;
-  title: string;
-  horizon: number;
-  summary: string;
-  impact: string[];
-  risks: string[];
-  uncertainty: number;
-  contextFingerprint: string;
-  status: "candidate" | "adopted" | "dismissed";
-  stale: boolean;
-  sourceIds: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+export type PlotPrediction = PlotPredictionDto;
 
-export interface DryRunResult {
-  fingerprint: string;
-  safeToProceed: boolean;
-  findings: {
-    kind: "entity" | "fact" | "timeline" | "foreshadow" | "outline";
-    sourceId: string;
-    label: string;
-    impact: string;
-    severity: "info" | "warning";
-  }[];
-}
+export type DryRunResult = DryRunResultDto;
 
 export interface WritingSkillValidation {
   valid: boolean;
@@ -84,20 +42,7 @@ export interface WritingSkillValidation {
   checks: { id: string; passed: boolean; message: string }[];
 }
 
-export interface HarnessTemplate {
-  id: string;
-  kind: "prompt" | "recipe";
-  key: string;
-  name: string;
-  description: string;
-  systemInvariants: string;
-  defaultContent: string;
-  overrideContent: string | null;
-  effectiveContent: string;
-  clonedFromKey: string | null;
-  version: number;
-  updatedAt: string;
-}
+export type HarnessTemplate = HarnessTemplateDto;
 
 export interface Project {
   id: string;
@@ -129,71 +74,13 @@ export interface RecycledProject extends Project {
   deleteAfter: string;
 }
 
-export interface AuthorIntent {
-  projectId: string;
-  promise: string | null;
-  themes: string[];
-  audience: string | null;
-  tone: string | null;
-  boundaries: string[];
-  endingDirection: string | null;
-  currentFocus: string | null;
-  lockedFields: string[];
-  updatedAt: string;
-}
+export type AuthorIntent = AuthorIntentDto;
 
-export interface OutlineNode {
-  id: string;
-  projectId: string;
-  parentId: string | null;
-  kind: "book" | "volume" | "arc" | "chapter" | "scene" | "beat";
-  path: string;
-  depth: number;
-  ordinal: number;
-  title: string;
-  summary: string | null;
-  goal: string | null;
-  conflict: string | null;
-  outcome: string | null;
-  povEntityId: string | null;
-  storyTime: string | null;
-  status: "planned" | "drafting" | "review" | "committed" | "abandoned";
-  metadata: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-}
+export type OutlineNode = OutlineNodeDto;
 
-export interface CanonEntity {
-  id: string;
-  projectId: string;
-  type: "character" | "location" | "organization" | "item" | "rule" | "concept";
-  name: string;
-  aliases: string[];
-  description: string | null;
-  attributes: Record<string, unknown>;
-  status: "active" | "retired";
-  createdAt: string;
-  updatedAt: string;
-}
+export type CanonEntity = CanonEntityDto;
 
-export interface CanonFact {
-  id: string;
-  projectId: string;
-  subjectId: string;
-  predicate: string;
-  objectEntityId: string | null;
-  value: unknown;
-  validFromNodeId: string | null;
-  validToNodeId: string | null;
-  knowledgeScope: "omniscient" | "reader" | "character" | "author_secret";
-  knowledgeSubjectId: string | null;
-  authority: "candidate" | "inferred" | "confirmed" | "locked";
-  confidence: number;
-  sourceType: string;
-  sourceId: string | null;
-  supersedesFactId: string | null;
-  createdAt: string;
-}
+export type CanonFact = CanonFactDto;
 
 export interface RelationshipEvent {
   id: string;
@@ -264,21 +151,7 @@ export interface StoryBible {
   }[];
 }
 
-export interface StyleProfile {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string | null;
-  rules: string[];
-  examples: string[];
-  negativeRules: string[];
-  source: string;
-  active: boolean;
-  status: "active" | "retired";
-  createdAt: string;
-  updatedAt: string;
-  version: number;
-}
+export type StyleProfile = StyleProfileDto;
 
 export type WritingSkillScope =
   | "all"
@@ -287,20 +160,7 @@ export type WritingSkillScope =
   | "edit"
   | "review";
 
-export interface WritingSkill {
-  id: string;
-  projectId: string;
-  name: string;
-  description: string | null;
-  instructions: string;
-  scopes: WritingSkillScope[];
-  priority: number;
-  enabled: boolean;
-  source: string;
-  createdAt: string;
-  updatedAt: string;
-  version: number;
-}
+export type WritingSkill = WritingSkillDto;
 
 export type ImportFormat =
   | "markdown"
@@ -331,32 +191,7 @@ export interface ImportBatch {
   updatedAt: string;
 }
 
-export interface ImportBatchDetail {
-  batch: ImportBatch;
-  candidates: {
-    id: string;
-    batchId: string;
-    kind:
-      | "project"
-      | "document"
-      | "outline"
-      | "intent"
-      | "entity"
-      | "style"
-      | "skill"
-      | "relationship"
-      | "timeline"
-      | "foreshadow"
-      | "character-arc"
-      | "scene-analysis";
-    ordinal: number;
-    title: string;
-    payload: Record<string, unknown>;
-    status: "pending" | "selected" | "discarded" | "applied";
-    createdAt: string;
-    updatedAt: string;
-  }[];
-}
+export type ImportBatchDetail = ImportBatchDetailDto;
 
 export type { BundleCounts } from "@lapis/contracts";
 
@@ -388,32 +223,9 @@ export interface ImportUploadSession {
   updatedAt: string;
 }
 
-export interface SystemBackupManifest {
-  id: string;
-  label: string;
-  databaseFile: string;
-  createdAt: string;
-  sizeBytes: number;
-  sha256: string;
-  migration: number;
-  pageCount: number;
-  projectCount: number;
-}
+export type SystemBackupManifest = SystemBackupManifestDto;
 
-export interface SystemBackupPreview {
-  manifest: SystemBackupManifest;
-  valid: boolean;
-  hashMatches: boolean;
-  integrityCheck: string;
-  foreignKeyViolations: number;
-  counts: {
-    projects: number;
-    documents: number;
-    versions: number;
-    canonFacts: number;
-    runs: number;
-  };
-}
+export type SystemBackupPreview = SystemBackupPreviewDto;
 
 export interface ProjectQualityReport {
   projectId: string;
@@ -591,38 +403,8 @@ export type ReviewIssueDecisionAction =
   | "false_positive"
   | "intentional_keep";
 
-export interface ReviewWorkspaceIssue {
-  id: string;
-  category: string;
-  severity: "info" | "minor" | "major" | "critical";
-  message: string;
-  evidence: { quote: string; start?: number; end?: number }[];
-  suggestedDirection: string | null;
-  requiresAuthorDecision: boolean;
-  status: ReviewIssueStatus;
-  decision: {
-    action: ReviewIssueDecisionAction;
-    note: string | null;
-    decidedAt: string;
-  } | null;
-}
-
-export interface ReviewWorkspaceReport {
-  id: string;
-  projectId: string;
-  runId: string;
-  stepId: string;
-  documentVersionId: string | null;
-  documentId: string | null;
-  documentTitle: string | null;
-  verdict: "pass" | "revise" | "block";
-  summary: string;
-  scores: Record<string, number>;
-  reviewedContent: string | null;
-  reviewedContentHash: string | null;
-  issues: ReviewWorkspaceIssue[];
-  createdAt: string;
-}
+export type ReviewWorkspaceReport = ReviewWorkspaceDto["reports"][number];
+export type ReviewWorkspaceIssue = ReviewWorkspaceReport["issues"][number];
 
 export interface ReviewRevisionProposal {
   id: string;
@@ -639,10 +421,7 @@ export interface ReviewRevisionProposal {
   decidedAt: string | null;
 }
 
-export interface ReviewWorkspace {
-  reports: ReviewWorkspaceReport[];
-  proposals: ReviewRevisionProposal[];
-}
+export type ReviewWorkspace = ReviewWorkspaceDto;
 
 export type StoryCompass = StoryCompassDto;
 export type StoryLongLine = StoryLongLineDto;
@@ -663,18 +442,7 @@ export interface FoundationCandidate {
   updatedAt: string;
 }
 
-export interface FoundationCandidateSet {
-  set: {
-    id: string;
-    projectId: string;
-    sourceRunId: string;
-    title: string;
-    status: "open" | "partially_adopted" | "adopted" | "discarded";
-    createdAt: string;
-    updatedAt: string;
-  };
-  candidates: FoundationCandidate[];
-}
+export type FoundationCandidateSet = FoundationCandidateSetDto;
 
 /** 自动驾驶会话 / 舵令 / 详情：直接复用合约 DTO，与后端保持同一份形状。
  *  契约里 session 同时携带 mode、approvalMode 与 origin。 */
