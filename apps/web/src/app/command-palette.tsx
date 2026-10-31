@@ -8,7 +8,7 @@ import { useI18n } from "../i18n";
 import { useFocusTrap } from "./focus-trap";
 import { ADVANCED_WORKSPACES, QUICK_WORKSPACES, WORKSPACES, workspacePath } from "./workspaces";
 
-/* ⌘K 命令面板：五个工作面、AI 快速创作与高级工具。 */
+/* ⌘K command palette: five workspaces, AI quick create and advanced tools. */
 
 interface CommandItem {
   id: string;

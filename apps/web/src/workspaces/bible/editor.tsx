@@ -176,8 +176,9 @@ function IntentForm({ bible, pending, onSubmit }: { bible: StoryBible; pending: 
 function OutlineForm({ projectId, bible, pending, onSave }: { projectId: string; bible: StoryBible; pending: boolean; onSave: (work: () => Promise<unknown>) => void }) {
   const [selectedId, setSelectedId] = useState("new");
   const selected = bible.outline.find((node) => node.id === selectedId);
-  // key 绑定资源身份与版本：查询刷新或 AI 候选采纳后字段和并发令牌一起重置，
-  // 避免旧表单内容配合新 updatedAt 静默覆盖（CR-65）。
+  // The key binds resource identity and version: after a query refresh or an
+  // accepted AI candidate, fields and the concurrency token reset together, so
+  // stale form content cannot silently overwrite with a new updatedAt (CR-65).
   return <OutlineFields key={`${selectedId}@${selected?.updatedAt ?? "new"}`} projectId={projectId} bible={bible} selected={selected} pending={pending} onSave={onSave} onSelect={setSelectedId} />;
 }
 
@@ -215,8 +216,10 @@ function OutlineFields({ projectId, bible, selected, pending, onSave, onSelect }
   </form>;
 }
 
-// 选项与后端契约枚举对齐（CR-17）：type 为 character/location/organization/item/rule/concept，
-// status 为 active/retired；onChange 用 find 取代类型断言，让漂移在编译期暴露。
+// Options aligned with the backend contract enums (CR-17): type is
+// character/location/organization/item/rule/concept, status is active/retired;
+// onChange uses find instead of a type assertion so drift surfaces at compile
+// time.
 const ENTITY_TYPE_OPTIONS: readonly { value: CanonEntity["type"] }[] = [
   { value: "character" },
   { value: "location" },
@@ -254,7 +257,8 @@ function FactFields({ projectId, bible, selected, pending, onSave, onSelect }: {
   const { t } = useI18n();
   const [subjectId, setSubjectId] = useState(selected?.subjectId ?? bible.entities[0]?.id ?? ""); const [predicate, setPredicate] = useState(selected?.predicate ?? ""); const [value, setValue] = useState(typeof selected?.value === "string" ? selected.value : selected?.value ? JSON.stringify(selected.value) : ""); const [objectMode, setObjectMode] = useState<"value" | "entity">(selected?.objectEntityId ? "entity" : "value"); const [objectEntityId, setObjectEntityId] = useState(selected?.objectEntityId ?? bible.entities[0]?.id ?? ""); const [authority, setAuthority] = useState<CanonFact["authority"]>(selected?.authority ?? "confirmed"); const [reason, setReason] = useState("");
   const [confirmAction, setConfirmAction] = useState<"revise" | "withdraw" | null>(null);
-  // 契约要求 objectEntityId 与 value 必须且只能提供一个（CR-18）：实体宾语模式下省略 value，文本模式下 objectEntityId 置 null。
+  // The contract requires exactly one of objectEntityId and value (CR-18):
+  // entity-object mode omits value, text mode sets objectEntityId to null.
   const saveRevision = (confirmLockedRevision: boolean) => {
     if (!selected) return;
     const object = objectMode === "entity" ? { objectEntityId } : { objectEntityId: null, value };

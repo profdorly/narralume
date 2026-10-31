@@ -1,5 +1,6 @@
-/* 数字输入框：内部持有原始字符串，清空时不回落为 0，失焦时才钳位提交。
-   解决受控 number input「清空即 0、再输入出现 0N」的占位问题。 */
+/* Number input: holds the raw string internally, does not fall back to 0 when
+   cleared, and clamps and commits only on blur. Fixes the controlled number
+   input problem where clearing gives 0 and typing again yields "0N". */
 
 import { useState } from "react";
 import type { InputHTMLAttributes } from "react";
@@ -16,9 +17,12 @@ interface NumberFieldProps
 }
 
 interface NumberDraft {
-  /** 输入框里的原始文本，允许为空串。 */
+  /** Raw text in the input; may be an empty string. */
   text: string;
-  /** 已提交给父组件的数值；外部 value 与之不同时才重置显示。 */
+  /**
+   * The value already committed to the parent; the display resets only when the
+   * external value differs from it.
+   */
   committed: number;
 }
 
@@ -33,8 +37,9 @@ export function NumberField({
     text: String(value),
     committed: value,
   }));
-  /* 外部值变化（罗盘载入、会话重置）时同步显示；用户编辑产生的回显
-     与 committed 一致，不会被打断。 */
+  /* Sync the display when the external value changes (compass loaded, session
+     reset); the echo produced by user edits equals committed, so it does not
+     interrupt them. */
   if (draft.committed !== value) {
     setDraft({ text: String(value), committed: value });
   }

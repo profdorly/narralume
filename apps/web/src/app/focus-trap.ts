@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
-/* 全屏层（命令面板 / 对话框）的最小焦点囚禁：
-   打开时聚焦首个可聚焦元素，Tab / Shift+Tab 在内部循环，Esc 交给调用方。 */
+/* Minimal focus trap for full-screen layers (command palette / dialogs):
+   focuses the first focusable element on open, Tab / Shift+Tab cycle inside,
+   Esc is left to the caller. */
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';

@@ -1,4 +1,5 @@
-/* 格式化助手（从各旧视图去重搬入）。日期 / 数字的 locale 跟随界面语言。 */
+/* Formatting helpers (deduplicated from the old views). Date / number locale
+   follows the UI language. */
 
 import { getLocale, translate, type Locale } from "../i18n";
 
@@ -59,7 +60,7 @@ export function formatBytes(value: number): string {
   return `${current.toFixed(1)} TB`;
 }
 
-/** 由任意 id 推出稳定的封面色相（书架封面的 id-hash hue）。 */
+/** Derive a stable cover hue from any id (the id-hash hue of shelf covers). */
 export function coverHue(value: string): number {
   return [...value].reduce(
     (hash, character) => (hash * 31 + character.charCodeAt(0)) % 360,

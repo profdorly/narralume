@@ -16,7 +16,8 @@ export function BookCover({ project }: { project: Project }) {
     imageUrl && imageUrl.startsWith("blob:") ? imageUrl : null,
   );
   useEffect(() => {
-    // local 驱动下封面无 HTTP URL，改取内核 bytes 缓存为 Blob URL。
+    // With the local driver, covers have no HTTP URL; use the kernel bytes
+    // cached as a Blob URL instead.
     if (!project.cover || imageUrl) return;
     let cancelled = false;
     void projectCoverBlob(project)

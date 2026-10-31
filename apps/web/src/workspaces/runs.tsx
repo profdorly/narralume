@@ -126,9 +126,11 @@ function RunDetailPanel({ projectId, detail, liveText, pending, error, onSelectR
   const { run } = detail;
   const completedSteps = detail.steps.filter((step) => ["succeeded", "skipped"].includes(step.status)).length;
   const act = (work: () => Promise<unknown>) => { setNotice(null); mutation.mutate(work); };
-  /* 按钮完全由服务端 availableActions 驱动；未知动作不再猜测。 */
+  /* Buttons are driven entirely by the server's availableActions; unknown
+     actions are no longer guessed. */
   const can = new Set(detail.availableActions);
-  /* 与 harness 路由同式：有效尝试上限 = min(配方 maxAttempts, 策略 maxRetries + 1)。 */
+  /* Same formula as the harness router: effective attempt limit = min(recipe
+     maxAttempts, policy maxRetries + 1). */
   const policyMaxRetries = detail.effectivePolicy?.maxRetries ?? policyRetryNumber(run.policy.maxRetries);
   const attemptCap = (step: RunDetail["steps"][number]) =>
     policyMaxRetries === null ? step.maxAttempts : Math.min(step.maxAttempts, policyMaxRetries + 1);
@@ -160,8 +162,9 @@ function RunDetailPanel({ projectId, detail, liveText, pending, error, onSelectR
   </section>;
 }
 
-/** 请求修订：带修订指示提交。每次点提交生成一个新 requestId（= 一次新提交）；
- *  同一 requestId 的网络重试由服务端幂等去重。 */
+/** Request a revision: submit with revision instructions. Every click on submit
+ *  generates a new requestId (= a new submission); network retries with the
+ *  same requestId are deduplicated idempotently by the server. */
 function RevisionRequest({ pending, onSubmit }: { pending: boolean; onSubmit: (requestId: string, instruction: string) => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);

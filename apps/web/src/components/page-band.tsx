@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
 
-/* 页眉横带：mono 引签居左、宋体题名居中、右侧注记。
-   除藏书室（竖排巨题）外，所有工作区页首统一使用本组件，保证对齐。 */
+/* Page header band: mono tag on the left, serif title in the center, notes on
+   the right. Every workspace header uses this component (except the library,
+   with its vertical giant title) to keep alignment. */
 
 interface PageBandProps {
-  /** 引签，如 "VOYAGE · 06" */
+  /** Tag, e.g. "VOYAGE · 06" */
   index: string;
-  /** 工作区名，如 "自动驾驶" */
+  /** Workspace name, e.g. "Autopilot" */
   title: string;
-  /** 右侧注记区：统计、状态、模式开关等 */
+  /** Right-side notes area: stats, status, mode toggles, etc. */
   meta?: ReactNode;
 }
 

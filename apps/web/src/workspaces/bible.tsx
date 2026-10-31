@@ -1,5 +1,6 @@
-/* 故事圣经：单页 Canon Spread。左侧辑签负责切换主题，右侧同一张纸幅
-   同时承载稳定的阅读面与显式的人工编辑，不再叠放七个板块和独立控制台。 */
+/* Story bible: a single-page Canon Spread. Tabs on the left switch topics; the
+   sheet on the right carries both a stable reading view and explicit manual
+   editing, instead of seven stacked panels and a separate console. */
 
 import "../styles/bible.css";
 
@@ -73,7 +74,8 @@ export function BibleWorkspace() {
     );
   };
   const backfillFocus = searchParams.get(BIBLE_BACKFILL_PARAM) === "open";
-  /* 补全完成后的「用 AI 补充…」：切到对应板块的列表视图，再聚焦 AI 候选面板。 */
+  /* "Use AI to add…" after the fill-in finishes: switch to the list view of
+     that panel, then focus the AI candidate panel. */
   const deskFocusRef = useRef<BibleSectionId | null>(null);
   const focusCandidateDesk = () => {
     const desk = document.querySelector<HTMLElement>(".bible-ai");
@@ -281,7 +283,8 @@ function ActiveSection({
   }
 }
 
-/* ---- 意图：首语 + 主题带 + 锁栏 ------------------------------------------ */
+/* ---- Intent: opening line + theme band + lock bar -------------------------
+   */
 
 function IntentSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -381,7 +384,7 @@ function IntentSection({ bible }: { bible: StoryBible }) {
   );
 }
 
-/* ---- 大纲 ---------------------------------------------------------------- */
+/* ---- Outline ------------------------------------------------------------- */
 
 function OutlineSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -456,7 +459,7 @@ function OutlineSection({ bible }: { bible: StoryBible }) {
   );
 }
 
-/* ---- 实体 ---------------------------------------------------------------- */
+/* ---- Entities ------------------------------------------------------------ */
 
 function EntitySection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -501,7 +504,8 @@ function EntitySection({ bible }: { bible: StoryBible }) {
   );
 }
 
-/* ---- 正典：事实清单 ------------------------------------------------------- */
+/* ---- Canon: fact list -----------------------------------------------------
+   */
 
 function FactSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -566,7 +570,7 @@ function jsonValueOf(value: unknown): string {
   }
 }
 
-/* ---- 关系 ---------------------------------------------------------------- */
+/* ---- Relations ----------------------------------------------------------- */
 
 function RelationSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -613,7 +617,7 @@ function RelationSection({ bible }: { bible: StoryBible }) {
   );
 }
 
-/* ---- 时间线 -------------------------------------------------------------- */
+/* ---- Timeline ------------------------------------------------------------ */
 
 function TimelineSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();
@@ -647,7 +651,7 @@ function TimelineSection({ bible }: { bible: StoryBible }) {
   );
 }
 
-/* ---- 伏笔 ---------------------------------------------------------------- */
+/* ---- Foreshadowing ------------------------------------------------------- */
 
 function ForeshadowSection({ bible }: { bible: StoryBible }) {
   const { t } = useI18n();

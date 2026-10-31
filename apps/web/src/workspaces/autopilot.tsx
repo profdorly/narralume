@@ -1,4 +1,5 @@
-/* 长篇推演（航海日志）：罗盘 hero + 航次档 + 指令口 + 手账。 */
+/* Long-form simulation (logbook): compass hero + voyage file + command port +
+   journal. */
 
 import "../styles/autopilot.css";
 
@@ -58,10 +59,12 @@ import { useProjectId } from "../lib/project-route";
 import { projectWorkspacePath } from "../lib/project-route";
 import { rememberTask } from "../lib/task-ledger";
 
-/* 后台会自行推进、需要轮询收敛的会话状态；慢启动的 pending 也在其列。
-   paused / awaiting_user / failed 由用户动作驱动，动作完成后已 invalidate。 */
+/* Session states that the backend advances by itself and that need polling to
+   converge; slow-starting pending is among them. paused / awaiting_user /
+   failed are driven by user actions, which invalidate once they complete. */
 const SESSION_PROGRESSING_STATUSES = ["pending", "planning", "running"];
-/* 进行中的建书 Run：候选可能在 Run 推进期间才写入，候选列表要跟着轮询。 */
+/* A book-setup Run in progress: candidates may only be written while the Run
+   advances, so the candidate list must poll along. */
 const FOUNDATION_RUN_ACTIVE_STATUSES = ["pending", "running", "failed_recoverable"];
 
 export function AutopilotWorkspace() {
@@ -127,7 +130,8 @@ export function AutopilotWorkspace() {
     return runs.find((run) => ["pending", "running", "paused", "awaiting_user", "failed_recoverable"].includes(run.status)) ?? null;
   }, [foundationRunsQuery.data, requestedFoundationRunId]);
 
-  /* 生成 Run 落定（从进行中变为终态或让位）时补拉一次候选，收敛最后一次写入。 */
+  /* When the generation Run settles (from in progress to terminal, or
+     yielding), fetch the candidates once more to pick up the last write. */
   const foundationRunActive = Boolean(
     foundationRun && FOUNDATION_RUN_ACTIVE_STATUSES.includes(foundationRun.status),
   );
@@ -168,7 +172,8 @@ export function AutopilotWorkspace() {
     queryKey: ["autopilot", "session", selectedSessionId],
     queryFn: ({ signal }) => getAutopilotSession(selectedSessionId!, signal),
     enabled: Boolean(selectedSessionId),
-    /* 慢启动会话首次读回仍是 pending，漏掉就永久停在「等待开始」。 */
+    /* A slow-starting session still reads back as pending the first time;
+       missing that leaves it stuck at "waiting to start" forever. */
     refetchInterval: (query) =>
       query.state.data && SESSION_PROGRESSING_STATUSES.includes(query.state.data.session.status)
         ? 1_400
@@ -179,7 +184,9 @@ export function AutopilotWorkspace() {
   const steerRequestRef = useRef<PendingRequest | null>(null);
   const foundationRequestRef = useRef<PendingRequest | null>(null);
 
-  /* 舵令输入绑定所选航次：切换会话即在渲染期间清空，避免写给 A 的指示发给 B。 */
+  /* The steering input is bound to the selected voyage: switching sessions
+     clears it during render, so instructions written for A are never sent to B.
+     */
   const [steerSessionId, setSteerSessionId] = useState(selectedSessionId);
   if (steerSessionId !== selectedSessionId) {
     setSteerSessionId(selectedSessionId);
@@ -411,8 +418,10 @@ function StartSessionForm({ projectId, compass, pending, error, maxChapters, onS
   const requestRef = useRef<PendingRequest | null>(null);
   const { t } = useI18n();
   const targetEditedRef = useRef(false);
-  /* 首次使用（没有记忆值）时跟随罗盘的目标章数；一旦写过一次会话，
-     之后回到本页都恢复上次使用的章数，不再被罗盘的 12 覆盖。 */
+  /* On first use (no remembered value), follow the compass's target chapter
+     count; once a session has been written, returning to this page restores the
+     last used chapter count instead of being overwritten by the compass's 12.
+     */
   useEffect(() => {
     if (compass && !targetEditedRef.current && rememberedTarget(projectId) === null) {
       setTarget(Math.min(compass.target.chapters, maxChapters));
@@ -422,7 +431,8 @@ function StartSessionForm({ projectId, compass, pending, error, maxChapters, onS
   return <form className="autopilot__setup-card" onSubmit={(event) => { event.preventDefault(); const input = { approvalMode, planningMode, origin: { surface: "autopilot" as const }, targetChapters: effectiveTargetChapters, windowSize, maxRevisionCycles, chapterPolicy: { qualityPreset } }; rememberTarget(projectId, effectiveTargetChapters); onSubmit({ ...input, requestId: requestIdFor(requestRef, JSON.stringify(input)) }); }}><header><p className="mono">{t("autopilot.step", { n: 3 })}</p><h2>{t("autopilot.sessionStart.stepTitle")}</h2></header><p className="autopilot__setup-hint">{t("autopilot.sessionStart.hint")}</p><label>{t("autopilot.sessionStart.approvalMode")}<select value={approvalMode} onChange={(event) => setApprovalMode(event.target.value as typeof approvalMode)}><option value="continuous">{t("autopilot.sessionStart.approvalContinuous")}</option><option value="per_chapter">{t("autopilot.sessionStart.approvalPerChapter")}</option></select></label><label>{t("autopilot.sessionStart.targetChapters")}<NumberField min={1} max={maxChapters} value={effectiveTargetChapters} onChange={(value) => { targetEditedRef.current = true; setTarget(value); }} /></label><details className="autopilot__advanced"><summary>{t("autopilot.sessionStart.advanced")}</summary><label>{t("autopilot.sessionStart.planningMode")}<select value={planningMode} onChange={(event) => setPlanningMode(event.target.value as typeof planningMode)}><option value="auto">{t("autopilot.sessionStart.planningAuto")}</option><option value="confirm">{t("autopilot.sessionStart.planningConfirm")}</option></select></label><div className="autopilot__setup-grid"><label>{t("autopilot.sessionStart.windowSize")}<NumberField min={1} max={AUTOMATION_LIMITS.planningWindow} value={windowSize} onChange={setWindow} /></label><label>{t("autopilot.sessionStart.maxRevisionCycles")}<NumberField min={0} max={AUTOMATION_LIMITS.revisionCycles} value={maxRevisionCycles} onChange={setCycles} /></label></div><label>{t("autopilot.sessionStart.qualityPreset")}<select value={qualityPreset} onChange={(event) => setPreset(event.target.value as typeof qualityPreset)}><option value="fast">{t("autopilot.sessionStart.qualityFast")}</option><option value="standard">{t("autopilot.sessionStart.qualityStandard")}</option><option value="deep">{t("autopilot.sessionStart.qualityDeep")}</option></select></label></details><button type="submit" className="btn btn--primary" disabled={pending || !compass}>{pending ? t("autopilot.sessionStart.submitPending") : t("autopilot.sessionStart.submit")}</button>{!compass ? <p className="autopilot__setup-hint">{t("autopilot.sessionStart.needCompassHint")}</p> : null}{error ? <ErrorNote error={error} title={t("autopilot.sessionStart.errorTitle")} /> : null}</form>;
 }
 
-/* 每个项目记忆「这次写几章」的上次取值；只存导航线索级别的轻量偏好。 */
+/* Per project, remember the last value of "how many chapters this time"; only a
+   lightweight preference at the navigation-hint level. */
 const TARGET_KEY_PREFIX = "lapis:autopilot-target:";
 
 function rememberedTarget(projectId: string): number | null {
@@ -439,7 +449,7 @@ function rememberTarget(projectId: string, value: number): void {
   try {
     window.localStorage.setItem(`${TARGET_KEY_PREFIX}${projectId}`, String(value));
   } catch {
-    /* 私密模式下放弃持久化 */
+    /* In private browsing, give up persistence */
   }
 }
 
@@ -477,14 +487,16 @@ function ActiveSessionPanel({ session, detail, selected, onSelect }: {
   );
 }
 
-/* ---- 罗盘 hero ----------------------------------------------------------- */
+/* ---- Compass hero -----------------------------------------------------------
+   */
 
 function CompassCard({ detail, reports }: { detail: AutopilotSessionDetail | undefined; reports: ReviewWorkspaceReport[] }) {
   const { t } = useI18n();
   const legs = detail?.links ?? [];
   const quality = sessionQualitySummary(detail, reports);
   const running = detail?.session;
-  /* 针动 = 已入账 / 目标；得到 360° 上的一个角。 */
+  /* Needle position = completed chapters / target, giving an angle on the 360°
+     dial. */
   const progress = running
     ? Math.min(1, running.completedChapters / Math.max(1, running.targetChapters))
     : 0;
@@ -498,7 +510,7 @@ function CompassCard({ detail, reports }: { detail: AutopilotSessionDetail | und
         <svg viewBox="0 0 200 200">
           <circle cx="100" cy="100" r="92" fill="none" stroke="var(--ink)" strokeWidth="0.6" />
           <circle cx="100" cy="100" r="78" fill="none" stroke="var(--ink)" strokeWidth="0.4" strokeDasharray="1 5" />
-          {/* 外周小字刻（船舶日志的气场） */}
+          {/* Small engraved ticks around the rim (ship's log feel) */}
           {Array.from({ length: 8 }).map((_, index) => {
             const tickAngle = (-Math.PI / 2) + (index / 8) * Math.PI * 2;
             const x1 = 100 + 86 * Math.cos(tickAngle);
@@ -517,7 +529,7 @@ function CompassCard({ detail, reports }: { detail: AutopilotSessionDetail | und
               />
             );
           })}
-          {/* 进度弧 */}
+          {/* Progress arc */}
           <path
             d={describeArc(100, 100, 70, -Math.PI / 2, angle)}
             fill="none"
@@ -525,7 +537,7 @@ function CompassCard({ detail, reports }: { detail: AutopilotSessionDetail | und
             strokeWidth="1.6"
             strokeLinecap="round"
           />
-          {/* 指针 & 针心 */}
+          {/* Needle & hub */}
           <line x1="100" y1="100" x2={needleX} y2={needleY} stroke="var(--accent)" strokeWidth="1.8" />
           <line x1="100" y1="100" x2={100 + 46 * Math.cos(angle + Math.PI)} y2={100 + 46 * Math.sin(angle + Math.PI)} stroke="var(--ink-soft)" strokeWidth="0.6" strokeDasharray="1 4" />
           <circle cx="100" cy="100" r="5" fill="var(--accent)" />
@@ -619,7 +631,8 @@ function sessionQualitySummary(
   };
 }
 
-/* ---- 指挥台 -------------------------------------------------------------- */
+/* ---- Command desk
+   -------------------------------------------------------------- */
 
 function CommandDeck({
   sessions,
@@ -837,7 +850,8 @@ function CommandDeck({
   );
 }
 
-/* ---- 请求修订（航次级） ---------------------------------------------------- */
+/* ---- Request revision (voyage level)
+   ---------------------------------------------------- */
 
 function SessionRevisionRequest({ pending, onSubmit }: { pending: boolean; onSubmit: (requestId: string, instruction: string) => void }) {
   const { t } = useI18n();
@@ -859,7 +873,8 @@ function SessionRevisionRequest({ pending, onSubmit }: { pending: boolean; onSub
   );
 }
 
-/* ---- 小工具 ------------------------------------------------------------ */
+/* ---- Small helpers
+   ------------------------------------------------------------ */
 
 function safeCandidatePayload(
   text: string,
@@ -953,8 +968,10 @@ function autopilotStatusLabel(status: AutopilotSession["status"]): string {
   return translate(getLocale(), KEY[status]);
 }
 
-/* 环节终态来自 autopilot_run_links.outcome（completed/failed/cancelled，以及
-   失败处置动作 retry-current/skip-chapter/replan、转修订 revision_requested）。 */
+/* A step's terminal state comes from autopilot_run_links.outcome
+   (completed/failed/cancelled, plus the failure handling actions
+   retry-current/skip-chapter/replan, and revision_requested for a hand-off to
+   revision). */
 function legOutcomeState(outcome: string | null): string {
   if (outcome === null) return "pending";
   if (outcome === "failed" || outcome === "cancelled") return outcome;

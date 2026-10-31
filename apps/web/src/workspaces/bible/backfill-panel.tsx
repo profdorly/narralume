@@ -1,5 +1,7 @@
-/* 「从正文补全故事圣经」：按阅读顺序逐章走手动结算管线。面板挂在故事圣经
-   页首，负责开始确认、进度、逐章裁定、停机处理与完成后的下一步指引。 */
+/* "Fill in the story bible from the manuscript": runs the manual settlement
+   pipeline chapter by chapter in reading order. The panel sits at the top of
+   the story bible page and handles start confirmation, progress, per-chapter
+   decisions, stop handling, and guidance on the next step after completion. */
 
 import "../../styles/bible-backfill.css";
 
@@ -68,12 +70,21 @@ const SKIPPABLE_ITEM_STATUSES = new Set([
   "awaiting_decision",
 ]);
 const POLL_INTERVAL_MS = 2_500;
-/** 完成后引导去各板块 AI 候选面板补齐的宏观部分。 */
+/**
+ * After completion, guide the author to each panel's AI candidate panel to fill
+ * in the macro parts.
+ */
 const NEXT_SECTIONS: BibleEditorSection[] = ["intent", "outline", "entities"];
-/** 读完全部章节后由 AI 生成建议的宏观板块，按此顺序依次发起。 */
+/**
+ * Macro panels for which AI generates suggestions after all chapters are read,
+ * started one by one in this order.
+ */
 const GENERATED_SECTIONS = ["intent", "entities", "outline"] as const;
 type GeneratedSection = (typeof GENERATED_SECTIONS)[number];
-/** 可以“重新阅读”的章节状态：已读过（或读失败、被拒绝）的章节。 */
+/**
+ * Chapter states that allow "re-read": chapters already read (or that failed to
+ * read, or were rejected).
+ */
 const REREADABLE_ITEM_STATUSES = new Set([
   "applied",
   "empty",
@@ -82,14 +93,15 @@ const REREADABLE_ITEM_STATUSES = new Set([
   "failed",
 ]);
 
-/* 开始时勾选了“随后生成宏观板块”的任务，记在本机；任务完成后面板据此自动发起一次，
-   发起前先取走标记，避免重复发起。 */
+/* A job started with "then generate macro panels" checked is remembered on this
+   device; when the job completes the panel starts the generation once from that
+   flag, taking the flag first to avoid starting twice. */
 const SECTIONS_MARKER_PREFIX = "lapis:bible-backfill:sections:";
 function rememberSectionsAfter(jobId: string) {
   try {
     window.localStorage.setItem(SECTIONS_MARKER_PREFIX + jobId, "1");
   } catch {
-    /* 存储不可用时退回手动按钮。 */
+    /* When storage is unavailable, fall back to the manual button. */
   }
 }
 function takeSectionsMarker(jobId: string): boolean {
@@ -110,7 +122,10 @@ export function bibleBackfillQueryKey(projectId: string) {
 interface BibleBackfillPanelProps {
   projectId: string;
   bible: StoryBible;
-  /** 从导入完成后的入口进入：展开并聚焦面板。 */
+  /**
+   * Entered from the entry shown after an import finishes: expand and focus the
+   * panel.
+   */
   focus?: boolean;
   onOpenCandidateDesk: (section: BibleEditorSection) => void;
 }
@@ -127,8 +142,10 @@ export function BibleBackfillPanel({
   const bodyId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const queryKey = bibleBackfillQueryKey(projectId);
-  /* 只在读取进行中（running，含正在结算的章节）时轮询；暂停、等待审阅或
-     等待处理时进度不会自己变化，靠 SSE 与操作后的刷新即可。 */
+  /* Poll only while reading is in progress (running, including a chapter being
+     settled); when paused, waiting for review or waiting for handling, progress
+     does not change by itself, so SSE and refreshes after actions are enough.
+     */
   const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getCurrentBibleBackfill(projectId, signal),
@@ -154,8 +171,10 @@ export function BibleBackfillPanel({
       (document) => document.kind === "manuscript" && !document.archivedAt,
     );
 
-  /* 展开：作者手动切换优先；否则聚焦入口、进行中（结束后仍保持展开）或
-     有章节正文却从未补全时自动展开。 */
+  /* Expansion: a manual toggle by the author wins; otherwise expand
+     automatically for the focus entry, while in progress (and staying expanded
+     after it ends), or when there is chapter text that has never been filled
+     in. */
   const [expandedChoice, setExpandedChoice] = useState<boolean | null>(null);
   const [sawActive, setSawActive] = useState(false);
   if (active && !sawActive) setSawActive(true);
@@ -199,7 +218,8 @@ export function BibleBackfillPanel({
       if (watchedRunIds.has(runId)) refresh();
     },
   });
-  /* 采纳数或任务状态变化时，故事圣经内容可能已被写入，刷新阅读面。 */
+  /* When the accepted count or the job status changes, story bible content may
+     have been written; refresh the reading view. */
   const contentSignal = job
     ? `${job.id}:${job.status}:${detail?.counts.applied ?? 0}`
     : null;
@@ -251,8 +271,10 @@ export function BibleBackfillPanel({
     },
   });
 
-  /* 宏观板块（作者意图、实体、大纲）：逐个发起现有的 AI 候选生成，结果作为候选留在各板块审阅。
-     已有同板块生成在进行时视为已发起。 */
+  /* Macro panels (author intent, entities, outline): start the existing AI
+     candidate generation one by one; results stay as candidates for review in
+     each panel. A generation already running for the same panel counts as
+     started. */
   const sectionsMutation = useMutation({
     mutationFn: async (): Promise<GeneratedSection[]> => {
       const failed: GeneratedSection[] = [];
@@ -286,7 +308,9 @@ export function BibleBackfillPanel({
     }
   }, [jobId, jobStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* 重新阅读单章：以该章为唯一条目新建一次补全，已结算过也照读，补缺漏、纠正错误。 */
+  /* Re-read a single chapter: create a new fill-in with that chapter as its
+  only item; it is read even if already settled, to fill gaps and fix mistakes.
+  */
   const [rereadTarget, setRereadTarget] = useState<{
     item: BibleBackfillItemDto;
     title: string;
@@ -576,7 +600,7 @@ export function BibleBackfillPanel({
   );
 }
 
-/* ---- 未开始 ------------------------------------------------------------- */
+/* ---- Not started -------------------------------------------------------- */
 
 function IdleState({
   chapterManuscripts,
@@ -639,7 +663,7 @@ function StartError({ error }: { error: unknown }) {
   );
 }
 
-/* ---- 进行中 ------------------------------------------------------------- */
+/* ---- In progress -------------------------------------------------------- */
 
 function ActiveState({
   projectId,
@@ -699,8 +723,11 @@ function ActiveState({
     job.status === "awaiting_decision"
       ? (current?.changeSetId ?? null)
       : conflictChangeSetId;
-  /* 冲突或待审停机要先裁定本章变更集（裁定后会自动继续），此时“继续”只会再次停下，
-     故隐藏；变更集已在别处裁定、已不存在或读取失败时才显示“继续”。 */
+  /* A stop for a conflict or pending review requires deciding this chapter's
+     change set first (it continues automatically after the decision), so
+     "Continue" would only stop again and is hidden; "Continue" shows only when
+     the change set was decided elsewhere, no longer exists, or failed to load.
+     */
   const stopChangeSets = useQuery({
     queryKey: ["project", projectId, "canon-change-sets"],
     queryFn: ({ signal }) => getCanonChangeSets(projectId, signal),
@@ -874,7 +901,10 @@ function ActiveState({
   );
 }
 
-/** 读取并展示当前章节的变更集，裁定走既有的故事变化裁定接口。 */
+/**
+ * Load and show the current chapter's change set; decisions go through the
+ * existing story change decision endpoint.
+ */
 function ChangeSetSlot({
   projectId,
   changeSetId,
@@ -901,7 +931,8 @@ function ChangeSetSlot({
   const changeSet = changeSetId
     ? query.data?.find((set) => set.id === changeSetId)
     : undefined;
-  /* 缓存可能来自写作台、早于本章变更集生成：缺失时补读一次。 */
+  /* The cache may come from the writing desk and predate this chapter's change
+     set: load once more when it is missing. */
   const refetchedFor = useRef<string | null>(null);
   useEffect(() => {
     if (
@@ -1089,7 +1120,10 @@ function AttentionState({
   );
 }
 
-/** 跳过待裁定章节不会裁定它：变更集仍留在写作台可审阅。 */
+/**
+ * Skipping a chapter pending decision does not decide it: the change set stays
+ * reviewable at the writing desk.
+ */
 function SkipHint({ item }: { item: BibleBackfillItemDto }) {
   const { t } = useI18n();
   if (item.status !== "awaiting_decision" || !item.changeSetId) return null;
@@ -1098,7 +1132,7 @@ function SkipHint({ item }: { item: BibleBackfillItemDto }) {
   );
 }
 
-/* ---- 已结束 ------------------------------------------------------------- */
+/* ---- Finished ----------------------------------------------------------- */
 
 function FinishedState({
   projectId,
@@ -1124,8 +1158,9 @@ function FinishedState({
   onReread: (item: BibleBackfillItemDto, title: string) => void;
 }) {
   const { t } = useI18n();
-  /* 留给写作台审阅的章节，作者之后可能已在写作台裁定：变更集列表已在缓存中时按其当前状态显示，
-     不为此另发请求。 */
+  /* Chapters left for review at the writing desk may since have been decided
+     there: when the change set list is already in the cache, show its current
+     state, without sending a separate request for it. */
   const cachedChangeSets = useQuery({
     queryKey: ["project", projectId, "canon-change-sets"],
     queryFn: ({ signal }) => getCanonChangeSets(projectId, signal),
@@ -1155,7 +1190,8 @@ function FinishedState({
         ]
       : []),
   ];
-  /* 取消途中遇到意外错误时，任务以 cancelled 结束并记下原因。 */
+  /* If an unexpected error occurs while cancelling, the job ends as cancelled
+     and records the reason. */
   const reason = job.status === "cancelled" && job.error ? stopReason(job.error, t) : null;
   return (
     <div className="bible-backfill__finished">
@@ -1179,7 +1215,8 @@ function FinishedState({
         ))}
       </dl>
       <UsageLine usage={detail.usage} final />
-      {/* 导入时抽取、补全过程中没有哪一章锚定的时间线事件：明确告诉作者还剩多少。 */}
+      {/* Timeline events extracted at import that no chapter anchored during the
+         fill-in: tell the author explicitly how many remain. */}
       {detail.unanchoredImportedEvents > 0 ? (
         <p className="bible-backfill__note">
           <CircleAlert size={13} aria-hidden="true" />
@@ -1253,7 +1290,7 @@ function FinishedState({
   );
 }
 
-/* ---- 章节清单 ----------------------------------------------------------- */
+/* ---- Chapter list ------------------------------------------------------- */
 
 function ItemList({
   items,
@@ -1310,7 +1347,10 @@ function ItemList({
   );
 }
 
-/** 条目上发生过的事（改投新版本、沿用已有结算、取消时脱离），逐句说明。 */
+/**
+ * What happened to an item (retargeted to a new version, reused an existing
+ * settlement, detached on cancel), one sentence each.
+ */
 function ItemNote({ item }: { item: BibleBackfillItemDto }) {
   const { t } = useI18n();
   const lines = itemNoteKeys(item).map((key) => t(key));
@@ -1391,9 +1431,12 @@ function itemStatusLabel(
   return t(keys[item.status]);
 }
 
-/* ---- 工具 --------------------------------------------------------------- */
+/* ---- Utilities ---------------------------------------------------------- */
 
-/** 已结束任务里仍待裁定的章节，按变更集的当前状态改记为已采纳或已拒绝。 */
+/**
+ * Chapters still pending decision in a finished job, recorded as accepted or
+ * rejected according to the change set's current state.
+ */
 function withStudioDecisions(
   items: BibleBackfillItemDto[],
   counts: BibleBackfillDetailDto["counts"],
@@ -1454,7 +1497,10 @@ function currentItem(
 
 type BackfillError = NonNullable<BibleBackfillJobDto["error"]>;
 
-/** 停机原因的附加字段可能平铺在 error 上，也可能收在 error.details 里。 */
+/**
+ * The extra fields of a stop reason may sit flat on error or inside
+ * error.details.
+ */
 function errorPayload(error: BackfillError): Record<string, unknown> {
   const details = error.details;
   return details && typeof details === "object" && !Array.isArray(details)
@@ -1468,7 +1514,10 @@ function stringField(error: BackfillError | null, key: string): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
-/** 协调器写入 job.error 的停机原因码 → 面板文案；detail 表示附带服务端原始说明。 */
+/**
+ * Stop reason code written by the coordinator to job.error → panel text; detail
+ * means the raw server explanation is attached.
+ */
 const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
   "child.awaiting_user": { key: "bible.backfill.stopReason.childAwaitingUser" },
   "child.failed": { key: "bible.backfill.stopReason.childFailed", detail: true },
@@ -1484,12 +1533,16 @@ const STOP_REASONS: Record<string, { key: MessageKey; detail?: true }> = {
   "document.version.not_found": { key: "bible.backfill.stopReason.versionMissing" },
 };
 
-/** review_required 停机列出的、本章要改动的现有记录。 */
+/**
+ * Existing records this chapter would change, listed by a review_required stop.
+ */
 interface ReviewTarget {
   path: string;
   action: "withdraw" | "supersede" | "update" | "end" | "anchor" | "develop" | "resolve";
   label: string | null;
-  /** 伏笔已回收或已放弃，本章要把它重新打开。 */
+  /**
+   * The foreshadowing was resolved or abandoned; this chapter would reopen it.
+   */
   reopens: boolean;
 }
 
@@ -1530,9 +1583,11 @@ function reviewTargets(error: BackfillError): ReviewTarget[] {
 
 interface StopReason {
   message: string;
-  /** 服务端原始说明（多为英文），只作次要详情。 */
+  /**
+   * Raw server explanation (usually English), shown only as secondary detail.
+   */
   detail: string | null;
-  /** 未识别的原因码，只作次要详情。 */
+  /** Unrecognized reason code, shown only as secondary detail. */
   code: string | null;
 }
 
@@ -1574,7 +1629,10 @@ function StopReasonText({ reason }: { reason: StopReason }) {
   );
 }
 
-/** 子运行已记录的用量；只有计价产生了非零费用时才显示费用。 */
+/**
+ * Usage recorded by the child run; the cost is shown only when pricing produced
+ * a non-zero cost.
+ */
 function UsageLine({
   usage,
   final = false,

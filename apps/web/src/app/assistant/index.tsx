@@ -274,9 +274,11 @@ export function ProjectAssistant({
     onSettled: () =>
       invalidateAssistant(queryClient, projectId, conversationId),
   });
-  /* 侧栏的低风险直连动作：run/autopilot 卡的取消直接走各自控制端点，
-   *  不经 assistant activity 通道（那套只服务工具提案/长期目标）。
-   *  失败章节卡的重试同理——与运行中心「重试本章」同一动作。 */
+  /* Low-risk direct actions in the sidebar: cancelling a run/autopilot card
+   *  goes straight to that card's control endpoint, not through the assistant
+   *  activity channel (which only serves tool proposals/long-term goals).
+   *  Retrying a failed chapter card works the same way, as the same action as
+   *  "Retry chapter" in the run center. */
   const taskControlMutation = useMutation({
     mutationFn: async ({
       activity,
@@ -285,7 +287,8 @@ export function ProjectAssistant({
       activity: AssistantActivityDto;
       action: "cancel" | "retry_chapter";
     }): Promise<unknown> => {
-      // 返回结构随来源不同（RunSnapshot vs 会话详情），这里只关心成功与否。
+      // The return shape varies by source (RunSnapshot vs session detail); only
+      // success matters here.
       if (action === "retry_chapter") {
         return controlRun(projectId, activity.sourceId, {
           action: "retry_chapter",

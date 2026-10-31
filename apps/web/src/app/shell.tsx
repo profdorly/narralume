@@ -40,9 +40,11 @@ import {
   type WorkspaceDef,
 } from "./workspaces";
 
-/* 应用骨架：左栏 rail（可折叠）+ 路由主区 + ⌘K 命令面板。
-   主导航收敛为书架/项目概览/故事/写作/交付；其余工作区在 rail 下挂「高级工具」组，
-   快速跳转统一走命令面板（全屏菜单已退役）。 */
+/* App shell: left rail (collapsible) + routed main area + ⌘K command palette.
+   Main navigation is reduced to shelf / project overview / story / writing /
+   delivery; the other workspaces hang under an "Advanced tools" group in the
+   rail, and quick jumps all go through the command palette (the full-screen
+   menu is retired). */
 
 const RAIL_COLLAPSED_KEY = "lapis:rail-collapsed";
 const AUTO_COLLAPSE_QUERY = "(max-width: 1100px)";
@@ -73,8 +75,10 @@ const RunsWorkspace = lazy(() => import("../workspaces/runs").then((module) => (
 const LabWorkspace = lazy(() => import("../workspaces/lab").then((module) => ({ default: module.LabWorkspace })));
 const SettingsWorkspace = lazy(() => import("../workspaces/settings").then((module) => ({ default: module.SettingsWorkspace })));
 
-/* 左栏折叠态有两层来源：宽屏记忆（localStorage）与窄屏（≤1100px）自动折叠。
-   窄屏里的手动收 / 展是会话级覆盖、不写记忆；重新回到宽屏即落回记忆态。 */
+/* The rail's collapsed state has two sources: the wide-screen memory
+   (localStorage) and automatic collapse on narrow screens (≤1100px). A manual
+   collapse / expand on a narrow screen is a session-level override and is not
+   remembered; returning to a wide screen restores the remembered state. */
 function useRailCollapsed(): [boolean, () => void] {
   const [preference, setPreference] = useState(() => {
     try {
@@ -113,7 +117,7 @@ function useRailCollapsed(): [boolean, () => void] {
     try {
       window.localStorage.setItem(RAIL_COLLAPSED_KEY, next ? "1" : "0");
     } catch {
-      /* 私密模式下放弃持久化 */
+      /* In private browsing, give up persistence */
     }
   };
 
@@ -283,7 +287,7 @@ function ShellFrame() {
       try {
         window.localStorage.setItem(ASSISTANT_OPEN_KEY, open ? "1" : "0");
       } catch {
-        /* 私密模式下只保留当前会话状态 */
+        /* In private browsing, keep only the current session state */
       }
     },
     [currentPath],

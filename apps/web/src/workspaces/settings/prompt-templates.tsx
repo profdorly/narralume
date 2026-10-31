@@ -17,8 +17,10 @@ import {
   type HarnessTemplate,
 } from "../../lib/api";
 
-/* 提示词模板（生成类步骤）：呈现官方默认写作法，允许整体替换并随时恢复官方版本。
- * 结构不变量（锁定正典、输出格式等）由服务端代码强制追加，不在此暴露。 */
+/* Prompt templates (generation steps): show the official default writing
+ * method, allow replacing it as a whole and restoring the official version at
+ * any time. Structural invariants (locked canon, output format, etc.) are
+ * appended by server code and are not exposed here. */
 
 const EXPOSED_PROMPT_KEYS: readonly string[] = [
   "prompt.chapter-draft",
@@ -32,7 +34,10 @@ interface BilingualDraft {
   en: string;
 }
 
-/** 面板展示的名称与描述走 i18n 字典（数据库字段仅作未知模板的回退）。 */
+/**
+ * Names and descriptions shown in the panel come from the i18n dictionary
+ * (database fields are only a fallback for unknown templates).
+ */
 const ITEM_COPY: Record<
   string,
   { name: MessageKey; description: MessageKey }
@@ -67,7 +72,10 @@ function itemCopy(
   };
 }
 
-/** 结构不变量存为双语 JSON；按界面语言取对应版本展示。 */
+/**
+ * Structural invariants are stored as bilingual JSON; show the version matching
+ * the UI language.
+ */
 function invariantText(template: HarnessTemplate, locale: Locale): string {
   const trimmed = template.systemInvariants.trim();
   try {
@@ -75,7 +83,7 @@ function invariantText(template: HarnessTemplate, locale: Locale): string {
     const text = parsed[locale];
     if (typeof text === "string" && text.trim()) return text.trim();
   } catch {
-    /* 纯文本原样展示 */
+    /* Plain text is shown as is */
   }
   return trimmed;
 }
@@ -91,7 +99,7 @@ function parseBilingual(template: HarnessTemplate): BilingualDraft {
       return { "pt-BR": parsed["pt-BR"], en: parsed.en };
     }
   } catch {
-    /* 纯文本内容按中文处理 */
+    /* Plain-text content is treated as pt-BR */
   }
   return { "pt-BR": trimmed, en: "" };
 }
@@ -147,8 +155,10 @@ function PromptTemplateCard({ template }: { template: HarnessTemplate }) {
   const name = copy?.name ?? template.name;
   const description = copy?.description ?? template.description;
   const queryClient = useQueryClient();
-  // 父级以 `${key}:${version}` 为 key 挂载本卡片：服务端版本变化（保存/恢复/其他
-  // 窗口写入）即整体重挂载，本地草稿自然回到最新生效内容，且不受无关刷新影响。
+  // The parent mounts this card with `${key}:${version}` as its key: a change
+  // of server version (save/restore/write from another window) remounts it
+  // entirely, so the local draft returns to the latest effective content and is
+  // unaffected by unrelated refreshes.
   const initial = useMemo(() => parseBilingual(template), [template]);
   const [draft, setDraft] = useState<BilingualDraft>(initial);
 

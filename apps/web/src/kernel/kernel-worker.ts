@@ -1,15 +1,18 @@
 /// <reference lib="webworker" />
 /**
- * M3 浏览器内核 Worker：镜像 app.ts 的装配，但宿主是 RouteTable +
- * postMessage 事件桥，而不是 Fastify + SSE。同一批 register*Routes 在
- * 两个宿主注册——HTTP 契约是唯一 API 面（D1）。
+ * M3 browser kernel Worker: mirrors the wiring in app.ts, but the host is a
+ * RouteTable plus a postMessage event bridge instead of Fastify + SSE. The same
+ * register*Routes functions register on both hosts; the HTTP contract is the
+ * only API surface (D1).
  *
- * 消息协议：
- * - 请求 {type:"request", id, method, path, query, body, headers}
- * - 响应 {type:"response", id, ok, status, body|error:{code,message,details}}
- *   （二进制 body 以 Uint8Array 结构化克隆传输）
- * - 事件 {type:"event", eventName, payload}（run/model/autopilot 状态四类）
- * - 就绪 {type:"ready"} / 失败 {type:"fatal", message}
+ * Message protocol:
+ * - request {type:"request", id, method, path, query, body, headers}
+ * - response {type:"response", id, ok, status,
+ *   body|error:{code,message,details}}
+ *   (binary bodies travel as structured-cloned Uint8Array)
+ * - event {type:"event", eventName, payload} (four kinds: run/model/autopilot
+ *   state)
+ * - ready {type:"ready"} / failure {type:"fatal", message}
  */
 import { LAPIS_VERSION } from "@lapis/contracts";
 import {
@@ -138,7 +141,8 @@ async function boot(): Promise<void> {
     );
   });
 
-  // 刷新恢复：与 app.ts 相同的孤儿回收（无跨进程残留，防御性保留）。
+  // Refresh recovery: the same orphan reclamation as app.ts (there is no
+  // cross-process leftover here; kept defensively).
   const recoveryNow = new Date().toISOString();
   runStore.recoverExpiredLeases(recoveryNow);
 
@@ -309,7 +313,7 @@ async function boot(): Promise<void> {
     environment: {},
   });
 
-  // 健康 + 事件端点（镜像 app.ts 的 /api/health 与 /api/events）。
+  // Health and events endpoints (mirror /api/health and /api/events in app.ts).
   table.route("GET", "/api/health", async () => ({
     status: 200,
     body: {
@@ -324,8 +328,9 @@ async function boot(): Promise<void> {
     status: 200,
     body: { at: new Date().toISOString() },
   }));
-  // 下载我的库（D6）：导出 OPFS 数据库完整字节（sahpool exportFile）。
-  // server 模式同名端点在 Node 侧走备份文件；两驱动的 UI 都从这取 bytes。
+  // Download my library (D6): export the full bytes of the OPFS database
+  // (sahpool exportFile). In server mode the endpoint of the same name serves
+  // the Node backup file; the UI of both drivers reads the bytes from here.
   table.route("GET", "/api/system/database-download", async () => {
     const bytes = await database.raw.exportBytes?.();
     if (!bytes) {

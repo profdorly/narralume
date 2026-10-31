@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-/* 默认跟随系统；用户可临时反转昼夜，再次点击即可恢复系统跟随。 */
+/* Follows the system by default; the user can temporarily flip day/night, and
+   clicking again restores following the system. */
 
 export type Theme = "light" | "dark";
 export type ThemePreference = "system" | Theme;
@@ -60,7 +61,7 @@ export const useTheme = create<ThemeState>()((set, get) => ({
         window.localStorage.setItem(THEME_PREFERENCE_KEY, preference);
       }
     } catch {
-      /* 私密模式下只保留当前会话。 */
+      /* In private browsing, keep only the current session. */
     }
     const theme = resolvedTheme(preference);
     applyTheme(theme);

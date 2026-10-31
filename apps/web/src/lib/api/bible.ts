@@ -389,14 +389,20 @@ export type {
   BibleBackfillUsageDto,
 } from "@lapis/contracts";
 
-/** 建任务；同一 requestId 重放返回原任务（idempotentReplay）。 */
+/**
+ * Create a job; replaying the same requestId returns the original job
+ * (idempotentReplay).
+ */
 export async function startBibleBackfill(
   projectId: string,
   input: {
     requestId: string;
     mode?: BibleBackfillMode;
     chapterIds?: string[];
-    /** 重新读已结算过的章节（“Re-read chapter”），补缺漏、纠正错误。 */
+    /**
+     * Re-read an already settled chapter ("Re-read chapter") to fill gaps and
+     * fix mistakes.
+     */
     rereadSettled?: boolean;
   },
 ): Promise<BibleBackfillCreatedDto> {
@@ -406,7 +412,10 @@ export async function startBibleBackfill(
   );
 }
 
-/** 当前任务：有活动任务取活动任务，否则取最近一次；从未开始时 job 为 null。 */
+/**
+ * Current job: the active job if there is one, otherwise the most recent; job
+ * is null if never started.
+ */
 export async function getCurrentBibleBackfill(
   projectId: string,
   signal?: AbortSignal,
@@ -428,7 +437,10 @@ export async function getBibleBackfill(
   );
 }
 
-/** 作者控制：pause / resume / cancel，skip_item / retry_item 需带 ordinal。 */
+/**
+ * Author controls: pause / resume / cancel; skip_item / retry_item require an
+ * ordinal.
+ */
 export async function actOnBibleBackfill(
   projectId: string,
   jobId: string,
@@ -445,7 +457,7 @@ export async function actOnBibleBackfill(
 }
 
 /* ==========================================================================
-   建书（foundation）/ 自动驾驶
+   Book setup (foundation) / autopilot
    ========================================================================== */
 
 export async function generateFoundation(
@@ -453,7 +465,7 @@ export async function generateFoundation(
   input: {
     requestId: string;
     braindump: string;
-    /** 稀疏覆盖；qualityPreset 在这里选择。 */
+    /** Sparse override; qualityPreset is chosen here. */
     policy?: ModelExecutionPolicy;
     preferences: {
       genre: string | null;
@@ -471,7 +483,10 @@ export async function generateFoundation(
   );
 }
 
-/** AI 引导建书：一次请求同时立项并发起 foundation 后台任务（202，幂等）。 */
+/**
+ * AI-guided book setup: one request creates the project and starts the
+ * foundation background task (202, idempotent).
+ */
 export async function createProjectWithFoundation(input: {
   requestId: string;
   title: string;

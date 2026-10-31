@@ -72,8 +72,9 @@ export function projectCoverUrl(
 ): string | null {
   if (!project.cover) return null;
   if (readDriverOverride() === "local" || currentDriverMode() === "local") {
-    // local 模式封面无 HTTP URL——封面经 projectCoverBlob() 取 bytes 后
-    // 由调用方渲染；此处返回 null 让调用方走默认占位或已缓存的 blob。
+    // In local mode covers have no HTTP URL: the caller fetches the bytes via
+    // projectCoverBlob() and renders them; returning null here lets the caller
+    // use the default placeholder or a cached blob.
     return localCoverCache.get(coverCacheKey(project)) ?? null;
   }
   return `/api/projects/${encodeURIComponent(project.id)}/cover?v=${encodeURIComponent(project.cover.updatedAt)}`;
@@ -86,7 +87,10 @@ function coverCacheKey(
   return `${project.id}:${project.cover?.updatedAt ?? ""}`;
 }
 
-/** local 模式取封面 bytes 并缓存为 Blob URL（同封面更新时间只取一次）。 */
+/**
+ * In local mode, fetch the cover bytes and cache them as a Blob URL (fetched
+ * once per cover update time).
+ */
 export async function projectCoverBlob(
   project: Pick<Project, "id" | "cover">,
 ): Promise<string | null> {
@@ -98,7 +102,8 @@ export async function projectCoverBlob(
     `/api/projects/${encodeURIComponent(project.id)}/cover`,
   );
   const url = URL.createObjectURL(blob);
-  // 回收旧版本的 Blob URL，避免刷新封面后累积泄漏。
+  // Revoke the old version's Blob URL so refreshed covers do not accumulate
+  // leaks.
   for (const [existingKey, existingUrl] of localCoverCache) {
     if (existingKey.startsWith(`${project.id}:`) && existingKey !== key) {
       URL.revokeObjectURL(existingUrl);
@@ -162,7 +167,10 @@ export async function purgeRecycledProject(
   );
 }
 
-/** 项目概览：进度、当前章节、活动任务、待办计数与下一步。 */
+/**
+ * Project overview: progress, current chapter, active task, pending counts and
+ * next step.
+ */
 export async function getProjectOverview(
   projectId: string,
   signal?: AbortSignal,

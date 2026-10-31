@@ -21,7 +21,10 @@ const ASSISTANT_EFFORT_LABEL_KEYS: Record<AssistantEffortLevel, MessageKey> = {
   high: "assistant.effort.high",
 };
 
-/** composer 上方的模型胶囊：同协议换模型 + 对话级思考档。 */
+/**
+ * Model pill above the composer: switch models within the same protocol +
+ * conversation-level reasoning tier.
+ */
 export function AssistantModelControls({
   conversation,
   disabled,
@@ -39,7 +42,8 @@ export function AssistantModelControls({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { t } = useI18n();
-  /* 胶囊在关闭状态也要显示当前生效模型名，清单常驻拉取（staleTime 抑制重复）。 */
+  /* The pill shows the effective model name even when closed, so the list is
+     always fetched (staleTime suppresses repeats). */
   const providersQuery = useQuery({
     queryKey: ["assistant-models", "providers"],
     queryFn: ({ signal }) => listProviders(signal),
@@ -105,7 +109,8 @@ export function AssistantModelControls({
   const effectiveProvider = effectiveModel
     ? (providerById.get(effectiveModel.providerId) ?? null)
     : null;
-  /* 对话内只出现同协议模型：跨协议家族去设置页改默认生成模型。 */
+  /* Only same-protocol models appear in a conversation: to cross protocol
+     families, change the default generation model in Settings. */
   const candidates = useMemo(
     () =>
       effectiveProvider

@@ -49,8 +49,10 @@ import { PromptTemplatesSection } from "./prompt-templates";
 import { ModelCard, ModelForm, ProviderForm } from "./provider-forms";
 import { RoleCard } from "./role-card";
 
-/* 设置：默认生成模型与岗位继承（写作/规划/审稿在未覆盖时继承默认生成模型）、
-   Provider/模型/派岗管理、高级工具（运行中心/长篇推演链接、生产资产、系统备份档）。 */
+/* Settings: default generation model and role inheritance
+   (writing/planning/review inherit the default generation model unless
+   overridden), Provider/model/assignment management, advanced tools (run center
+   / long-form simulation links, production assets, system backups). */
 
 export function SettingsWorkspace() {
   const queryClient = useQueryClient();

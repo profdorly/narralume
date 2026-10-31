@@ -161,8 +161,10 @@ export function activityActionId(activity: AssistantActivityDto): string | null 
     : null;
 }
 
-/* 产品决策动作出现在哪，任务现场就在哪：这类 run 卡回写作台处理候选，
-   与 taskHref「现场由产品来源推导」同一套取向；没有决策动作的才退回运行中心。 */
+/* Wherever the product decision action appears is where the task lives: these
+   run cards go back to the writing desk to handle candidates, in line with
+   taskHref's "location derived from product origin"; only cards without a
+   decision action fall back to the run center. */
 const PRODUCT_DECISION_ACTIONS = new Set([
   "accept_plan",
   "accept_manuscript",
@@ -275,7 +277,7 @@ export function selectConversation(
     if (conversationId) window.localStorage.setItem(key, conversationId);
     else window.localStorage.removeItem(key);
   } catch {
-    /* 私密模式下只保持当前会话状态 */
+    /* In private browsing, keep only the current session state */
   }
 }
 

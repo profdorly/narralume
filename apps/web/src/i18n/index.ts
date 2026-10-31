@@ -36,7 +36,7 @@ type FlattenKeys<T> = {
     : `${K}.${FlattenKeys<T[K]>}`;
 }[keyof T & string];
 
-/** 全部合法字典键（点路径），如 "common.action.save"。 */
+/** Every valid dictionary key (dotted path), e.g. "common.action.save". */
 export type MessageKey = FlattenKeys<Messages>;
 
 export type MessageVars = Record<string, string | number>;
@@ -79,7 +79,10 @@ function applyPlurals(template: string, vars: MessageVars): string {
   );
 }
 
-/** 非 React 环境也可用的纯翻译函数；变量插值格式为 {name}。 */
+/**
+ * Pure translation function usable outside React; variables are interpolated as
+ * {name}.
+ */
 export function translate(
   locale: Locale,
   key: MessageKey,
@@ -105,7 +108,7 @@ function detectInitialLocale(): Locale {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved === "pt-BR" || saved === "en") return saved;
   } catch {
-    /* 私密模式下视为未存储 */
+    /* In private browsing, treat as not stored */
   }
   const nav = (typeof navigator !== "undefined" ? navigator.language : "") ?? "";
   if (nav.toLowerCase().startsWith("en")) return "en";
@@ -162,7 +165,7 @@ export function setLocale(locale: Locale): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, locale);
   } catch {
-    /* 私密模式下只保留当前会话状态 */
+    /* In private browsing, keep only the current session state */
   }
   if (typeof document !== "undefined") {
     document.documentElement.lang = locale;
@@ -187,7 +190,10 @@ export interface I18n {
   t: (key: MessageKey, vars?: MessageVars) => string;
 }
 
-/** React 侧入口：订阅 locale 变化并给出翻译函数。 */
+/**
+ * React entry point: subscribes to locale changes and provides the translation
+ * function.
+ */
 export function useI18n(): I18n {
   const locale = useSyncExternalStore(subscribe, getLocale);
   return {

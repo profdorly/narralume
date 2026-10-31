@@ -1,7 +1,8 @@
 import { apiErrorHint, apiErrorMessage } from "../lib/api";
 import { useI18n } from "../i18n";
 
-/* 错误注记：ApiError 的错误码提示优先，回退到后端 message。 */
+/* Error note: the ApiError code hint takes precedence, falling back to the
+   backend message. */
 
 interface ErrorNoteProps {
   error: unknown;

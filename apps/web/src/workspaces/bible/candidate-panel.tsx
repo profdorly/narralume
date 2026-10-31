@@ -35,7 +35,8 @@ interface CanonCandidatePanelProps {
 const TERMINAL = new Set(["completed", "failed", "cancelled"]);
 
 export function CanonCandidatePanel(props: CanonCandidatePanelProps) {
-  /* 指示文本与 startedRunId 绑定 Spread 身份：切换页签时重挂载，避免串页。 */
+  /* The instruction text and startedRunId are bound to the Spread identity:
+     switching tabs remounts, so tabs never mix. */
   return <CanonCandidatePanelView key={props.spread} {...props} />;
 }
 

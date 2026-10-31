@@ -54,8 +54,9 @@ export function StyleManager({ projectId }: { projectId: string }) {
   const mutation = useMutation({ mutationFn: (input: { current: StyleProfile | null; value: Parameters<typeof createStyleProfile>[1] }) => input.current ? updateStyleProfile(input.current, input.value) : createStyleProfile(projectId, input.value), onSuccess: (style) => { setSelectedId(style.id); void queryClient.invalidateQueries({ queryKey: ["project", projectId, "styles"] }); } });
   const lifecycleMutation = useMutation({ mutationFn: ({ style, status }: { style: StyleProfile; status: StyleProfile["status"] }) => updateStyleProfile(style, { status, active: false }), onSuccess: (style) => { setArchiveTarget(null); setSelectedId(style.status === "retired" && !showRetired ? "new" : style.id); void queryClient.invalidateQueries({ queryKey: ["project", projectId, "styles"] }); } });
   const [extractFailedRunId, setExtractFailedRunId] = useState<string | null>(null);
-  /* 提炼走一次 mutation：提交后在 mutationFn 内轮询 run 至终态；
-   * 成功则刷新列表并选中新草稿（source=extract:{runId}），失败挂出查看入口。 */
+  /* Extraction is a single mutation: after submitting, mutationFn polls the run
+   * until it is terminal; on success refresh the list and select the new draft
+   * (source=extract:{runId}); on failure show a link to inspect it. */
   const extractMutation = useMutation({
     mutationFn: (text: string) =>
       extractStyleProfile(projectId, { requestId: crypto.randomUUID(), text }).then((created) =>
@@ -81,7 +82,10 @@ export function StyleManager({ projectId }: { projectId: string }) {
 }
 const RUN_TERMINAL_STATUSES: readonly string[] = ["completed", "failed", "cancelled"];
 
-/** 轮询提炼 run 直到终态；10 分钟未终态视为超时，防止悬挂任务拖住面板。 */
+/**
+ * Poll the extraction run until it is terminal; not terminal after 10 minutes
+ * counts as a timeout, so a hung task cannot hold the panel.
+ */
 async function pollRunUntilTerminal(projectId: string, runId: string): Promise<RunDetail> {
   const deadline = Date.now() + 10 * 60_000;
   for (;;) {
@@ -94,7 +98,10 @@ async function pollRunUntilTerminal(projectId: string, runId: string): Promise<R
   }
 }
 
-/** 贴样文提炼风格档案：贴一段自己的或参考的文字，AI 提炼成未启用的草稿档案。 */
+/**
+ * Extract a style profile from pasted sample text: paste some of your own or
+ * reference writing, and AI extracts it into a disabled draft profile.
+ */
 function StyleExtractPanel({ projectId, busy, failedRunId, error, onStart, onDismissError }: { projectId: string; busy: boolean; failedRunId: string | null; error: unknown; onStart: (text: string) => void; onDismissError: () => void }) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -156,7 +163,8 @@ export function ImportManager({ projectId }: { projectId: string }) {
   const [selection, setSelection] = useState<{ projectId: string; batchId: string } | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [appliedProjectId, setAppliedProjectId] = useState<string | null>(null);
-  /* 本次应用是否带入了正文文档：带正文时提供「用 AI 补全故事圣经」入口。 */
+  /* Whether this application brought in a manuscript document: if so, offer the
+     "Use AI to fill in the story bible" entry. */
   const [appliedWithProse, setAppliedWithProse] = useState(false);
   const analysisRequestRef = useRef<{ batchId: string; requestId: string } | null>(null);
   const batchesQuery = useQuery({

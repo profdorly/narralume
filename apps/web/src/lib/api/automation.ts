@@ -12,16 +12,22 @@ import type {
 export async function createAutopilotSession(
   projectId: string,
   input: {
-    /** 同一次提交的幂等键；网络重试复用同一个 requestId，重新提交才换新。 */
+    /**
+     * Idempotency key of one submission; network retries reuse the same
+     * requestId, only a new submission gets a new one.
+     */
     requestId: string;
-    /** continuous = 多章连续生产（AI 快速创作）；per_chapter = 逐章验收。 */
+    /**
+     * continuous = multi-chapter continuous production (AI quick create);
+     * per_chapter = chapter-by-chapter approval.
+     */
     approvalMode?: "continuous" | "per_chapter";
     planningMode?: "auto" | "confirm";
     origin?: RunOriginInput | null;
     targetChapters: number;
     windowSize: number;
     maxRevisionCycles: number;
-    /** 稀疏覆盖。 */
+    /** Sparse override. */
     chapterPolicy?: ModelExecutionPolicy;
   },
 ): Promise<AutopilotSession & { idempotentReplay: boolean }> {

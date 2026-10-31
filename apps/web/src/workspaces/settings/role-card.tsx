@@ -5,7 +5,8 @@ import { useI18n } from "../../i18n";
 import type { AssignmentRole, ModelConfigDto, PublicProviderDto } from "../../lib/api";
 import { modelDisplayName, roleCopy } from "./constants";
 
-/* ---- 岗位卡：含继承语义的生成模型岗 ------------------------------------------- */
+/* ---- Role card: generation model role with inheritance semantics
+   ------------------------------------------- */
 
 export function RoleCard({ role, assignedModel, assignmentModelId, inheritedModel, inherited, providers, candidates, pending, error, onAssign, onRemove }: {
   role: AssignmentRole;

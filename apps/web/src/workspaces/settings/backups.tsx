@@ -15,7 +15,8 @@ import {
 } from "../../lib/api";
 import { formatBytes, formatRelativeDate, formatTime, shortHash } from "../../lib/fmt";
 
-/* ---- 系统备份档（从交付迁入：整库备份、校档与灾备恢复） ---------------------- */
+/* ---- System backups (moved from delivery: full database backup, verification
+   and disaster recovery) ---------------------- */
 
 export function SystemBackupsSection() {
   const { t } = useI18n();

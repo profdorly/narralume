@@ -36,8 +36,10 @@ export function useCreateProjectDialog(
       language: ProjectLanguage;
       form: ProjectForm;
     }) => {
-      /* 空白建书走纯项目创建（无模型也可用）；AI 引导建书一次立项并发起
-         foundation 后台任务，requestId 即本次提交的幂等键。 */
+      /* A blank book uses plain project creation (works without a model);
+         AI-guided book setup creates the project and starts the foundation
+         background task in one go, with requestId as the idempotency key of
+         this submission. */
       if (mode === "ai" && input.premise) {
         const request = {
           title: input.title,
