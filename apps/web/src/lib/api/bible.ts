@@ -417,17 +417,6 @@ export async function getCurrentBibleBackfill(
   );
 }
 
-export async function getBibleBackfill(
-  projectId: string,
-  jobId: string,
-  signal?: AbortSignal,
-): Promise<BibleBackfillDetailDto> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/${encodeURIComponent(jobId)}`,
-    signal ? { signal } : {},
-  );
-}
-
 /** 作者控制：pause / resume / cancel，skip_item / retry_item 需带 ordinal。 */
 export async function actOnBibleBackfill(
   projectId: string,

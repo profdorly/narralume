@@ -69,7 +69,7 @@ const STUDIO_TOOLS: Array<{ id: StudioTool; labelKey: MessageKey }> = [
   { id: "selection", labelKey: "studio.tools.selection" },
 ];
 
-export function studioToolFromFocus(value: string | null): StudioTool {
+function studioToolFromFocus(value: string | null): StudioTool {
   if (value === "canon") return "canon";
   if (value === "revisions") return "revisions";
   if (value === "comments") return "comments";

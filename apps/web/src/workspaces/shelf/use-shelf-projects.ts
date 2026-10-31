@@ -12,7 +12,7 @@ import {
   type Project,
 } from "../../lib/api";
 
-export function importFormatFor(filename: string): ImportFormat {
+function importFormatFor(filename: string): ImportFormat {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "txt" || ext === "text") return "text";
   if (ext === "docx") return "docx";

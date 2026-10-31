@@ -1,29 +1,20 @@
 import type {
   AssignmentRole,
-  AutopilotSession,
   AutopilotSessionDetail,
   CanonEntity,
   CanonFact,
   ExportFormat,
   FoundationCandidate,
-  FoundationCandidateSet,
   Foreshadow,
   ModelConfigDto,
-  NarrativeRun,
   OutlineNode,
   Project,
-  ProjectQualityReport,
-  QualityPreset,
   ReviewIssueDecisionAction,
-  ReviewRevisionProposal,
   ReviewWorkspaceIssue,
   ReviewWorkspaceReport,
-  RunStatus,
-  RunStepKind,
   AssistantActivityTextDto,
   StoryDocument,
   WireApi,
-  WritingSkillScope,
 } from "./api";
 import { getLocale, translate, type MessageKey } from "../i18n";
 
@@ -33,23 +24,6 @@ import { getLocale, translate, type MessageKey } from "../i18n";
    ========================================================================== */
 
 /* --- 运行 -------------------------------------------------------------- */
-
-export function runStatusLabel(status: RunStatus, recipe?: string): string {
-  const keys: Record<RunStatus, MessageKey> = {
-    pending: "labels.runStatus.pending",
-    running: "labels.runStatus.running",
-    paused: "labels.runStatus.paused",
-    awaiting_user: "labels.runStatus.awaitingUser",
-    failed_recoverable: "labels.runStatus.failedRecoverable",
-    failed: "labels.runStatus.failed",
-    cancelled: "labels.runStatus.cancelled",
-    completed:
-      recipe === "chapter-production"
-        ? "labels.runStatus.completedChapter"
-        : "labels.runStatus.completed",
-  };
-  return translate(getLocale(), keys[status]);
-}
 
 /** 面向列表的短版运行状态（无 recipe 语境）。 */
 export function runStatusShortLabel(status: string): string {
@@ -65,64 +39,6 @@ export function runStatusShortLabel(status: string): string {
   };
   const key: MessageKey | undefined = keys[status];
   return key ? translate(getLocale(), key) : status;
-}
-
-export function runStepLabel(kind: RunStepKind): string {
-  const keys: Record<RunStepKind, MessageKey> = {
-    "context.compile": "labels.runStepKind.contextCompile",
-    "scene.plan": "labels.runStepKind.scenePlan",
-    "draft.generate": "labels.runStepKind.draftGenerate",
-    "deterministic.check": "labels.runStepKind.deterministicCheck",
-    "semantic.review": "labels.runStepKind.semanticReview",
-    "revision.generate": "labels.runStepKind.revisionGenerate",
-    "chapter.settle": "labels.runStepKind.chapterSettle",
-    "chapter.commit": "labels.runStepKind.chapterCommit",
-    "foundation.generate": "labels.runStepKind.foundationGenerate",
-    "foundation.stage": "labels.runStepKind.foundationStage",
-    "outline.generate": "labels.runStepKind.outlineGenerate",
-    "outline.entities": "labels.runStepKind.outlineEntities",
-    "outline.commit": "labels.runStepKind.outlineCommit",
-    "steer.classify": "labels.runStepKind.steerClassify",
-    "arc.review": "labels.runStepKind.arcReview",
-    "volume.review": "labels.runStepKind.volumeReview",
-    "cocreate.context": "labels.runStepKind.cocreateContext",
-    "cocreate.respond": "labels.runStepKind.cocreateRespond",
-    "cocreate.stage": "labels.runStepKind.cocreateStage",
-    "adoption.prepare": "labels.runStepKind.adoptionPrepare",
-    "adoption.settle": "labels.runStepKind.adoptionSettle",
-    "adoption.commit": "labels.runStepKind.adoptionCommit",
-    "edit.transform": "labels.runStepKind.editTransform",
-    "edit.stage": "labels.runStepKind.editStage",
-    "import.analyze": "labels.runStepKind.importAnalyze",
-    "import.stage": "labels.runStepKind.importStage",
-    "assistant.context": "labels.runStepKind.assistantContext",
-    "assistant.respond": "labels.runStepKind.assistantRespond",
-    "assistant.stage": "labels.runStepKind.assistantStage",
-    "canon.context": "labels.runStepKind.canonContext",
-    "canon.candidate": "labels.runStepKind.canonCandidate",
-    "canon.stage": "labels.runStepKind.canonStage",
-  };
-  return translate(getLocale(), keys[kind]);
-}
-
-export function runModeLabel(mode: NarrativeRun["mode"]): string {
-  const keys: Record<NarrativeRun["mode"], MessageKey> = {
-    autopilot: "labels.runMode.autopilot",
-    "chapter-gate": "labels.runMode.chapterGate",
-    director: "labels.runMode.director",
-    "co-create": "labels.runMode.coCreate",
-    manual: "labels.runMode.manual",
-  };
-  return translate(getLocale(), keys[mode]);
-}
-
-export function runVerdictLabel(verdict: "pass" | "revise" | "block"): string {
-  const keys: Record<typeof verdict, MessageKey> = {
-    pass: "labels.runVerdict.pass",
-    revise: "labels.runVerdict.revise",
-    block: "labels.runVerdict.block",
-  };
-  return translate(getLocale(), keys[verdict]);
 }
 
 /* --- 模型供给：Provider / Model / Assignment ----------------------------- */
@@ -169,15 +85,6 @@ export function metadataSourceLabel(
     migration: "labels.metadataSource.migration",
   };
   return translate(getLocale(), keys[source]);
-}
-
-export function qualityPresetLabel(preset: QualityPreset): string {
-  const keys: Record<QualityPreset, MessageKey> = {
-    fast: "labels.qualityPreset.fast",
-    standard: "labels.qualityPreset.standard",
-    deep: "labels.qualityPreset.deep",
-  };
-  return translate(getLocale(), keys[preset]);
 }
 
 export function probeStageLabel(
@@ -284,22 +191,6 @@ export function foreshadowStatusLabel(status: Foreshadow["status"]): string {
 
 /* --- 自动驾驶 / 建书候选 -------------------------------------------------- */
 
-export function autopilotSessionStatusLabel(
-  status: AutopilotSession["status"],
-): string {
-  const keys: Record<AutopilotSession["status"], MessageKey> = {
-    pending: "labels.autopilotSessionStatus.pending",
-    planning: "labels.autopilotSessionStatus.planning",
-    running: "labels.autopilotSessionStatus.running",
-    paused: "labels.autopilotSessionStatus.paused",
-    awaiting_user: "labels.autopilotSessionStatus.awaitingUser",
-    failed: "labels.autopilotSessionStatus.failed",
-    cancelled: "labels.autopilotSessionStatus.cancelled",
-    completed: "labels.autopilotSessionStatus.completed",
-  };
-  return translate(getLocale(), keys[status]);
-}
-
 export function autopilotLinkRoleLabel(
   role: AutopilotSessionDetail["links"][number]["role"],
 ): string {
@@ -311,7 +202,7 @@ export function autopilotLinkRoleLabel(
   return translate(getLocale(), keys[role]);
 }
 
-export function steerClassificationLabel(
+function steerClassificationLabel(
   value: NonNullable<
     AutopilotSessionDetail["steers"][number]["classification"]
   >,
@@ -373,18 +264,6 @@ export function foundationCandidateStatusLabel(
   return translate(getLocale(), keys[status]);
 }
 
-export function foundationCandidateSetStatusLabel(
-  status: FoundationCandidateSet["set"]["status"],
-): string {
-  const keys: Record<typeof status, MessageKey> = {
-    open: "labels.foundationCandidateSetStatus.open",
-    partially_adopted: "labels.foundationCandidateSetStatus.partiallyAdopted",
-    adopted: "labels.foundationCandidateSetStatus.adopted",
-    discarded: "labels.foundationCandidateSetStatus.discarded",
-  };
-  return translate(getLocale(), keys[status]);
-}
-
 /* --- 审稿室 -------------------------------------------------------------- */
 
 export function reviewCategoryLabel(category: string): string {
@@ -437,55 +316,7 @@ export function reviewVerdictLabel(
   return translate(getLocale(), keys[verdict]);
 }
 
-export function proposalStatusLabel(
-  status: ReviewRevisionProposal["status"],
-): string {
-  const keys: Record<ReviewRevisionProposal["status"], MessageKey> = {
-    proposed: "labels.proposalStatus.proposed",
-    accepted: "labels.proposalStatus.accepted",
-    rejected: "labels.proposalStatus.rejected",
-    superseded: "labels.proposalStatus.superseded",
-  };
-  return translate(getLocale(), keys[status]);
-}
-
 /* --- 交付 / 导入 / 体检 --------------------------------------------------- */
-
-export function qualityReadinessLabel(
-  readiness: ProjectQualityReport["readiness"],
-): string {
-  if (readiness === "blocked")
-    return translate(getLocale(), "labels.qualityReadiness.blocked");
-  if (readiness === "needs_attention")
-    return translate(getLocale(), "labels.qualityReadiness.needsAttention");
-  return translate(getLocale(), "labels.qualityReadiness.ready");
-}
-
-export function qualitySeverityLabel(
-  severity: ProjectQualityReport["issues"][number]["severity"],
-): string {
-  const keys: Record<
-    ProjectQualityReport["issues"][number]["severity"],
-    MessageKey
-  > = {
-    error: "labels.qualitySeverity.error",
-    warning: "labels.qualitySeverity.warning",
-    info: "labels.qualitySeverity.info",
-  };
-  return translate(getLocale(), keys[severity]);
-}
-
-export function importStatusLabel(status: string): string {
-  const keys: Record<string, MessageKey> = {
-    previewed: "labels.importStatus.previewed",
-    analyzing: "labels.importStatus.analyzing",
-    ready: "labels.importStatus.ready",
-    applied: "labels.importStatus.applied",
-    discarded: "labels.importStatus.discarded",
-  };
-  const key: MessageKey | undefined = keys[status];
-  return key ? translate(getLocale(), key) : status;
-}
 
 export function importCandidateKindLabel(kind: string): string {
   const keys: Record<string, MessageKey> = {
@@ -504,17 +335,6 @@ export function importCandidateKindLabel(kind: string): string {
   };
   const key: MessageKey | undefined = keys[kind];
   return key ? translate(getLocale(), key) : kind;
-}
-
-export function writingSkillScopeLabel(scope: WritingSkillScope): string {
-  const keys: Record<WritingSkillScope, MessageKey> = {
-    all: "labels.writingSkillScope.all",
-    chapter: "labels.writingSkillScope.chapter",
-    cocreate: "labels.writingSkillScope.cocreate",
-    edit: "labels.writingSkillScope.edit",
-    review: "labels.writingSkillScope.review",
-  };
-  return translate(getLocale(), keys[scope]);
 }
 
 export function exportFormatLabel(format: ExportFormat): string {
@@ -541,19 +361,6 @@ export function documentKindLabel(kind: StoryDocument["kind"]): string {
     "style-sample": "labels.documentKind.styleSample",
   };
   return translate(getLocale(), keys[kind]);
-}
-
-export function documentSourceLabel(source: string): string {
-  const locale = getLocale();
-  if (source.startsWith("restore:"))
-    return translate(locale, "labels.documentSource.restore");
-  if (source.startsWith("edit-proposal:"))
-    return translate(locale, "labels.documentSource.editProposal");
-  if (source.startsWith("cocreate:"))
-    return translate(locale, "labels.documentSource.cocreate");
-  return source === "manual"
-    ? translate(locale, "labels.documentSource.manual")
-    : source;
 }
 
 /* --- 任务协议（origin / stopReason / availableActions / nextAction） --------- */

@@ -252,7 +252,7 @@ const CANON_SPREAD_LABEL_KEYS: Record<
   foreshadows: "assistant.canonSpread.foreshadows",
 };
 
-export function canonSpreadLabel(spread: NonNullable<AssistantContext["canonSpread"]>) {
+function canonSpreadLabel(spread: NonNullable<AssistantContext["canonSpread"]>) {
   return translate(getLocale(), CANON_SPREAD_LABEL_KEYS[spread]);
 }
 

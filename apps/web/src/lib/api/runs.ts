@@ -87,19 +87,6 @@ export async function controlRun(
   );
 }
 
-export async function advanceRun(
-  projectId: string,
-  runId: string,
-): Promise<{
-  processed: boolean;
-  snapshot: RunSnapshot;
-}> {
-  return requestJson(
-    `/api/runs/${encodeURIComponent(runId)}/advance`,
-    jsonRequest("POST", { projectId }),
-  );
-}
-
 export async function discardRunStream(
   projectId: string,
   runId: string,

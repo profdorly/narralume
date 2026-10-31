@@ -16,7 +16,7 @@ export const WIRE_APIS: WireApi[] = [
   "anthropic-messages",
 ];
 
-export const ROLE_KEYS: Record<
+const ROLE_KEYS: Record<
   AssignmentRole,
   { name: MessageKey; note: MessageKey }
 > = {

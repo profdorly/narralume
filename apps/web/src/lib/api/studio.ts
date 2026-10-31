@@ -492,12 +492,3 @@ export async function restoreHarnessTemplate(
   );
 }
 
-export async function cloneHarnessTemplate(
-  template: HarnessTemplate,
-  input: { key: string; name: string },
-): Promise<HarnessTemplate> {
-  return requestJson(
-    `/api/harness/templates/${encodeURIComponent(template.key)}/clone`,
-    jsonRequest("POST", input),
-  );
-}

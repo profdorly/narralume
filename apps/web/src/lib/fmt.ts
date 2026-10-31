@@ -37,10 +37,6 @@ export function formatRelativeDate(
   }).format(new Date(timestamp));
 }
 
-export function countCharacters(value: string): number {
-  return [...value].length;
-}
-
 export function formatCount(value: number, locale: Locale = getLocale()): string {
   return new Intl.NumberFormat(locale, {
     notation: value >= 10_000 ? "compact" : "standard",

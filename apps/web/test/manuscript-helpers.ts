@@ -7,7 +7,7 @@ import {
   serializeDoc,
 } from "../src/workspaces/studio/manuscript-markdown";
 
-export function manuscriptOf(element: HTMLElement): Editor {
+function manuscriptOf(element: HTMLElement): Editor {
   const editor = manuscriptEditorOf(element);
   if (!editor) throw new Error("TipTap editor is not bound to this node");
   return editor;

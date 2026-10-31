@@ -30,7 +30,7 @@ function resolvedTheme(preference: ThemePreference): Theme {
   return preference === "system" ? systemTheme() : preference;
 }
 
-export function applyTheme(theme: Theme): void {
+function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 }
 

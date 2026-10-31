@@ -103,7 +103,7 @@ function takeSectionsMarker(jobId: string): boolean {
   }
 }
 
-export function bibleBackfillQueryKey(projectId: string) {
+function bibleBackfillQueryKey(projectId: string) {
   return ["project", projectId, "bible-backfill", "current"] as const;
 }
 

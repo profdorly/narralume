@@ -92,11 +92,3 @@ export async function decideStorySteer(
   );
 }
 
-export async function advanceAutopilotSession(
-  sessionId: string,
-): Promise<{ processed: boolean; detail: AutopilotSessionDetail }> {
-  return requestJson(
-    `/api/autopilot/sessions/${encodeURIComponent(sessionId)}/advance`,
-    jsonRequest("POST", {}),
-  );
-}
