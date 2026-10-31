@@ -10,6 +10,7 @@ export const autopilot = {
   },
   page: {
     title: "Criação rápida com IA",
+    index: "CRIAÇÃO · Q1",
     description:
       "Escolha um projeto e deixe a IA concluir capítulo após capítulo seguindo o plano da história; você pode intervir a qualquer momento.",
   },

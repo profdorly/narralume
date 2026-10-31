@@ -263,7 +263,7 @@ describe("A Estante", () => {
     await screen.findAllByText("潮汐灯塔");
     fireEvent.click(screen.getByRole("button", { name: "Lista" }));
 
-    expect(screen.getByText("NO.01")).toBeInTheDocument();
+    expect(screen.getByText("Nº 01")).toBeInTheDocument();
     expect(screen.getByText("Escrita")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Lista" })).toHaveAttribute(
       "aria-pressed",
@@ -272,7 +272,7 @@ describe("A Estante", () => {
     expect(window.localStorage.getItem("shelf:view")).toBe("list");
 
     fireEvent.click(screen.getByRole("button", { name: "Capas" }));
-    expect(screen.queryByText("NO.01")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nº 01")).not.toBeInTheDocument();
     expect(window.localStorage.getItem("shelf:view")).toBe("covers");
   });
 

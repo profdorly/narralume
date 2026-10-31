@@ -140,7 +140,7 @@ describe("Simulação de longo fôlego", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     await screen.findByText(/第一章 灯下潮痕/);
-    expect(screen.getByText(/score 82%/)).toBeInTheDocument();
+    expect(screen.getByText(/relevância 82%/)).toBeInTheDocument();
 
     // 预测单
     await screen.findByText(/姐姐的失踪与旧邮局/);

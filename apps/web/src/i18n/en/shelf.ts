@@ -3,6 +3,7 @@ import type { shelf as shelfPt } from "../pt-BR/shelf";
 export const shelf: typeof shelfPt = {
   title: "The Stacks",
   ghost: "STACKS",
+  kicker: "01 · Stacks",
   trialNote:
     "Online trial: data is stored only in this device's browser and is wiped when site data is cleared — do not store real works here. The built-in model creates at most 3 consecutive chapters per run; you can connect your own model service in Settings; for backups, download your library in Runs.",
   error: {
@@ -34,6 +35,7 @@ export const shelf: typeof shelfPt = {
     worksCount: "{count, plural, one {# book} other {# books}}",
     latestUpdate: "Last updated · {date}",
     headNo: "No.",
+    rowNo: "No. {no}",
     headTitle: "Title · Premise",
     headMeta: "Chapters · Phase · Updated",
   },
@@ -84,6 +86,7 @@ export const shelf: typeof shelfPt = {
   },
   crop: {
     title: "Adjust cover framing",
+    eyebrow: "COVER CROP",
     note: "Drag the image into place; scroll or pinch to zoom. The 3:4 portrait frame is the final cover.",
     error: "Cover not cropped",
     cutting: "Cropping…",
@@ -93,6 +96,7 @@ export const shelf: typeof shelfPt = {
   edit: {
     languageLabel: "Writing language (controls AI prose and replies)",
     title: "Edit book & cover",
+    eyebrow: "EDIT BOOK",
     note: "The cover on the shelf is only an identifier; chapters, bible, and versions are maintained inside the book.",
     previewAlt: "Cover preview pending save",
     restoreDefault: "Default cover will be restored",
@@ -126,6 +130,7 @@ export const shelf: typeof shelfPt = {
   },
   deleteBook: {
     title: "Move to recycle bin",
+    eyebrow: "DESTROY",
     note: "“{name}” will leave the shelf and be kept for 30 days, during which it can be restored from the recycle bin. Type the book title to confirm.",
     confirmLabel: "Confirm book title",
     error: "Not deleted",
@@ -135,6 +140,7 @@ export const shelf: typeof shelfPt = {
   },
   recycle: {
     title: "Recycle bin",
+    eyebrow: "RECYCLE",
     note: "Books are kept for 30 days; they remain archived after restore. Permanent deletion cannot be undone.",
     loadError: "Recycle bin can't be loaded right now",
     autoClean: "Auto-cleaned after {date}",

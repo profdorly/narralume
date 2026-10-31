@@ -1,5 +1,6 @@
 export const lab = {
   title: "Laboratório narrativo",
+  pageIndex: "LABORATÓRIO · L2",
   meta: "Busca semântica · Previsões de enredo · Prévia de impacto · Memória da história",
   missing: {
     description:
@@ -26,7 +27,7 @@ export const lab = {
     memoryError: "A manutenção da memória não foi concluída",
   },
   search: {
-    eyebrow: "Busca semântica · SEARCH-01",
+    eyebrow: "Busca semântica · BUSCA-01",
     title: "Buscar memória relacionada da história",
     placeholder:
       "ex.: Que sinais apareceram antes de a irmã desaparecer no capítulo 3?",
@@ -36,9 +37,11 @@ export const lab = {
     error: "A busca falhou",
     empty: "Nenhuma memória relacionada da história foi encontrada.",
     hint: "Digite uma pergunta e as configurações, o texto e as memórias relacionados aparecem aqui.",
+    score: "relevância {percent}%",
   },
   index: {
     title: "Índice de busca do manuscrito",
+    code: "ÍNDICE-01",
     loadError: "Não foi possível carregar o índice agora",
     documents: "Capítulos indexados",
     documentsValue: "{indexed} de {total}",
@@ -85,6 +88,8 @@ export const lab = {
   },
   dryRun: {
     title: "Prévia de impacto",
+    code: "PRÉVIA-01",
+    fingerprint: "impressão digital {value}",
     intro:
       "Antes de mudar algo, veja quais configurações, capítulos e estados da história seriam afetados.",
     placeholder: "ex.: Fazer de Lia alguém que nunca existiu de fato.",

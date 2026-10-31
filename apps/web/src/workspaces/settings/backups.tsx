@@ -53,7 +53,7 @@ export function SystemBackupsSection() {
     <section className="settings__section delivery__section--backups" aria-label={t("settings.backups.label")}>
       <header className="settings__section-head">
         <div>
-          <p className="mono">DISASTER</p>
+          <p className="mono">{t("settings.backups.eyebrow")}</p>
           <h2><Archive size={13} strokeWidth={2} aria-hidden="true" /> {t("settings.backups.label")}</h2>
         </div>
         <button
@@ -131,7 +131,7 @@ export function SystemBackupsSection() {
               projects: systemRestoreTarget.counts.projects,
             })}
           </p>
-          <label className="delivery__restore-directory">{t("settings.backups.directoryLabel")}<input value={restoreDirectory} onChange={(event) => setRestoreDirectory(event.target.value)} placeholder="E:\\novel-restored-data" /></label>
+          <label className="delivery__restore-directory">{t("settings.backups.directoryLabel")}<input value={restoreDirectory} onChange={(event) => setRestoreDirectory(event.target.value)} placeholder={t("settings.backups.directoryPlaceholder")} /></label>
           {!restoreDirectory.trim() ? <p className="delivery__restore-warning">{t("settings.backups.directoryWarning")}</p> : null}
           {systemRestoreMutation.isError ? <ErrorNote error={systemRestoreMutation.error} title={t("settings.backups.restoreErrorTitle")} /> : null}
         </ConfirmDialog>

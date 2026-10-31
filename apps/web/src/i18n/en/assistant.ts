@@ -62,6 +62,8 @@ export const assistant: typeof assistantPt = {
   message: {
     assistantLabel: "Assistant reply",
     authorLabel: "Your message",
+    assistantTag: "ASSISTANT",
+    authorTag: "AUTHOR",
   },
   decision: {
     confirming: "Delegating…",

@@ -48,7 +48,7 @@ export function RecycleBin({
   });
   return (
     <ShelfDialog
-      eyebrow="RECYCLE"
+      eyebrow={t("shelf.recycle.eyebrow")}
       title={t("shelf.recycle.title")}
       note={t("shelf.recycle.note")}
       onClose={onClose}

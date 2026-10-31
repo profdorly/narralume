@@ -75,7 +75,7 @@ function CoverCropDialog({
         aria-modal="true"
         aria-label={t("shelf.crop.title")}
       >
-        <p className="shelf-dialog__eyebrow mono">COVER CROP</p>
+        <p className="shelf-dialog__eyebrow mono">{t("shelf.crop.eyebrow")}</p>
         <h2 className="shelf-dialog__title">{t("shelf.crop.title")}</h2>
         <p className="shelf-dialog__note">{t("shelf.crop.note")}</p>
         <div className="cover-cropper__stage cover-cropper__stage--dialog">
@@ -326,7 +326,7 @@ export function BookEditDialog({
 
   return (
     <ShelfDialog
-      eyebrow="EDIT BOOK"
+      eyebrow={t("shelf.edit.eyebrow")}
       title={t("shelf.edit.title")}
       note={t("shelf.edit.note")}
       className="shelf-dialog--book-edit"

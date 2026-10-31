@@ -9,6 +9,7 @@ export const overview: typeof overviewPt = {
   loadError: "Overview is temporarily unavailable",
   masthead: {
     emptyPremise: "The opening page is still unwritten.",
+    index: "OVERVIEW · 02",
     progress: "{committed} committed · {total, plural, one {# chapter} other {# chapters}} · {words, plural, one {# character} other {# characters}}",
     lastWriting: "Last writing {time}",
     neverWriting: "No writing yet",

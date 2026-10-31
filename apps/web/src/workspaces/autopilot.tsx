@@ -265,7 +265,7 @@ export function AutopilotWorkspace() {
   return (
     <div className="autopilot">
       <PageBand
-        index="CRIAÇÃO · Q1"
+        index={t("autopilot.page.index")}
         title={t("autopilot.page.title")}
         meta={
           <span className="mono">
@@ -881,7 +881,7 @@ function foundationSummary(
 ): Array<{ label: string; value: string }> {
   const text = (key: string) => typeof payload[key] === "string" ? payload[key] : "";
   const lines = (key: string) => Array.isArray(payload[key])
-    ? (payload[key] as unknown[]).filter((value): value is string => typeof value === "string").join("、")
+    ? (payload[key] as unknown[]).filter((value): value is string => typeof value === "string").join(", ")
     : "";
   if (kind === "intent") {
     return [

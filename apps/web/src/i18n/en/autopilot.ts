@@ -12,6 +12,7 @@ export const autopilot: typeof autopilotPt = {
   },
   page: {
     title: "AI Quick Creation",
+    index: "CREATION · Q1",
     description:
       "Pick a project and let AI finish chapter after chapter following the story plan; you can step in anytime.",
   },

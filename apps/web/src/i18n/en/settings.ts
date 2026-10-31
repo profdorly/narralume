@@ -7,6 +7,7 @@ export const settings: typeof settingsPt = {
     hint: "Switches the UI display language only; project content and model prompts are unaffected.",
   },
   title: "Settings",
+  pageIndex: "SETTINGS · S1",
   backToProject: "Back to project",
   band: {
     counts: "{providers, plural, one {# provider} other {# providers}} · {models, plural, one {# model} other {# models}} · {status}",
@@ -100,6 +101,8 @@ export const settings: typeof settingsPt = {
     credentialLabelNew: "Key or env:NAME",
     credentialRequired: "A new model provider requires a key or an env:NAME reference.",
     saveErrorTitle: "Model provider not saved",
+    baseUrlLabel: "Base URL",
+    anthropicVersionLabel: "Anthropic Version",
   },
   model: {
     cardAria: "Model {id}",
@@ -125,6 +128,7 @@ export const settings: typeof settingsPt = {
   },
   tools: {
     label: "Advanced tools",
+    eyebrow: "ADVANCED",
     hintTrial: "Run ledger, long-form lab, and production assets (styles / Writing Skill / import management).",
     hintFull:
       "Run ledger, long-form lab, production assets (styles / Writing Skill / import management), and system backup archives.",
@@ -136,6 +140,7 @@ export const settings: typeof settingsPt = {
   },
   driver: {
     label: "Run driver",
+    eyebrow: "DRIVER",
     note: "Currently {mode}; changes apply after a page reload, and clearing the choice restores auto-detection.",
     modeLocal: "Local kernel (data stays in this browser's OPFS)",
     modeServer: "Local service (Node API)",
@@ -167,6 +172,7 @@ export const settings: typeof settingsPt = {
   },
   backups: {
     label: "System backup archives",
+    eyebrow: "DISASTER",
     createLabel: "Scheduled archive {date}",
     createAria: "Create a full-library backup",
     createAction: "Back up now",
@@ -182,6 +188,7 @@ export const settings: typeof settingsPt = {
     restoreInfo:
       "Integrity: {check}; foreign key violations: {violations}; projects: {projects}. This does not overwrite the current database; the target directory must differ from the current data directory, and overwriting is forbidden by default.",
     directoryLabel: "Server target directory",
+    directoryPlaceholder: "E:\\novel-restored-data",
     directoryWarning: "Enter a target directory before confirming.",
     restoreErrorTitle: "Library not restored",
     previewTitle: "Archive check · {id}",
@@ -217,6 +224,7 @@ export const settings: typeof settingsPt = {
   },
   prompts: {
     label: "Prompt templates",
+    eyebrow: "PROMPTS",
     hint: "Official default instructions for generation steps. Changes apply to subsequent generations immediately; restore the official default at any time. Structural rules (locked canon, output format) are always enforced by the system and unaffected by edits.",
     loadError: "Prompt templates are temporarily unavailable",
     modified: "Modified",

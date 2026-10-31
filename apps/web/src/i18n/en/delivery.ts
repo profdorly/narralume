@@ -7,6 +7,7 @@ export const delivery: typeof deliveryPt = {
       "Select a work to check manuscript quality, export files, and keep recoverable content snapshots here.",
   },
   pageBand: {
+    index: "DELIVERY · 05",
     meta: "Press specs · {count, plural, one {# export format} other {# export formats}}",
   },
   gates: {
@@ -93,6 +94,7 @@ export const delivery: typeof deliveryPt = {
   },
   productionTools: {
     heading: "Styles, Skills & Imports",
+    eyebrow: "PRODUCTION ASSETS",
     tabs: {
       styles: "Styles",
       skills: "Writing Skill",
@@ -103,7 +105,7 @@ export const delivery: typeof deliveryPt = {
       loading: "Loading styles…",
       loadError: "The style list is temporarily unavailable",
       retired: "Archived",
-      newStyle: "＋ New style",
+      newStyle: "+ New style",
       hideRetired: "Hide archived",
       showRetired: "Show archived",
       archive: "Archive style",
@@ -138,12 +140,13 @@ export const delivery: typeof deliveryPt = {
         failed:
           "The distillation task did not finish; check the task details and retry.",
         error: "Distillation did not start",
+        timeout: "Style extraction run {runId} did not finish within 10 minutes",
       },
     },
     skills: {
       loading: "Loading Writing Skills…",
       loadError: "The Writing Skill list is temporarily unavailable",
-      newSkill: "＋ New Skill",
+      newSkill: "+ New Skill",
       importPackage: "Import .skill.zip",
       validate: "Validate",
       exportPackage: "Export package",
@@ -159,6 +162,14 @@ export const delivery: typeof deliveryPt = {
         description: "Description",
         instructions: "Instructions",
         priority: "Priority",
+        scope: "Scope",
+        scopes: {
+          all: "All",
+          chapter: "Chapter",
+          cocreate: "Co-creation",
+          edit: "Edit",
+          review: "Review",
+        },
         error: "The Writing Skill operation did not complete",
         submit: "Save Skill",
       },

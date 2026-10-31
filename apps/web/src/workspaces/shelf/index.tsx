@@ -122,7 +122,7 @@ export function ShelfWorkspace() {
           {t("shelf.ghost")}
         </p>
         <h1 className="shelf__title">{t("shelf.title")}</h1>
-        <p className="shelf__kicker mono">01 · Estante</p>
+        <p className="shelf__kicker mono">{t("shelf.kicker")}</p>
       </header>
 
       <div className="shelf__toolbar">
@@ -318,7 +318,9 @@ export function ShelfWorkspace() {
                   />
                   <span className="shelf-row__no">
                     <span className="mono">
-                      NO.{String(index + 1).padStart(2, "0")}
+                      {t("shelf.catalog.rowNo", {
+                        no: String(index + 1).padStart(2, "0"),
+                      })}
                     </span>
                     <span className="shelf-row__id mono">
                       {shortId(project.id)}

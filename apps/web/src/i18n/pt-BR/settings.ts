@@ -5,6 +5,7 @@ export const settings = {
     hint: "Muda só o idioma da interface; o conteúdo do projeto e os prompts do modelo não são afetados.",
   },
   title: "Configurações",
+  pageIndex: "AJUSTES · S1",
   backToProject: "Voltar ao projeto",
   band: {
     counts: "{providers, plural, one {# provedor} other {# provedores}} · {models, plural, one {# modelo} other {# modelos}} · {status}",
@@ -98,6 +99,8 @@ export const settings = {
     credentialLabelNew: "Chave ou env:NAME",
     credentialRequired: "Um provedor novo exige uma chave ou uma referência env:NAME.",
     saveErrorTitle: "O provedor de modelo não foi salvo",
+    baseUrlLabel: "URL base",
+    anthropicVersionLabel: "Versão da API Anthropic",
   },
   model: {
     cardAria: "Modelo {id}",
@@ -123,6 +126,7 @@ export const settings = {
   },
   tools: {
     label: "Ferramentas avançadas",
+    eyebrow: "AVANÇADO",
     hintTrial: "Livro de execuções, laboratório de longo fôlego e ativos de produção (estilos / habilidade de escrita / gestão de importação).",
     hintFull:
       "Livro de execuções, laboratório de longo fôlego, ativos de produção (estilos / habilidade de escrita / gestão de importação) e arquivos de backup do sistema.",
@@ -134,6 +138,7 @@ export const settings = {
   },
   driver: {
     label: "Driver de execução",
+    eyebrow: "DRIVER",
     note: "No momento {mode}; as mudanças valem depois de recarregar a página, e limpar a escolha restaura a detecção automática.",
     modeLocal: "Núcleo local (os dados ficam no OPFS deste navegador)",
     modeServer: "Serviço local (API Node)",
@@ -165,6 +170,7 @@ export const settings = {
   },
   backups: {
     label: "Arquivos de backup do sistema",
+    eyebrow: "CONTINGÊNCIA",
     createLabel: "Arquivo agendado {date}",
     createAria: "Criar um backup da biblioteca inteira",
     createAction: "Fazer backup agora",
@@ -180,6 +186,7 @@ export const settings = {
     restoreInfo:
       "Integridade: {check}; violações de chave estrangeira: {violations}; projetos: {projects}. Isto não sobrescreve o banco atual; o diretório de destino precisa ser diferente do diretório de dados atual, e a sobrescrita é proibida por padrão.",
     directoryLabel: "Diretório de destino no servidor",
+    directoryPlaceholder: "E:\\dados-restaurados",
     directoryWarning: "Informe um diretório de destino antes de confirmar.",
     restoreErrorTitle: "A biblioteca não foi restaurada",
     previewTitle: "Checagem do arquivo · {id}",
@@ -215,6 +222,7 @@ export const settings = {
   },
   prompts: {
     label: "Modelos de prompt",
+    eyebrow: "PROMPTS",
     hint: "Instruções oficiais padrão das etapas de geração. As mudanças valem nas gerações seguintes na hora; restaure o padrão oficial a qualquer momento. Regras estruturais (cânone travado, formato de saída) são sempre aplicadas pelo sistema e não mudam com edições.",
     loadError: "Os modelos de prompt estão temporariamente indisponíveis",
     modified: "Modificado",

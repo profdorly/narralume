@@ -317,7 +317,7 @@ export function StudioWorkspace() {
   return (
     <div className="studio">
       <PageBand
-        index="ESCRITA · 04"
+        index={t("studio.header.index")}
         title={t("studio.header.title")}
         meta={
           <div

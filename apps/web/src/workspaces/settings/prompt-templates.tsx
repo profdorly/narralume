@@ -120,7 +120,7 @@ export function PromptTemplatesSection() {
   return (
     <section className="settings__section" aria-label={t("settings.prompts.label")}>
       <header className="settings__section-head">
-        <div><p className="mono">PROMPTS</p><h2>{t("settings.prompts.label")}</h2></div>
+        <div><p className="mono">{t("settings.prompts.eyebrow")}</p><h2>{t("settings.prompts.label")}</h2></div>
         <p className="settings__section-note">{t("settings.prompts.hint")}</p>
       </header>
       {templatesQuery.isPending ? (

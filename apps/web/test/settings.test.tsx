@@ -712,7 +712,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     );
     const switchedForm = (await screen.findByText("Editar provedor de modelo")).closest("form");
     expect(within(switchedForm!).getByLabelText("Nome do provedor")).toHaveValue("第二渠道");
-    expect(within(switchedForm!).getByLabelText("Base URL")).toHaveValue(
+    expect(within(switchedForm!).getByLabelText("URL base")).toHaveValue(
       "https://api.second.example.com/v1",
     );
   });

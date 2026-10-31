@@ -48,6 +48,7 @@ export const bible: typeof biblePt = {
     noEvidence: "No evidence chapters yet", unplacedClues: "Setups without payoff windows",
   },
   title: "Story Bible",
+  pageIndex: "STORY · 03",
   catalogAriaLabel: "Catalog counts",
   catalogCounts:
     "{outline, plural, one {# node} other {# nodes}} · {entities, plural, one {# entity} other {# entities}} · {facts, plural, one {# fact} other {# facts}} · {foreshadows, plural, one {# foreshadow} other {# foreshadows}}",

@@ -29,7 +29,7 @@ export function DeleteDialog({
 
   return (
     <ShelfDialog
-      eyebrow="DESTROY"
+      eyebrow={t("shelf.deleteBook.eyebrow")}
       title={t("shelf.deleteBook.title")}
       note={t("shelf.deleteBook.note", { name: project.title })}
       onClose={onClose}

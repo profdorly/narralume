@@ -59,10 +59,10 @@ export function ProviderForm({ provider, pending, error, onCancel, onSubmit }: {
       <h3>{provider ? t("settings.provider.formTitleEdit") : t("settings.provider.formTitleNew")}</h3>
       <label>{t("settings.provider.nameLabel")}<input required value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label>{t("settings.provider.protocolLabel")}<select value={wireApi} onChange={(event) => setWireApi(event.target.value as WireApi)}>{WIRE_APIS.map((value) => <option key={value} value={value}>{wireApiLabel(value)}</option>)}</select></label>
-      <label>Base URL<input required type="url" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.example.com/v1" /></label>
+      <label>{t("settings.provider.baseUrlLabel")}<input required type="url" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.example.com/v1" /></label>
       <label>{t("settings.provider.endpointLabel")}<input value={endpoint} onChange={(event) => setEndpoint(event.target.value)} /></label>
       <label>{provider ? t("settings.provider.credentialLabelEdit") : t("settings.provider.credentialLabelNew")}<input type="password" value={credentialRef} onChange={(event) => setCredentialRef(event.target.value)} autoComplete="off" /></label>
-      {wireApi === "anthropic-messages" ? <label>Anthropic Version<input value={anthropicVersion} onChange={(event) => setAnthropicVersion(event.target.value)} /></label> : null}
+      {wireApi === "anthropic-messages" ? <label>{t("settings.provider.anthropicVersionLabel")}<input value={anthropicVersion} onChange={(event) => setAnthropicVersion(event.target.value)} /></label> : null}
       <label className="supply__check"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />{t("common.action.enable")}</label>
       {localError ? <p className="supply__local-error" role="alert">{localError}</p> : null}
       {error ? <ErrorNote error={error} title={t("settings.provider.saveErrorTitle")} /> : null}

@@ -3,6 +3,7 @@ import type { studio as studioPt } from "../pt-BR/studio";
 export const studio: typeof studioPt = {
   header: {
     title: "Writing Desk",
+    index: "WRITING · 04",
     modeSwitchAria: "Writing mode",
   },
   required: {

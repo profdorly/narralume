@@ -208,7 +208,7 @@ export function SettingsWorkspace() {
   return (
     <div className="settings">
       <PageBand
-        index="AJUSTES · S1"
+        index={t("settings.pageIndex")}
         title={t("settings.title")}
         meta={
           <span className="settings__band-meta">
@@ -367,7 +367,7 @@ export function SettingsWorkspace() {
 
       <section className="settings__section" aria-label={t("settings.tools.label")}>
         <header className="settings__section-head">
-          <div><p className="mono">ADVANCED</p><h2>{t("settings.tools.label")}</h2></div>
+          <div><p className="mono">{t("settings.tools.eyebrow")}</p><h2>{t("settings.tools.label")}</h2></div>
           <p className="settings__section-note">
             {t("settings.tools.hintFull")}
           </p>
@@ -403,7 +403,7 @@ export function SettingsWorkspace() {
 
       <section className="settings__section" aria-label={t("settings.driver.label")}>
         <header className="settings__section-head">
-          <div><p className="mono">DRIVER</p><h2>{t("settings.driver.label")}</h2></div>
+          <div><p className="mono">{t("settings.driver.eyebrow")}</p><h2>{t("settings.driver.label")}</h2></div>
           <p className="settings__section-note">
             {t("settings.driver.note", {
               mode: driverMode === "local"

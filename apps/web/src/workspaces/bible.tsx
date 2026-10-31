@@ -125,7 +125,7 @@ export function BibleWorkspace() {
   return (
     <div className="bible">
       <PageBand
-        index="HISTÓRIA · 03"
+        index={t("bible.pageIndex")}
         title={t("bible.title")}
         meta={
           bible ? (
@@ -634,7 +634,7 @@ function TimelineSection({ bible }: { bible: StoryBible }) {
             <div key={event.id}>
               <p className="bible__facts-line">
                 <strong>{event.title}</strong>
-                {event.storyTimeStart ? `（${event.storyTimeStart}）` : ""}
+                {event.storyTimeStart ? ` (${event.storyTimeStart})` : ""}
               </p>
               {event.description ? (
                 <p className="bible__blockquote">{event.description}</p>

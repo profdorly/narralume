@@ -47,6 +47,7 @@ export const bible = {
     noEvidence: "Ainda não há capítulos de evidência", unplacedClues: "Preparações sem janela de pagamento",
   },
   title: "Bíblia da história",
+  pageIndex: "HISTÓRIA · 03",
   catalogAriaLabel: "Contagens do catálogo",
   catalogCounts:
     "{outline, plural, one {# nó} other {# nós}} · {entities, plural, one {# entidade} other {# entidades}} · {facts, plural, one {# fato} other {# fatos}} · {foreshadows, plural, one {# antecipação} other {# antecipações}}",

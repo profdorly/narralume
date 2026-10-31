@@ -111,7 +111,7 @@ export function MessageEntry({ message }: { message: AssistantMessageDto }) {
     >
       <header>
         <span className="mono">
-          {isAssistant ? "ASSISTANT" : "AUTHOR"}
+          {isAssistant ? t("assistant.message.assistantTag") : t("assistant.message.authorTag")}
         </span>
         <time dateTime={message.createdAt}>
           {formatRelativeDate(message.createdAt)}

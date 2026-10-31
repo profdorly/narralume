@@ -1,6 +1,7 @@
 export const shelf = {
   title: "A Estante",
   ghost: "ESTANTE",
+  kicker: "01 · Estante",
   trialNote:
     "Os dados ficam só no navegador deste aparelho e somem se você limpar os dados do site — não guarde obras definitivas aqui. O modelo integrado escreve no máximo 3 capítulos seguidos por execução; em Configurações você liga o próprio serviço de modelo. Para backup, baixe a biblioteca em Execuções.",
   error: {
@@ -32,6 +33,7 @@ export const shelf = {
     worksCount: "{count, plural, one {# livro} other {# livros}}",
     latestUpdate: "Última atualização · {date}",
     headNo: "Nº",
+    rowNo: "Nº {no}",
     headTitle: "Título · Premissa",
     headMeta: "Capítulos · Fase · Atualizado",
   },
@@ -82,6 +84,7 @@ export const shelf = {
   },
   crop: {
     title: "Ajustar o recorte da capa",
+    eyebrow: "RECORTE DA CAPA",
     note: "Arraste a imagem para o lugar; role ou pinça para ampliar. O quadro vertical 3:4 é a capa final.",
     error: "A capa não foi recortada",
     cutting: "Recortando…",
@@ -91,6 +94,7 @@ export const shelf = {
   edit: {
     languageLabel: "Idioma da escrita (controla a prosa e as respostas da IA)",
     title: "Editar livro e capa",
+    eyebrow: "EDITAR LIVRO",
     note: "A capa na estante serve só de identificação; capítulos, bíblia e versões se mantêm dentro do livro.",
     previewAlt: "Prévia da capa aguardando salvamento",
     restoreDefault: "A capa padrão será restaurada",
@@ -124,6 +128,7 @@ export const shelf = {
   },
   deleteBook: {
     title: "Mover para a lixeira",
+    eyebrow: "DESCARTE",
     note: "“{name}” sai da estante e fica guardado por 30 dias, durante os quais pode ser restaurado na lixeira. Digite o título do livro para confirmar.",
     confirmLabel: "Confirmar o título do livro",
     error: "Não foi excluído",
@@ -133,6 +138,7 @@ export const shelf = {
   },
   recycle: {
     title: "Lixeira",
+    eyebrow: "LIXEIRA",
     note: "Os livros ficam guardados por 30 dias; depois de restaurados, permanecem arquivados. A exclusão permanente não tem volta.",
     loadError: "Não foi possível carregar a lixeira agora",
     autoClean: "Limpeza automática depois de {date}",

@@ -60,6 +60,8 @@ export const assistant = {
   message: {
     assistantLabel: "Resposta do assistente",
     authorLabel: "Sua mensagem",
+    assistantTag: "ASSISTENTE",
+    authorTag: "AUTOR",
   },
   decision: {
     confirming: "Delegando…",

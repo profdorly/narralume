@@ -1,5 +1,8 @@
 export const runs = {
   title: "Central de execuções",
+  pageIndex: "EXECUÇÕES · L1",
+  issueNo: "EDIÇÃO Nº {no}",
+  runHeading: "EXECUÇÃO {id}",
   volumeMeta: "{runs, plural, one {# execução} other {# execuções}} / {issues, plural, one {# edição} other {# edições}}",
   issueArchiveLabel: "Arquivo de edições",
   catalog: {

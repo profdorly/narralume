@@ -2,6 +2,9 @@ import type { runs as runsPt } from "../pt-BR/runs";
 
 export const runs: typeof runsPt = {
   title: "Run Center",
+  pageIndex: "RUNS · L1",
+  issueNo: "ISSUE NO. {no}",
+  runHeading: "RUN {id}",
   volumeMeta: "{runs, plural, one {# run} other {# runs}} / {issues, plural, one {# issue} other {# issues}}",
   issueArchiveLabel: "Issue archive",
   catalog: {

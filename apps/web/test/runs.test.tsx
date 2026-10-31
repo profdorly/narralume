@@ -126,7 +126,7 @@ afterEach(() => {
 });
 
 describe("Central de execuções", () => {
-  it("电影期号目录 + 期主档按 ISSUE NO. 组合", async () => {
+  it("电影期号目录 + 期主档按 EDIÇÃO Nº 组合", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/runs") return json([RUN_COMPLETED, RUN_RUNNING]);
@@ -135,8 +135,8 @@ describe("Central de execuções", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns();
 
-    await screen.findByText("ISSUE NO. 202608");
-    expect(screen.getByText(/ISSUE NO\. 202608/)).toBeInTheDocument();
+    await screen.findAllByText("EDIÇÃO Nº 202608");
+    expect(screen.getByRole("heading", { name: "EDIÇÃO Nº 202608" })).toBeInTheDocument();
     // 左栏期号索引
     expect(screen.getByRole("button", { name: /Edição 2026-08/ })).toBeInTheDocument();
     // 行项
@@ -224,7 +224,7 @@ describe("Central de execuções", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderRuns();
 
-    await screen.findByText(/ISSUE NO\. 202608/);
+    await screen.findByRole("heading", { name: "EDIÇÃO Nº 202608" });
     // 检查轮询已发起
     await new Promise((resolve) => setTimeout(resolve, 1800));
     const calls = fetchMock.mock.calls.filter(([u]) =>

@@ -5,6 +5,7 @@ export const delivery = {
       "Selecione uma obra para conferir a qualidade do manuscrito, exportar arquivos e guardar instantâneos recuperáveis do conteúdo.",
   },
   pageBand: {
+    index: "ENTREGA · 05",
     meta: "Especificações de publicação · {count, plural, one {# formato de exportação} other {# formatos de exportação}}",
   },
   gates: {
@@ -91,6 +92,7 @@ export const delivery = {
   },
   productionTools: {
     heading: "Estilos, habilidades e importações",
+    eyebrow: "ATIVOS DE PRODUÇÃO",
     tabs: {
       styles: "Estilos",
       skills: "Habilidade de escrita",
@@ -101,7 +103,7 @@ export const delivery = {
       loading: "Carregando estilos…",
       loadError: "A lista de estilos está temporariamente indisponível",
       retired: "Arquivado",
-      newStyle: "＋ Novo estilo",
+      newStyle: "+ Novo estilo",
       hideRetired: "Ocultar arquivados",
       showRetired: "Mostrar arquivados",
       archive: "Arquivar estilo",
@@ -136,12 +138,13 @@ export const delivery = {
         failed:
           "A tarefa de destilação não terminou; confira os detalhes da tarefa e tente de novo.",
         error: "A destilação não começou",
+        timeout: "A destilação de estilo {runId} não terminou em 10 minutos",
       },
     },
     skills: {
       loading: "Carregando habilidades de escrita…",
       loadError: "A lista de habilidades de escrita está temporariamente indisponível",
-      newSkill: "＋ Nova habilidade",
+      newSkill: "+ Nova habilidade",
       importPackage: "Importar .skill.zip",
       validate: "Validar",
       exportPackage: "Exportar pacote",
@@ -157,6 +160,14 @@ export const delivery = {
         description: "Descrição",
         instructions: "Instruções",
         priority: "Prioridade",
+        scope: "Escopo",
+        scopes: {
+          all: "Tudo",
+          chapter: "Capítulo",
+          cocreate: "Cocriação",
+          edit: "Edição",
+          review: "Revisão",
+        },
         error: "A operação da habilidade de escrita não foi concluída",
         submit: "Salvar habilidade",
       },

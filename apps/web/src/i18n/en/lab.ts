@@ -2,6 +2,7 @@ import type { lab as labPt } from "../pt-BR/lab";
 
 export const lab: typeof labPt = {
   title: "Narrative Lab",
+  pageIndex: "LAB · L2",
   meta: "Semantic search · Plot predictions · Impact preview · Story memory",
   missing: {
     description:
@@ -38,9 +39,11 @@ export const lab: typeof labPt = {
     error: "Search failed",
     empty: "No related story memory found.",
     hint: "Enter a question and related settings, text, and memories will appear here.",
+    score: "score {percent}%",
   },
   index: {
     title: "Manuscript search index",
+    code: "INDEX-01",
     loadError: "The index cannot be loaded right now",
     documents: "Indexed chapters",
     documentsValue: "{indexed} of {total}",
@@ -87,6 +90,8 @@ export const lab: typeof labPt = {
   },
   dryRun: {
     title: "Impact preview",
+    code: "PREVIEW-01",
+    fingerprint: "fingerprint {value}",
     intro:
       "Before making a change, check which settings, chapters, and story states it would affect.",
     placeholder: "e.g. Make Lia someone who never really existed.",

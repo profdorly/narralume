@@ -7,6 +7,7 @@ export const overview = {
   loadError: "A visão geral está temporariamente indisponível",
   masthead: {
     emptyPremise: "A página de abertura ainda não foi escrita.",
+    index: "VISÃO · 02",
     progress: "{committed, plural, one {# registrado} other {# registrados}} · {total, plural, one {# capítulo} other {# capítulos}} · {words, plural, one {# caractere} other {# caracteres}}",
     lastWriting: "Última escrita {time}",
     neverWriting: "Ainda não houve escrita",

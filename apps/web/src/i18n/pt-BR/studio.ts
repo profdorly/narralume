@@ -1,6 +1,7 @@
 export const studio = {
   header: {
     title: "Mesa de escrita",
+    index: "ESCRITA · 04",
     modeSwitchAria: "Modo de escrita",
   },
   required: {

@@ -135,7 +135,7 @@ export function LabWorkspace() {
 
   return (
     <div className="lab">
-      <PageBand index="LABORATÓRIO · L2" title={t("lab.title")} meta={<span>{t("lab.meta")}</span>} />
+      <PageBand index={t("lab.pageIndex")} title={t("lab.title")} meta={<span>{t("lab.meta")}</span>} />
 
       <div className="lab__layout">
         <div className="lab__column">
@@ -350,7 +350,7 @@ function SearchChamber({
                 </span>
                 <span className="lab__hit-title">{hit.title}</span>
                 <span className="lab__hit-score mono">
-                  score {Math.round(hit.score * 100)}%
+                  {t("lab.search.score", { percent: Math.round(hit.score * 100) })}
                 </span>
               </div>
               <p className="lab__hit-content">{hit.content.slice(0, 120)}…</p>
@@ -403,7 +403,7 @@ function RetrievalIndexPanel({ projectId }: { projectId: string }) {
         <p className="lab__panel-title" id="lab-index-title">
           {t("lab.index.title")}
         </p>
-        <span className="lab__panel-count mono">INDEX-01</span>
+        <span className="lab__panel-count mono">{t("lab.index.code")}</span>
       </header>
       <div className="lab__panel-body">
         {statusQuery.isPending ? (
@@ -634,7 +634,7 @@ function DryRun({
     <div className="lab__panel">
       <header className="lab__panel-head">
         <p className="lab__panel-title">{t("lab.dryRun.title")}</p>
-        <span className="lab__panel-count mono">PREVIEW-01</span>
+        <span className="lab__panel-count mono">{t("lab.dryRun.code")}</span>
       </header>
       <div className="lab__panel-body">
         <p className="lab__note">
@@ -682,7 +682,7 @@ function DryRun({
                 </div>
               ))}
               <span className="lab__dryrun-fingerprint mono">
-                fingerprint {result.fingerprint.slice(0, 12)}
+                {t("lab.dryRun.fingerprint", { value: result.fingerprint.slice(0, 12) })}
               </span>
             </div>
           ) : (
