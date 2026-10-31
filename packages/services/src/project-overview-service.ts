@@ -110,8 +110,9 @@ export class ProjectOverviewService {
       .filter((candidate) => candidate.status === "pending");
     const reports = this.reviews.listProjectReports(projectId);
     const reviewIssues = reports.flatMap((report) => {
-      // 只有已经绑定到正文的报告，才能在写作台中定位和裁定。
-      // 任务中途失败留下的候选审稿仍保留在运行证据里，但不能冒充产品待办。
+      // Only reports already bound to the manuscript can be located and decided
+      // at the writing desk. Candidate reviews left by a task that failed
+      // midway stay in the run evidence, but must not pose as product to-dos.
       if (!report.documentId) return [];
       const run = this.runs.getRun(report.runId);
       if (run?.status === "cancelled") return [];
@@ -198,8 +199,10 @@ export class ProjectOverviewService {
       );
     }
     return {
-      // foundation 也会把书级大纲根节点记在 targetOutlineNodeId 上；
-      // 是否为单章任务必须由 recipe 判断，不能把“有目标节点”等同于“写正文”。
+      // foundation also records the book-level outline root node in
+      // targetOutlineNodeId; whether it is a single-chapter task must be
+      // decided by the recipe; "has a target node" does not mean "writes
+      // prose".
       kind: isChapterTask ? "chapter" : "foundation",
       id: snapshot.run.id,
       status: snapshot.run.status,

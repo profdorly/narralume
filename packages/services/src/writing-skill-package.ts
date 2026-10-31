@@ -13,9 +13,10 @@ export class WritingSkillPackageError extends ServiceError {
 }
 
 /**
- * 解析写作 Skill 包（.zip 或 .md）：ZIP 走安全路径检查、引用数量与
- * 大小限制；SKILL.md frontmatter 提取元数据。bytes 用 Uint8Array（浏览器
- * ArrayBuffer 与 Node Buffer 都可传入）。
+ * Parse a writing Skill package (.zip or .md): ZIP files go through safe path
+ * checks plus reference count and size limits; metadata is taken from the
+ * SKILL.md frontmatter. bytes is a Uint8Array (a browser ArrayBuffer or a Node
+ * Buffer can both be passed).
  */
 export async function parseWritingSkillPackage(
   filename: string,
@@ -125,7 +126,7 @@ export async function parseWritingSkillPackage(
   return { ...validated, references };
 }
 
-/** 导出 Skill 为 markdown 文件内容。 */
+/** Export a Skill as markdown file content. */
 export function renderSkillMarkdown(skill: WritingSkill): string {
   return [
     "---",
@@ -199,7 +200,7 @@ function safeSkillPath(input: string): string {
   return path;
 }
 
-/** 把 Skill 与其引用打包为 ZIP 二进制（Uint8Array）。 */
+/** Pack a Skill and its references into a ZIP binary (Uint8Array). */
 export async function buildWritingSkillZip(
   skill: WritingSkill,
   references: ReadonlyArray<{ path: string; content: string }>,

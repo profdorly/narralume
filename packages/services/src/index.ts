@@ -87,7 +87,7 @@ export {
   renderSkillMarkdown,
   WritingSkillPackageError,
 } from "./writing-skill-package.js";
-// ---- 自 apps/server 迁入的运行时无关模块（M3 阶段 A）----
+// ---- Runtime-independent modules moved from apps/server (M3 phase A) ----
 export * from "./run-coordinator.js";
 export * from "./event-hub.js";
 export * from "./autopilot-coordinator.js";
@@ -109,7 +109,7 @@ export * from "./provider-defaults.js";
 export * from "./delivery-service.js";
 export * from "./task-classification.js";
 
-// ---- 路由注册器（Fastify 与浏览器内核双宿主）----
+// ---- Route registrars (two hosts: Fastify and the browser kernel) ----
 export * from "./route-error.js";
 export * from "./agent-skill-routes.js";
 export * from "./assistant-routes.js";

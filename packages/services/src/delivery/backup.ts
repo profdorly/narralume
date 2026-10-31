@@ -64,7 +64,8 @@ export function restoreBackup(
       now,
     );
     const expected = bundle.manifest.counts;
-    // runs 只作为已中断历史随包导出，不在恢复副本中续跑，因此不参与计数校验。
+    // runs are exported in the bundle only as interrupted history and do not
+    // resume in the restored copy, so they are not part of the count check.
     const mismatched = (Object.keys(expected) as (keyof BundleCounts)[])
       .filter((key) => key !== "runs")
       .filter((key) => counts[key] !== expected[key]);

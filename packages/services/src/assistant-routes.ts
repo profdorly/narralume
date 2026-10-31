@@ -263,7 +263,9 @@ export function registerAssistantRoutes(
       );
       const recipe = buildAssistantTurnRecipe(runId);
       const now = new Date().toISOString();
-      /* 对话覆盖的模型失效时明确失败并提示重选，不静默回退全局默认。 */
+      /* When the model overridden by the conversation becomes invalid, fail
+         explicitly and ask to choose again; do not silently fall back to the
+         global default. */
       if (conversation.settings.modelId) {
         requireAliveAssistantModel(conversation.settings.modelId, {
           models,
@@ -414,8 +416,9 @@ export function registerAssistantRoutes(
           now: new Date().toISOString(),
         });
         if (activity.executionMode === "auto") {
-          // auto 活动失败后重试：交办执行，但不走下面的 confirm 响应路径；
-          // 结果由 projection 统一投影。
+          // Retry after an auto activity failed: dispatch the execution, but
+          // skip the confirm response path below; the result is projected
+          // uniformly by the projection.
           const execution = executor.executeAutoActivity(activity.id);
           if (!execution) {
             const current = assistants.requireActivity(activity.id);
@@ -722,6 +725,8 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * 对话内换模型只允许在当前生效模型（对话覆盖 ?? 全局 writing 分配）的
- * 同协议家族内进行：跨协议模型在设置页改默认分配后再用。
+ * Switching models within a conversation is only allowed inside the protocol
+ * family of the current effective model (conversation override ?? global
+ * writing assignment): for a model of another protocol, change the default
+ * assignment in Settings first.
  */

@@ -2,12 +2,14 @@ import type { AuthContext } from "./auth-context.js";
 import { LOCAL_OPERATOR } from "./auth-context.js";
 
 /**
- * 运行时无关的路由注册接口：同一份 register*Routes 代码在 Fastify
- * （HTTP）与浏览器内核（Worker RPC）双注册。HTTP 契约是唯一 API 面。
+ * Runtime-independent route registration interface: the same register*Routes
+ * code registers on both Fastify (HTTP) and the browser kernel (Worker RPC).
+ * The HTTP contract is the only API surface.
  *
- * 处理器收到的 request 是「已解析」的对象（body/params/query 为普通
- * JS 值），返回 RouteResponse（或裸 JSON 值 = 200）。二进制响应用
- * Uint8Array body + 显式 headers 表达。抛错走宿主的统一错误映射。
+ * The request a handler receives is already parsed (body/params/query are
+ * plain JS values); it returns a RouteResponse (or a bare JSON value = 200).
+ * Binary responses use a Uint8Array body + explicit headers. Thrown errors go
+ * through the host's unified error mapping.
  */
 
 export type RouteMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -15,15 +17,21 @@ export type RouteMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export interface RouteRequest {
   readonly method: RouteMethod;
   readonly path: string;
-  /** 路径参数（:projectId 等），已解码。 */
+  /** Path parameters (:projectId, etc.), already decoded. */
   readonly params: Readonly<Record<string, string>>;
-  /** 查询参数（URL 解析后的字典，值为 string 或 string[]）。 */
+  /**
+   * Query parameters (dictionary after URL parsing; values are string or
+   * string[]).
+   */
   readonly query: Record<string, unknown>;
-  /** JSON body（DELETE 也允许）。 */
+  /** JSON body (also allowed for DELETE). */
   readonly body: unknown;
-  /** 请求头（小写键）。仅在 ETag 协商等少数端点使用。 */
+  /**
+   * Request headers (lowercase keys). Used only by a few endpoints, e.g. for
+   * ETag negotiation.
+   */
   readonly headers: Readonly<Record<string, string>>;
-  /** 结构化日志（内核侧可为 no-op）。 */
+  /** Structured logger (may be a no-op on the kernel side). */
   readonly log: { warn(payload: unknown, message?: string): void };
   /** Identidade do operador. Hoje é sempre o operador local; SaaS preenche tenantId. */
   readonly auth: AuthContext;
@@ -42,7 +50,10 @@ export type RouteHandler = (
 ) => Promise<RouteResponse | unknown> | RouteResponse | unknown;
 
 export interface RouteOptions {
-  /** 请求体上限（字节）。Fastify 映射 bodyLimit；内核侧校验 JSON 大小。 */
+  /**
+   * Request body limit (bytes). Maps to bodyLimit in Fastify; the kernel side
+   * checks the JSON size.
+   */
   readonly bodyLimit?: number;
 }
 
@@ -56,8 +67,8 @@ export interface RouteApp {
 }
 
 /**
- * 处理器返回值归一：裸值 = 200 JSON；RouteResponse 原样。
- * 用于两个宿主适配器的公共出口。
+ * Normalize a handler's return value: a bare value = 200 JSON; a RouteResponse
+ * is passed through. The shared exit point of both host adapters.
  */
 export function normalizeRouteResult(
   result: RouteResponse | unknown,

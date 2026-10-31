@@ -1,9 +1,10 @@
 import { sha256BytesHex } from "@lapis/domain";
 
 /**
- * 纯 JS 字节工具：Node 与浏览器 Worker 共用，避免 Buffer 依赖。
- * base64 走 btoa/atob（两运行时都原生），sha256 字节哈希先经
- * latin1 字符串桥接（btoa 安全区间）再复用 domain 的同步实现。
+ * Pure-JS byte utilities shared by Node and browser Workers, avoiding a Buffer
+ * dependency. base64 uses btoa/atob (native in both runtimes); sha256 of bytes
+ * first bridges through a latin1 string (the btoa-safe range), then reuses the
+ * synchronous implementation in domain.
  */
 
 const BASE64_ALPHABET =

@@ -51,7 +51,10 @@ const IntentCandidatePayloadSchema = z.object({
   currentFocus: z.string().nullable(),
 });
 
-/** 从会话 chapterPolicy 还原生效策略（含创建时显式字段与停靠模式）。 */
+/**
+ * Rebuild the effective policy from the session's chapterPolicy (including
+ * explicit fields set at creation and the parking mode).
+ */
 export function resolveSessionEffectivePolicy(
   session: Pick<AutopilotSession, "chapterPolicy">,
 ): EffectivePolicy & {
@@ -62,7 +65,8 @@ export function resolveSessionEffectivePolicy(
   const effectivePolicy = resolveEffectivePolicy(
     session.chapterPolicy as ModelExecutionPolicy,
   ).effectivePolicy;
-  // chapterPolicy 的运行时字段是宽松 Record，这里逐字段校形后收窄。
+  // The runtime fields of chapterPolicy are a loose Record; validate them one
+  // by one here to narrow the type.
   const raw = session.chapterPolicy as Readonly<Record<string, unknown>>;
   const explicitPolicyFields: string[] | undefined = Array.isArray(
     raw.explicitPolicyFields,
@@ -242,9 +246,11 @@ export function requestSessionCancellation(
 }
 
 /**
- * 采纳地基候选：intent/compass 走基线防覆盖检查（生成后人工改过的内容
- * 不被旧候选覆盖），canon 实体按 (type,name) 去重插入。editedPayload 为
- * 用户在采纳前编辑过的载荷；不传则用候选当前载荷。
+ * Accept foundation candidates: intent/compass go through the baseline
+ * overwrite check (content edited by hand after generation is not overwritten
+ * by an old candidate); canon entities are inserted deduplicated by
+ * (type,name). editedPayload is the payload the user edited before accepting;
+ * when omitted, the candidate's current payload is used.
  */
 export function adoptCandidate(
   database: NarrativeDatabase,
@@ -266,7 +272,9 @@ export function adoptCandidate(
     if (candidate.kind === "intent") {
       const input = IntentCandidatePayloadSchema.parse(payload);
       const current = story.getAuthorIntent(candidate.projectId);
-      // 候选保存了生成时的意图基线；生成后人工修改过的意图不能被旧候选覆盖。
+      // The candidate stores the intent baseline from generation time; an
+      // intent edited by hand after generation must not be overwritten by an
+      // old candidate.
       if (
         (current?.updatedAt ?? null) !==
         baselineValue(candidate.payload, "intentUpdatedAt")
@@ -309,7 +317,9 @@ export function adoptCandidate(
         input.longLines,
       );
       const currentCompass = automation.getCompass(candidate.projectId);
-      // 候选保存了生成时的指南针版本；生成后人工修改过的指南针不能被旧候选覆盖。
+      // The candidate stores the compass version from generation time; a
+      // compass edited by hand after generation must not be overwritten by an
+      // old candidate.
       if (
         (currentCompass?.version ?? null) !==
         baselineValue(candidate.payload, "compassVersion")
@@ -557,7 +567,10 @@ export function keepBlockedManuscript(input: {
   input.automation.resumeSession(session.id, input.now);
 }
 
-/** 最近一次 run 状态事件的原因；没有事件时退回 run 状态本身。 */
+/**
+ * Reason of the most recent run status event; without events, falls back to the
+ * run status itself.
+ */
 export function latestRunReason(snapshot: RunSnapshot): string | null {
   const event = [...snapshot.events]
     .reverse()
@@ -567,7 +580,10 @@ export function latestRunReason(snapshot: RunSnapshot): string | null {
     : snapshot.run.status;
 }
 
-/** 读取候选生成时保存的基线值；缺失时返回 null（等价于“生成时尚不存在”）。 */
+/**
+ * Read the baseline value saved when the candidate was generated; returns null
+ * when missing (equivalent to "did not exist at generation time").
+ */
 function baselineValue(
   payload: Readonly<Record<string, unknown>>,
   key: string,

@@ -16,11 +16,14 @@ export {
 } from "./manual-settlement-run.js";
 
 /**
- * 写作台路径：作者正式提交正文版本后自动开一个后台结算 Run。
- * 没有可用写作模型时静默跳过——手动写作永远不能被模型配置阻塞。
- * （「从正文补全故事圣经」走 createManualSettlementRun，缺模型时显式报错。）
- * 若进行中的补全任务仍要结算这一章，则改由任务按新版本只结算一次，
- * 不另开结算（见 retargetBackfillChapter）。
+ * Writing desk path: after the author formally commits a manuscript version, a
+ * background settlement Run starts automatically. When no writing model is
+ * available it is skipped silently: manual writing must never be blocked by
+ * model configuration. ("Fill in the story bible from the manuscript" uses
+ * createManualSettlementRun, which reports an explicit error when the model is
+ * missing.) If an in-progress fill-in job still has to settle this chapter, the
+ * job settles it once against the new version instead and no separate
+ * settlement starts (see retargetBackfillChapter).
  */
 export function startManualSettlementRun(input: {
   database: NarrativeDatabase;
@@ -57,7 +60,8 @@ export function startManualSettlementRun(input: {
     return null;
   }
   if (!hasWritingAssignment(database, environment)) return null;
-  /* 每个版本最多一条结算 Run；不同版本各自结算，串行或并发都安全。 */
+  /* At most one settlement Run per version; different versions settle
+     separately, which is safe serially or concurrently. */
   if (findActiveManualSettlementRun(database, projectId, versionId)) {
     return null;
   }

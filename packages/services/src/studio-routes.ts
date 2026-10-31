@@ -245,7 +245,8 @@ export function registerStudioRoutes(
         request.params,
       );
       const input = CreateSelectionEditRequestSchema.parse(request.body);
-      // 版本/草稿一致性检查与 run 创建都在服务层；失败不得产生版本副作用。
+      // Version/draft consistency checks and run creation live in the service
+      // layer; a failure must not produce version side effects.
       const snapshot = createSelectionEditRun(database, {
         projectId,
         documentId,
@@ -326,7 +327,8 @@ export function registerStudioRoutes(
           });
           return result;
         }
-        // 版本追加/检索段/大纲状态/操作日志/手动结算的完整组装在服务层。
+        // The full assembly of version append/retrieval chunks/outline
+        // status/operation log/manual settlement lives in the service layer.
         const decided = acceptEditProposal(database, {
           proposal,
           now,

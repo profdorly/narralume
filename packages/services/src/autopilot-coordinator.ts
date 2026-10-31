@@ -359,8 +359,10 @@ export class AutopilotCoordinator {
       this.automation.requireSession(sessionId).chapterPolicy.planningOnly ===
         true
     ) {
-      // planningOnly 会话只负责补齐章节大纲：规划 Run 完成后即结算，
-      // 不进入章节生产。写作由后续会话（或作者）另行启动。
+      // planningOnly sessions only fill in chapter outlines: they settle as
+      // soon as the planning Run completes, without entering chapter
+      // production. Writing is started separately by a later session (or the
+      // author).
       this.automation.setSessionStatus(sessionId, "completed", now);
       return this.changed(sessionId, "session.completed");
     }
@@ -555,7 +557,8 @@ export class AutopilotCoordinator {
  * effectivePolicy, so this is idempotent for them; legacy rows holding a
  * partial policy are upgraded with built-in defaults.
  */
-// 迁移至 @lapis/services（automation-service）；本文件与路由都从那里取用。
+// Moved to @lapis/services (automation-service); this file and the routes both
+// import it from there.
 export { resolveSessionEffectivePolicy } from "./automation-service.js";
 import { resolveSessionEffectivePolicy } from "./automation-service.js";
 

@@ -174,7 +174,8 @@ async function parseAgentSkillPackage(
       "The Agent Skill package contains more entries than the safety limit",
     );
   }
-  // 所有条目先做路径安全校验，拒绝绝对路径与目录穿越。
+  // Every entry first goes through the path safety check, rejecting absolute
+  // paths and directory traversal.
   const safeEntries = entries.map((entry) => ({
     entry,
     path: safePath(entry.name),

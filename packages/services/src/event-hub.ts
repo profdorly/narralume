@@ -1,9 +1,10 @@
 import { randomUuid } from "@lapis/domain";
 
 /**
- * 事件广播枢纽：订阅者是「写一帧」回调。Fastify 适配器传入
- * ServerResponse.write 绑定；浏览器内核传入 postMessage 桥。
- * 回调抛错视为订阅者已死，自动摘除。
+ * Event broadcast hub: subscribers are "write one frame" callbacks. The Fastify
+ * adapter passes a bound ServerResponse.write; the browser kernel passes the
+ * postMessage bridge. A callback that throws is treated as a dead subscriber
+ * and removed automatically.
  */
 export type EventSink = (frame: string) => void;
 
@@ -36,7 +37,7 @@ export class ServerEventHub {
         try {
           client.release();
         } catch {
-          // release 自身失败不再传播。
+          // A failure of release itself is not propagated.
         }
       }
     }

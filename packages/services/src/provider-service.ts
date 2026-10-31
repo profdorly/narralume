@@ -13,7 +13,10 @@ export class ProviderServiceError extends ServiceError {
   }
 }
 
-/** 停用 Provider 的引用完整性：仍有已分配模型时不能停用。 */
+/**
+ * Referential integrity for disabling a Provider: it cannot be disabled while
+ * it still has assigned models.
+ */
 export function requireProviderDisablable(
   models: SqliteModelRepository,
   assignments: SqliteAssignmentRepository,
@@ -35,7 +38,10 @@ export function requireProviderDisablable(
   }
 }
 
-/** 删除 Provider 的引用完整性：环境托管不能删、有模型或分配引用不能删。 */
+/**
+ * Referential integrity for deleting a Provider: environment-managed ones
+ * cannot be deleted, nor ones referenced by models or assignments.
+ */
 export function requireProviderDeletable(
   providers: SqliteProviderRepository,
   models: SqliteModelRepository,

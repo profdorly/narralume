@@ -8,8 +8,9 @@ import {
 import { RunServiceError, withRuntimeModelPolicy } from "./run-policy.js";
 
 /**
- * 手动结算 Run 的来源：写作台提交、或「从正文补全故事圣经」任务。
- * 形状受 RunOriginSchema（strict）约束；补全任务的 jobId 放在 run.policy。
+ * Origin of a manual settlement Run: a writing desk commit, or a "Fill in the
+ * story bible from the manuscript" job. The shape is constrained by
+ * RunOriginSchema (strict); the fill-in job's jobId goes in run.policy.
  */
 export type ManualSettlementOrigin = {
   surface: "writing" | "bible-backfill";
@@ -17,10 +18,13 @@ export type ManualSettlementOrigin = {
 };
 
 /**
- * 手动结算 Run 的共享创建器：从一个已提交的章节版本提取故事变化候选。
- * 它复用章节链的 settle/commit 步骤，但只产 candidate，不追加版本、
- * 不占主创作链互斥（targetOutlineNodeId 保持 null；锚点章节在提交变更集时
- * 写入 payload，见 SETTLED_OUTLINE_NODE_KEY）。调用方负责模型可用性与去重策略。
+ * Shared creator of manual settlement Runs: extracts story change candidates
+ * from a committed chapter version. It reuses the settle/commit steps of the
+ * chapter chain, but only produces candidates: it appends no version and does
+ * not take the main writing chain's mutual exclusion (targetOutlineNodeId stays
+ * null; the anchor chapter is written into the payload when the change set is
+ * committed, see SETTLED_OUTLINE_NODE_KEY). The caller is responsible for model
+ * availability and the deduplication policy.
  */
 export function createManualSettlementRun(input: {
   database: NarrativeDatabase;
@@ -64,7 +68,9 @@ export function createManualSettlementRun(input: {
   }).run;
 }
 
-/** 某个版本仍在进行中的手动结算 Run（任何来源）。 */
+/**
+ * Manual settlement Runs still in progress for a given version (any origin).
+ */
 export function findActiveManualSettlementRun(
   database: NarrativeDatabase,
   projectId: string,

@@ -117,9 +117,10 @@ export class AssistantToolExecutor {
   }
 
   /**
-   * R6 直接执行语义：stage 落盘为 running 的 auto 活动，在所属
-   * assistant-turn Run 完成后由这里交办。重复调用必须幂等——下游
-   * Run/Session 使用以 activity.id 派生的确定性 ID。
+   * R6 direct execution semantics: the stage persists the auto activity as
+   * running, and it is dispatched from here once the owning assistant-turn Run
+   * completes. Repeated calls must be idempotent: downstream Runs/Sessions use
+   * deterministic IDs derived from activity.id.
    */
   executeAutoActivity(activityId: string): AssistantToolExecutionResult | null {
     const activity = this.assistants.getActivity(activityId);
@@ -154,8 +155,10 @@ export class AssistantToolExecutor {
   }
 
   /**
-   * Run 终态回调：交办该 assistant-turn 直接执行的待办活动。
-   * 必须在事务外调用；只读取并执行，失败落盘为 failed 供原活动重试。
+   * Run terminal callback: dispatch the pending activities that this
+   * assistant-turn executes directly. Must be called outside a transaction; it
+   * only reads and executes, and failures are persisted as failed so the
+   * original activity can be retried.
    */
   runAutoActivitiesForTurn(runId: string): void {
     const activityId = `${runId}:tool`;

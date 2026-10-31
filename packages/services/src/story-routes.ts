@@ -143,7 +143,8 @@ export function registerStoryRoutes(
   },
 ): void {
   registerStoryStateRoutes(app, database);
-  /* 进行中的「从正文补全故事圣经」任务接管章节新版本时的回调。 */
+  /* Callback for when an in-progress "Fill in the story bible from the
+     manuscript" job takes over a new chapter version. */
   const backfillHooks = {
     interruptRun: (runId: string, reason: string) => {
       options.coordinator.interrupt(runId, reason);
@@ -263,7 +264,8 @@ export function registerStoryRoutes(
           "Project not found",
           404,
         );
-      // 资料与封面在同一事务中提交：版本前提失败时封面也不会被改动（CR-83）。
+      // Details and cover are committed in one transaction: if the version
+      // precondition fails, the cover is not changed either (CR-83).
       const updated = database.transaction(() => {
         const latest = projects.get(projectId);
         if (!latest || latest.updatedAt !== input.expectedUpdatedAt)
@@ -321,7 +323,8 @@ export function registerStoryRoutes(
   app.route("DELETE", "/api/projects/:projectId", async (request) => {
     const { projectId } = ProjectParamsSchema.parse(request.params);
     const input = DeleteProjectRequestSchema.parse(request.body);
-    // 前置校验、软删除与级联取消（活动 Run 与自动驾驶会话）都在服务层。
+    // Prechecks, soft delete and cascading cancellation (active Runs and
+    // autopilot sessions) all live in the service layer.
     const { recycled, activeRunIds } = softDeleteProject(database, {
       projectId,
       expectedUpdatedAt: input.expectedUpdatedAt,
@@ -790,7 +793,8 @@ export function registerStoryRoutes(
     async (request) => {
       const { projectId, factId } = FactParamsSchema.parse(request.params);
       const input = ReviseCanonFactRequestSchema.parse(request.body);
-      // 生效前提与 locked 确认的规则在服务层。
+      // The rules for activation preconditions and locked confirmation live in
+      // the service layer.
       const { revised, conflicts } = reviseCanonFact(database, {
         projectId,
         factId,
@@ -1125,7 +1129,8 @@ export function registerStoryRoutes(
     async (request) => {
       const { projectId, documentId } = documentParams(request.params);
       const input = AppendDocumentVersionRequestSchema.parse(request.body);
-      // 版本追加、删草稿、检索段、大纲状态与自动结算的副作用链在服务层。
+      // The side-effect chain of version append, draft deletion, retrieval
+      // chunks, outline status and auto-settlement lives in the service layer.
       const version = commitDocumentVersion(database, {
         projectId,
         documentId,
@@ -1160,7 +1165,8 @@ export function registerStoryRoutes(
           "The version to restore does not exist",
           404,
         );
-      // 恢复 = 以目标版本内容再走一次提交副作用链（含自动结算）。
+      // Restore = run the commit side-effect chain again with the target
+      // version's content (including auto-settlement).
       const version = commitDocumentVersion(database, {
         projectId,
         documentId,

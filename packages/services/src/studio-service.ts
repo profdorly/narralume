@@ -26,8 +26,10 @@ export class StudioServiceError extends ServiceError {
 }
 
 /**
- * 选区 AI 改写的版本/草稿一致性检查与 run 创建。有草稿时先固化
- * checkpoint 版本再删草稿；无草稿时校验 baseVersion 仍为当前版本。
+ * Version/draft consistency check and run creation for AI rewriting of a
+ * selection. With a draft, first freeze it as a checkpoint version and then
+ * delete the draft; without one, check that baseVersion is still the current
+ * version.
  */
 export function createSelectionEditRun(
   database: NarrativeDatabase,
@@ -45,7 +47,8 @@ export function createSelectionEditRun(
 ) {
   const documents = new SqliteDocumentRepository(database);
   const runs = new SqliteRunRepository(database);
-  // 先校验模型可用性：失败请求不能产生正文版本副作用或删除草稿。
+  // Check model availability first: a failed request must not produce
+  // manuscript version side effects or delete the draft.
   requireWritingAssignment(database, input.environment);
   const document = documents.get(input.projectId, input.documentId);
   if (!document)
@@ -149,8 +152,10 @@ export function createSelectionEditRun(
 }
 
 /**
- * 编辑提案 accept 的完整组装：追加版本、更新检索段、大纲置 committed、
- * 写操作日志、自动开手动结算。reject 分支留在路由（单行仓储调用）。
+ * Full assembly for accepting an edit proposal: append version, update
+ * retrieval chunks, set outline to committed, write the operation log,
+ * auto-start a manual settlement. The reject branch stays in the route (a
+ * single repository call).
  */
 export function acceptEditProposal(
   database: NarrativeDatabase,
@@ -232,7 +237,8 @@ export function acceptEditProposal(
       JSON.stringify({ versionId: version.id, proposalId: proposal.id }),
       now,
     );
-  /* 采纳选区提案同样是章节正式内容变化，自动开手动结算。 */
+  /* Accepting a selection proposal is also a formal change to the chapter
+     content, so it auto-starts a manual settlement. */
   startManualSettlementRun({
     database,
     environment: input.environment,

@@ -121,7 +121,10 @@ function docxTitlePageLabel(value: string): string {
   return `<w:p><w:pPr><w:pStyle w:val="${DOCX_TITLE_PAGE_STYLE}"/><w:jc w:val="center"/><w:spacing w:after="480"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(value)}</w:t></w:r></w:p>`;
 }
 
-/** outlineLevel 写入段落大纲级别，Word 导航窗格与再次导入都据此识别标题。 */
+/**
+ * outlineLevel sets the paragraph outline level; the Word navigation pane and
+ * re-import both use it to recognize headings.
+ */
 export function docxParagraph(value: string, outlineLevel: 0 | 1 | null) {
   const heading = outlineLevel !== null;
   const lines = value.split("\n");
