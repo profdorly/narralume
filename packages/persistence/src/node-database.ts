@@ -8,7 +8,7 @@ function sqlString(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-/** Node 打开路径：node:sqlite 驱动 + 磁盘文件（或 :memory:）。 */
+/** Node open path: node:sqlite driver + disk file (or :memory:). */
 export class NodeNarrativeDatabase extends NarrativeDatabase {
   constructor(path = ":memory:") {
     const resolved = path === ":memory:" ? path : resolve(path);

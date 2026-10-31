@@ -340,8 +340,10 @@ export function resolveCredentialForEnvironment(
   environment: Readonly<Record<string, string | undefined>>,
 ): ResolvedCredential {
   if (provider.credentialRef.startsWith("relay:")) {
-    // 中继 provider（D5）：真实 key 只在中继环境变量里，浏览器端拿哑 key。
-    // 中继会剥掉这个头并注入服务端 key，哑值只满足非空校验。
+    // Relay provider (D5): the real key lives only in the relay's environment
+    // variables; the browser gets a dummy key. The relay strips this header and
+    // injects the server key; the dummy value only satisfies the non-empty
+    // check.
     return { ok: true, apiKey: `relay:${provider.credentialRef.slice(6)}` };
   }
   if (!provider.credentialRef.startsWith("env:")) {
@@ -402,8 +404,10 @@ export function modelStepError(
       message: outputLimited
         ? "Structured output still hit the model output/context limit after repair; raise the effective limit or shrink the input"
         : error.message,
-      // 校验失败是随机采样问题：随 StructuredOutputError 的可重试语义
-      // 走 step 级退避重试；只有输出/上下文上限例外——重掷同样会撞上限。
+      // A validation failure is a random-sampling problem: following the
+      // retryable semantics of StructuredOutputError, it goes through
+      // step-level backoff retry. Only output/context limits are excluded,
+      // since a re-roll hits the same limit.
       retryable: outputLimited ? false : error.retryable,
       details: {
         attempts: error.attempts,

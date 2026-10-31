@@ -37,8 +37,9 @@ export interface StructuredGenerationResult<T> {
   usage: NormalizedUsage;
 }
 
-/** 校验失败是随机采样问题：换个重掷很可能过，值得 step 级退避重试；
- *  重试预算由配方 maxAttempts × harness 重试策略封顶。 */
+/** A validation failure is a random-sampling problem: a re-roll will likely
+ *  pass, so step-level backoff retry is worth it; the retry budget is capped by
+ *  the recipe's maxAttempts × the harness retry policy. */
 export class StructuredOutputError extends ModelError {
   readonly attempts: number;
   readonly validationIssues: readonly string[];

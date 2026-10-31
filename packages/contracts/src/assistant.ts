@@ -37,7 +37,10 @@ export const AssistantContextSchema = z
   .strict();
 export type AssistantContext = z.infer<typeof AssistantContextSchema>;
 
-/** 思考档位：off=不发送参数让模型自决，low 为助手默认。 */
+/**
+ * Reasoning tier: off = send no parameter and let the model decide; low is the
+ * assistant default.
+ */
 export const AssistantReasoningEffortSchema = z.enum([
   "off",
   "low",
@@ -50,7 +53,10 @@ export type AssistantReasoningEffort = z.infer<
 
 export const AssistantConversationSettingsSchema = z
   .object({
-    /** 覆盖对话所用模型（models.id）；null=跟随全局 writing 分配。 */
+    /**
+     * Override the model used by the conversation (models.id); null = follow
+     * the global writing assignment.
+     */
     modelId: IdSchema.nullable(),
     reasoningEffort: AssistantReasoningEffortSchema.nullable(),
   })
@@ -64,7 +70,10 @@ export const AssistantConversationSchema = z.object({
   projectId: IdSchema,
   title: z.string().min(1).max(200),
   status: z.enum(["active", "archived"]),
-  /** 对话级模型与思考档；字段为 null 表示跟随全局默认。 */
+  /**
+   * Conversation-level model and reasoning tier; a null field means follow the
+   * global default.
+   */
   settings: AssistantConversationSettingsSchema,
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
@@ -212,8 +221,10 @@ export type AssistantActivityArtifactDto = z.infer<
   typeof AssistantActivityArtifactSchema
 >;
 
-/** 展示文案描述符：key 为前端标签表的机器键，params 供插值。
- *  服务端不再产出任何自然语言展示文案（waitingReason 同理，只发机码）。 */
+/** Display text descriptor: key is a machine key of the frontend label table;
+ *  params are for interpolation. The server no longer produces any
+ *  natural-language display text (the same goes for waitingReason, which sends
+ *  only codes). */
 export const AssistantActivityTextSchema = z.object({
   key: z.string().trim().min(1).max(120),
   params: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
@@ -242,12 +253,17 @@ export const AssistantActivitySchema = z.object({
     "cancelled",
     "rejected",
   ]),
-  /** 任务卡标题：机码描述符；长任务的用户自拟标题为原文字符串。 */
+  /**
+   * Task card title: a machine-code descriptor; for long tasks a user-written
+   * title is a raw string.
+   */
   goal: z.union([z.string(), AssistantActivityTextSchema]),
   stage: AssistantActivityTextSchema,
   summary: AssistantActivityTextSchema.nullable(),
-  /** 停泊/等待原因的机器码（如 chapter_commit_approval_required），
-   *  展示文案由前端标签表统一渲染，服务端不再各自维护中文措辞。 */
+  /** Machine code of the parking/waiting reason (e.g.
+   *  chapter_commit_approval_required); the display text is rendered by the
+   *  frontend label table, so the server no longer maintains its own wording.
+   */
   waitingReason: z.string().nullable(),
   availableActions: z.array(z.string()),
   sourceType: z.enum(["run", "autopilot", "assistant_tool", "long_goal"]),
@@ -308,7 +324,10 @@ export type RenameAssistantConversationRequest = z.infer<
   typeof RenameAssistantConversationRequestSchema
 >;
 
-/** 至少携带一项要修改的设置；modelId=null 表示清除覆盖、回到全局默认。 */
+/**
+ * Carries at least one setting to change; modelId=null clears the override and
+ * returns to the global default.
+ */
 export const ConfigureAssistantConversationRequestSchema = z
   .object({
     action: z.literal("configure"),
@@ -325,7 +344,10 @@ export type ConfigureAssistantConversationRequest = z.infer<
   typeof ConfigureAssistantConversationRequestSchema
 >;
 
-/** 对话动作端点的联合请求体：归档、重命名或调整模型/思考档。 */
+/**
+ * Union request body of the conversation action endpoint: archive, rename, or
+ * adjust the model/reasoning tier.
+ */
 export const AssistantConversationActionRequestSchema = z.union([
   ArchiveAssistantConversationRequestSchema,
   RenameAssistantConversationRequestSchema,

@@ -90,7 +90,10 @@ export interface ProjectBackup {
   sizeBytes: number;
   createdAt: IsoDateTime;
   restoredProjectId: string | null;
-  /** 备份内容的分类计数（导出/恢复校验清单）；旧备份可能缺失。 */
+  /**
+   * Per-category counts of the backup contents (export/restore checklist);
+   * older backups may lack it.
+   */
   counts?: Record<string, number> | null;
 }
 

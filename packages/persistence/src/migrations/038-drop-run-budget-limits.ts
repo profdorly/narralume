@@ -1,5 +1,6 @@
-/* 移除 Run 级预算门控：用量只作遥测记录，不再有限额或调度前预留。
-   保护改由既有的超时/重试/修复次数/上下文安全边距承担。 */
+/* Remove run-level budget gating: usage is only recorded as telemetry, with no
+   limits or pre-scheduling reservations. Protection now comes from the existing
+   timeouts/retries/repair counts/context safety margins. */
 export const migration038 = {
   version: 38,
   name: "drop-run-budget-limits",

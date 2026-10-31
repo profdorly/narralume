@@ -543,7 +543,8 @@ export class ChapterWorkerSuite {
         sourceHash: manual.version.contentHash,
         createdAt: now,
       });
-      /* 没有任何候选的手动结算（例如只修错字）不建空变更集，避免裁定面板出现噪音。 */
+      /* A manual settlement with no candidates at all (e.g. only typo fixes)
+         creates no empty change set, avoiding noise in the decision panel. */
       const hasCandidates =
         boundSettlement.stateDelta.length > 0 ||
         boundSettlement.factCandidates.length > 0 ||
@@ -556,8 +557,9 @@ export class ChapterWorkerSuite {
           projectId: run.projectId,
           runId: run.id,
           stepId: step.id,
-          /* 锚点章节在结算时就确定：之后文档改绑或删除都不会移动或阻断它
-             （见 SettlementApplicationService.settlementAnchor）。 */
+          /* The anchor chapter is fixed at settlement time: later rebinding or
+             deleting the document neither moves nor blocks it (see
+             SettlementApplicationService.settlementAnchor). */
           changes: {
             ...boundSettlement,
             [SETTLED_OUTLINE_NODE_KEY]: manual.outlineNode.id,

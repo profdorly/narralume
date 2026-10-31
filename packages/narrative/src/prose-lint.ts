@@ -67,7 +67,10 @@ const ZH_CLICHE_TERMS = [
   "沉声道",
 ] as const;
 
-/** “不是A，（而）是B”（“而”可省略）. */
+/**
+ * The Chinese "not A, (but) B" contrast (bu shi A, (er) shi B; "er" is
+ * optional).
+ */
 const ZH_NEGATION_FLIP = /不是[^，。！？\n“”‘’]{1,12}，?而?是/gu;
 
 /* ---- Portuguese and English (per 1,000 words) ------------------------- */
@@ -527,7 +530,7 @@ function zhClicheIssue(content: string): ProseLintIssue | null {
   };
 }
 
-/** “不是A，（而）是B”: at least 3 times. */
+/** The Chinese "not A, (but) B" contrast: at least 3 times. */
 function zhNegationFlipIssue(content: string): ProseLintIssue | null {
   const matches = content.match(ZH_NEGATION_FLIP);
   if (!matches || matches.length < 3) return null;

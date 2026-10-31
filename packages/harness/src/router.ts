@@ -210,8 +210,9 @@ export function routeRun(
   }
 
   if (next.kind === "chapter.settle" && run.recipe !== "manual-settlement") {
-    /* 审稿闸门只约束 AI 产出的候选稿；手动结算的对象是作者已正式提交
-       的正文版本，本身不存在“未过审”状态。 */
+    /* The review gate only constrains AI-produced candidate drafts; manual
+       settlement operates on a manuscript version the author has already
+       formally committed, which has no "unreviewed" state. */
     const gate = latestSucceededGate(steps);
     const verdict = gateVerdict(gate);
     if (verdict !== "pass" && !reviewBlockOverridden(run, gate)) {

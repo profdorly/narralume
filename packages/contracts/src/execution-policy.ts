@@ -142,15 +142,16 @@ export interface ResolvedPolicy {
 const BUILT_IN_DEFAULTS = {
   maxRevisionCycles: 2,
   semanticReview: true,
-  // 慢推理网关的首字节延迟常态在 30-60s（本地账本实测成功调用 TTFT 最高
-  // 40.5s），45s 会贴线误杀；首字节预算放宽到 120s，总期限仍由
-  // logicalCallDeadlineMs 兜底。
+  // On slow reasoning gateways a 30-60 s time to first byte is normal (the
+  // highest TTFT of a successful call in the local ledger was 40.5 s), so 45 s
+  // would kill calls right at the edge. The first-byte budget is raised to
+  // 120 s; the overall deadline is still enforced by logicalCallDeadlineMs.
   requestStartTimeoutMs: 120_000,
   streamIdleTimeoutMs: 120_000,
   logicalCallDeadlineMs: 360_000,
   stepDeadlineMs: 480_000,
   runDeadlineMs: 600_000,
-  // 每步最多 1+4=5 次尝试，与配方里的 maxAttempts=5 对齐。
+  // At most 1+4=5 attempts per step, matching maxAttempts=5 in the recipes.
   maxRetries: 4,
   retryBaseDelayMs: 1_000,
   maxRepairAttempts: 1,

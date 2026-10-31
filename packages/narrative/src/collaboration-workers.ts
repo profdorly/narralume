@@ -55,8 +55,10 @@ export class CollaborationWorkerSuite {
     this.templates = new SqliteTemplateRepository(database);
   }
 
-  /** 替换式指令组装：模板生效内容（override ?? 官方默认）整体替换写作层，
-   *  结构不变量由代码追加，不受模板影响；craft=true 时追加作品写作法。 */
+  /** Replacement-style instruction assembly: the template's effective content
+   *  (override ?? official default) replaces the writing layer as a whole;
+   *  structural invariants are appended by code and unaffected by the template;
+   *  craft=true appends the project's writing method. */
   private authoredInstructions(
     projectId: string,
     key: string,
@@ -73,7 +75,10 @@ export class CollaborationWorkerSuite {
     });
   }
 
-  /** 作品写作法：chapter-draft 的生效写作层，重写产出正文的步骤共用。 */
+  /**
+   * The project's writing method: the effective writing layer of chapter-draft,
+   * shared by steps that rewrite prose.
+   */
   private workCraft(projectId: string): string {
     return workCraftLayer({
       language: promptLanguageOf(

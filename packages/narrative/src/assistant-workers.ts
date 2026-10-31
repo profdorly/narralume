@@ -346,8 +346,10 @@ export class AssistantWorkerSuite {
     const context = assistantContextArtifact(
       requiredArtifact(snapshot, "assistant.context"),
     );
-    /* 思考档来自对话设置（可选 policy 字段）：off=不发送参数让模型自决，
-       未设置时保持旧默认 low。思考 token 会吃输出预算，档位越高输出上限同步抬高。 */
+    /* The reasoning tier comes from the conversation settings (optional policy
+       field): off = send no parameter and let the model decide; when unset,
+       keep the old default of low. Reasoning tokens consume the output budget,
+       so a higher tier raises the output limit accordingly. */
     const effort = snapshot.run.policy.assistantReasoningEffort;
     const effortCeiling: Record<"off" | "low" | "medium" | "high", number> = {
       off: 8_000,
@@ -442,8 +444,10 @@ export class AssistantWorkerSuite {
         createdAt: now,
       });
       if (toolCall && stagedActivityId) {
-        // auto：候选生成或任务控制直接交办，不再追加确认卡片；
-        // confirm：维持待确认卡片，由作者显式执行。
+        // auto: candidate generation or task control is dispatched directly,
+        // with no extra confirmation card;
+        // confirm: keep the pending-confirmation card for the author to execute
+        // explicitly.
         const status = access === "auto" ? "running" : "proposed";
         this.assistants.insertActivity({
           id: stagedActivityId,
@@ -544,7 +548,8 @@ function toolDescriptorArray(value: unknown): AssistantToolDescriptor[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     if (typeof entry === "string") {
-      // 旧工件里 allowedTools 只是工具名数组；按默认策略重建描述。
+      // In old artifacts allowedTools is just an array of tool names; rebuild
+      // the descriptions from the default policy.
       const access = assistantToolAccess(entry as AssistantToolName);
       return [{ name: entry, label: entry, description: "", access }];
     }
@@ -565,8 +570,10 @@ function toolDescriptorArray(value: unknown): AssistantToolDescriptor[] {
   });
 }
 
-/** 工具活动卡片的 goal 机码：落库存储，展示文案由前端标签表渲染。
- *  数字参数（targetChapters）由投影层从 input 提取插值。 */
+/** Machine code for the goal of a tool activity card: stored in the database;
+ *  the display text is rendered by the frontend label table. Numeric parameters
+ *  (targetChapters) are extracted from input by the projection layer for
+ *  interpolation. */
 function toolGoal(call: AssistantToolCall): string {
   if (call.name === "foundation.start") return "tool.goal.foundation.start";
   if (call.name === "chapter.start") return "tool.goal.chapter.start";

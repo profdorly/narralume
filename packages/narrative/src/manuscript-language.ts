@@ -1,6 +1,10 @@
-/** 原稿语言的轻量检测（尽力而为）：只区分葡语、西语、英语与中文，其余返回 unknown。
- *  不依赖外部库：CJK 原稿看书写系统，拉丁字母原稿数各语言独有的高频功能词。
- *  结果只作为拆书、章节结算与故事圣经候选提示中的参考行；语言不变量仍要求模型跟随正文本身。 */
+/** Lightweight (best-effort) detection of the manuscript language: only tells
+ *  Portuguese, Spanish, English and Chinese apart; anything else is unknown. No
+ *  external library: CJK manuscripts are judged by writing system, Latin-script
+ *  manuscripts by counting high-frequency function words unique to each
+ *  language. The result is only a reference line in book analysis, chapter
+ *  settlement and story bible candidate prompts; the language invariant still
+ *  requires the model to follow the text itself. */
 
 import type { ProjectLanguage } from "@lapis/contracts";
 
@@ -31,18 +35,31 @@ export function manuscriptLanguageHint(
 
 type ScoredLanguage = "Portuguese" | "Spanish" | "English" | "French";
 
-/** 只取正文开头这么多字符，足以判断语言，也让检测成本与原稿长度无关。 */
+/**
+ * Only this many characters from the start of the text are read: enough to
+ * judge the language, and it makes detection cost independent of manuscript
+ * length.
+ */
 const SAMPLE_CHARACTERS = 100_000;
-/** 判定一种拉丁字母语言至少需要的功能词命中数。 */
+/**
+ * Minimum number of function-word hits needed to decide on a Latin-script
+ * language.
+ */
 const MIN_WORD_HITS = 3;
-/** 领先语言的命中数至少是第二名的这么多倍，否则不下结论。 */
+/**
+ * The leading language's hits must be at least this many times the runner-up's,
+ * otherwise no conclusion is drawn.
+ */
 const MIN_LEAD_RATIO = 2;
-/** 判定中文至少需要的汉字数。 */
+/** Minimum number of Han characters needed to decide on Chinese. */
 const MIN_HAN_CHARACTERS = 8;
 
-/** 各语言独有的高频功能词（小写，保留变音符）。葡语与西语共有的 que、de、para、nada，
- *  以及西语与法语共有的 la、le、un、en 等都不列入；万一某个词出现在多张表中，
- *  构建时也会剔除。法语只用来吸收法语原稿的命中：它领先时结果为 unknown。 */
+/** High-frequency function words unique to each language (lowercase, diacritics
+ *  kept). Words shared by Portuguese and Spanish (que, de, para, nada), and by
+ *  Spanish and French (la, le, un, en, etc.) are not listed; if a word still
+ *  appears in several tables, it is removed when the map is built. French only
+ *  absorbs hits from French manuscripts: when it leads, the result is unknown.
+ */
 const FUNCTION_WORDS: Record<ScoredLanguage, readonly string[]> = {
   Portuguese: [
     "não",
@@ -186,7 +203,8 @@ const FUNCTION_WORDS: Record<ScoredLanguage, readonly string[]> = {
     "what",
     "said",
     "an",
-    // 与葡语 do（de + o）同形，列在两张表中，构建时作为共有词剔除。
+    // Same form as Portuguese "do" (de + o); listed in both tables and removed
+    // as a shared word when the map is built.
     "do",
   ],
   French: [
@@ -218,7 +236,10 @@ const FUNCTION_WORDS: Record<ScoredLanguage, readonly string[]> = {
   ],
 };
 
-/** 功能词 → 语言；在多种语言中出现的词不计入。 */
+/**
+ * Function word → language; words that appear in several languages are not
+ * counted.
+ */
 const WORD_LANGUAGE: ReadonlyMap<string, ScoredLanguage> = (() => {
   const owners = new Map<string, Set<ScoredLanguage>>();
   for (const language of Object.keys(FUNCTION_WORDS) as ScoredLanguage[])
@@ -233,7 +254,10 @@ const WORD_LANGUAGE: ReadonlyMap<string, ScoredLanguage> = (() => {
   return result;
 })();
 
-/** 检测原稿语言。过短、混合或不在检测范围内的语言返回 unknown。 */
+/**
+ * Detect the manuscript language. Text that is too short, mixed, or in a
+ * language outside the detection range returns unknown.
+ */
 export function detectManuscriptLanguage(
   text: string,
 ): DetectedManuscriptLanguage {
@@ -245,7 +269,8 @@ export function detectManuscriptLanguage(
     sample.match(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)
       ?.length ?? 0;
   if ((han + otherCjk) * 2 >= letters) {
-    // 假名或谚文占到一成以上时是日文或韩文，不在检测范围内。
+    // When kana or hangul make up more than a tenth, the text is Japanese or
+    // Korean, which is outside the detection range.
     return han >= MIN_HAN_CHARACTERS && otherCjk * 10 < han + otherCjk
       ? "Chinese"
       : "unknown";

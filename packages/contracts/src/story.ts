@@ -84,8 +84,9 @@ export const CreateProjectRequestSchema = z.object({
   form: ProjectFormSchema.default("novel"),
 });
 /**
- * 封面变更与书籍资料保存在同一个请求里提交，服务端在同一事务中应用，
- * 避免“封面已改、资料 409”的半提交（CR-83）。
+ * The cover change is submitted in the same request as the book details and
+ * the server applies both in one transaction, avoiding a half-commit where the
+ * cover changed but the details got a 409 (CR-83).
  */
 export const ProjectCoverMutationSchema = z.discriminatedUnion("action", [
   z.object({
@@ -136,7 +137,7 @@ export const UpdateAuthorIntentRequestSchema = AuthorIntentSchema.omit({
 })
   .partial()
   .extend({
-    /** null 断言作品中尚无作者意图记录。 */
+    /** null asserts that the project has no author intent record yet. */
     expectedUpdatedAt: TimestampSchema.nullable(),
   });
 

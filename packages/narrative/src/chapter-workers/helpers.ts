@@ -461,8 +461,9 @@ export function groundReviewEvidence(
   };
 }
 
-/** 剥掉模型把上下文标注语法（[node:…]、[timeline:…] 等）抄进 ID 值的前缀。
- *  返回规范化的结算对象；只重写字段值，不丢任何候选。 */
+/** Strip prefixes where the model copied context annotation syntax ([node:…],
+ *  [timeline:…], etc.) into ID values. Returns the normalized settlement
+ *  object; only field values are rewritten, no candidate is dropped. */
 export function stripContextTagPrefixes(settlement: Settlement): Settlement {
   const id = (value: string): string =>
     value.replace(

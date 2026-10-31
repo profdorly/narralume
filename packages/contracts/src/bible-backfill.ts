@@ -3,9 +3,12 @@ import { z } from "zod";
 const IdSchema = z.string().trim().min(1).max(300);
 
 /**
- * 「从正文补全故事圣经」：按章节顺序逐章走手动结算管线。
- * review_each —— 每章产出的变更集等作者在审阅面板裁定后再结算下一章；
- * auto_apply_stop_on_conflict —— 自动应用，遇到正典冲突即停下等作者处理。
+ * "Fill in the story bible from the manuscript": runs the manual settlement
+ * pipeline chapter by chapter, in chapter order.
+ * review_each: each chapter's change set waits for the author's decision in
+ * the review panel before the next chapter is settled;
+ * auto_apply_stop_on_conflict: applied automatically, stopping for the author
+ * when a canon conflict appears.
  */
 export const BibleBackfillModeSchema = z.enum([
   "review_each",

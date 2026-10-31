@@ -1,7 +1,10 @@
 /**
- * 伏笔的来源：导入应用时记录产生它的导入候选 ID，章节结算记录变更集 ID；
- * 作者录入的伏笔为 NULL。「从正文补全故事圣经」的自动模式据此把导入创建的
- * 伏笔与作者录入的区分开。已有伏笔的来源无从得知，保持 NULL（按作者录入处理）。
+ * Foreshadowing origin: applying an import records the import candidate ID that
+ * produced it, and chapter settlement records the change set ID; foreshadowing
+ * entered by the author is NULL. The automatic mode of "Fill in the story bible
+ * from the manuscript" uses this to tell import-created foreshadowing from the
+ * author's own. The origin of existing foreshadowing cannot be known, so it
+ * stays NULL (treated as author-entered).
  */
 export const migration047 = {
   version: 47,

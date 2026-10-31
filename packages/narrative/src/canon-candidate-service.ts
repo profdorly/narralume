@@ -342,8 +342,10 @@ export class CanonCandidateService {
         ? this.story.requireOutlineNode(projectId, parentId)
         : null;
       const ordinal = integerValue(item.after.ordinal);
-      // create 候选也必须检查生成基线：同父节点同序号的节点已存在时，
-      // 说明候选生成后的大纲已变化，不能盲目提交否则只会撞上唯一约束。
+      // create candidates must also check the generation baseline: if a node
+      // with the same parent and position already exists, the outline changed
+      // after the candidate was generated, and committing blindly would only
+      // hit the unique constraint.
       const siblings = this.story
         .listOutline(projectId)
         .filter((node) => node.parentId === (parent?.id ?? null));
@@ -473,8 +475,10 @@ export class CanonCandidateService {
         "concept",
       ]);
       const name = stringValue(item.after.name);
-      // create 候选也必须检查生成基线：候选生成后同名同类型实体已存在时，
-      // 说明正典已被人为修改，应显式冲突而不是撞上唯一约束（泛化 500）。
+      // create candidates must also check the generation baseline: if an entity
+      // with the same name and type exists since generation, the canon was
+      // edited by hand, so report an explicit conflict instead of hitting the
+      // unique constraint (a generic 500).
       if (
         this.canon
           .listEntities(projectId, { includeRetired: true })

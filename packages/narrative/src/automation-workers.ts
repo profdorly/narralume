@@ -98,8 +98,10 @@ export class AutomationWorkerSuite {
     );
   }
 
-  /** 替换式指令组装：模板生效内容（override ?? 官方默认）整体替换写作层，
-   *  结构不变量由代码追加，不受模板影响。 */
+  /** Replacement-style instruction assembly: the template's effective content
+   *  (override ?? official default) replaces the writing layer as a whole;
+   *  structural invariants are appended by code and unaffected by the template.
+   */
   private authoredInstructions(projectId: string, key: string): string {
     return authoredInstructions({
       language: promptLanguageOf(
@@ -526,7 +528,9 @@ export class AutomationWorkerSuite {
         generation: {
           mode: result.mode,
           attempts: result.attempts,
-          // 保存生成时的大纲基线；commit 时比对，防止后台规划覆盖期间的人工编辑。
+          // Save the outline baseline at generation time; commit compares
+          // against it, so background planning cannot overwrite manual edits
+          // made meanwhile.
           outlineFingerprint: outlineFingerprint(outline),
           compassVersion: compass?.version ?? null,
           contextReceiptId: compiled.receipt.id,

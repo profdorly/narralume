@@ -1,7 +1,9 @@
 /**
- * 运行时无关的散列与随机 ID：同一实现服务 Node 与浏览器（WASM 内核）。
- * sha256 是纯 JS 同步实现——调用点全在同步仓储/工作流代码里，Web Crypto
- * 的异步 digest 无法平替；负载是 KB 级 JSON 与短 ID 串，性能足够。
+ * Runtime-independent hashing and random IDs: one implementation serves both
+ * Node and the browser (WASM kernel). sha256 is a synchronous pure-JS
+ * implementation: every call site is in synchronous repository/workflow code,
+ * where the asynchronous Web Crypto digest cannot substitute. Payloads are
+ * KB-sized JSON and short ID strings, so performance is sufficient.
  */
 
 const K = new Uint32Array([
@@ -22,7 +24,9 @@ export function sha256Hex(input: string): string {
   return sha256BytesHex(new TextEncoder().encode(input));
 }
 
-/** 字节输入（不经 UTF-8 编码）——上传分块/封面等二进制哈希。 */
+/**
+ * Byte input (no UTF-8 encoding): binary hashes for upload chunks, covers, etc.
+ */
 export function sha256BytesHex(data: Uint8Array): string {
   const bitLength = data.length * 8;
   // padding: 0x80 + zeros + 64-bit big-endian length
@@ -102,7 +106,9 @@ function rotr(value: number, bits: number): number {
   return ((value >>> bits) | (value << (32 - bits))) >>> 0;
 }
 
-/** 随机 UUID：globalThis.crypto 在 Node 19+ 与所有现代浏览器原生可用。 */
+/**
+ * Random UUID: globalThis.crypto is native in Node 19+ and all modern browsers.
+ */
 export function randomUuid(): string {
   return globalThis.crypto.randomUUID();
 }

@@ -142,8 +142,9 @@ export const RunActionRequestSchema = z.discriminatedUnion("action", [
   z
     .object({
       projectId: IdSchema,
-      /** 终态 failed 的章节 run 重开新 run：同章节、同来源，服务端派生
-       *  确定性 requestId，重复点击幂等回到同一个新 run。 */
+      /** Reopen a chapter run that ended in terminal `failed` as a new run:
+       *  same chapter and origin; the server derives a deterministic requestId,
+       *  so repeated clicks idempotently return the same new run. */
       action: z.literal("retry_chapter"),
       requestId: IdSchema,
     })

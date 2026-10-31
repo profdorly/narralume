@@ -1,6 +1,6 @@
 /**
- * 浏览器入口：不得引入任何 Node 内建模块（node:fs 等）。
- * Node 侧请用主入口的 NodeNarrativeDatabase。
+ * Browser entry point: must not import any Node built-in module (node:fs,
+ * etc.). On the Node side use NodeNarrativeDatabase from the main entry point.
  */
 export type { SqliteRawDatabase, SqliteStatement } from "./driver.js";
 export {

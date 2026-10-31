@@ -12,7 +12,10 @@ interface ForeignKeyRow {
   to: string | null;
 }
 
-/** 查找所有真实外键引用，防止删除资源时意外级联清掉历史。 */
+/**
+ * Find all real foreign key references, so deleting a resource never
+ * accidentally cascades away history.
+ */
 export function listForeignKeyReferences(
   database: NarrativeDatabase,
   targetTable: string,

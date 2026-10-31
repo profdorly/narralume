@@ -165,7 +165,7 @@ export const UpdateCompassRequestSchema = StoryCompassSchema.omit({
 });
 
 export const PutCompassRequestSchema = UpdateCompassRequestSchema.extend({
-  /** null 断言作品中尚无故事指南针。 */
+  /** null asserts that the project has no story compass yet. */
   expectedVersion: z.number().int().positive().nullable(),
 });
 

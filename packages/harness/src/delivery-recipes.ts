@@ -31,7 +31,10 @@ export function buildImportAnalysisRecipe(runId: string): DeliveryRecipe {
   };
 }
 
-/** 贴样文提炼风格档案：单步 run，产物是一条未启用的 style profile 草稿。 */
+/**
+ * Extract a style profile from pasted sample text: a single-step run whose
+ * output is a disabled style profile draft.
+ */
 export function buildStyleExtractionRecipe(runId: string): DeliveryRecipe {
   return {
     name: "style-extraction",

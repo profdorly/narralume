@@ -1,5 +1,6 @@
-/* 协作对话获得自己的模型与思考档设置：modelId 为空表示跟随全局 writing
-   分配；reasoningEffort 为空表示低档（助手既有默认）。 */
+/* Collaboration conversations get their own model and reasoning tier settings:
+   an empty modelId means follow the global writing assignment; an empty
+   reasoningEffort means low (the assistant's existing default). */
 export const migration037 = {
   version: 37,
   name: "assistant-conversation-settings",

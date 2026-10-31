@@ -1,9 +1,11 @@
 /**
- * 持久层驱动的最小面：仓储代码只依赖这三个方法（prepare/exec/close），
- * node:sqlite 的 DatabaseSync 结构上满足本接口，浏览器 WASM 驱动按同一
- * 形状实现，仓储零改动即可双运行时运行。
+ * Minimal surface of the persistence driver: repository code depends only on
+ * these three methods (prepare/exec/close). node:sqlite's DatabaseSync
+ * satisfies this interface structurally, and the browser WASM driver implements
+ * the same shape, so repositories run on both runtimes unchanged.
  *
- * 行对象一律“列名做键”（与 node:sqlite 默认一致）；参数一律按位传。
+ * Row objects are always keyed by column name (the node:sqlite default);
+ * parameters are always positional.
  */
 export interface SqliteStatement {
   run(...params: unknown[]): {
@@ -19,9 +21,10 @@ export interface SqliteRawDatabase {
   exec(sql: string): void;
   close(): void;
   /**
-   * 导出整个数据库的字节（下载我的库，D6）。Node 驱动暂未实现——
-   * Node 侧走备份服务（VACUUM INTO + 完整性校验）；浏览器 sahpool
-   * 驱动用 pool 的 exportFile。
+   * Export the bytes of the whole database (download my library, D6). Not yet
+   * implemented in the Node driver: the Node side uses the backup service
+   * (VACUUM INTO + integrity check); the browser sahpool driver uses the pool's
+   * exportFile.
    */
   exportBytes?(): Promise<Uint8Array>;
 }
