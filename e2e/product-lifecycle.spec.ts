@@ -70,7 +70,7 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
   await providerSection.getByRole("button", { name: "Novo" }).click();
   const providerForm = providerSection.locator("form.supply__editor");
   await providerForm.getByLabel("Nome do provedor").fill(providerName);
-  await providerForm.getByLabel("Base URL").fill("https://e2e.example.com/v1");
+  await providerForm.getByLabel("URL base").fill("https://e2e.example.com/v1");
   await providerForm
     .getByLabel("Chave ou env:NAME")
     .fill("e2e-placeholder-key");
