@@ -13,12 +13,22 @@ export interface RunTextStream {
 /* Streamed model text arrives in many small deltas. Writing each one used to
    rewrite the whole growing row (content || delta), so a chapter cost writes
    quadratic in its length. Deltas are now buffered per step and written at
-   most once per FLUSH_MS or FLUSH_CHARS, and before any read, status change
-   or discard. The buffer is shared by every repository on the same database,
-   so readers in this process always see the full text. A crash loses at most
-   FLUSH_MS of text, which the interrupted-run recovery already tolerates. */
-const FLUSH_MS = 1_000;
+   most once per flush interval or every FLUSH_CHARS, and before any read,
+   status change or discard. The buffer is shared by every repository on the
+   same database, so readers in this process always see the full text. A crash
+   loses at most one flush interval of text, which the interrupted-run
+   recovery already tolerates. */
 const FLUSH_CHARS = 16_000;
+let flushMs = 1_000;
+
+/**
+ * How long deltas may wait before they are written. The browser kernel uses
+ * a shorter interval: closing the tab terminates its worker at once, so
+ * whatever is still buffered is lost.
+ */
+export function setRunStreamFlushInterval(ms: number): void {
+  flushMs = Math.max(0, ms);
+}
 
 interface PendingText {
   runId: string;
@@ -67,13 +77,26 @@ export class SqliteRunStreamRepository {
     entry.now = now;
     if (
       entry.text.length >= FLUSH_CHARS ||
-      Date.now() - entry.startedAt >= FLUSH_MS
+      Date.now() - entry.startedAt >= flushMs
     ) {
       this.flushEntry(key);
       return;
     }
     if (!entry.timer) {
-      const timer = setTimeout(() => this.flushEntry(key), FLUSH_MS);
+      const timer = setTimeout(() => {
+        // A timer has no caller to fail: a write error here (project purged,
+        // disk full, database closed) must not end the process. The text of
+        // that flush is dropped; the step itself goes on and records its
+        // final output as usual.
+        try {
+          this.flushEntry(key);
+        } catch (error) {
+          console.warn(
+            "[run-stream] buffered text could not be written",
+            error,
+          );
+        }
+      }, flushMs);
       (timer as { unref?: () => void }).unref?.();
       entry.timer = timer;
     }

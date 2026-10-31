@@ -493,7 +493,11 @@ export async function buildApp(
     await autopilotCoordinator?.stop();
     await bibleBackfillCoordinator?.stop();
     await coordinator.stop();
-    streams.flush();
+    try {
+      streams.flush();
+    } catch (error) {
+      app.log.warn({ err: error }, "buffered run text could not be written");
+    }
     events.close();
     if (ownsDatabase) database.close();
   });

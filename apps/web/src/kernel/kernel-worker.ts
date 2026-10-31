@@ -23,6 +23,7 @@ import {
 import {
   SqliteAutomationRepository,
   SqliteRunStreamRepository,
+  setRunStreamFlushInterval,
   SqliteRunRepository,
   SqliteProjectRepository,
 } from "@lapis/persistence/browser";
@@ -99,6 +100,9 @@ async function boot(): Promise<void> {
   const events = new ServerEventHub();
   events.add((frame) => post({ type: "sse", frame }));
 
+  // Closing the tab terminates this worker at once, so buffered stream text
+  // is written more often here than on the Server (see run-stream-repository).
+  setRunStreamFlushInterval(250);
   const streams = new SqliteRunStreamRepository(database);
   const modelClient = new GatewayNarrativeModelClient(
     database,

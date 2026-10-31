@@ -7,6 +7,7 @@ import {
   SqliteProjectRepository,
   SqliteRunRepository,
   SqliteRunStreamRepository,
+  setRunStreamFlushInterval,
 } from "../src/index.js";
 
 const now = "2026-08-10T00:00:00.000Z";
@@ -78,6 +79,33 @@ describe("SqliteRunRepository", () => {
         .get("run-1", "probe.ghost"),
     ).toEqual({ count: 0 });
     unsubscribe();
+  });
+
+  it("a failed timed flush of streamed text is logged, never thrown", async () => {
+    seedRun(1);
+    runs.leaseNext("worker-a", now, 30_000);
+    const step = runs.startStep("run-1", "run-1:context", now);
+    setRunStreamFlushInterval(10);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      new SqliteRunStreamRepository(database).appendText(
+        "run-1",
+        step.id,
+        "texto",
+        now,
+      );
+      // The write fails when the timer fires (here: the step row is gone).
+      database.raw.exec("PRAGMA foreign_keys = ON;");
+      database.raw.prepare("DELETE FROM run_steps WHERE id = ?").run(step.id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(warn).toHaveBeenCalledWith(
+        "[run-stream] buffered text could not be written",
+        expect.anything(),
+      );
+    } finally {
+      warn.mockRestore();
+      setRunStreamFlushInterval(1_000);
+    }
   });
 
   it("buffers streamed deltas and shows them to every reader on the database", () => {
