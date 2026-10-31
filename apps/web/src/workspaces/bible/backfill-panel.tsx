@@ -48,7 +48,7 @@ import {
 } from "../../lib/api";
 import { formatCount } from "../../lib/fmt";
 import { projectWorkspacePath } from "../../lib/project-route";
-import { useServerEvents } from "../../lib/sse";
+import { eventAwareInterval, useServerEvents } from "../../lib/sse";
 import {
   CanonChangeSetReview,
   parseSettlementConflicts,
@@ -133,7 +133,7 @@ export function BibleBackfillPanel({
     queryKey,
     queryFn: ({ signal }) => getCurrentBibleBackfill(projectId, signal),
     refetchInterval: (current) =>
-      current.state.data?.job?.status === "running" ? POLL_INTERVAL_MS : false,
+      current.state.data?.job?.status === "running" ? eventAwareInterval(POLL_INTERVAL_MS) : false,
   });
   const detail = query.data;
   const job = detail?.job ?? null;

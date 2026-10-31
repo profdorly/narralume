@@ -30,7 +30,7 @@ import {
   type AssistantContext,
   type AssistantConversationDto,
 } from "../../lib/api";
-import { useServerEvents } from "../../lib/sse";
+import { eventAwareInterval, useServerEvents } from "../../lib/sse";
 import { ConversationPicker } from "./conversation-picker";
 import {
   assistantRunIds,
@@ -117,7 +117,7 @@ export function ProjectAssistant({
     queryFn: ({ signal }) => getAssistantConversation(conversationId!, signal),
     enabled: Boolean(conversationId),
     refetchInterval: (query) =>
-      hasLiveActivity(query.state.data) ? 1_500 : false,
+      hasLiveActivity(query.state.data) ? eventAwareInterval(1_500) : false,
   });
   const relatedRunIds = useMemo(
     () => assistantRunIds(detailQuery.data),

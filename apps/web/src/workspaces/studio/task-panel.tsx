@@ -14,6 +14,7 @@ import {
 import { getLocale, translate, useI18n, type MessageKey } from "../../i18n";
 import { runStatusShortLabel, taskActionLabel } from "../../lib/labels";
 import { projectWorkspacePath } from "../../lib/project-route";
+import { eventAwareInterval, useServerEvents } from "../../lib/sse";
 import { rememberTask } from "../../lib/task-ledger";
 
 const TERMINAL_STATUSES = new Set(["failed", "cancelled", "completed"]);
@@ -38,7 +39,15 @@ export function WritingTaskPanel({ projectId, runId, onRunChange, onDismiss, onA
   const query = useQuery({
     queryKey: ["run", runId],
     queryFn: ({ signal }) => getRunDetail(projectId, runId, signal),
-    refetchInterval: (state) => state.state.data && !TERMINAL_STATUSES.has(state.state.data.run.status) ? 1_500 : false,
+    refetchInterval: (state) => state.state.data && !TERMINAL_STATUSES.has(state.state.data.run.status) ? eventAwareInterval(1_500) : false,
+  });
+  useServerEvents({
+    onRunStatus: (eventRunId) => {
+      if (eventRunId === runId) void queryClient.invalidateQueries({ queryKey: ["run", runId] });
+    },
+    onRunEvent: (eventRunId) => {
+      if (eventRunId === runId) void queryClient.invalidateQueries({ queryKey: ["run", runId] });
+    },
   });
   const mutation = useMutation({
     mutationFn: (request: RunActionRequest) => controlRun(projectId, runId, request),

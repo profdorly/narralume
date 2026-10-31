@@ -25,7 +25,7 @@ import {
 } from "../../lib/api";
 import { projectWorkspacePath } from "../../lib/project-route";
 import { entityTypeLabel } from "../../lib/labels";
-import { useServerEvents } from "../../lib/sse";
+import { eventAwareInterval, useServerEvents } from "../../lib/sse";
 
 interface CanonCandidatePanelProps {
   projectId: string;
@@ -79,7 +79,7 @@ function CanonCandidatePanelView({
     refetchInterval: (query) =>
       query.state.data && TERMINAL.has(query.state.data.run.status)
         ? false
-        : 1_500,
+        : eventAwareInterval(1_500),
   });
 
   const refresh = () => {

@@ -62,22 +62,37 @@ export interface BibleBackfillStatusEvent {
   action: string;
 }
 
-/**
- * 订阅服务端事件流，返回关闭函数。
- * server 驱动走 /api/events 的 EventSource；local 驱动订阅内核事件桥
- * （帧与 SSE data 同构 JSON），接口与重连语义不变。
- * 绑定时同步读已知模式先行绑定（server 缺省），探测若判定 local 再切换，
- * 保证与旧实现一致的同步绑定语义。
- */
-export function subscribeServerEvents(handlers: ServerEventHandlers): () => void {
-  let closed = false;
-  let kernelBound = false;
-  let unsubscribeKernel: (() => void) | null = null;
-  let source: EventSource | null = null;
+/* One event connection per tab, shared by every subscriber. Each hook used
+   to open its own EventSource; browsers allow only six HTTP/1.1 connections
+   per origin, so a few open panels could stall every other request. The
+   connection opens with the first subscriber and closes with the last.
+   Server driver: EventSource on /api/events. Local driver: the kernel event
+   bridge, whose frames have the same JSON data lines. */
+const subscribers = new Set<ServerEventHandlers>();
+let source: EventSource | null = null;
+let unsubscribeKernel: (() => void) | null = null;
+let live = false;
 
-  const dispatch = (text: string) => {
-    const parsed = parseServerEvent(text);
-    if (!parsed) return;
+/** How long a query that the event stream keeps fresh waits between polls. */
+export const EVENT_FALLBACK_MS = 15_000;
+
+/** True while the event stream is connected, so pushed events keep data fresh. */
+export function serverEventsLive(): boolean {
+  return live;
+}
+
+/**
+ * refetchInterval for data that server events also refresh: the given fast
+ * interval only while the stream is down, a slow safety net otherwise.
+ */
+export function eventAwareInterval(fastMs: number): number {
+  return live ? Math.max(fastMs, EVENT_FALLBACK_MS) : fastMs;
+}
+
+function dispatch(text: string): void {
+  const parsed = parseServerEvent(text);
+  if (!parsed) return;
+  for (const handlers of subscribers) {
     if (parsed.type === "model.event")
       handlers.onModelEvent?.(parsed.runId, parsed.event);
     if (parsed.type === "run.status")
@@ -97,44 +112,63 @@ export function subscribeServerEvents(handlers: ServerEventHandlers): () => void
         status: parsed.status,
         action: parsed.action,
       });
-  };
+  }
+}
 
-  const bindKernel = () => {
-    if (kernelBound) return;
-    kernelBound = true;
-    source?.close();
-    source = null;
-    // 内核事件桥转发的是完整 SSE 帧（event: …\ndata: …），先剥出 data 行。
-    unsubscribeKernel = addKernelEventListener((frame) => {
-      const dataLine = frame
-        .split("\n")
-        .find((line) => line.startsWith("data: "));
-      if (dataLine) dispatch(dataLine.slice("data: ".length));
-    });
-  };
+function bindKernel(): void {
+  if (unsubscribeKernel) return;
+  source?.close();
+  source = null;
+  live = true;
+  // The kernel bridge forwards whole SSE frames (event: …\ndata: …).
+  unsubscribeKernel = addKernelEventListener((frame) => {
+    const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
+    if (dataLine) dispatch(dataLine.slice("data: ".length));
+  });
+}
 
-  const bindServer = () => {
-    if (kernelBound || source || typeof EventSource === "undefined") return;
-    source = new EventSource("/api/events");
-    const forward = (message: MessageEvent<string>) => dispatch(message.data);
-    source.addEventListener("model.event", forward as EventListener);
-    source.addEventListener("run.status", forward as EventListener);
-    source.addEventListener("run.event", forward as EventListener);
-    source.addEventListener("bible_backfill.status", forward as EventListener);
+function bindServer(): void {
+  if (unsubscribeKernel || source || typeof EventSource === "undefined") return;
+  source = new EventSource("/api/events");
+  source.onopen = () => {
+    live = true;
   };
+  source.onerror = () => {
+    // EventSource reconnects by itself; polling covers the gap.
+    live = false;
+  };
+  const forward = (message: MessageEvent<string>) => dispatch(message.data);
+  source.addEventListener("model.event", forward as EventListener);
+  source.addEventListener("run.status", forward as EventListener);
+  source.addEventListener("run.event", forward as EventListener);
+  source.addEventListener("bible_backfill.status", forward as EventListener);
+}
 
+function connect(): void {
   const initial = readDriverOverride() ?? currentDriverMode();
   if (initial === "local") bindKernel();
   else bindServer();
-
   void requireResolvedMode().then((mode) => {
-    if (!closed && mode === "local") bindKernel();
+    if (subscribers.size > 0 && mode === "local") bindKernel();
   });
+}
 
+function disconnect(): void {
+  unsubscribeKernel?.();
+  unsubscribeKernel = null;
+  source?.close();
+  source = null;
+  live = false;
+}
+
+/** Subscribes to server events; returns the unsubscribe function. */
+export function subscribeServerEvents(handlers: ServerEventHandlers): () => void {
+  const entry = { ...handlers };
+  subscribers.add(entry);
+  if (subscribers.size === 1) connect();
   return () => {
-    closed = true;
-    unsubscribeKernel?.();
-    source?.close();
+    subscribers.delete(entry);
+    if (subscribers.size === 0) disconnect();
   };
 }
 

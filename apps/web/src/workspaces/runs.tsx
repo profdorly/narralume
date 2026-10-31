@@ -26,7 +26,7 @@ import {
 } from "../lib/api";
 import { runStatusShortLabel, taskActionLabel } from "../lib/labels";
 import { projectWorkspacePath, useProjectId } from "../lib/project-route";
-import { useRunLiveText, useServerEvents } from "../lib/sse";
+import { eventAwareInterval, useRunLiveText, useServerEvents } from "../lib/sse";
 
 const TERMINAL = new Set(["failed", "cancelled", "completed"]);
 
@@ -40,13 +40,13 @@ export function RunsWorkspace() {
     queryKey: ["project", projectId, "runs"],
     queryFn: ({ signal }) => getProjectRuns(projectId!, signal),
     enabled: Boolean(projectId),
-    refetchInterval: (query) => query.state.data?.some((run) => !TERMINAL.has(run.status)) ? 1_250 : false,
+    refetchInterval: (query) => query.state.data?.some((run) => !TERMINAL.has(run.status)) ? eventAwareInterval(1_250) : false,
   });
   const detailQuery = useQuery({
     queryKey: ["run", selectedRunId],
     queryFn: ({ signal }) => getRunDetail(projectId!, selectedRunId!, signal),
     enabled: Boolean(projectId && selectedRunId),
-    refetchInterval: (query) => query.state.data && !TERMINAL.has(query.state.data.run.status) ? 1_500 : false,
+    refetchInterval: (query) => query.state.data && !TERMINAL.has(query.state.data.run.status) ? eventAwareInterval(1_500) : false,
   });
   const persistedStreamSignal = detailQuery.data?.streams.length
     ? detailQuery.data.streams

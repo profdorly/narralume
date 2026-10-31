@@ -13,7 +13,10 @@ export function PlanningEntities({ projectId, runId, pending, onContinue }: {
   const query = useQuery({
     queryKey: ["project", projectId, "canon-candidates", "entities"],
     queryFn: ({ signal }) => getCanonCandidates(projectId, "entities", signal),
-    refetchInterval: 3_000,
+    // Fast only while the run has not produced this run's sets yet; then a
+    // slow refresh, since decisions made here invalidate the query anyway.
+    refetchInterval: (current) =>
+      (current.state.data ?? []).some((set) => set.runId === runId) ? 15_000 : 3_000,
   });
   const sets = (query.data ?? []).filter((set) => set.runId === runId);
   const rejected = sets.some((set) => set.items.some((item) => item.decision?.action === "reject"));
