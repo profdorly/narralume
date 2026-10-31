@@ -154,13 +154,7 @@ describe("SqliteRunRepository", () => {
         )
         .all("run-1"),
     ).toEqual([
-      {
-        kind: "context",
-        content_json: JSON.stringify({
-          compiledHash: "abc",
-          receiptId: "receipt-1",
-        }),
-      },
+      // The step output lives on the step row only; extra artifacts are kept.
       {
         kind: "lore-activation",
         content_json: JSON.stringify({ activated: ["entry-1"] }),

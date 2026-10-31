@@ -863,7 +863,9 @@ describe("ChapterWorkerSuite", () => {
     expect(
       database.raw
         .prepare(
-          "SELECT kind FROM run_artifacts WHERE run_id = ? AND step_id = ?",
+          `SELECT json_extract(payload_json, '$.artifactKind') AS kind
+           FROM run_events
+           WHERE run_id = ? AND step_id = ? AND type = 'step.succeeded'`,
         )
         .get("run-noop", "run-noop:revise:0"),
     ).toEqual({ kind: "revision_noop" });

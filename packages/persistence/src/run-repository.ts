@@ -384,14 +384,9 @@ export class SqliteRunRepository {
            WHERE run_id = ? AND id = ?`,
         )
         .run(serialized, outputHash, now, now, runId, stepId);
-      const artifactId = this.insertRunArtifact(
-        runId,
-        stepId,
-        artifactKind,
-        serialized,
-        outputHash,
-        now,
-      );
+      // The step row keeps the output; run_artifacts holds only extra
+      // artifacts, which have no other copy. (It used to get a second copy
+      // of every step output, which nothing read.)
       const extraArtifactIds = additionalArtifacts.map((artifact) => {
         const extraSerialized = stableJson(artifact.output);
         return this.insertRunArtifact(
@@ -415,7 +410,6 @@ export class SqliteRunRepository {
         stepId,
         "step.succeeded",
         {
-          artifactId,
           artifactKind,
           outputHash,
           additionalArtifactIds: extraArtifactIds,
@@ -429,7 +423,6 @@ export class SqliteRunRepository {
         {
           stepId,
           outputHash,
-          artifactId,
           artifactKind,
           additionalArtifactIds: extraArtifactIds,
         },
