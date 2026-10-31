@@ -34,6 +34,13 @@ export const migration050 = {
     ${guard("update")}
   `,
   transform(raw: SqliteRawDatabase) {
+    // The write guards refuse rows of projects in the recycle bin, but their
+    // vectors must be kept for a restore. Drop the guards for the copy and
+    // recreate them; `sql` (and its checksum) stays as shipped.
+    raw.exec(`
+      DROP TRIGGER "segment-vectors-project-write-guard-insert";
+      DROP TRIGGER "segment-vectors-project-write-guard-update";
+    `);
     const rows = raw
       .prepare(
         `SELECT segment_id, model, embedding_json, content_hash, updated_at
@@ -67,6 +74,7 @@ export const migration050 = {
         row.updated_at,
       );
     }
+    raw.exec(`${guard("insert")}\n${guard("update")}`);
     raw.exec("DROP TABLE segment_embeddings;");
   },
 };

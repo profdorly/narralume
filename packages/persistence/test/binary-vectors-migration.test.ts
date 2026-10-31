@@ -95,4 +95,51 @@ describe("migration 050 (binary-segment-vectors)", () => {
     expect(hits[0]!.vectorScore).toBeCloseTo(1, 5);
     expect(hits.map(({ id }) => id)).not.toContain("bad");
   });
+
+  it("keeps the vectors of a project in the recycle bin", () => {
+    // Regression: the write guards on segment_vectors refused these rows and
+    // rolled the whole migration back, so such a library could not open.
+    const database = new NodeNarrativeDatabase();
+    databases.push(database);
+    database.migrate(legacyMigrations);
+    insertLegacyProject(
+      database,
+      createProject({ id: "trashed", title: "Na lixeira", now }),
+    );
+    database.raw
+      .prepare(
+        `INSERT INTO text_segments(
+           id, project_id, source_type, source_id, title, content, authority,
+           metadata_json, created_at, updated_at
+         ) VALUES ('seg', 'trashed', 'note', 'seg', '', 'texto', 'reference', '{}', ?, ?)`,
+      )
+      .run(now, now);
+    database.raw
+      .prepare(
+        `INSERT INTO segment_embeddings(
+           segment_id, model, dimensions, embedding_json, content_hash, updated_at
+         ) VALUES ('seg', 'test-embedding', 2, '[1,0]', 'hash', ?)`,
+      )
+      .run(now);
+    database.raw
+      .prepare("UPDATE projects SET deleted_at = ? WHERE id = 'trashed'")
+      .run(now);
+
+    expect(database.migrate()).toBe(50);
+    expect(
+      database.raw
+        .prepare(
+          "SELECT segment_id, length(vector) AS bytes FROM segment_vectors",
+        )
+        .all(),
+    ).toEqual([{ segment_id: "seg", bytes: 8 }]);
+    // The guards are back: new writes for the trashed project are refused.
+    expect(() =>
+      database.raw
+        .prepare(
+          `UPDATE segment_vectors SET updated_at = ? WHERE segment_id = 'seg'`,
+        )
+        .run(now),
+    ).toThrow("project.not_found");
+  });
 });
