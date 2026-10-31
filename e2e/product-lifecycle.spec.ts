@@ -41,7 +41,7 @@ async function selectEditorRange(editor: Locator, start: number, end: number) {
   );
 }
 
-test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 → 交付", async ({
+test("main flow through the UI only: settings → create book → outline → write → AI continuation → delivery", async ({
   page,
 }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`;
@@ -59,7 +59,8 @@ test("主链只经由 UI: 设置 → 建书 → 大纲 → 写作 → AI 接续 
     page.getByRole("main").getByText("Configurações", { exact: true }),
   ).toBeVisible();
 
-  // 供给管理收纳在 <details> 里，先展开再进“模型渠道”列。
+  // Supply management sits inside a <details>; expand it before going to the
+  // "model providers" column.
   await page
     .getByRole("group", { name: "Gestão de provedores e modelos" })
     .locator("summary")

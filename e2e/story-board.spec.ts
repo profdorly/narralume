@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("全书看板显示结构、筛选章节并打开正文", async ({
+test("the whole-book board shows the structure, filters chapters and opens the manuscript", async ({
   page,
   request,
 }, testInfo) => {

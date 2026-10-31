@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { KnowledgeEditorDto } from "@lapis/contracts";
 
-test("人工认知维护：历史变化、更正撤销、并发保护与双语重试", async ({
+test("manual knowledge maintenance: history changes, correction undo, concurrency protection and bilingual retry", async ({
   page,
   request,
   context,

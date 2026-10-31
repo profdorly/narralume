@@ -31,7 +31,7 @@ async function start(request: APIRequestContext) {
   return { projectId, sessionId, runId };
 }
 
-test("规划的新设定经作者采纳后才创建章节", async ({
+test("new settings from planning create chapters only after the author adopts them", async ({
   page,
   request,
 }, testInfo) => {
@@ -121,7 +121,7 @@ test("规划的新设定经作者采纳后才创建章节", async ({
   ).toBe(true);
 });
 
-test("拒绝新设定后保留裁定并提供重新规划", async ({
+test("rejecting new settings keeps the decisions and offers replanning", async ({
   page,
   request,
 }, testInfo) => {

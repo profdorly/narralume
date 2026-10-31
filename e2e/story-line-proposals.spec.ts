@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("故事线建议逐项裁定、证据跳转、刷新保留与过期保护", async ({
+test("story line suggestions: per-item decisions, evidence jumps, kept across reloads and stale protection", async ({
   page,
   request,
 }, testInfo) => {

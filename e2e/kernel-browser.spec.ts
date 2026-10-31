@@ -3,17 +3,18 @@ import { expect, test } from "@playwright/test";
 const KERNEL_READY_TIMEOUT = 40_000;
 
 /**
- * M3 验收：浏览器本地内核（Worker + OPFS）承载 UI 主链。
- * 显式把驱动锁到 local（localStorage 覆盖），全程不依赖 Node API——
- * 尽管Playwright webServer 仍在，页面请求一律走内核 RouteTable。
- * 链路：建项目 → 大纲 → 写作台手写并保存版本 → 交付备份 → reload 持久
- * → 运行中心可访问。
+ * M3 acceptance: the in-browser local kernel (Worker + OPFS) carries the main
+ * UI flow. The driver is pinned to local explicitly (localStorage override) and
+ * nothing depends on the Node API: although the Playwright webServer is still
+ * running, every page request goes through the kernel RouteTable.
+ * Flow: create project → outline → write by hand in the studio and save a
+ * version → delivery backup → reload persists → the run center is reachable.
  */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("lapis:driver", "local"));
 });
 
-test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 → 运行中心", async ({
+test("local kernel main UI flow: create project → outline → write → version persists → run center", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -29,7 +30,7 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
     { timeout: KERNEL_READY_TIMEOUT },
   );
 
-  // 空白建书（无模型也可用的纯项目创建）。
+  // Blank book creation (plain project creation that works without a model).
   await page.getByRole("button", { name: /Livro em branco/ }).click();
   await page.getByLabel("Título").fill(title);
   await page
@@ -43,7 +44,7 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   expect(projectId).toBeTruthy();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
 
-  // 大纲：创建章节节点。
+  // Outline: create a chapter node.
   await page.getByRole("link", { name: "Ir para História" }).click();
   await page.getByRole("button", { name: "Ver Estrutura" }).click();
   await page.getByLabel("Tipo").selectOption({ label: "Capítulo" });
@@ -63,7 +64,8 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   const chapterId = new URL(page.url()).searchParams.get("outline")!;
   expect(chapterId).toBeTruthy();
 
-  // 写作台：创建文档 + 手写正文并保存版本（手动创作永远可用）。
+  // Studio: create a document + write text by hand and save a version (manual
+  // writing is always available).
   await page.getByRole("button", { name: "Criar", exact: true }).click();
   const editor = page.getByLabel("Editor do corpo em Markdown");
   await expect(editor).toBeVisible();
@@ -73,7 +75,8 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
     page.getByRole("status").filter({ hasText: /Versão registrada|versões/ }),
   ).toBeVisible();
 
-  // 重启持久性：reload 后内核从 OPFS 重开，章节文档与正文仍在。
+  // Restart persistence: after reload the kernel reopens from OPFS and the
+  // chapter document and text are still there.
   await page.reload();
   await expect(page.locator(".status-pill__label").first()).toHaveText(
     "Núcleo online",
@@ -193,11 +196,13 @@ test("本地内核 UI 主链: 建项目 → 大纲 → 写作 → 版本持久 �
   await page.reload();
   await expect(knowledge.getByRole("article")).toHaveCount(0);
 
-  // runs 账本在 local 驱动下可用（运行中心空态；窄屏导航折叠，直接按地址访问）。
+  // The runs ledger works under the local driver (run center empty state; on
+  // narrow screens the navigation collapses, so go by URL).
   await page.goto(`/projects/${projectId}/runs`);
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/runs`));
 
-  // 下载我的库（D6）：local 驱动从内核导出完整 SQLite bytes。
+  // Download my library (D6): the local driver exports the full SQLite bytes
+  // from the kernel.
   const download = page.waitForEvent("download");
   await page.goto("/settings");
   await expect(

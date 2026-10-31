@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("按章核对认知、关系与伏笔证据，刷新和导航保留定位", async ({
+test("checks knowledge, relations and foreshadowing evidence per chapter, keeping the position across reloads and navigation", async ({
   page,
 }, testInfo) => {
   await page.goto(
@@ -148,7 +148,10 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
   ).toBe(true);
 });
 
-test("章节状态空作品入口与看板直达", async ({ page, request }) => {
+test("chapter state entry for an empty book and direct link to the board", async ({
+  page,
+  request,
+}) => {
   const response = await request.post("/api/projects", {
     data: { requestId: crypto.randomUUID(), title: "空作品状态" },
   });

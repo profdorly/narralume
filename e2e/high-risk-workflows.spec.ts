@@ -7,12 +7,12 @@ const TERMINAL_RUN_STATUSES = new Set([
   "failed",
 ]);
 
-test("项目助手调度完成后，备份恢复保留完整协作历史", async ({
+test("after the project assistant finishes dispatching, backup and restore keep the full collaboration history", async ({
   page,
 }, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-1440",
-    "高风险流程只跑一次桌面基线",
+    "high-risk flows run only once, on the desktop baseline",
   );
   const projectId = await createProject(page, `协作恢复-${Date.now()}`);
   const userMessage = "帮我整理故事方向，并保留为待确认任务。";
@@ -95,10 +95,12 @@ test("项目助手调度完成后，备份恢复保留完整协作历史", async
   ).toBeVisible();
 });
 
-test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page }, testInfo) => {
+test("a Canon candidate is generated and decided through the UI and written into the author intent", async ({
+  page,
+}, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-1440",
-    "高风险流程只跑一次桌面基线",
+    "high-risk flows run only once, on the desktop baseline",
   );
   const projectId = await createProject(page, `Canon候选-${Date.now()}`);
 
@@ -129,12 +131,12 @@ test("Canon 候选经 UI 生成、裁定并写入作者意图", async ({ page },
   await expect(page.getByText("Adotado", { exact: true })).toBeVisible();
 });
 
-test("快速创作致命失败会停靠，并可从 UI 重试为新任务", async ({
+test("a fatal quick-creation failure parks and can be retried from the UI as a new task", async ({
   page,
 }, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-1440",
-    "高风险流程只跑一次桌面基线",
+    "high-risk flows run only once, on the desktop baseline",
   );
   const projectId = await createProject(page, `失败恢复-${Date.now()}`);
   const created = await apiPost<{ id: string }>(
