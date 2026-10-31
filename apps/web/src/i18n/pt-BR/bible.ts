@@ -258,7 +258,6 @@ export const bible = {
   backfill: {
     eyebrow: "IA · A PARTIR DO MANUSCRITO",
     title: "Completar a Bíblia da história a partir do manuscrito",
-    ariaLabel: "Completar a Bíblia da história a partir do manuscrito",
     show: "Mostrar",
     hide: "Ocultar",
     summary: {
@@ -310,7 +309,6 @@ export const bible = {
       paused: "Pausado. O progresso está salvo; retome quando quiser.",
       listLabel: "Progresso dos capítulos",
       untitled: "Capítulo {number}",
-      itemLabel: "{title}: {status}",
     },
     itemStatus: {
       pending: "Aguardando",

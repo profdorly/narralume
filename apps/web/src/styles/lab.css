@@ -115,14 +115,6 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
-.lab__search-meta {
-  display: flex;
-  gap: 0.6rem;
-  color: var(--ink-faint);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-}
 
 .lab__hits {
   display: flex;

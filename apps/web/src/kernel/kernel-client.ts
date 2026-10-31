@@ -9,7 +9,7 @@
 
 import { getLocale, translate } from "../i18n";
 
-export type KernelEventListener = (frame: string) => void;
+type KernelEventListener = (frame: string) => void;
 
 interface KernelResponseFrame {
   type: "response";
@@ -27,7 +27,7 @@ type KernelFrame =
   | { type: "fatal"; message: string }
   | { type: "sse"; frame: string };
 
-export interface KernelHttpError {
+interface KernelHttpError {
   status: number;
   code: string;
   message: string;
@@ -132,7 +132,7 @@ function ensureWorker(): Worker {
 }
 
 /** 启动内核并等待 ready；失败（如 sahpool 被其他标签页占用）时 reject。 */
-export function bootKernel(): Promise<void> {
+function bootKernel(): Promise<void> {
   bootPromise ??= (async () => {
     await acquireKernelLock();
     await new Promise<void>((resolve, reject) => {
@@ -215,7 +215,7 @@ export function addKernelEventListener(
   return () => listeners.delete(listener);
 }
 
-export interface KernelRequestInit {
+interface KernelRequestInit {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   query?: Record<string, string> | undefined;
@@ -224,7 +224,7 @@ export interface KernelRequestInit {
 }
 
 /** 内核形状的 HTTP 错误（已由 mapRouteError 映射为 ApiError 形状）。 */
-export class KernelApiError extends Error {
+class KernelApiError extends Error {
   constructor(readonly payload: KernelHttpError) {
     super(payload.message);
     this.name = "KernelApiError";

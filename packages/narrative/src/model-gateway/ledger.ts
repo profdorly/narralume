@@ -51,7 +51,7 @@ export function budgetUsage(
   };
 }
 
-export interface ModelPricing {
+interface ModelPricing {
   input: number;
   output: number;
   cachedInput: number;
@@ -293,7 +293,7 @@ export function snapshotRuntime(
   };
 }
 
-export function estimateRequestInputTokens(request: ModelRequest): number {
+function estimateRequestInputTokens(request: ModelRequest): number {
   const content = [
     request.instructions ?? "",
     stableJson(request.messages),
@@ -342,7 +342,7 @@ export function roleOutputLimit(
   return positiveInteger(run.policy[roleOutputPolicyKey(purpose)]);
 }
 
-export function roleOutputPolicyKey(purpose: string): string {
+function roleOutputPolicyKey(purpose: string): string {
   const role = modelRoleForPurpose(purpose);
   return role === "planning"
     ? "planningMaxOutputTokens"
@@ -374,7 +374,7 @@ export function pricingFor(
   };
 }
 
-export function finiteNonNegative(value: unknown): number | null {
+function finiteNonNegative(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= 0
     ? value
     : null;

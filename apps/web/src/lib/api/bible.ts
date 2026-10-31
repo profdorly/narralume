@@ -141,7 +141,7 @@ export async function updateCanonEntity(
   );
 }
 
-export interface StoryResourceRemoval {
+interface StoryResourceRemoval {
   id: string;
   disposition: "deleted" | "abandoned" | "retired" | "voided";
   references: number;
@@ -202,7 +202,7 @@ export async function updateOutlineNode(
   );
 }
 
-export type { OutlineChangeRequest, OutlineChangePreview } from "@lapis/contracts";
+export type { OutlineChangeRequest } from "@lapis/contracts";
 
 export function previewOutlineChange(projectId: string, change: OutlineChangeRequest): Promise<OutlineChangePreview> {
   return requestJson<OutlineChangePreview>(`/api/projects/${encodeURIComponent(projectId)}/outline/changes/preview`, jsonRequest("POST", change));
@@ -382,9 +382,7 @@ export type {
   BibleBackfillDetailDto,
   BibleBackfillCreatedDto,
   BibleBackfillItemDto,
-  BibleBackfillItemStatus,
   BibleBackfillJobDto,
-  BibleBackfillJobStatus,
   BibleBackfillMode,
   BibleBackfillUsageDto,
 } from "@lapis/contracts";
@@ -413,17 +411,6 @@ export async function getCurrentBibleBackfill(
 ): Promise<BibleBackfillDetailDto> {
   return requestJson(
     `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/current`,
-    signal ? { signal } : {},
-  );
-}
-
-export async function getBibleBackfill(
-  projectId: string,
-  jobId: string,
-  signal?: AbortSignal,
-): Promise<BibleBackfillDetailDto> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/bible-backfills/${encodeURIComponent(jobId)}`,
     signal ? { signal } : {},
   );
 }

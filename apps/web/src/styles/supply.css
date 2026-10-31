@@ -23,16 +23,6 @@
   flex: 1;
 }
 
-.supply__notice {
-  padding: 0.6rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--canon) 30%, transparent);
-  border-left: 2px solid var(--canon);
-  border-radius: var(--radius-card);
-  color: var(--ink-soft);
-  background: color-mix(in srgb, var(--canon) 7%, transparent);
-  font-size: 0.8rem;
-}
-
 /* Column header "new" button (compact secondary action) */
 .supply__mini-action {
   display: inline-flex;
@@ -226,11 +216,6 @@
   letter-spacing: 0.03em;
   flex: 1;
 }
-.supply__column-count {
-  color: var(--ink-faint);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-}
 .supply__column-body {
   flex: 1;
   overflow-y: auto;
@@ -302,9 +287,6 @@
   color: var(--canon);
 }
 .supply__provider-status[data-on="false"] {
-  color: var(--ink-faint);
-}
-.supply__provider-count {
   color: var(--ink-faint);
 }
 

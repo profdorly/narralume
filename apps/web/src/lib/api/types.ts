@@ -289,7 +289,7 @@ export type RunStatus =
   | "cancelled"
   | "completed";
 
-export type RunStepKind =
+type RunStepKind =
   | "context.compile"
   | "scene.plan"
   | "draft.generate"

@@ -162,7 +162,7 @@ export function applyRuntimeRequest(
   return applied;
 }
 
-export function mergedSampling(
+function mergedSampling(
   protocol: ModelProtocol,
   model: Readonly<Record<string, unknown>>,
   request: ModelRequest,
@@ -188,7 +188,7 @@ export function mergedSampling(
   };
 }
 
-export function adapterSamplingDefaults(
+function adapterSamplingDefaults(
   protocol: ModelProtocol,
 ): Pick<ModelRequest, "temperature" | "topP"> {
   // Provider defaults are intentionally left on the provider unless the
@@ -200,7 +200,7 @@ export function adapterSamplingDefaults(
   return {};
 }
 
-export function normalizeSampling(
+function normalizeSampling(
   sampling: Readonly<Record<string, unknown>>,
 ): Pick<
   ModelRequest,
@@ -250,7 +250,7 @@ export function positiveInteger(value: unknown): number | null {
     : null;
 }
 
-export function finiteInRange(
+function finiteInRange(
   value: unknown,
   min: number,
   max: number,
@@ -267,7 +267,7 @@ export interface PhysicalAttemptCounter {
   count: number;
 }
 
-export interface LogicalCallScope {
+interface LogicalCallScope {
   signal: AbortSignal;
   dispose(): void;
   normalizeError(error: unknown, callerSignal: AbortSignal): unknown;
@@ -454,7 +454,7 @@ export function modelStepError(
  * request falls outside the probe evidence instead (for example a reasoning
  * effort other than the probe's, or top_p, which the probe never sends).
  */
-export function requestConstraintHint(
+function requestConstraintHint(
   error: ModelError,
   attempt: { runtime: CandidateRuntime; request: ModelRequest },
 ): { reason: string; hint: string } | null {
@@ -519,7 +519,7 @@ export async function withProviderPermit<T>(
   }
 }
 
-export class ProviderSemaphore {
+class ProviderSemaphore {
   private active = 0;
   private readonly queue: Array<{
     resolve: (release: () => void) => void;
@@ -576,7 +576,7 @@ export class ProviderSemaphore {
   }
 }
 
-export function cancelledModelError(): ModelError {
+function cancelledModelError(): ModelError {
   return new ModelError(
     "Model call cancelled while waiting for provider capacity",
     {
@@ -585,7 +585,7 @@ export function cancelledModelError(): ModelError {
   );
 }
 
-export function isStepError(error: unknown): error is RunStepError {
+function isStepError(error: unknown): error is RunStepError {
   return (
     Boolean(error) &&
     typeof error === "object" &&
@@ -594,7 +594,7 @@ export function isStepError(error: unknown): error is RunStepError {
   );
 }
 
-export function explicitPolicyFields(
+function explicitPolicyFields(
   policy: Readonly<Record<string, unknown>>,
 ): ReadonlySet<string> {
   const value = policy.explicitPolicyFields;
@@ -670,7 +670,7 @@ export function resolveRuntimeTimeouts(
   };
 }
 
-export function timeoutMsOrNull(value: unknown, max: number): number | null {
+function timeoutMsOrNull(value: unknown, max: number): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? Math.min(Math.floor(value), max)
     : null;
@@ -686,7 +686,7 @@ export function policyIntInRange(
     : null;
 }
 
-export function redactDiagnostic(value: string): string {
+function redactDiagnostic(value: string): string {
   return value
     .replace(/Bearer\s+[A-Za-z0-9._~+/-]+/giu, "Bearer [REDACTED]")
     .replace(

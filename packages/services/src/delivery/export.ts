@@ -73,7 +73,7 @@ export async function exportProject(
   };
 }
 
-export function exportSections(
+function exportSections(
   ctx: DeliveryContext,
   projectId: string,
   options: ProjectExportOptions,

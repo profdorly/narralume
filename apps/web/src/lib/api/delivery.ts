@@ -77,7 +77,7 @@ export async function deleteAgentSkill(skillId: string): Promise<void> {
    旧稿导入 / 交付 / 备份
    ========================================================================== */
 
-export async function previewStoryImport(input: {
+async function previewStoryImport(input: {
   targetProjectId: string | null;
   filename: string;
   format: ImportFormat;

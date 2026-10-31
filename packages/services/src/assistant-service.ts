@@ -17,7 +17,7 @@ export class AssistantServiceError extends ServiceError {
   }
 }
 
-export interface AssistantContextShape {
+interface AssistantContextShape {
   surface: string;
   documentId: string | null;
   outlineNodeId?: string | null;

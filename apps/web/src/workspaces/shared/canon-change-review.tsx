@@ -15,9 +15,9 @@ import {
   type CanonChangeSetView,
 } from "../../lib/api";
 
-export type CanonChangeDecision = "apply" | "reject";
+type CanonChangeDecision = "apply" | "reject";
 
-export interface CanonChangeReviewLabels {
+interface CanonChangeReviewLabels {
   apply?: string;
   forceApply?: string;
   defer?: string;
@@ -212,13 +212,13 @@ export function SettlementConflictNote({
   );
 }
 
-export interface SettlementConflictDetails {
+interface SettlementConflictDetails {
   conflicts: Array<{ path: string; existingIds: string[]; reason: string }>;
   forceAllowed: boolean;
 }
 
 /** 从裁定接口的 409 settlement.conflict 读出冲突清单。 */
-export function settlementConflictDetails(
+function settlementConflictDetails(
   error: unknown,
 ): SettlementConflictDetails | null {
   if (!(error instanceof ApiError) || error.code !== "settlement.conflict")
@@ -276,13 +276,13 @@ function settlementConflictLabel(reason: string): string {
   return messageKey ? translate(getLocale(), messageKey) : reason;
 }
 
-export function canonSummary(changes: Record<string, unknown>): string | null {
+function canonSummary(changes: Record<string, unknown>): string | null {
   return typeof changes.summary === "string" && changes.summary.trim()
     ? changes.summary
     : null;
 }
 
-export function canonChangeItems(
+function canonChangeItems(
   changes: Record<string, unknown>,
   entityNames: Map<string, string>,
 ): Array<{ label: string; text: string }> {

@@ -96,7 +96,7 @@ export function chapterAuthoredInstructions(
   });
 }
 
-export function workCraft(deps: ChapterWorkerDeps, projectId: string): string {
+function workCraft(deps: ChapterWorkerDeps, projectId: string): string {
   return workCraftLayer({
     language: promptLanguageOf(projectLanguage(deps, projectId)),
     templateContent:
@@ -776,7 +776,7 @@ type GroundedReviewResult = Omit<DerivedReviewResult, "issues"> & {
   >;
 };
 
-export function locateEvidence(
+function locateEvidence(
   locator: ParagraphLocator,
   ordinals: readonly number[],
 ): GroundedParagraphEvidence[] {
@@ -810,7 +810,7 @@ export function bindSettlementEvidence(
   };
 }
 
-export function normalizeTitle(value: string): string {
+function normalizeTitle(value: string): string {
   return value.trim().replace(/\s+/gu, " ");
 }
 
@@ -893,7 +893,7 @@ export function isRevisionNoop(base: string, candidate: string): boolean {
   );
 }
 
-export function normalizeLineEndings(value: string): string {
+function normalizeLineEndings(value: string): string {
   return value.replace(/\r\n?/gu, "\n");
 }
 

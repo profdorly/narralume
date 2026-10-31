@@ -113,16 +113,6 @@ export function createOutlineNode(input: CreateOutlineNodeInput): OutlineNode {
   };
 }
 
-export function isAncestor(
-  candidate: OutlineNode,
-  descendant: OutlineNode,
-): boolean {
-  return (
-    candidate.projectId === descendant.projectId &&
-    descendant.path.startsWith(`${candidate.path}/`)
-  );
-}
-
 function requiredText(value: string, code: string, message: string): string {
   const text = value.trim();
   if (!text) throw new DomainError(code, message);

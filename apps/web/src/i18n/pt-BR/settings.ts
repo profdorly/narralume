@@ -127,7 +127,6 @@ export const settings = {
   tools: {
     label: "Ferramentas avançadas",
     eyebrow: "AVANÇADO",
-    hintTrial: "Livro de execuções, laboratório de longo fôlego e ativos de produção (estilos / habilidade de escrita / gestão de importação).",
     hintFull:
       "Livro de execuções, laboratório de longo fôlego, ativos de produção (estilos / habilidade de escrita / gestão de importação) e arquivos de backup do sistema.",
     projectsLoadError: "Não foi possível carregar a lista de projetos agora",

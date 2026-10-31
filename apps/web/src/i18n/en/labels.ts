@@ -1,17 +1,6 @@
 import type { labels as labelsPt } from "../pt-BR/labels";
 
 export const labels: typeof labelsPt = {
-  runStatus: {
-    pending: "Awaiting the spark",
-    running: "Writing",
-    paused: "Paused at a safe boundary",
-    awaitingUser: "Awaiting the author's call",
-    failedRecoverable: "Recoverable failure",
-    failed: "Run failed",
-    cancelled: "Cancelled",
-    completed: "Run completed",
-    completedChapter: "Chapter committed",
-  },
   runStatusShort: {
     pending: "Waiting",
     running: "Running",
@@ -23,50 +12,7 @@ export const labels: typeof labelsPt = {
     completed: "Done",
   },
   runStepKind: {
-    contextCompile: "Compiling chapter context",
-    scenePlan: "Scene planning",
-    draftGenerate: "Generating draft",
-    deterministicCheck: "Deterministic checks",
-    semanticReview: "Evidence review",
-    revisionGenerate: "Bounded revision",
-    chapterSettle: "Chapter settlement",
-    chapterCommit: "Atomic commit",
-    foundationGenerate: "Generating foundation candidates",
-    foundationStage: "Staging candidates",
-    outlineGenerate: "Planning upcoming chapters",
     outlineEntities: "Preparing new story elements for review",
-    outlineCommit: "Committing the course",
-    steerClassify: "Classifying director's note",
-    arcReview: "Arc retrospective",
-    volumeReview: "Volume retrospective",
-    cocreateContext: "Assembling story room context",
-    cocreateRespond: "Generating persona reply",
-    cocreateStage: "Staging reply version",
-    adoptionPrepare: "Preparing adoption scope",
-    adoptionSettle: "Settling scene and canon candidates",
-    adoptionCommit: "Committing co-created scene",
-    editTransform: "Generating selection rewrite",
-    editStage: "Staging reviewable diff",
-    importAnalyze: "AI deconstructing manuscript",
-    importStage: "Staging import candidates",
-    assistantContext: "Assembling collaboration context",
-    assistantRespond: "Generating assistant reply",
-    assistantStage: "Staging assistant result",
-    canonContext: "Assembling canon context",
-    canonCandidate: "Generating canon change candidates",
-    canonStage: "Staging canon change candidates",
-  },
-  runMode: {
-    autopilot: "AI quick creation",
-    chapterGate: "Chapter gate",
-    director: "Director mode",
-    coCreate: "Co-creation",
-    manual: "Manual pipeline",
-  },
-  runVerdict: {
-    pass: "Pass",
-    revise: "Needs revision",
-    block: "Blocked",
   },
   wireApi: {
     openaiChat: "Chat Completions",
@@ -80,26 +26,11 @@ export const labels: typeof labelsPt = {
     embedding: "Embedding",
     rerank: "Rerank",
   },
-  assignmentRoleHint: {
-    writing: "Prose, revisions, settlement, and general analysis",
-    planning:
-      "Foundation building, scene plans, upcoming-chapter planning; falls back to Writing when unset",
-    review: "Semantic review; falls back to Writing when unset",
-    embedding:
-      "Vector retrieval; degrades explicitly when unset, never falls back to Writing",
-    rerank:
-      "Reranks the passages the search found with the OpenAI Decisions API; optional, without it the search order is used",
-  },
   metadataSource: {
     manual: "Declared manually",
     environment: "Environment",
     catalog: "Catalog",
     migration: "Migration",
-  },
-  qualityPreset: {
-    fast: "Fast",
-    standard: "Standard",
-    deep: "Deep",
   },
   probeStage: {
     text: "Basic text",
@@ -159,16 +90,6 @@ export const labels: typeof labelsPt = {
     resolved: "Resolved",
     abandoned: "Abandoned",
   },
-  autopilotSessionStatus: {
-    pending: "Waiting to start",
-    planning: "Planning chapters",
-    running: "Writing continuously",
-    paused: "Paused",
-    awaitingUser: "Awaiting the author",
-    failed: "Needs attention",
-    cancelled: "Creation stopped",
-    completed: "Creation completed",
-  },
   autopilotLinkRole: {
     rollingPlan: "Upcoming-chapter plan",
     chapter: "This chapter",
@@ -201,12 +122,6 @@ export const labels: typeof labelsPt = {
     adopted: "Adopted",
     discarded: "Set aside",
   },
-  foundationCandidateSetStatus: {
-    open: "Pending a ruling",
-    partiallyAdopted: "Partially adopted",
-    adopted: "Adopted",
-    discarded: "Set aside",
-  },
   reviewCategory: {
     continuity: "Continuity",
     canon: "Canon",
@@ -236,29 +151,6 @@ export const labels: typeof labelsPt = {
     revise: "Revision advised",
     block: "Blocked",
   },
-  proposalStatus: {
-    proposed: "Pending",
-    accepted: "Adopted",
-    rejected: "Rejected",
-    superseded: "Superseded",
-  },
-  qualityReadiness: {
-    blocked: "Failed the delivery gate",
-    needsAttention: "Gate passed; a second look advised",
-    ready: "Ready to deliver",
-  },
-  qualitySeverity: {
-    error: "Blocking",
-    warning: "Warning",
-    info: "Suggestion",
-  },
-  importStatus: {
-    previewed: "Candidates previewed",
-    analyzing: "AI deconstructing",
-    ready: "Awaiting a ruling",
-    applied: "Adopted",
-    discarded: "Discarded",
-  },
   importCandidateKind: {
     project: "Work",
     document: "Manuscript",
@@ -272,13 +164,6 @@ export const labels: typeof labelsPt = {
     foreshadow: "Foreshadowing",
     characterArc: "Character arc",
     sceneAnalysis: "Scene analysis",
-  },
-  writingSkillScope: {
-    all: "All",
-    chapter: "Chapter",
-    cocreate: "Co-create",
-    edit: "Rewrite",
-    review: "Review",
   },
   exportFormat: {
     markdown: "Markdown",
@@ -295,12 +180,6 @@ export const labels: typeof labelsPt = {
     synopsis: "Synopsis",
     note: "Writing notes",
     styleSample: "Style sample",
-  },
-  documentSource: {
-    restore: "Restored from history",
-    editProposal: "AI proposal",
-    cocreate: "Adopted from story room",
-    manual: "Saved manually",
   },
   taskAction: {
     pause: "Pause",

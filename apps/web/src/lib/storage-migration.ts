@@ -9,10 +9,10 @@
    the app removed on purpose would come back from its old copy. */
 
 const LEGACY_PREFIX = "narralume:";
-export const STORAGE_PREFIX = "lapis:";
+const STORAGE_PREFIX = "lapis:";
 const MIGRATED_MARKER = `${STORAGE_PREFIX}storage-migrated`;
 
-export function migrateLegacyStorage(storage: Storage): void {
+function migrateLegacyStorage(storage: Storage): void {
   if (storage.getItem(MIGRATED_MARKER) !== null) return;
   const legacyKeys: string[] = [];
   for (let index = 0; index < storage.length; index += 1) {

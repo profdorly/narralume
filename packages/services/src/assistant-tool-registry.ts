@@ -87,9 +87,3 @@ export const ASSISTANT_TOOL_REGISTRY: readonly AssistantToolDescriptorDto[] =
       access: assistantToolAccess(tool.name),
     }),
   );
-
-export function isRegisteredAssistantTool(
-  name: string,
-): name is AssistantToolName {
-  return ASSISTANT_TOOL_REGISTRY.some((tool) => tool.name === name);
-}

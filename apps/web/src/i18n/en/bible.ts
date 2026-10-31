@@ -259,7 +259,6 @@ export const bible: typeof biblePt = {
   backfill: {
     eyebrow: "AI · FROM MANUSCRIPT",
     title: "Complete Story Bible from manuscript",
-    ariaLabel: "Complete Story Bible from manuscript",
     show: "Show",
     hide: "Hide",
     summary: {
@@ -311,7 +310,6 @@ export const bible: typeof biblePt = {
       paused: "Paused. Progress is saved; resume whenever you're ready.",
       listLabel: "Chapter progress",
       untitled: "Chapter {number}",
-      itemLabel: "{title}: {status}",
     },
     itemStatus: {
       pending: "Waiting",

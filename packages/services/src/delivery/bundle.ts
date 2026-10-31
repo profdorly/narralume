@@ -1741,7 +1741,7 @@ export function records(
   >;
 }
 
-export function parseJsonObject(value: unknown): Record<string, unknown> {
+function parseJsonObject(value: unknown): Record<string, unknown> {
   if (typeof value !== "string" || !value) return {};
   try {
     const parsed: unknown = JSON.parse(value);
@@ -1812,7 +1812,7 @@ export function canonType(value: string | null): CanonEntity["type"] {
     : "concept";
 }
 
-export function documentKind(value: string | null) {
+function documentKind(value: string | null) {
   return [
     "manuscript",
     "chapter",
@@ -1833,7 +1833,7 @@ export function documentKind(value: string | null) {
     : "manuscript";
 }
 
-export function outlineKind(value: string | null) {
+function outlineKind(value: string | null) {
   return ["book", "volume", "arc", "chapter", "scene", "beat"].includes(
     value ?? "",
   )
@@ -1841,7 +1841,7 @@ export function outlineKind(value: string | null) {
     : "chapter";
 }
 
-export function outlineStatus(value: string) {
+function outlineStatus(value: string) {
   return ["planned", "drafting", "review", "committed", "abandoned"].includes(
     value,
   )
@@ -1849,7 +1849,7 @@ export function outlineStatus(value: string) {
     : "planned";
 }
 
-export function projectPhase(value: string): ProjectPhase {
+function projectPhase(value: string): ProjectPhase {
   return [
     "idea",
     "foundation",
@@ -1862,13 +1862,13 @@ export function projectPhase(value: string): ProjectPhase {
     : "idea";
 }
 
-export function timelineVisibility(value: string | null) {
+function timelineVisibility(value: string | null) {
   return ["omniscient", "reader", "author_secret"].includes(value ?? "")
     ? (value as "omniscient" | "reader" | "author_secret")
     : "omniscient";
 }
 
-export function foreshadowStatus(value: string | null) {
+function foreshadowStatus(value: string | null) {
   return ["planned", "planted", "developing", "resolved", "abandoned"].includes(
     value ?? "",
   )
@@ -1876,7 +1876,7 @@ export function foreshadowStatus(value: string | null) {
     : "planned";
 }
 
-export function personaKind(value: string | null) {
+function personaKind(value: string | null) {
   return ["author", "narrator", "character"].includes(value ?? "")
     ? (value as "author" | "narrator" | "character")
     : "character";

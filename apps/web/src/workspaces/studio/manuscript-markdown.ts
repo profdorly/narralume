@@ -117,8 +117,3 @@ export function markdownOffsetToPm(map: OffsetMap, offset: number): number {
   return map.pmAt[index] ?? 1;
 }
 
-export function pmPosToMarkdownOffset(map: OffsetMap, pmPos: number): number {
-  const index = map.pmAt.findIndex((pos) => pos >= pmPos);
-  if (index >= 0) return index;
-  return map.markdown.length;
-}

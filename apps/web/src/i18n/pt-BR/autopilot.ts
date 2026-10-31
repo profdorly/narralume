@@ -106,8 +106,6 @@ export const autopilot = {
   sessionStart: {
     stepTitle: "Começar a criação em série",
     hint: "Por padrão a IA conclui vários capítulos seguidos e salva o manuscrito e o estado da história depois de cada um; você pode pausar ou acrescentar instruções a qualquer momento. Se só precisa de um rascunho do capítulo atual, use “Passar para a IA” na mesa de escrita.",
-    trialHint:
-      "Você está usando o modelo integrado: no máximo {count} capítulos por sessão. Defina como padrão um modelo com a sua própria chave de API para o limite completo.",
     approvalMode: "Modo de criação",
     approvalContinuous: "Contínuo (recomendado)",
     approvalPerChapter: "Esperar a minha confirmação depois de cada capítulo",

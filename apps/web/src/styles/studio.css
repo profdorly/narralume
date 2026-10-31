@@ -63,12 +63,6 @@
   font-size: 0.96rem;
   letter-spacing: 0.04em;
 }
-.studio__docs-count {
-  margin-left: auto;
-  color: var(--ink-faint);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-}
 .studio__docs-list {
   flex: 1;
   overflow-y: auto;
@@ -129,23 +123,6 @@
   opacity: 0.75;
 }
 
-.studio__docs-foot {
-  padding: 0.55rem 0.9rem;
-  border-top: 1px solid var(--hairline-soft);
-}
-.studio__doc-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--accent-deep);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-}
-.studio__doc-new:hover {
-  border-bottom: 1px solid var(--accent-hairline);
-  padding-bottom: 1px;
-}
-
 /* ---- Center: the draft sheet ------------------------------------------- */
 
 .studio__desk {
@@ -173,22 +150,6 @@
   color: var(--accent-deep);
   font-size: 0.78rem;
   border-bottom: 1px solid var(--accent-hairline);
-}
-.studio__desk-bookmark {
-  height: 4px;
-  background: var(--accent);
-  flex-shrink: 0;
-  position: relative;
-}
-.studio__desk-bookmark::before {
-  content: "";
-  position: absolute;
-  right: 1.4rem;
-  top: 0;
-  width: 44px;
-  height: 100%;
-  background: inherit;
-  clip-path: polygon(0 0, 100% 0, 82% 100%, 50% 78%, 18% 100%);
 }
 .studio__desk-head {
   padding: 1.05rem 1.3rem 0.9rem;
@@ -844,28 +805,6 @@
     0 0 0 2px var(--accent-soft),
     var(--shadow-pin);
 }
-.studio__pin-body {
-  flex: 1;
-  min-width: 0;
-}
-.studio__pin-quote {
-  display: block;
-  color: var(--ink-soft);
-  font-size: 0.68rem;
-  line-height: 1.7;
-  font-style: italic;
-  border-left: 1px dashed var(--hairline);
-  padding-left: 0.45rem;
-  margin: 0.3rem 0 0.3rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.studio__pin-meta {
-  font-family: var(--font-mono);
-  font-size: 0.56rem;
-  color: var(--ink-faint);
-  letter-spacing: 0.06em;
-}
 .studio__pin-state {
   padding: 0.08rem 0.42rem 0.12rem;
   border-radius: 999px;
@@ -1307,8 +1246,7 @@
   flex-direction: column;
 }
 
-.manuscript-editor .ProseMirror,
-.manuscript-editor__content {
+.manuscript-editor .ProseMirror {
   flex: 1;
   min-height: 44vh;
   font-family: var(--font-serif);
@@ -1323,8 +1261,7 @@
   outline: none;
 }
 
-.manuscript-editor .ProseMirror:focus,
-.manuscript-editor__content:focus {
+.manuscript-editor .ProseMirror:focus {
   border-color: var(--accent-hairline);
   box-shadow: inset 0 1px 0 var(--accent-soft);
 }
@@ -1348,8 +1285,7 @@
   text-decoration-skip-ink: none;
 }
 
-.manuscript-editor--focus .ProseMirror,
-.manuscript-editor__content--focus {
+.manuscript-editor--focus .ProseMirror {
   max-width: 42rem;
   margin: 0 auto;
   min-height: 70vh;

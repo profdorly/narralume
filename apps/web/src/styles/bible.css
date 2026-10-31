@@ -250,12 +250,6 @@
   line-height: 1.3;
   letter-spacing: 0.035em;
 }
-.bible__intent-current {
-  margin: -0.2rem 0 0.3rem;
-  color: var(--ink-soft);
-  font-size: 0.88rem;
-  line-height: 1.8;
-}
 .bible__intent-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -554,30 +548,6 @@
   color: var(--ink);
   font-size: 0.9rem;
   line-height: 1.6;
-}
-.bible__ledger-sub {
-  color: var(--ink-soft);
-  font-size: 0.78rem;
-  font-weight: var(--weight-meta);
-  line-height: 1.65;
-}
-.bible__ledger-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.28rem;
-  margin-top: 0.24rem;
-}
-.bible__badge {
-  padding: 0.08rem 0.42rem 0.12rem;
-  border: 1px solid var(--hairline);
-  border-radius: 999px;
-  color: var(--ink-faint);
-  font-size: 0.6rem;
-}
-.bible__badge[data-on="true"] {
-  color: var(--accent-deep);
-  border-color: var(--accent-hairline);
-  background: var(--accent-soft);
 }
 
 /* ---- Foreshadowing: status ribbons ------------------------------------- */

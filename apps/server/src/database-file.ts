@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-export const DATABASE_FILE = "lapis.sqlite";
+const DATABASE_FILE = "lapis.sqlite";
 /** Name used before the product was renamed. Libraries created then keep it. */
-export const LEGACY_DATABASE_FILE = "narralume.sqlite";
+const LEGACY_DATABASE_FILE = "narralume.sqlite";
 
 /**
  * The database file to open (or restore into) inside a data directory.

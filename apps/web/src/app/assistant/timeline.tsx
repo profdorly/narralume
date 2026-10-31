@@ -136,7 +136,7 @@ let markdownLoading: Promise<MarkdownRenderer> | null = null;
 
 /** Loads the sanitizing Markdown renderer once (marked + DOMPurify live in
  *  their own chunk). A failed load is retried on the next message. */
-export function loadMarkdownRenderer(): Promise<MarkdownRenderer> {
+function loadMarkdownRenderer(): Promise<MarkdownRenderer> {
   markdownLoading ??= import("./markdown").then(
     (module) => (markdownRenderer = module.renderMarkdown),
     (error: unknown) => {

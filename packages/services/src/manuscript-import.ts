@@ -3,7 +3,7 @@
 
 import { detectManuscriptLanguage } from "@lapis/narrative";
 
-export interface ManuscriptSection {
+interface ManuscriptSection {
   title: string;
   content: string;
 }
@@ -896,14 +896,14 @@ const CJK_CHARACTER =
 const SCRIPT_SAMPLE_CHARACTERS = 200_000;
 
 /** 以正文前 20 万字符取样：CJK 字符占字母类字符多数时按“字”统计。 */
-export function isCjkManuscript(text: string): boolean {
+function isCjkManuscript(text: string): boolean {
   const sample = text.slice(0, SCRIPT_SAMPLE_CHARACTERS);
   const letters = sample.match(/\p{L}/gu)?.length ?? 0;
   const cjk = sample.match(CJK_CHARACTER)?.length ?? 0;
   return letters === 0 || cjk * 2 >= letters;
 }
 
-export type StatisticalStylePayload = {
+type StatisticalStylePayload = {
   name: string;
   description: string;
   rules: string[];

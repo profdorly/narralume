@@ -22,12 +22,12 @@ export function manuscriptEditorOf(element: HTMLElement): Editor | null {
   return editorsByDom.get(element) ?? null;
 }
 
-export interface ManuscriptSelection {
+interface ManuscriptSelection {
   start: number;
   end: number;
 }
 
-export interface ManuscriptEditorProps {
+interface ManuscriptEditorProps {
   value: string;
   placeholder: string;
   ariaLabel: string;

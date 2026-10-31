@@ -122,7 +122,7 @@ function docxTitlePageLabel(value: string): string {
 }
 
 /** outlineLevel 写入段落大纲级别，Word 导航窗格与再次导入都据此识别标题。 */
-export function docxParagraph(value: string, outlineLevel: 0 | 1 | null) {
+function docxParagraph(value: string, outlineLevel: 0 | 1 | null) {
   const heading = outlineLevel !== null;
   const lines = value.split("\n");
   const runs = lines
@@ -164,7 +164,7 @@ export function renderText(
     .concat("\n");
 }
 
-export function markdownishToXhtml(content: string) {
+function markdownishToXhtml(content: string) {
   return content
     .split(/\n\s*\n/u)
     .map((paragraph) => {
@@ -177,7 +177,7 @@ export function markdownishToXhtml(content: string) {
     .join("");
 }
 
-export function escapeXml(value: string) {
+function escapeXml(value: string) {
   return value
     .replace(/&/gu, "&amp;")
     .replace(/</gu, "&lt;")

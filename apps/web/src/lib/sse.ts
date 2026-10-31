@@ -13,7 +13,7 @@ import {
    /api/events 的 EventSource 封装（从旧 run-center / studio-view 搬入）。
    ========================================================================== */
 
-export function parseServerEvent(text: string): ServerEvent | null {
+function parseServerEvent(text: string): ServerEvent | null {
   try {
     const value = JSON.parse(text) as unknown;
     if (!value || typeof value !== "object" || !("type" in value)) return null;
@@ -24,12 +24,12 @@ export function parseServerEvent(text: string): ServerEvent | null {
 }
 
 /** model.event 载荷中最常用的 text.delta 形状。 */
-export interface TextDeltaPayload {
+interface TextDeltaPayload {
   type: string;
   text?: string;
 }
 
-export function isTextDelta(event: unknown): event is {
+function isTextDelta(event: unknown): event is {
   type: "text.delta";
   text: string;
 } {
@@ -41,7 +41,7 @@ export function isTextDelta(event: unknown): event is {
   );
 }
 
-export interface ServerEventHandlers {
+interface ServerEventHandlers {
   onModelEvent?: (runId: string, event: unknown) => void;
   onRunStatus?: (runId: string, status: string) => void;
   onRunEvent?: (
@@ -55,7 +55,7 @@ export interface ServerEventHandlers {
   onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
 }
 
-export interface BibleBackfillStatusEvent {
+interface BibleBackfillStatusEvent {
   projectId: string;
   jobId: string;
   status: string;
@@ -74,12 +74,7 @@ let unsubscribeKernel: (() => void) | null = null;
 let live = false;
 
 /** How long a query that the event stream keeps fresh waits between polls. */
-export const EVENT_FALLBACK_MS = 15_000;
-
-/** True while the event stream is connected, so pushed events keep data fresh. */
-export function serverEventsLive(): boolean {
-  return live;
-}
+const EVENT_FALLBACK_MS = 15_000;
 
 /**
  * refetchInterval for data that server events also refresh: the given fast
@@ -162,7 +157,7 @@ function disconnect(): void {
 }
 
 /** Subscribes to server events; returns the unsubscribe function. */
-export function subscribeServerEvents(handlers: ServerEventHandlers): () => void {
+function subscribeServerEvents(handlers: ServerEventHandlers): () => void {
   const entry = { ...handlers };
   subscribers.add(entry);
   if (subscribers.size === 1) connect();

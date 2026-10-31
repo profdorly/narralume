@@ -218,7 +218,7 @@ export async function previewImport(
   });
 }
 
-export async function prepareImportPreview(
+async function prepareImportPreview(
   ctx: DeliveryContext,
   input: {
     targetProjectId: string | null;
@@ -300,7 +300,7 @@ export async function prepareImportPreview(
   };
 }
 
-export function persistImportPreview(
+function persistImportPreview(
   ctx: DeliveryContext,
   prepared: {
     batch: ImportBatch;
@@ -313,7 +313,7 @@ export function persistImportPreview(
   }
 }
 
-export function completedUploadResult(
+function completedUploadResult(
   ctx: DeliveryContext,
   session: ImportUploadSession,
 ) {
@@ -426,7 +426,7 @@ export function discardImport(
   return ctx.delivery.getImportBatchDetail(batchId)!;
 }
 
-export function applyCandidates(
+function applyCandidates(
   ctx: DeliveryContext,
   batch: {
     targetProjectId: string | null;
@@ -677,7 +677,7 @@ export function applyCandidates(
   return projectId;
 }
 
-export function candidatesFromText(
+function candidatesFromText(
   batchId: string,
   title: string,
   sourceText: string,
@@ -711,7 +711,7 @@ export function candidatesFromText(
   return candidates;
 }
 
-export function candidatesFromBundle(
+function candidatesFromBundle(
   batchId: string,
   bundle: NarrativeBundle,
   now: string,
@@ -741,7 +741,7 @@ export function candidatesFromBundle(
   ];
 }
 
-export function candidate(
+function candidate(
   batchId: string,
   kind: ImportCandidate["kind"],
   ordinal: number,
@@ -762,7 +762,7 @@ export function candidate(
   };
 }
 
-export async function extractEpub(bytes: Uint8Array) {
+async function extractEpub(bytes: Uint8Array) {
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(bytes);
@@ -870,7 +870,7 @@ export async function extractEpub(bytes: Uint8Array) {
   return result;
 }
 
-export function decodeEpubHref(href: string): string {
+function decodeEpubHref(href: string): string {
   const xmlDecoded = href
     .replaceAll("&amp;", "&")
     .replaceAll("&quot;", '"')
@@ -887,7 +887,7 @@ export function decodeEpubHref(href: string): string {
   }
 }
 
-export async function extractDocx(bytes: Uint8Array) {
+async function extractDocx(bytes: Uint8Array) {
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(bytes);
@@ -933,7 +933,7 @@ export async function extractDocx(bytes: Uint8Array) {
   return normalizeImportedText(docxDocumentText(documentXml, stylesXml));
 }
 
-export function normalizeImportedText(value: string) {
+function normalizeImportedText(value: string) {
   return trimLineEnds(
     value
       .replace(/^\uFEFF/u, "")
@@ -944,7 +944,7 @@ export function normalizeImportedText(value: string) {
     .trim();
 }
 
-export function entityByImportedName(
+function entityByImportedName(
   entities: readonly CanonEntity[],
   name: string | null,
 ): CanonEntity | null {
@@ -963,7 +963,7 @@ export function entityByImportedName(
 
 /** Notes written at import follow the project's writing language.
  *  Style-candidate wording follows the manuscript script; see inferStylePayload. */
-export function importNoteLabels(language: string) {
+function importNoteLabels(language: string) {
   return language === "en"
     ? {
         defaultRelation: "related",
@@ -979,7 +979,7 @@ export function importNoteLabels(language: string) {
       };
 }
 
-export function renderAnalysisCandidate(
+function renderAnalysisCandidate(
   candidate: ImportCandidate,
   labels: ReturnType<typeof importNoteLabels>,
 ): string {
@@ -1004,7 +1004,7 @@ export function renderAnalysisCandidate(
   ].join("\n");
 }
 
-export function styleFromPayload(
+function styleFromPayload(
   projectId: string,
   candidate: ImportCandidate,
   now: string,
@@ -1026,7 +1026,7 @@ export function styleFromPayload(
   };
 }
 
-export function skillFromPayload(
+function skillFromPayload(
   projectId: string,
   candidate: ImportCandidate,
   now: string,
@@ -1049,7 +1049,7 @@ export function skillFromPayload(
   };
 }
 
-export function titleFromFilename(filename: string) {
+function titleFromFilename(filename: string) {
   return (
     filename
       .replace(/\.narrative\.json$/iu, "")

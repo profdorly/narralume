@@ -64,15 +64,4 @@ export const shell: typeof shellPt = {
     footerRun: "Run",
     hintAdvanced: "Advanced",
   },
-  trial: {
-    title: "Enter the online trial",
-    configMissing: "The trial site has not finished verification setup.",
-    checking: "Confirming your session…",
-    challenge: "Please complete the human verification.",
-    timeout: "The verification service timed out. Reload the verification.",
-    rejected: "Verification failed. Please try again.",
-    unavailable: "The verification widget is temporarily unavailable. Reload the verification.",
-    loadFailed: "The verification widget failed to load. Check your network or content-blocking settings and try again.",
-    reload: "Reload verification",
-  },
 };

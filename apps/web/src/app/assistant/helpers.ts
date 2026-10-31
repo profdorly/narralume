@@ -9,7 +9,7 @@ import type {
 } from "../../lib/api";
 import { projectWorkspacePath } from "../../lib/project-route";
 
-export type TimelineEntry =
+type TimelineEntry =
   | { type: "message"; at: string; id: string; message: AssistantMessageDto }
   | {
       type: "activity";
@@ -252,7 +252,7 @@ const CANON_SPREAD_LABEL_KEYS: Record<
   foreshadows: "assistant.canonSpread.foreshadows",
 };
 
-export function canonSpreadLabel(spread: NonNullable<AssistantContext["canonSpread"]>) {
+function canonSpreadLabel(spread: NonNullable<AssistantContext["canonSpread"]>) {
   return translate(getLocale(), CANON_SPREAD_LABEL_KEYS[spread]);
 }
 

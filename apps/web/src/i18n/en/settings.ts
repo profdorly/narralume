@@ -129,7 +129,6 @@ export const settings: typeof settingsPt = {
   tools: {
     label: "Advanced tools",
     eyebrow: "ADVANCED",
-    hintTrial: "Run ledger, long-form lab, and production assets (styles / Writing Skill / import management).",
     hintFull:
       "Run ledger, long-form lab, production assets (styles / Writing Skill / import management), and system backup archives.",
     projectsLoadError: "Project list cannot be loaded right now",
