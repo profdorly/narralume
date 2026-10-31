@@ -24,16 +24,6 @@ export const labels = {
     embedding: "Embedding",
     rerank: "Reordenação",
   },
-  assignmentRoleHint: {
-    writing: "Prosa, reescritas, acerto e análise geral",
-    planning:
-      "Fundação, planos de cena, planejamento dos próximos capítulos; recai na Escrita quando não está definido",
-    review: "Revisão semântica; recai na Escrita quando não está definido",
-    embedding:
-      "Recuperação vetorial; degrada de forma explícita quando não está definido, nunca recai na Escrita",
-    rerank:
-      "Reordena os trechos encontrados pela busca com a Decisions API da OpenAI; opcional, sem ela vale a ordem da busca",
-  },
   metadataSource: {
     manual: "Declarado manualmente",
     environment: "Ambiente",

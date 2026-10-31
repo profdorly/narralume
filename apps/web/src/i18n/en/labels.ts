@@ -26,16 +26,6 @@ export const labels: typeof labelsPt = {
     embedding: "Embedding",
     rerank: "Rerank",
   },
-  assignmentRoleHint: {
-    writing: "Prose, revisions, settlement, and general analysis",
-    planning:
-      "Foundation building, scene plans, upcoming-chapter planning; falls back to Writing when unset",
-    review: "Semantic review; falls back to Writing when unset",
-    embedding:
-      "Vector retrieval; degrades explicitly when unset, never falls back to Writing",
-    rerank:
-      "Reranks the passages the search found with the OpenAI Decisions API; optional, without it the search order is used",
-  },
   metadataSource: {
     manual: "Declared manually",
     environment: "Environment",

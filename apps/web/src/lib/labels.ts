@@ -63,18 +63,6 @@ export function assignmentRoleLabel(role: AssignmentRole): string {
   return translate(getLocale(), keys[role]);
 }
 
-/** 角色用途与降级规则（与后端语义一致）。 */
-export function assignmentRoleHint(role: AssignmentRole): string {
-  const keys: Record<AssignmentRole, MessageKey> = {
-    writing: "labels.assignmentRoleHint.writing",
-    planning: "labels.assignmentRoleHint.planning",
-    review: "labels.assignmentRoleHint.review",
-    embedding: "labels.assignmentRoleHint.embedding",
-    rerank: "labels.assignmentRoleHint.rerank",
-  };
-  return translate(getLocale(), keys[role]);
-}
-
 export function metadataSourceLabel(
   source: ModelConfigDto["metadataSource"],
 ): string {
