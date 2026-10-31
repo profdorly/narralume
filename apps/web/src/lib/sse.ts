@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { QueryClientContext } from "@tanstack/react-query";
+import { useContext, useEffect, useRef, useState } from "react";
 
 import type { ServerEvent } from "@lapis/contracts";
 
@@ -57,6 +58,12 @@ interface ServerEventHandlers {
    * coordinator.
    */
   onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
+  /**
+   * The stream went down or came back. Events sent meanwhile are not
+   * replayed, so refetch what the events would have refreshed; queries also
+   * switch between their slow and fast polling interval when refetched.
+   */
+  onConnectionChange?: (live: boolean) => void;
 }
 
 interface BibleBackfillStatusEvent {
@@ -118,7 +125,7 @@ function bindKernel(): void {
   if (unsubscribeKernel) return;
   source?.close();
   source = null;
-  live = true;
+  setLive(true);
   // The kernel bridge forwards whole SSE frames (event: …\ndata: …).
   unsubscribeKernel = addKernelEventListener((frame) => {
     const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
@@ -126,15 +133,31 @@ function bindKernel(): void {
   });
 }
 
+function setLive(next: boolean): void {
+  if (live === next) return;
+  live = next;
+  for (const handlers of subscribers) handlers.onConnectionChange?.(next);
+}
+
+let reopenTimer: ReturnType<typeof setTimeout> | null = null;
+
 function bindServer(): void {
   if (unsubscribeKernel || source || typeof EventSource === "undefined") return;
-  source = new EventSource("/api/events");
-  source.onopen = () => {
-    live = true;
-  };
-  source.onerror = () => {
-    // EventSource reconnects by itself; polling covers the gap.
-    live = false;
+  const current = new EventSource("/api/events");
+  source = current;
+  current.onopen = () => setLive(true);
+  current.onerror = () => {
+    setLive(false);
+    // EventSource retries by itself unless the server answered with an error
+    // status; then it stays CLOSED, so open a new one after a pause.
+    if (current.readyState === 2 && source === current && !reopenTimer) {
+      reopenTimer = setTimeout(() => {
+        reopenTimer = null;
+        if (source !== current || subscribers.size === 0) return;
+        source = null;
+        bindServer();
+      }, 5_000);
+    }
   };
   const forward = (message: MessageEvent<string>) => dispatch(message.data);
   source.addEventListener("model.event", forward as EventListener);
@@ -157,6 +180,8 @@ function disconnect(): void {
   unsubscribeKernel = null;
   source?.close();
   source = null;
+  if (reopenTimer) clearTimeout(reopenTimer);
+  reopenTimer = null;
   live = false;
 }
 
@@ -180,6 +205,8 @@ export function useServerEvents(
   enabled = true,
 ): void {
   const ref = useRef(handlers);
+  // Optional: components rendered without a QueryClientProvider still get events.
+  const queryClient = useContext(QueryClientContext);
   useEffect(() => {
     ref.current = handlers;
   });
@@ -193,8 +220,16 @@ export function useServerEvents(
         ref.current.onRunEvent?.(runId, stepId, sequence, eventType, payload),
       onBibleBackfillStatus: (event) =>
         ref.current.onBibleBackfillStatus?.(event),
+      onConnectionChange: (isLive) => {
+        // Events sent while the stream was down are not replayed, and polling
+        // intervals depend on the stream state: refresh what is on screen.
+        // Several hooks share one connection; refetching active queries once
+        // per change is enough, and invalidateQueries dedupes in-flight work.
+        void queryClient?.invalidateQueries({ refetchType: "active" });
+        ref.current.onConnectionChange?.(isLive);
+      },
     });
-  }, [enabled]);
+  }, [enabled, queryClient]);
 }
 
 /**

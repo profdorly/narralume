@@ -19,10 +19,11 @@ import {
   useLocation,
 } from "react-router";
 
+import { ChunkBoundary } from "../components/chunk-boundary";
 import { IconButton } from "../components/icon-button";
 import { BRAND_NAME, LapisMark, LapisWordmark } from "../components/lapis-mark";
 import { getLocale, translate, useI18n, type MessageKey } from "../i18n";
-import { getHealth } from "../lib/api";
+import { getAssistantConversations, getHealth } from "../lib/api";
 import {
   subscribeAssistantContext,
   type AssistantContextPatch,
@@ -78,19 +79,6 @@ const SettingsWorkspace = lazy(() => import("../workspaces/settings").then((modu
    panel (with its CSS) on its first open or when it was left open last time. */
 const CommandPalette = lazy(() => import("./command-palette").then((module) => ({ default: module.CommandPalette })));
 const ProjectAssistant = lazy(() => import("./assistant").then((module) => ({ default: module.ProjectAssistant })));
-
-/** Whether this browser remembers an assistant conversation for the project
- *  (the key ProjectAssistant writes when a conversation is selected). */
-function hasAssistantConversation(projectId: string): boolean {
-  try {
-    return (
-      window.localStorage.getItem(`lapis:assistant-conversation:${projectId}`) !==
-      null
-    );
-  } catch {
-    return false;
-  }
-}
 
 /* The rail's collapsed state has two sources: the wide-screen memory
    (localStorage) and automatic collapse on narrow screens (≤1100px). A manual
@@ -262,13 +250,19 @@ function ShellFrame() {
     assistantState.open && (!mobileLayout || assistantState.route === currentPath);
   // Latches on the first open: from then on ProjectAssistant renders the launcher
   // itself (with the live activity count) and stays loaded when closed. A
-  // project that already has an assistant conversation loads it right away, so
-  // the launcher shows that conversation's running tasks; a project that never
-  // used the assistant has none to count.
+  // project that already has an assistant conversation loads it right away
+  // (still closed), so the launcher shows its running tasks; a project that
+  // never used the assistant has none to count. The list query shares its key
+  // with ProjectAssistant, so it is fetched once.
+  const assistantConversations = useQuery({
+    queryKey: ["assistant", projectId, "conversations"],
+    queryFn: ({ signal }) => getAssistantConversations(projectId!, signal),
+    enabled: Boolean(projectId),
+  });
   const [assistantLoaded, setAssistantLoaded] = useState(false);
   if (
     !assistantLoaded &&
-    (assistantOpen || (projectId && hasAssistantConversation(projectId)))
+    (assistantOpen || (assistantConversations.data?.length ?? 0) > 0)
   )
     setAssistantLoaded(true);
   const assistantScope = assistantContextScope(
@@ -438,25 +432,40 @@ function ShellFrame() {
         </Suspense>
       </main>
       {paletteOpen ? (
-        <Suspense fallback={null}>
-          <CommandPalette
-            projectId={projectId}
-            onClose={() => setPaletteOpen(false)}
-          />
-        </Suspense>
+        <ChunkBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <CommandPalette
+              projectId={projectId}
+              onClose={() => setPaletteOpen(false)}
+            />
+          </Suspense>
+        </ChunkBoundary>
       ) : null}
       {projectId ? (
         assistantLoaded ? (
-          <Suspense fallback={null}>
-            <ProjectAssistant
-              key={projectId}
-              projectId={projectId}
-              context={assistantContext}
-              open={assistantOpen}
-              onOpen={() => setProjectAssistantOpen(true)}
-              onClose={() => setProjectAssistantOpen(false)}
-            />
-          </Suspense>
+          <ChunkBoundary
+            // The app was probably updated while this tab stayed open: a
+            // reload fetches the current files.
+            fallback={<AssistantTrigger onOpen={() => window.location.reload()} />}
+          >
+            <Suspense
+              // Keep the launcher on screen while the assistant chunk loads.
+              fallback={
+                assistantOpen ? null : (
+                  <AssistantTrigger onOpen={() => setProjectAssistantOpen(true)} />
+                )
+              }
+            >
+              <ProjectAssistant
+                key={projectId}
+                projectId={projectId}
+                context={assistantContext}
+                open={assistantOpen}
+                onOpen={() => setProjectAssistantOpen(true)}
+                onClose={() => setProjectAssistantOpen(false)}
+              />
+            </Suspense>
+          </ChunkBoundary>
         ) : (
           <AssistantTrigger onOpen={() => setProjectAssistantOpen(true)} />
         )

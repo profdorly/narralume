@@ -38,6 +38,8 @@ function json(value: unknown) {
 }
 
 let requests: string[] = [];
+/** Conversations the server reports for project-1 (none unless a test says so). */
+let serverConversations: (typeof CONVERSATION)[] = [];
 
 function renderShell() {
   window.history.pushState({}, "", "/projects/project-1/overview");
@@ -59,6 +61,7 @@ beforeEach(() => {
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
   requests = [];
+  serverConversations = [];
   vi.stubGlobal("EventSource", EventSourceStub);
   vi.stubGlobal(
     "fetch",
@@ -68,7 +71,7 @@ beforeEach(() => {
       if (url === "/api/health") {
         return json({ status: "ok", service: "lapis", version: "0.2.0", database: { status: "ready", migration: 1 }, now: "2026-08-13T01:00:00.000Z" });
       }
-      if (url === "/api/projects/project-1/assistant/conversations") return json([CONVERSATION]);
+      if (url === "/api/projects/project-1/assistant/conversations") return json(serverConversations);
       if (url === `/api/assistant/conversations/${CONVERSATION.id}`) {
         return json({ conversation: CONVERSATION, messages: [], activities: [] });
       }
@@ -89,7 +92,10 @@ describe("shell collaboration sidebar and command palette", () => {
 
     const trigger = screen.getByRole("button", { name: "Abrir colaboração no projeto" });
     expect(screen.queryByRole("complementary", { name: "Colaboração no projeto" })).not.toBeInTheDocument();
-    expect(assistantRequests()).toEqual([]);
+    // Only the conversation list is asked for; with none, the panel stays unloaded.
+    await waitFor(() =>
+      expect(assistantRequests()).toEqual(["/api/projects/project-1/assistant/conversations"]),
+    );
 
     fireEvent.click(trigger);
     expect(await screen.findByRole("complementary", { name: "Colaboração no projeto" })).toBeInTheDocument();
@@ -102,24 +108,22 @@ describe("shell collaboration sidebar and command palette", () => {
   });
 
   it("preloads sidebar data when the project already has collaboration conversations, while the entry stays closed (showing the in-progress task count)", async () => {
-    window.localStorage.setItem(
-      "lapis:assistant-conversation:project-1",
-      CONVERSATION.id,
-    );
+    // No conversation remembered in this browser: the server list is enough.
+    serverConversations = [CONVERSATION];
     renderShell();
     expect(await screen.findByText("overview")).toBeInTheDocument();
 
+    await waitFor(() =>
+      expect(assistantRequests()).toContain(
+        `/api/assistant/conversations/${CONVERSATION.id}`,
+      ),
+    );
     expect(
       await screen.findByRole("button", { name: "Abrir colaboração no projeto" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("complementary", { name: "Colaboração no projeto" }),
     ).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(assistantRequests()).toContain(
-        `/api/assistant/conversations/${CONVERSATION.id}`,
-      ),
-    );
   });
 
   it("shows the sidebar right after load when it was left open last time", async () => {
