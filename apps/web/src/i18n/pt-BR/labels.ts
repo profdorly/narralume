@@ -300,16 +300,6 @@ export const labels = {
     cocreate: "Adotado da sala da história",
     manual: "Salvo manualmente",
   },
-  speakerPolicy: {
-    manual: "Escolha manual",
-    roundRobin: "Em rodízio",
-    natural: "Turnos naturais",
-  },
-  personaKind: {
-    author: "Agente da autoria",
-    narrator: "Narrador",
-    character: "Personagem",
-  },
   taskAction: {
     pause: "Pausar",
     resume: "Retomar",

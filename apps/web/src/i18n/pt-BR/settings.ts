@@ -238,10 +238,6 @@ export const settings = {
         name: "Editor de seleção",
         description: "Reescreve o texto selecionado segundo a instrução da autoria.",
       },
-      cocreateAdoption: {
-        name: "Adoção da coescrita",
-        description: "Transforma um turno escolhido de coescrita em prosa de cena do romance.",
-      },
       bookFoundation: {
         name: "Planejador da fundação do livro",
         description: "Dá forma à inspiração da autoria em candidatos de fundação selecionáveis.",

@@ -240,10 +240,6 @@ export const settings: typeof settingsPt = {
         name: "Selection editor",
         description: "Rewrites the selected text per the author's instruction.",
       },
-      cocreateAdoption: {
-        name: "Co-write adoption",
-        description: "Turns a chosen co-writing turn into novel scene prose.",
-      },
       bookFoundation: {
         name: "Book foundation planner",
         description: "Shapes the author's inspiration into selectable foundation candidates.",

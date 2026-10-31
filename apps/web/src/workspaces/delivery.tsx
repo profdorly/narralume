@@ -369,7 +369,6 @@ function summarizeBackupCounts(counts: Record<string, number>) {
     ["annotations", "delivery.backupCounts.annotations"],
     ["cover", "delivery.backupCounts.cover"],
     ["personas", "delivery.backupCounts.personas"],
-    ["cocreateSessions", "delivery.backupCounts.cocreateSessions"],
     ["storyTurns", "delivery.backupCounts.storyTurns"],
     ["reviews", "delivery.backupCounts.reviews"],
     ["assistantConversations", "delivery.backupCounts.assistantConversations"],

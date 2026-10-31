@@ -24,14 +24,11 @@ import type {
   BackgroundRunCreated,
   CanonEntity,
   CanonFact,
-  CharacterCardV3Export,
   Foreshadow,
   FoundationCandidate,
   FoundationCandidateSet,
   NarrativeMemory,
   OutlineNode,
-  PersonaCardImportResponse,
-  PersonaCardImportTarget,
   PlotPrediction,
   ProjectFoundationTaskCreated,
   RelationshipEvent,
@@ -39,7 +36,6 @@ import type {
   StoryBible,
   StoryCompass,
   StoryDevelopmentReview,
-  StoryPersona,
   TimelineEvent,
 } from "./types";
 
@@ -559,92 +555,6 @@ export async function updateStoryCompass(
 
 export function getStoryDevelopmentReviews(projectId: string, signal?: AbortSignal): Promise<StoryDevelopmentReview[]> {
   return requestJson(`/api/projects/${encodeURIComponent(projectId)}/compass/reviews`, signal ? { signal } : {});
-}
-
-export async function getPersonas(
-  projectId: string,
-  signal?: AbortSignal,
-): Promise<StoryPersona[]> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/personas`,
-    signal ? { signal } : {},
-  );
-}
-
-export async function createPersona(
-  projectId: string,
-  input: Pick<
-    StoryPersona,
-    | "kind"
-    | "entityId"
-    | "name"
-    | "description"
-    | "instructions"
-    | "voice"
-    | "profile"
-  >,
-): Promise<StoryPersona> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/personas`,
-    jsonRequest("POST", input),
-  );
-}
-
-export async function updatePersona(
-  personaId: string,
-  input: Pick<
-    StoryPersona,
-    | "kind"
-    | "entityId"
-    | "name"
-    | "description"
-    | "instructions"
-    | "voice"
-    | "profile"
-    | "status"
-  > & { expectedVersion: number },
-): Promise<StoryPersona> {
-  return requestJson(
-    `/api/personas/${encodeURIComponent(personaId)}`,
-    jsonRequest("PUT", input),
-  );
-}
-
-interface ImportPersonaCardInput {
-  requestId: string;
-  filename: string;
-  contentBase64: string;
-  target: PersonaCardImportTarget;
-}
-
-export async function importPersonaCardJson(
-  projectId: string,
-  input: ImportPersonaCardInput,
-): Promise<PersonaCardImportResponse> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/persona-card-imports/json`,
-    jsonRequest("POST", input),
-  );
-}
-
-export async function importPersonaCardPng(
-  projectId: string,
-  input: ImportPersonaCardInput,
-): Promise<PersonaCardImportResponse> {
-  return requestJson(
-    `/api/projects/${encodeURIComponent(projectId)}/persona-card-imports/png`,
-    jsonRequest("POST", input),
-  );
-}
-
-export async function getPersonaCard(
-  personaId: string,
-  signal?: AbortSignal,
-): Promise<CharacterCardV3Export> {
-  return requestJson(
-    `/api/personas/${encodeURIComponent(personaId)}/card`,
-    signal ? { signal } : {},
-  );
 }
 
 export async function searchProjectMemory(

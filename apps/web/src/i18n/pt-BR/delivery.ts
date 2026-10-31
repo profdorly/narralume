@@ -83,7 +83,6 @@ export const delivery = {
     annotations: "Anotações",
     cover: "Capa",
     personas: "Personas",
-    cocreateSessions: "Coescrita",
     storyTurns: "Turnos",
     reviews: "Revisões",
     assistantConversations: "Colaboração",

@@ -22,7 +22,6 @@ import type {
   RunStepKind,
   AssistantActivityTextDto,
   StoryDocument,
-  StoryPersona,
   WireApi,
   WritingSkillScope,
 } from "./api";
@@ -555,26 +554,6 @@ export function documentSourceLabel(source: string): string {
   return source === "manual"
     ? translate(locale, "labels.documentSource.manual")
     : source;
-}
-
-export function speakerPolicyLabel(
-  policy: "manual" | "round_robin" | "natural",
-): string {
-  const keys: Record<typeof policy, MessageKey> = {
-    manual: "labels.speakerPolicy.manual",
-    round_robin: "labels.speakerPolicy.roundRobin",
-    natural: "labels.speakerPolicy.natural",
-  };
-  return translate(getLocale(), keys[policy]);
-}
-
-export function personaKindLabel(kind: StoryPersona["kind"]): string {
-  const keys: Record<StoryPersona["kind"], MessageKey> = {
-    author: "labels.personaKind.author",
-    narrator: "labels.personaKind.narrator",
-    character: "labels.personaKind.character",
-  };
-  return translate(getLocale(), keys[kind]);
 }
 
 /* --- 任务协议（origin / stopReason / availableActions / nextAction） --------- */

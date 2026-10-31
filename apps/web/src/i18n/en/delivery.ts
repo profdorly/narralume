@@ -85,7 +85,6 @@ export const delivery: typeof deliveryPt = {
     annotations: "Annotations",
     cover: "Cover",
     personas: "Personas",
-    cocreateSessions: "Co-create",
     storyTurns: "Turns",
     reviews: "Reviews",
     assistantConversations: "Collab",

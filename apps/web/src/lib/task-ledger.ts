@@ -37,18 +37,11 @@ export function taskHref(
   const surface = typeof context.origin?.surface === "string"
     ? context.origin.surface
     : null;
-  const sessionId = typeof context.origin?.sessionId === "string"
-    ? context.origin.sessionId
-    : null;
   if (kind === "quick_creation") {
     return `${projectWorkspacePath(projectId, "autopilot")}?session=${encodeURIComponent(taskId)}`;
   }
   if (kind === "foundation") {
     return `${projectWorkspacePath(projectId, "autopilot")}?foundation=${encodeURIComponent(taskId)}`;
-  }
-  if (surface === "cocreate" && sessionId) {
-    const params = new URLSearchParams({ mode: "cocreate", session: sessionId });
-    return `${projectWorkspacePath(projectId, "studio")}?${params.toString()}`;
   }
   if (kind === "chapter" || surface === "studio" || surface === "writing") {
     const params = new URLSearchParams({ run: taskId });

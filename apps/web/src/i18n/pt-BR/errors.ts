@@ -79,10 +79,6 @@ export const errors = {
     bibleBackfillItemBusy: "Este capítulo está sendo lido agora. Pause a conclusão antes de pulá-lo.",
     bibleBackfillItemNotSkippable: "Este capítulo já foi processado e não pode ser pulado.",
     bibleBackfillItemNotFailed: "Só um capítulo cujo acerto falhou pode ser tentado de novo.",
-    adoptionIdempotencyConflict: "O mesmo requestId já foi usado para outro pedido de adoção de cena",
-    adoptionRangeInvalid: "O trecho de adoção está fora da ramificação atual ou numa ordem inválida",
-    adoptionScopeMismatch: "A ramificação ou o turno do trecho de adoção não pertence à sessão atual",
-    adoptionTurnsStale: "Turnos do trecho de adoção foram retirados; comece a adoção de novo",
     agentSkillCapabilityNotAllowed: "A capacidade não é permitida em Agent Skills importados",
     agentSkillDuplicateLabel: "Já existe um Agent Skill chamado \"{label}\" neste projeto",
     agentSkillDuplicateReference: "Caminho de referência duplicado",
@@ -227,26 +223,17 @@ export const errors = {
     canonFactPredicateEmpty: "O predicado do fato não pode estar vazio",
     canonFactSuperseded: "O fato foi substituído por uma revisão ou retirada mais nova; atualize antes de editar",
     chapterRunIdempotencyConflict: "O mesmo requestId já foi usado para outro pedido de execução de capítulo",
-    cocreateBranchMismatch: "A ramificação ativa não pertence à sessão atual",
-    cocreateBranchMissing: "A sessão não tem ramificação ativa",
     cocreateOpeningGreetingEmpty: "A saudação de abertura selecionada está vazia",
     cocreateOpeningPersonaInvalid:
       "O falante de abertura precisa ser um dos participantes de IA selecionados",
     cocreateOpeningSelectionInvalid:
       "A saudação de abertura selecionada já não existe; escolha-a de novo",
     cocreateParticipantDuplicate: "A mesma persona não pode entrar na sessão mais de uma vez",
-    cocreateParticipantsEmpty: "É preciso ativar pelo menos um participante de IA",
-    cocreateParticipantsRequired: "A política manual de falantes exige pelo menos um participante",
-    cocreateSessionInactive: "A sessão de coescrita não pode gerar agora",
     cocreateSessionNotFound: "cocreate_session {id} não existe",
     cocreateSessionVersionConflict: "A sala da história foi atualizada em outro lugar; atualize e tente de novo",
-    cocreateSpeakerInvalid: "A persona informada não está ativada",
-    cocreateSpeakerRequired: "Uma política manual de falantes precisa informar uma persona ativada",
-    cocreateSwipeIdempotencyConflict: "O mesmo requestId já foi usado para outro pedido de versão de resposta",
     cocreateTalkativenessInvalid: "A tendência de fala precisa estar entre 0 e 1",
     cocreateTargetMismatch: "O nó da estrutura-alvo da coescrita não pertence a este projeto",
     cocreateTitleEmpty: "O título da sessão não pode estar vazio",
-    cocreateTurnIdempotencyConflict: "O mesmo requestId já foi usado para outro turno de coescrita",
     commentBodyEmpty: "O comentário não pode estar vazio",
     commentQuoteMismatch: "A âncora do comentário não corresponde ao texto da versão",
     compassVersionConflict: "A bússola da história foi atualizada por outro processo; atualize e salve de novo",
@@ -348,11 +335,6 @@ export const errors = {
     llmCallNotFound: "llm_call {id} não existe",
     manualSettlementTargetMissing: "A execução de acerto manual está sem um alvo de versão do manuscrito",
     methodNotAllowed: "Este endpoint só aceita solicitações POST.",
-    loreActivationCandidateConflict:
-      "A ativação de lore contém entradas duplicadas em conflito",
-    loreActivationCandidateInvalid:
-      "Um candidato de ativação de lore tem alcance ou campo inválido",
-    loreActivationInputInvalid: "A entrada de ativação de lore é inválida",
     lorebookBindingDuplicate: "O mesmo livro de lore não pode ser vinculado duas vezes",
     lorebookNameConflict: "Já existe um livro de lore com este nome",
     lorebookNotFound: "Livro de lore não encontrado",
@@ -411,36 +393,6 @@ export const errors = {
     outlineReorderProtected: "Só capítulos planejados ainda não escritos podem se mover, sem atravessar capítulos escritos nem outros nós da estrutura.",
     outlineContextStale: "A estrutura mudou. Gere de novo este capítulo usando a ordem atual.",
     pathNotAllowed: "Este endpoint não está na lista pública permitida.",
-    personaCardFileBase64Invalid: "A codificação do arquivo do cartão de personagem é inválida",
-    personaCardFileExtensionInvalid:
-      "A extensão do arquivo do cartão de personagem não é suportada",
-    personaCardFileTooLarge: "O arquivo do cartão de personagem ultrapassa o limite de tamanho",
-    personaCardImportIdempotencyConflict:
-      "O mesmo requestId já foi usado para outra importação de cartão de personagem",
-    personaCardJsonMalformed: "O JSON do cartão de personagem está malformado",
-    personaCardJsonObjectRequired:
-      "A raiz do JSON do cartão de personagem precisa ser um objeto",
-    personaCardJsonUtf8Invalid:
-      "O JSON do cartão de personagem não é um texto UTF-8 válido",
-    personaCardKindInvalid:
-      "Uma identidade de autoria não pode ser importada nem exportada como cartão de personagem externo",
-    personaCardPngCcv3Missing:
-      "Nenhum dado de Character Card V3 foi encontrado no PNG",
-    personaCardPngCcv3SizeInvalid:
-      "Os dados de Character Card V3 no PNG têm um tamanho inválido",
-    personaCardPngCompressedCcv3Unsupported:
-      "Dados compactados de cartão de personagem em PNG não são suportados",
-    personaCardPngDimensionsUnsupported:
-      "As dimensões da imagem PNG ultrapassam o limite de segurança",
-    personaCardPngDuplicateCcv3:
-      "O PNG contém dados duplicados de Character Card V3",
-    personaCardPngInvalid: "O cartão de personagem PNG é estruturalmente inválido",
-    personaCardPngTooLarge:
-      "O cartão de personagem PNG ultrapassa o limite seguro de interpretação",
-    personaCardSchemaInvalid:
-      "O cartão de personagem não está em conformidade com Character Card V3",
-    personaCardTargetMismatch:
-      "O cartão de personagem que está sendo substituído não pertence a este projeto",
     personaEntityMismatch: "A entidade vinculada à persona não pertence a este projeto",
     personaNameConflict: "Já existe uma persona com este nome neste projeto; escolha outro nome",
     personaNameEmpty: "O nome da persona não pode estar vazio",
@@ -563,7 +515,6 @@ export const errors = {
     swipeContentEmpty: "O candidato da IA não pode estar vazio",
     swipeTurnInvalid: "Uma versão de resposta só pode ser anexada a um turno de IA da ramificação atual",
     swipeTurnMismatch: "O candidato não pertence a este turno",
-    swipeTurnNotAssistant: "Versões de resposta só podem ser geradas para turnos de IA",
     textRangeInvalid: "A seleção de texto está fora do intervalo da versão atual",
     timelineCauseCycle: "Os eventos da linha do tempo não podem formar um ciclo causal",
     timelineCauseNotFound: "O antecedente causal {causeId} não existe",

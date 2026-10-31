@@ -81,10 +81,6 @@ export const errors: typeof errorsPt = {
     bibleBackfillItemBusy: "This chapter is being read right now. Pause the completion before skipping it.",
     bibleBackfillItemNotSkippable: "This chapter is already processed and can't be skipped.",
     bibleBackfillItemNotFailed: "Only a chapter whose settlement failed can be retried.",
-    adoptionIdempotencyConflict: "The same requestId was already used for a different scene adoption request",
-    adoptionRangeInvalid: "The adoption range is outside the current branch or in an invalid order",
-    adoptionScopeMismatch: "The branch or turn in the adoption range does not belong to the current session",
-    adoptionTurnsStale: "Turns in the adoption range have been withdrawn; start the adoption again",
     agentSkillCapabilityNotAllowed: "Capability is not allowed in imported Agent Skills",
     agentSkillDuplicateLabel: "An Agent Skill named \"{label}\" already exists in this project",
     agentSkillDuplicateReference: "Duplicate reference path",
@@ -229,26 +225,17 @@ export const errors: typeof errorsPt = {
     canonFactPredicateEmpty: "Fact predicate must not be empty",
     canonFactSuperseded: "The fact was superseded by a newer revision or withdrawal; refresh before editing",
     chapterRunIdempotencyConflict: "The same requestId was already used for a different chapter run request",
-    cocreateBranchMismatch: "The active branch does not belong to the current session",
-    cocreateBranchMissing: "The session has no active branch",
     cocreateOpeningGreetingEmpty: "The selected opening greeting is empty",
     cocreateOpeningPersonaInvalid:
       "The opening speaker must be one of the selected AI participants",
     cocreateOpeningSelectionInvalid:
       "The selected opening greeting no longer exists; choose it again",
     cocreateParticipantDuplicate: "The same persona cannot join the session more than once",
-    cocreateParticipantsEmpty: "At least one AI participant must be enabled",
-    cocreateParticipantsRequired: "The manual speaker policy requires at least one participant",
-    cocreateSessionInactive: "The co-create session cannot generate right now",
     cocreateSessionNotFound: "cocreate_session {id} does not exist",
     cocreateSessionVersionConflict: "The story room was updated elsewhere; refresh and try again",
-    cocreateSpeakerInvalid: "The specified Persona is not enabled",
-    cocreateSpeakerRequired: "A manual speaker policy must specify an enabled Persona",
-    cocreateSwipeIdempotencyConflict: "The same requestId was already used for a different Swipe request",
     cocreateTalkativenessInvalid: "Speaking tendency must be between 0 and 1",
     cocreateTargetMismatch: "The co-create target outline node does not belong to this project",
     cocreateTitleEmpty: "Session title must not be empty",
-    cocreateTurnIdempotencyConflict: "The same requestId was already used for a different co-creation turn",
     commentBodyEmpty: "Comment must not be empty",
     commentQuoteMismatch: "The comment anchor does not match the version text",
     compassVersionConflict: "The story compass was updated by another process; refresh and save again",
@@ -350,11 +337,6 @@ export const errors: typeof errorsPt = {
     llmCallNotFound: "llm_call {id} does not exist",
     manualSettlementTargetMissing: "The manual settlement run is missing a manuscript version target",
     methodNotAllowed: "This endpoint only accepts POST requests.",
-    loreActivationCandidateConflict:
-      "Lore activation contains conflicting duplicate entries",
-    loreActivationCandidateInvalid:
-      "A Lore activation candidate has an invalid scope or field",
-    loreActivationInputInvalid: "The Lore activation input is invalid",
     lorebookBindingDuplicate: "The same lorebook cannot be bound twice",
     lorebookNameConflict: "A lorebook with this name already exists",
     lorebookNotFound: "Lorebook not found",
@@ -413,36 +395,6 @@ export const errors: typeof errorsPt = {
     outlineReorderProtected: "Only unwritten planned chapters can move, without crossing written chapters or other outline nodes.",
     outlineContextStale: "The outline structure has changed. Regenerate this chapter using the current order.",
     pathNotAllowed: "This endpoint is not in the public allowlist.",
-    personaCardFileBase64Invalid: "The character-card file encoding is invalid",
-    personaCardFileExtensionInvalid:
-      "The character-card file extension is not supported",
-    personaCardFileTooLarge: "The character-card file exceeds the size limit",
-    personaCardImportIdempotencyConflict:
-      "The same requestId was already used for a different character-card import",
-    personaCardJsonMalformed: "The character-card JSON is malformed",
-    personaCardJsonObjectRequired:
-      "The character-card JSON root must be an object",
-    personaCardJsonUtf8Invalid:
-      "The character-card JSON is not valid UTF-8 text",
-    personaCardKindInvalid:
-      "An author identity cannot be imported or exported as an external character card",
-    personaCardPngCcv3Missing:
-      "No Character Card V3 data was found in the PNG",
-    personaCardPngCcv3SizeInvalid:
-      "The Character Card V3 data in the PNG has an invalid size",
-    personaCardPngCompressedCcv3Unsupported:
-      "Compressed PNG character-card data is not supported",
-    personaCardPngDimensionsUnsupported:
-      "The PNG image dimensions exceed the safety limit",
-    personaCardPngDuplicateCcv3:
-      "The PNG contains duplicate Character Card V3 data",
-    personaCardPngInvalid: "The PNG character card is structurally invalid",
-    personaCardPngTooLarge:
-      "The PNG character card exceeds the safe parsing limit",
-    personaCardSchemaInvalid:
-      "The character card does not conform to Character Card V3",
-    personaCardTargetMismatch:
-      "The character card being replaced does not belong to this project",
     personaEntityMismatch: "The persona-bound entity does not belong to this project",
     personaNameConflict: "A persona with this name already exists in this project; please choose another name",
     personaNameEmpty: "Persona name must not be empty",
@@ -565,7 +517,6 @@ export const errors: typeof errorsPt = {
     swipeContentEmpty: "AI candidate must not be empty",
     swipeTurnInvalid: "A swipe can only be attached to an AI turn of the current branch",
     swipeTurnMismatch: "The candidate does not belong to this turn",
-    swipeTurnNotAssistant: "Swipes can only be generated for AI turns",
     textRangeInvalid: "Text selection is outside the current version range",
     timelineCauseCycle: "Timeline events must not form a causal cycle",
     timelineCauseNotFound: "Causal antecedent {causeId} does not exist",

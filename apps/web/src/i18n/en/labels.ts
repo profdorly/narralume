@@ -302,16 +302,6 @@ export const labels: typeof labelsPt = {
     cocreate: "Adopted from story room",
     manual: "Saved manually",
   },
-  speakerPolicy: {
-    manual: "Manual picking",
-    roundRobin: "Taking turns",
-    natural: "Natural turn-taking",
-  },
-  personaKind: {
-    author: "Author agent",
-    narrator: "Narrator",
-    character: "Character",
-  },
   taskAction: {
     pause: "Pause",
     resume: "Resume",
