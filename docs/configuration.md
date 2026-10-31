@@ -90,7 +90,7 @@ Quando a IA escreve um capítulo (inclusive na Criação rápida com IA), o Lapi
 
 Com um modelo atribuído ao papel "Reordenação da busca (opcional)", a busca entrega até 32 trechos candidatos e a [Decisions API da OpenAI](https://developers.openai.com/api/docs/guides/decisions) lê cada um ao lado do que vai ser escrito e estima a probabilidade de quem escreve precisar dele. Entram no contexto os 8 mais prováveis (no máximo dois por capítulo); trechos abaixo de 5% ficam de fora. A reordenação só escolhe entre o que a busca encontrou: sem a busca por palavras, personagens e embeddings não há candidatos.
 
-- **Onde vale**: escrita de capítulos por IA, inclusive na Criação rápida com IA. A busca do Laboratório narrativo não usa a reordenação. (A cocriação também usa, mas está fora da v1.)
+- **Onde vale**: escrita de capítulos por IA, inclusive na Criação rápida com IA. A busca do Laboratório narrativo não usa a reordenação.
 - **Como ativar**: em "Gestão de provedores e modelos", num provedor OpenAI (Chat Completions ou Responses, Base URL `https://api.openai.com/v1`), adicione o modelo `gpt-6-luna` com o tipo de tarefa "Reordenação". "Testar" envia uma pergunta à Decisions API. Depois, em "Papéis avançados", atribua o modelo a "Reordenação da busca (opcional)".
 - **Custo e privacidade**: a Decisions API cobra só a entrada, US$ 0,10 por milhão de tokens (preço de outubro de 2026). Com 32 trechos de cerca de 450 tokens, isso dá perto de US$ 0,0015 por capítulo. Os trechos candidatos são enviados à OpenAI a cada capítulo escrito por IA.
 - **Falhas**: se a chamada falhar, a tarefa continua com a ordem da busca e registra um evento `run.degraded` (capacidade `rerank`).

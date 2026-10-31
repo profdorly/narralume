@@ -261,7 +261,7 @@ O assistente responde direto a perguntas de análise; quando o assunto é escrit
 
 As duas ficam em "Configurações" → "Ferramentas avançadas", para o projeto escolhido em "Projeto dos ativos de produção".
 
-- Uma habilidade de escrita (Writing Skill) é um pacote de prompts de escrita e material de referência, ativado por escopo: `all`, `chapter`, `edit` ou `review` (a lista ainda mostra `cocreate`, mas a cocriação não faz parte da v1). Você pode criá-las e editá-las na aba "Habilidade de escrita", ou importar ("Importar .skill.zip"), validar ("Validar") e exportar ("Exportar pacote") pacotes `.skill.zip`.
+- Uma habilidade de escrita (Writing Skill) é um pacote de prompts de escrita e material de referência, ativado por escopo: `all`, `chapter`, `edit` ou `review` (uma habilidade criada antes ou importada de um pacote antigo pode ainda listar `cocreate`, que não tem mais efeito). Você pode criá-las e editá-las na aba "Habilidade de escrita", ou importar ("Importar .skill.zip"), validar ("Validar") e exportar ("Exportar pacote") pacotes `.skill.zip`.
 - Uma Agent Skill é um pacote restrito de tarefas do assistente que declara a descrição de quando acionar, as instruções e uma lista de capacidades permitidas. Por enquanto ela é importada de um pacote ZIP ("Importar pacote de Agent Skill"); pode ser ativada, desativada ou excluída, mas não criada nem exportada pela interface.
 
 Uma Agent Skill importada só usa as capacidades somente leitura ou de candidato que o sistema permite; não roda scripts arbitrários, não faz requisições de rede arbitrárias nem grava direto no banco de dados. A adoção de prosa oficial e de cânone confirmado continua seguindo os limites de confirmação embutidos no produto.

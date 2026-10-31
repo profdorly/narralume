@@ -261,7 +261,7 @@ The assistant answers analytical questions directly; when writing or task contro
 
 Both are managed in "Settings" → "Advanced tools", for the project chosen in "Project for production assets".
 
-- A Writing Skill is a package of writing prompts and reference material, enabled per scope: `all`, `chapter`, `edit`, or `review` (the list still shows `cocreate`, but co-creation is not part of v1). You can create and edit them in the "Writing Skill" tab, or import ("Import .skill.zip"), validate ("Validate"), and export ("Export package") `.skill.zip` bundles.
+- A Writing Skill is a package of writing prompts and reference material, enabled per scope: `all`, `chapter`, `edit`, or `review` (a skill created before or imported from an older package may still list `cocreate`, which no longer has any effect). You can create and edit them in the "Writing Skill" tab, or import ("Import .skill.zip"), validate ("Validate"), and export ("Export package") `.skill.zip` bundles.
 - An Agent Skill is a constrained assistant task package that declares its trigger description, instructions, and a capability allowlist. It is currently imported from a ZIP bundle ("Import Agent Skill package"); it can be enabled, disabled, or deleted, but not created or exported in the interface.
 
 An imported Agent Skill can only use the read-only or candidate-form capabilities the system allows; it cannot run arbitrary scripts, make arbitrary network requests, or write the database directly. Adopting official prose and confirmed settings still follows the product's built-in confirmation boundaries.

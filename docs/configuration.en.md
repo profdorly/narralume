@@ -90,7 +90,7 @@ When the AI writes a chapter (including in AI quick creation), Lapis searches th
 
 With a model assigned to the "Search reranking (optional)" role, the search hands up to 32 candidate passages to the [OpenAI Decisions API](https://developers.openai.com/api/docs/guides/decisions), which reads each one next to what is about to be written and estimates the probability that the writer needs it. The 8 most likely (at most two per chapter) go into the context; passages below 5% are left out. Reranking only chooses among what the search found: without the word, character, and embedding search there are no candidates.
 
-- **Where it applies**: AI chapter writing, including AI quick creation. The Narrative Lab search does not rerank. (Co-creation uses it too, but it is out of v1.)
+- **Where it applies**: AI chapter writing, including AI quick creation. The Narrative Lab search does not rerank.
 - **How to enable**: in "Provider and model management", under an OpenAI provider (Chat Completions or Responses, Base URL `https://api.openai.com/v1`), add the model `gpt-6-luna` with task type "Rerank". "Probe" sends one question to the Decisions API. Then, under "Advanced roles", assign the model to "Search reranking (optional)".
 - **Cost and privacy**: the Decisions API bills input only, US$ 0.10 per million tokens (October 2026 price). With 32 passages of about 450 tokens, that is roughly US$ 0.0015 per chapter. The candidate passages are sent to OpenAI for every chapter the AI writes.
 - **Failures**: if the call fails, the task continues with the search order and records a `run.degraded` event (capability `rerank`).
