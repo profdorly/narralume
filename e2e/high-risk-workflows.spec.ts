@@ -123,10 +123,14 @@ test("a Canon candidate is generated and decided through the UI and written into
     timeout: 12_000,
   });
   await page.getByRole("button", { name: "Adotar este item" }).click();
+  // The adopted promise shows in the intent spread; the same sentence can also
+  // be in the edit form and in the candidate diff, so look only at the spread.
   await expect(
-    page.getByText("每次灯塔熄灭，都有人失去一段不能复原的记忆。", {
-      exact: true,
-    }),
+    page
+      .getByLabel("Intenção da autoria", { exact: true })
+      .getByText("每次灯塔熄灭，都有人失去一段不能复原的记忆。", {
+        exact: true,
+      }),
   ).toBeVisible();
   await expect(page.getByText("Adotado", { exact: true })).toBeVisible();
 });
