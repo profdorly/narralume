@@ -1,0 +1,64 @@
+/* The assistant launcher stays in the shell bundle; the panel styles load with the
+   assistant chunk (project-assistant.css). */
+
+.assistant-trigger {
+  position: fixed;
+  z-index: 55;
+  top: auto;
+  left: auto;
+  right: clamp(1rem, 2.4vw, 1.9rem);
+  bottom: clamp(1rem, 2.4vw, 1.9rem);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  justify-content: center;
+  padding: 0.66rem 1.05rem;
+  border: 1px solid var(--accent-hairline);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-lift);
+  color: var(--accent-deep);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  transition:
+    color 160ms ease,
+    transform 260ms var(--ease-out-editorial),
+    background-color 160ms ease;
+}
+
+.assistant-trigger:hover {
+  color: var(--accent);
+  background: var(--paper);
+  transform: translateY(-2px);
+}
+
+.assistant-trigger__count {
+  min-width: 1.2rem;
+  height: 1.2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--paper-raised);
+  font-size: 0.58rem;
+  letter-spacing: 0;
+}
+
+@media (max-width: 760px) {
+  .assistant-trigger {
+    top: 0.7rem;
+    right: 8rem;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    min-height: 2rem;
+    border-right: 1px solid var(--accent-hairline);
+    border-radius: var(--radius-card);
+    padding: 0.45rem 0.6rem;
+  }
+
+  .assistant-trigger > span:not(.assistant-trigger__count) {
+    display: none;
+  }
+}

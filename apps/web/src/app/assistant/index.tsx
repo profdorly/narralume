@@ -6,7 +6,6 @@ import {
   ArrowUp,
   CircleDashed,
   LoaderCircle,
-  MessageSquareText,
   Pencil,
   Plus,
   X,
@@ -31,6 +30,7 @@ import {
   type AssistantConversationDto,
 } from "../../lib/api";
 import { eventAwareInterval, useServerEvents } from "../../lib/sse";
+import { AssistantTrigger } from "../assistant-trigger";
 import { ConversationPicker } from "./conversation-picker";
 import {
   assistantRunIds,
@@ -346,20 +346,11 @@ export function ProjectAssistant({
   return (
     <>
       {!open ? (
-        <button
-          ref={triggerRef}
-          type="button"
-          className="assistant-trigger"
-          onClick={onOpen}
-          aria-label={t("assistant.trigger.open")}
-          title={t("assistant.trigger.title")}
-        >
-          <MessageSquareText size={17} strokeWidth={1.5} aria-hidden="true" />
-          <span>{t("assistant.trigger.label")}</span>
-          {activeCount > 0 ? (
-            <span className="assistant-trigger__count mono">{activeCount}</span>
-          ) : null}
-        </button>
+        <AssistantTrigger
+          buttonRef={triggerRef}
+          onOpen={onOpen}
+          count={activeCount}
+        />
       ) : null}
       {open ? (
         <div
