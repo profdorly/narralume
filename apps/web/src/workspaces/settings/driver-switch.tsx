@@ -38,7 +38,7 @@ export function DriverSwitch() {
     quota: number;
   } | null>(null);
   const [lastExportAt, setLastExportAt] = useState<string | null>(() =>
-    window.localStorage.getItem("narralume:local-db-last-export"),
+    window.localStorage.getItem("lapis:local-db-last-export"),
   );
   const effective = override ?? mode;
   useEffect(() => {
@@ -68,7 +68,7 @@ export function DriverSwitch() {
       anchor.click();
       URL.revokeObjectURL(url);
       const exportedAt = new Date().toISOString();
-      window.localStorage.setItem("narralume:local-db-last-export", exportedAt);
+      window.localStorage.setItem("lapis:local-db-last-export", exportedAt);
       setLastExportAt(exportedAt);
     },
   });

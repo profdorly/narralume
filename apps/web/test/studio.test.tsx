@@ -327,7 +327,7 @@ describe("Mesa de escrita", () => {
       })),
     };
     window.localStorage.setItem(
-      "narralume:task-ledger",
+      "lapis:task-ledger",
       JSON.stringify([
         {
           projectId: "p-1",
@@ -1339,7 +1339,7 @@ it("交给 AI 发起单章 chapter run，并在失败重试时复用 requestId",
   expect(body).not.toHaveProperty("mode");
   // 台账已登记（离页恢复）
   const ledger = JSON.parse(
-    window.localStorage.getItem("narralume:task-ledger") ?? "[]",
+    window.localStorage.getItem("lapis:task-ledger") ?? "[]",
   ) as Array<{ taskId: string; kind: string }>;
   expect(
     ledger.some((entry) => entry.taskId === "run-ai-1" && entry.kind === "chapter"),

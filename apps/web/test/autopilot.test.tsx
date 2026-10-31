@@ -387,7 +387,7 @@ describe("自动驾驶", () => {
     fireEvent.change(screen.getByLabelText("Capítulos desta vez"), { target: { value: "5" } });
     fireEvent.submit(startButton.closest("form")!);
     await waitFor(() =>
-      expect(window.localStorage.getItem("narralume:autopilot-target:p-1")).toBe("5"),
+      expect(window.localStorage.getItem("lapis:autopilot-target:p-1")).toBe("5"),
     );
     first.unmount();
     renderAutopilot();

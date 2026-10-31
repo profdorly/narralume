@@ -17,7 +17,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
 };
 
-const STORAGE_KEY = "narralume:ui-locale";
+const STORAGE_KEY = "lapis:ui-locale";
 
 const MESSAGES: Partial<Record<Locale, Messages>> = {
   "pt-BR": ptBrMessages,

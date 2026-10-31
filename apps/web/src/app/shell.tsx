@@ -44,9 +44,9 @@ import {
    主导航收敛为书架/项目概览/故事/写作/交付；其余工作区在 rail 下挂「高级工具」组，
    快速跳转统一走命令面板（全屏菜单已退役）。 */
 
-const RAIL_COLLAPSED_KEY = "narralume:rail-collapsed";
+const RAIL_COLLAPSED_KEY = "lapis:rail-collapsed";
 const AUTO_COLLAPSE_QUERY = "(max-width: 1100px)";
-const ASSISTANT_OPEN_KEY = "narralume:assistant-open";
+const ASSISTANT_OPEN_KEY = "lapis:assistant-open";
 const REPOSITORY_URL = "https://github.com/profdorly/narralume";
 
 function GitHubMark({ size = 17 }: { size?: number }) {

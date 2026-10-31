@@ -301,7 +301,7 @@ describe("Complete Story Bible from manuscript", () => {
       requestId: expect.any(String),
       mode: "auto_apply_stop_on_conflict",
     });
-    expect(window.localStorage.getItem("narralume:bible-backfill:sections:job-1")).toBe("1");
+    expect(window.localStorage.getItem("lapis:bible-backfill:sections:job-1")).toBe("1");
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -659,7 +659,7 @@ describe("Complete Story Bible from manuscript", () => {
   });
 
   it("generates Intent, Entities and Outline on its own once a job started with them completes", async () => {
-    window.localStorage.setItem("narralume:bible-backfill:sections:job-1", "1");
+    window.localStorage.setItem("lapis:bible-backfill:sections:job-1", "1");
     const { calls } = stubApi({
       current: () =>
         detail(job({ status: "completed", currentOrdinal: null, mode: "auto_apply_stop_on_conflict" }), [
@@ -689,7 +689,7 @@ describe("Complete Story Bible from manuscript", () => {
         instruction: expect.stringContaining("whole finished manuscript"),
       });
     }
-    expect(window.localStorage.getItem("narralume:bible-backfill:sections:job-1")).toBeNull();
+    expect(window.localStorage.getItem("lapis:bible-backfill:sections:job-1")).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Generate Intent, Entities & Outline with AI" }),
     ).not.toBeInTheDocument();

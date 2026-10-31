@@ -86,7 +86,7 @@ test("故事线建议逐项裁定、证据跳转、刷新保留与过期保护",
     path: testInfo.outputPath("story-line-proposals.png"),
     fullPage: true,
   });
-  await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
+  await page.evaluate(() => localStorage.setItem("lapis:ui-locale", "en"));
   await page.reload();
   const english = page.getByRole("region", {
     name: "Story line progress proposals",

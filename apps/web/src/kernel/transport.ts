@@ -2,7 +2,7 @@
  * M3 双驱动传输层：api.ts 的三个底层助手（requestJson / requestVoid /
  * 裸 fetch）经此分发——server 模式走相对路径 fetch（现状不变），local
  * 模式走内核 kernelRequest。驱动在首次真正需要分发时探测 /api/health
- * 并缓存，localStorage("narralume:driver") 可显式覆盖。
+ * 并缓存，localStorage("lapis:driver") 可显式覆盖。
  *
  * 探测有意懒执行：单元测试（jsdom stub fetch）与首屏渲染都不应被
  * 一次主动探测打扰。
@@ -10,7 +10,7 @@
 
 export type DriverMode = "server" | "local" | "pending";
 
-const DRIVER_KEY = "narralume:driver";
+const DRIVER_KEY = "lapis:driver";
 
 let mode: DriverMode = "pending";
 let probe: Promise<DriverMode> | null = null;

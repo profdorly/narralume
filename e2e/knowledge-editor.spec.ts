@@ -210,7 +210,7 @@ test("人工认知维护：历史变化、更正撤销、并发保护与双语�
   await expect(form).toHaveCount(0);
   await expect(editor.getByText("另一个页面已经核对并保存")).toBeVisible();
 
-  await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
+  await page.evaluate(() => localStorage.setItem("lapis:ui-locale", "en"));
   await page.reload();
   await page
     .getByRole("button", { name: "Register and correct knowledge" })

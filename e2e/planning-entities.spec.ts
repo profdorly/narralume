@@ -72,7 +72,7 @@ test("规划的新设定经作者采纳后才创建章节", async ({
   await expect(continueButton).toBeDisabled();
   await page.reload();
   await expect(panel.getByText("Adotado", { exact: true })).toHaveCount(1);
-  await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
+  await page.evaluate(() => localStorage.setItem("lapis:ui-locale", "en"));
   await page.reload();
   const englishPanel = page.getByRole("region", {
     name: "New story elements in the plan",

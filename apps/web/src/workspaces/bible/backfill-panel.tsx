@@ -84,7 +84,7 @@ const REREADABLE_ITEM_STATUSES = new Set([
 
 /* 开始时勾选了“随后生成宏观板块”的任务，记在本机；任务完成后面板据此自动发起一次，
    发起前先取走标记，避免重复发起。 */
-const SECTIONS_MARKER_PREFIX = "narralume:bible-backfill:sections:";
+const SECTIONS_MARKER_PREFIX = "lapis:bible-backfill:sections:";
 function rememberSectionsAfter(jobId: string) {
   try {
     window.localStorage.setItem(SECTIONS_MARKER_PREFIX + jobId, "1");

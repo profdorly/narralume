@@ -11,7 +11,7 @@ const KERNEL_READY_TIMEOUT = 40_000;
  */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() =>
-    localStorage.setItem("narralume:driver", "local"),
+    localStorage.setItem("lapis:driver", "local"),
   );
 });
 

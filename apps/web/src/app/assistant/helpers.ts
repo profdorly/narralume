@@ -18,7 +18,7 @@ export type TimelineEntry =
       activity: AssistantActivityDto;
     };
 
-const CONVERSATION_KEY_PREFIX = "narralume:assistant-conversation:";
+const CONVERSATION_KEY_PREFIX = "lapis:assistant-conversation:";
 
 const PHASE_LABEL_KEYS: Record<string, MessageKey> = {
   queued: "assistant.phase.queued",

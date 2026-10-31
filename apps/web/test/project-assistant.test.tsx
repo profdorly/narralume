@@ -110,7 +110,7 @@ beforeEach(() => {
   setLocale("pt-BR");
   window.localStorage.clear();
   window.localStorage.setItem(
-    "narralume:assistant-conversation:project-1",
+    "lapis:assistant-conversation:project-1",
     CONVERSATION.id,
   );
   Element.prototype.scrollTo = vi.fn();
@@ -440,7 +440,7 @@ describe("项目协作侧栏", () => {
     );
     expect(
       window.localStorage.getItem(
-        "narralume:assistant-conversation:project-1",
+        "lapis:assistant-conversation:project-1",
       ),
     ).toBe(created.id);
     expect(await screen.findByText("Comece de onde você está olhando"))

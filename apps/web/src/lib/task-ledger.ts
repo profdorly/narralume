@@ -4,7 +4,7 @@
 
 import { projectWorkspacePath } from "./project-route";
 
-const LEDGER_KEY = "narralume:task-ledger";
+const LEDGER_KEY = "lapis:task-ledger";
 const LEDGER_CAP = 20;
 
 export interface TaskLedgerEntry {

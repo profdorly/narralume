@@ -423,7 +423,7 @@ function StartSessionForm({ projectId, compass, pending, error, maxChapters, onS
 }
 
 /* 每个项目记忆「这次写几章」的上次取值；只存导航线索级别的轻量偏好。 */
-const TARGET_KEY_PREFIX = "narralume:autopilot-target:";
+const TARGET_KEY_PREFIX = "lapis:autopilot-target:";
 
 function rememberedTarget(projectId: string): number | null {
   try {

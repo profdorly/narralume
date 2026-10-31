@@ -84,7 +84,7 @@ const BACKUPS = [
   {
     id: "bk-1",
     label: "交付前整备 2026-08-11",
-    databaseFile: "narralume.sqlite",
+    databaseFile: "lapis.sqlite",
     createdAt: "2026-08-11T06:00:00.000Z",
     sizeBytes: 184 * 1024 * 1024,
     sha256:
@@ -96,7 +96,7 @@ const BACKUPS = [
   {
     id: "bk-2",
     label: "上卷交付留底",
-    databaseFile: "narralume.sqlite",
+    databaseFile: "lapis.sqlite",
     createdAt: "2026-08-01T00:00:00.000Z",
     sizeBytes: 92 * 1024 * 1024,
     sha256:

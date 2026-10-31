@@ -6,7 +6,7 @@ export type Theme = "light" | "dark";
 export type ThemePreference = "system" | Theme;
 
 const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
-const THEME_PREFERENCE_KEY = "narralume:theme-preference";
+const THEME_PREFERENCE_KEY = "lapis:theme-preference";
 
 function themeFor(matchesDark: boolean): Theme {
   return matchesDark ? "dark" : "light";

@@ -198,7 +198,7 @@ test("长期故事线维护阶段记录并保护并发修改", async ({
   const after = (await (await request.get(url)).json()) as StoryCompassDto;
   expect(after.longLines).toEqual([]);
   expect(after.constraints).toEqual(initial.constraints);
-  await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
+  await page.evaluate(() => localStorage.setItem("lapis:ui-locale", "en"));
   await page.reload();
   const english = page.getByRole("region", {
     name: "Long story lines",

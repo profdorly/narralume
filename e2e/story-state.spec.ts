@@ -126,7 +126,7 @@ test("按章核对认知、关系与伏笔证据，刷新和导航保留定位",
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.evaluate(() => localStorage.setItem("narralume:ui-locale", "en"));
+  await page.evaluate(() => localStorage.setItem("lapis:ui-locale", "en"));
   await page.reload();
   const englishView = page.getByRole("region", {
     name: "Chapter state",
