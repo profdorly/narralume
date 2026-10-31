@@ -42,7 +42,7 @@ The interface is available in Brazilian Portuguese, its primary language, and in
 
 The Shelf is the entry point for all works. Each book shows its cover, title, subtitle, premise, chapter count, character count, and last-updated time.
 
-![Shelf, book creation entries, and a custom cover](../assets/narralume-shelf-1920x1080.png)
+![Shelf, book creation entries, and a custom cover](../assets/lapis-shelf-1920x1080.png)
 
 The search box matches titles, premises, and IDs. The toolbar switches between the "Covers" and "List" views; "Incl. archived" only decides whether archived works are shown — it does not change any work's state.
 
@@ -113,7 +113,7 @@ After entering a work, you land on its "Overview", headed by the book's title. I
 
 You can leave the page while a task keeps running in the background. When you return, re-enter the original processing point from the overview or the task card ("Return to the task") — do not submit the same piece of work twice.
 
-![Project overview, active tasks, and next-step entries](../assets/narralume-overview-1920x1080.png)
+![Project overview, active tasks, and next-step entries](../assets/lapis-overview-1920x1080.png)
 
 ## Story: maintain story material
 
@@ -161,7 +161,7 @@ The timeline records events in the story world, with times and notes. Foreshadow
 
 In "Candidate changes", write down what you want to add or adjust — for example, "make the character's motivation more concrete, but do not change the locked ending". After "Generate candidate changes", review the diff item by item, then choose "Adopt this item" or "Reject". Nothing is written into the story material until adoption.
 
-![The seven sections of the Story Bible, the complete-from-manuscript panel, and page editing](../assets/narralume-bible-1920x1080.png)
+![The seven sections of the Story Bible, the complete-from-manuscript panel, and page editing](../assets/lapis-bible-1920x1080.png)
 
 ## Writing: from draft to official version
 
@@ -217,7 +217,7 @@ If a change conflicts with the current canon — for example, a locked record �
 
 Co-creation is not part of v1, and the writing desk no longer links to it.
 
-![Draft list, prose, review, and version tools at the writing desk](../assets/narralume-studio-1920x1080.png)
+![Draft list, prose, review, and version tools at the writing desk](../assets/lapis-studio-1920x1080.png)
 
 ## AI quick creation: produce multiple chapters in one run
 
@@ -240,7 +240,7 @@ The page shows the current chapter, the stages, the reason for any stop, and the
 - After a candidate is adopted, subsequent chapters continue from the new state.
 - When the task finds a locked-fact conflict or a critical review issue, it stops and waits for you to handle it.
 
-![Direction, confirmation, execution, and intervention areas of AI quick creation](../assets/narralume-autopilot-1920x1080.png)
+![Direction, confirmation, execution, and intervention areas of AI quick creation](../assets/lapis-autopilot-1920x1080.png)
 
 ## Project assistant: find the entry point in one sentence
 
@@ -266,7 +266,7 @@ Both are managed in "Settings" → "Advanced tools", for the project chosen in "
 
 An imported Agent Skill can only use the read-only or candidate-form capabilities the system allows; it cannot run arbitrary scripts, make arbitrary network requests, or write the database directly. Adopting official prose and confirmed settings still follows the product's built-in confirmation boundaries.
 
-![The AI assistant sidebar in the project overview](../assets/narralume-assistant-1920x1080.png)
+![The AI assistant sidebar in the project overview](../assets/lapis-assistant-1920x1080.png)
 
 ## Advanced tools
 
@@ -278,7 +278,7 @@ The page only shows operations the current state allows — pause, resume, adopt
 
 When ordinary creation fails, prefer handling it from the writing desk or the quick-creation task card; enter the Run Center when you need to verify the failure reason, model usage, or partial prose.
 
-![The Run Center of a work that has not run AI tasks yet](../assets/narralume-runs-1920x1080.png)
+![The Run Center of a work that has not run AI tasks yet](../assets/lapis-runs-1920x1080.png)
 
 ### Narrative Lab
 
@@ -286,7 +286,7 @@ The Narrative Lab offers these kinds of operations: search story memory in natur
 
 Predictions can be adopted ("Adopt") as later reference or dismissed ("Dismiss"); when the underlying story material changes, old predictions are marked "Stale" and can no longer be adopted. Memory maintenance and impact preview are analysis tools — they never rewrite prose, confirmed settings, or the timeline automatically.
 
-![Predictions, memory, search, and impact preview in the Narrative Lab](../assets/narralume-lab-1920x1080.png)
+![Predictions, memory, search, and impact preview in the Narrative Lab](../assets/lapis-lab-1920x1080.png)
 
 ### Settings
 
@@ -302,7 +302,7 @@ Settings contains these sections:
 
 The browser kernel uses "Download my library (.sqlite)" to obtain the complete SQLite file; the local Server uses system backup archives or the backup scripts. Switching the run driver does not migrate data; seeing a different library after a refresh is normal.
 
-![Interface language, models assigned to roles, prompt templates, and providers in Settings](../assets/narralume-settings-1920x1080.png)
+![Interface language, models assigned to roles, prompt templates, and providers in Settings](../assets/lapis-settings-1920x1080.png)
 
 ## Delivery: export and preserve
 
@@ -328,7 +328,7 @@ After restoring, check the outline, the most recent prose versions, comments, st
 
 In browser mode, use "Download my library (.sqlite)" in Settings; with the local Server, use `scripts/backup.ps1` on Windows or `scripts/backup.sh` on macOS/Linux; with Docker, use `scripts/docker-backup.ps1`. A full SQLite backup may contain provider credentials, so keep it in a controlled directory like the manuscript itself. Never copy the main database file directly while the service is running.
 
-![Quality reminders, export formats, and project content snapshots](../assets/narralume-delivery-1920x1080.png)
+![Quality reminders, export formats, and project content snapshots](../assets/lapis-delivery-1920x1080.png)
 
 ## Mobile and desktop
 

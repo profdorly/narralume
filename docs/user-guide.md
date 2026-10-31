@@ -42,7 +42,7 @@ A interface está disponível em português do Brasil, o idioma principal, e em 
 
 A Estante é a porta de entrada de todas as obras. Cada livro mostra capa, título, subtítulo, premissa, número de capítulos, número de caracteres e a data da última atualização.
 
-![Estante, entradas de criação de livro e uma capa personalizada](../assets/narralume-shelf-1920x1080.png)
+![Estante, entradas de criação de livro e uma capa personalizada](../assets/lapis-shelf-1920x1080.png)
 
 A busca procura no título, na premissa e no ID. A barra de ferramentas alterna entre as vistas "Capas" e "Lista"; "Incl. arquivados" só decide se as obras arquivadas aparecem — não muda o estado de nenhuma obra.
 
@@ -113,7 +113,7 @@ Ao entrar numa obra, você chega à "Visão geral", encabeçada pelo título do 
 
 Você pode sair da página enquanto uma tarefa continua em segundo plano. Ao voltar, retome o ponto em que parou pela visão geral ou pelo cartão da tarefa ("Voltar à tarefa") — não envie o mesmo trabalho duas vezes.
 
-![Visão geral do projeto, tarefas ativas e entradas do próximo passo](../assets/narralume-overview-1920x1080.png)
+![Visão geral do projeto, tarefas ativas e entradas do próximo passo](../assets/lapis-overview-1920x1080.png)
 
 ## História: manter o material da história
 
@@ -161,7 +161,7 @@ A linha do tempo registra eventos do mundo da história, com datas e observaçõ
 
 Em "Mudanças candidatas", escreva o que quer acrescentar ou ajustar — por exemplo, "deixar a motivação do personagem mais concreta, sem mudar o final travado". Depois de "Gerar mudanças candidatas", revise as diferenças item a item e escolha "Adotar este item" ou "Recusar". Nada entra no material da história antes da adoção.
 
-![As sete seções da Bíblia da história, o painel de completar a partir do manuscrito e a edição da página](../assets/narralume-bible-1920x1080.png)
+![As sete seções da Bíblia da história, o painel de completar a partir do manuscrito e a edição da página](../assets/lapis-bible-1920x1080.png)
 
 ## Escrita: do rascunho à versão oficial
 
@@ -217,7 +217,7 @@ Se uma mudança conflitar com o cânone atual — por exemplo, com um registro t
 
 A cocriação não faz parte da v1, e a mesa de escrita não leva mais a ela.
 
-![Lista de rascunhos, prosa, revisão e versões na mesa de escrita](../assets/narralume-studio-1920x1080.png)
+![Lista de rascunhos, prosa, revisão e versões na mesa de escrita](../assets/lapis-studio-1920x1080.png)
 
 ## Criação rápida com IA: vários capítulos numa só execução
 
@@ -240,7 +240,7 @@ A página mostra o capítulo atual, as etapas, o motivo de qualquer parada e as 
 - Depois que um candidato é adotado, os capítulos seguintes continuam a partir do novo estado.
 - Quando a tarefa encontra um conflito com um fato travado ou um problema crítico de revisão, ela para e espera você resolver.
 
-![As áreas de direção, confirmação, execução e intervenção da criação rápida com IA](../assets/narralume-autopilot-1920x1080.png)
+![As áreas de direção, confirmação, execução e intervenção da criação rápida com IA](../assets/lapis-autopilot-1920x1080.png)
 
 ## Assistente do projeto: achar o caminho numa frase
 
@@ -266,7 +266,7 @@ As duas ficam em "Configurações" → "Ferramentas avançadas", para o projeto 
 
 Uma Agent Skill importada só usa as capacidades somente leitura ou de candidato que o sistema permite; não roda scripts arbitrários, não faz requisições de rede arbitrárias nem grava direto no banco de dados. A adoção de prosa oficial e de cânone confirmado continua seguindo os limites de confirmação embutidos no produto.
 
-![A barra lateral do assistente de IA na visão geral do projeto](../assets/narralume-assistant-1920x1080.png)
+![A barra lateral do assistente de IA na visão geral do projeto](../assets/lapis-assistant-1920x1080.png)
 
 ## Ferramentas avançadas
 
@@ -278,7 +278,7 @@ A página só mostra as operações que o estado atual permite — pausar, retom
 
 Quando uma criação comum falhar, prefira resolvê-la na mesa de escrita ou no cartão da tarefa de criação rápida; entre na Central de execuções quando precisar conferir o motivo da falha, o uso do modelo ou a prosa parcial.
 
-![A Central de execuções de uma obra que ainda não rodou tarefas de IA](../assets/narralume-runs-1920x1080.png)
+![A Central de execuções de uma obra que ainda não rodou tarefas de IA](../assets/lapis-runs-1920x1080.png)
 
 ### Laboratório narrativo
 
@@ -286,7 +286,7 @@ O Laboratório narrativo oferece estes tipos de operação: buscar na memória d
 
 As previsões podem ser adotadas ("Adotar") como referência futura ou dispensadas ("Dispensar"); quando o material da história em que se basearam muda, as previsões antigas ficam marcadas como "Desatualizada" e não podem mais ser adotadas. A manutenção da memória e a prévia de impacto são ferramentas de análise — nunca reescrevem sozinhas a prosa, o cânone confirmado ou a linha do tempo.
 
-![Previsões, memória, busca e prévia de impacto no Laboratório narrativo](../assets/narralume-lab-1920x1080.png)
+![Previsões, memória, busca e prévia de impacto no Laboratório narrativo](../assets/lapis-lab-1920x1080.png)
 
 ### Configurações
 
@@ -302,7 +302,7 @@ As Configurações têm estas seções:
 
 O núcleo no navegador usa "Baixar minha biblioteca (.sqlite)" para obter o arquivo SQLite completo; o Server local usa os arquivos de backup do sistema ou os scripts de backup. Trocar o driver de execução não migra dados; ver outra biblioteca depois de recarregar a página é normal.
 
-![Idioma da interface, modelos atribuídos aos papéis, modelos de prompt e provedores em Configurações](../assets/narralume-settings-1920x1080.png)
+![Idioma da interface, modelos atribuídos aos papéis, modelos de prompt e provedores em Configurações](../assets/lapis-settings-1920x1080.png)
 
 ## Entrega: exportar e guardar
 
@@ -328,7 +328,7 @@ Depois de restaurar, confira a estrutura, as versões mais recentes da prosa, os
 
 No modo navegador, use "Baixar minha biblioteca (.sqlite)" nas Configurações; com o Server local, use `scripts/backup.ps1` no Windows ou `scripts/backup.sh` no macOS/Linux; com o Docker, use `scripts/docker-backup.ps1`. Um backup SQLite completo pode conter credenciais de provedores, então guarde-o num diretório controlado, como o próprio manuscrito. Nunca copie o arquivo do banco principal diretamente com o serviço rodando.
 
-![Avisos de qualidade, formatos de exportação e instantâneos do conteúdo do projeto](../assets/narralume-delivery-1920x1080.png)
+![Avisos de qualidade, formatos de exportação e instantâneos do conteúdo do projeto](../assets/lapis-delivery-1920x1080.png)
 
 ## Celular e computador
 
