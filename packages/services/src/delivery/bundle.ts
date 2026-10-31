@@ -54,7 +54,9 @@ export interface DeliveryContext {
 
 export const BundleSchema = z.object({
   manifest: z.object({
-    format: z.literal("narralume"),
+    // "narralume" is the id bundles carried before the rename; files already
+    // exported keep it, so import accepts both for good.
+    format: z.enum(["lapis", "narralume"]),
     version: z.literal(6),
     exportedAt: z.string(),
     counts: BundleCountsSchema,
@@ -520,7 +522,7 @@ export function buildBundle(
   });
   return BundleSchema.parse({
     manifest: {
-      format: "narralume",
+      format: "lapis",
       version: 6,
       exportedAt: now,
       counts,

@@ -546,7 +546,7 @@ describe("delivery API", () => {
       styles: unknown[];
       skills: unknown[];
     };
-    expect(bundle.manifest.format).toBe("narralume");
+    expect(bundle.manifest.format).toBe("lapis");
     expect(bundle.personas).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

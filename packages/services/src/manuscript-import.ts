@@ -12,7 +12,9 @@ export interface ManuscriptSection {
  *  既有的“第 N 章”与“Chapter + 数字”形式不受此限。 */
 export const HEADING_MAX_CHARACTERS = 80;
 /** Paragraph style written on the exported title page so re-import can skip it. */
-export const DOCX_TITLE_PAGE_STYLE = "NarraLumeTitlePage";
+export const DOCX_TITLE_PAGE_STYLE = "LapisTitlePage";
+/** Title page style of DOCX files exported before the rename. */
+const LEGACY_DOCX_TITLE_PAGE_STYLE = "NarraLumeTitlePage";
 
 // 标题捕获用贪婪的 (\S.*)$ 再去尾部空白：惰性的 (\S.*?)\s*$ 在长空白串上是平方级。
 const MARKDOWN_HEADING = /^#{1,3}\s+(\S.*)$/u;
@@ -721,7 +723,11 @@ export function docxDocumentText(
     replaceElements(documentXml, DOCX_PPR_CHANGE, () => ""),
     DOCX_PPR,
     ({ body }) => {
-      if (xmlValue(body, "w:pStyle") === DOCX_TITLE_PAGE_STYLE)
+      const style = xmlValue(body, "w:pStyle");
+      if (
+        style === DOCX_TITLE_PAGE_STYLE ||
+        style === LEGACY_DOCX_TITLE_PAGE_STYLE
+      )
         return DOCX_TITLE_PAGE_MARK;
       const level = paragraphHeadingLevel(body, styles);
       return level === null ? "" : `<#${level}>`;
