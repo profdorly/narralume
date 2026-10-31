@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { LabWorkspace } from "../src/workspaces/lab";
 
-/* 长篇推演：语义检索、剧情预测、故事记忆与影响预演。 */
+/* Long-form lab: semantic search, plot prediction, story memory and impact
+   preview. */
 
 const PREDICTIONS = [
   {
@@ -122,7 +123,7 @@ afterEach(() => {
 });
 
 describe("Simulação de longo fôlego", () => {
-  it("语义检索可提交问题并展示原文；剧情预测和故事记忆有卡", async () => {
+  it("semantic search submits a question and shows the source text; plot prediction and story memory have cards", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/predictions") return json(PREDICTIONS);
@@ -134,7 +135,7 @@ describe("Simulação de longo fôlego", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderLab();
 
-    // 检索投
+    // search panel
     fireEvent.change(screen.getByLabelText("Pergunta de busca"), {
       target: { value: "姐姐什么时候消失" },
     });
@@ -142,20 +143,20 @@ describe("Simulação de longo fôlego", () => {
     await screen.findByText(/第一章 灯下潮痕/);
     expect(screen.getByText(/relevância 82%/)).toBeInTheDocument();
 
-    // 预测单
+    // prediction sheet
     await screen.findByText(/姐姐的失踪与旧邮局/);
     expect(screen.getByText("Previsões de enredo")).toBeInTheDocument();
     expect(screen.getByText("+3 capítulos à frente")).toBeInTheDocument();
     expect(screen.getByText(/基于第三章灯下潮痕的缝隙/)).toBeInTheDocument();
 
-    // 故事记忆
+    // story memory
     await screen.findByText("EPISODIC");
     expect(screen.getByText(/第三章stamp、preface的按需印/)).toBeInTheDocument();
     expect(screen.getByLabelText("Capítulos à frente")).toHaveAttribute("max", "20");
     expect(screen.getByLabelText("Quantidade de candidatos")).toHaveAttribute("max", "5");
   });
 
-  it("记忆查询失败时显示故障，不伪装成空仓", async () => {
+  it("shows a failure when the memory query fails instead of pretending the store is empty", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/predictions") return json([]);
@@ -174,7 +175,7 @@ describe("Simulação de longo fôlego", () => {
     expect(screen.queryByText("Ainda não há memórias guardadas")).not.toBeInTheDocument();
   });
 
-  it("采纳预测调 PUT /predictions/:id；body 与决策一致，不含 profileId", async () => {
+  it("adopting a prediction calls PUT /predictions/:id with a body matching the decision, without profileId", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/predictions") return json(PREDICTIONS);
@@ -208,7 +209,7 @@ describe("Simulação de longo fôlego", () => {
     expect(body).not.toHaveProperty("outputReserve");
   });
 
-  it("故事状态变化后的预测显示失效且不能采纳", async () => {
+  it("a prediction made before a story state change shows as stale and cannot be adopted", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/predictions")
@@ -315,7 +316,7 @@ describe("Simulação de longo fôlego", () => {
     ).toBeInTheDocument();
   });
 
-  it("无项目时不发请求，藏书室回回链接在", () => {
+  it("with no project no request is sent and the link back to the shelf is there", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });

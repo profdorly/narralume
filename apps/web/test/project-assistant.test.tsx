@@ -122,8 +122,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("项目协作侧栏", () => {
-  it("关闭时卸载侧栏，并在关闭后恢复到触发按钮（CR-84）", async () => {
+describe("project collaboration sidebar", () => {
+  it("unmounts the sidebar when closed and returns focus to the trigger button after closing (CR-84)", async () => {
     vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/project-1/assistant/conversations") return json([CONVERSATION]);
@@ -141,7 +141,7 @@ describe("项目协作侧栏", () => {
     expect(screen.getByRole("button", { name: "Abrir colaboração no projeto" })).toHaveFocus();
   });
 
-  it("只在打开时订阅当前会话关联运行的事件（CR-10）", async () => {
+  it("subscribes to the events of the current conversation's linked run only while open (CR-10)", async () => {
     let detailRequests = 0;
     vi.stubGlobal("EventSource", EventSourceStub);
     vi.stubGlobal(
@@ -196,7 +196,7 @@ describe("项目协作侧栏", () => {
     expect(source.close).toHaveBeenCalledOnce();
   });
 
-  it("模型胶囊只列同协议模型，思考档与模型选择写回对话设置", async () => {
+  it("the model pill lists only same-protocol models, and the thinking level and model choice are written back to the conversation settings", async () => {
     const configured: Array<Record<string, unknown>> = [];
     const settings = { modelId: null as string | null, reasoningEffort: null as string | null };
     const providers = [
@@ -236,7 +236,8 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    /* 默认态：显示全局默认模型 + 默认徽标 + 思考·低。 */
+    /* Default state: shows the global default model + default badge + thinking
+       · low. */
     const trigger = await screen.findByRole("button", { name: /Modelo da conversa e esforço/ });
     await waitFor(() => expect(trigger).toHaveTextContent("default-model"));
     expect(trigger).toHaveTextContent("Padrão");
@@ -247,11 +248,12 @@ describe("项目协作侧栏", () => {
       expect(screen.getByRole("button", { name: /Modelo da conversa e esforço/ })).toHaveAttribute("aria-expanded", "true"),
     );
     expect(screen.getByRole("listbox", { name: "Modelo da conversa" })).toBeInTheDocument();
-    /* 同协议模型可见，跨协议模型（anthropic）不出现。 */
+    /* Same-protocol models are visible; the cross-protocol model (anthropic)
+       does not appear. */
     expect(await screen.findByRole("option", { name: "chat-model-2" })).toBeInTheDocument();
     expect(screen.queryByText("anthropic-model")).not.toBeInTheDocument();
 
-    /* 选模型 → configure 写回 modelId。 */
+    /* Pick a model → configure writes back modelId. */
     fireEvent.click(screen.getByRole("option", { name: "chat-model-2" }));
     await waitFor(() =>
       expect(configured).toEqual([
@@ -259,7 +261,7 @@ describe("项目协作侧栏", () => {
       ]),
     );
 
-    /* 重开弹层切思考档。 */
+    /* Reopen the popover and switch the thinking level. */
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Modelo da conversa e esforço/ })).toHaveTextContent("chat-model-2"),
     );
@@ -272,7 +274,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("切换并归档协作对话后回到仍活跃的会话 (CR-11)", async () => {
+  it("switching to and archiving a collaboration conversation returns to a conversation that is still active (CR-11)", async () => {
     const second = {
       ...CONVERSATION,
       id: "assistant-conversation-2",
@@ -318,7 +320,8 @@ describe("项目协作侧栏", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAssistant();
 
-    /* 初始占位触发器显示“项目协作”；等数据加载、触发器可用后再点开。 */
+    /* The initial placeholder trigger shows "project collaboration"; wait for
+       data to load and the trigger to be enabled before opening it. */
     const trigger = await screen.findByRole("button", { name: "Colaboração no projeto" });
     await waitFor(() => expect(trigger).not.toBeDisabled());
     fireEvent.click(trigger);
@@ -344,7 +347,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("重命名当前协作对话并刷新列表", async () => {
+  it("renames the current collaboration conversation and refreshes the list", async () => {
     let conversations = [CONVERSATION];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -393,7 +396,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("新建协作对话后保持在新对话，不被旧列表切回", async () => {
+  it("stays on a newly created collaboration conversation instead of being switched back by the old list", async () => {
     const created = {
       ...CONVERSATION,
       id: "assistant-conversation-2",
@@ -447,7 +450,7 @@ describe("项目协作侧栏", () => {
       .toBeInTheDocument();
   });
 
-  it("对可恢复的失败提案显示原地重试动作 (CR-104)", async () => {
+  it("shows an in-place retry action for a recoverable failed proposal (CR-104)", async () => {
     let retried = false;
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -497,7 +500,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("在同一时间线展示上下文、回复和待确认动作，并在确认后链接原任务", async () => {
+  it("shows context, replies and pending actions on one timeline, and links the original task after confirmation", async () => {
     let confirmed = false;
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -556,7 +559,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("等待采纳的运行卡片：文案统一渲染、引到写作台、可直接取消", async () => {
+  it("run card waiting for adoption: copy is rendered by the shared labels, it links to the studio and can be cancelled directly", async () => {
     const fetchMock = vi.fn(
       (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
@@ -611,10 +614,11 @@ describe("项目协作侧栏", () => {
       "href",
       "/projects/project-1/studio?run=chapter-run-1&document=document-1",
     );
-    // waitingReason 现在是机器码，由前端标签表统一渲染成中文。
+    // waitingReason is now a machine code that the frontend label table renders
+    // into display text.
     expect(await screen.findByText("Manuscrito candidato aguardando adoção")).toBeInTheDocument();
 
-    // 低风险取消动作直接在卡片上执行，不需要跳页。
+    // The low-risk cancel action runs right on the card, with no page change.
     fireEvent.click(screen.getByRole("button", { name: "Cancelar tarefa" }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -627,7 +631,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("失败的章节运行卡片可直接重试本章", async () => {
+  it("a failed chapter run card can retry its chapter directly", async () => {
     const fetchMock = vi.fn(
       (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
@@ -685,7 +689,7 @@ describe("项目协作侧栏", () => {
     );
   });
 
-  it("发送消息时保留当前稿件、章节和选区上下文", async () => {
+  it("keeps the current manuscript, chapter and selection context when sending a message", async () => {
     const messageBodies: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -742,7 +746,7 @@ describe("项目协作侧栏", () => {
     expect(messageBodies[1]?.requestId).toBe(messageBodies[0]?.requestId);
   });
 
-  it("允许把后续消息切换为项目全局上下文", async () => {
+  it("allows switching later messages to the project-wide context", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/projects/project-1/assistant/conversations") {
@@ -797,7 +801,7 @@ describe("项目协作侧栏", () => {
     });
   });
 
-  it("Enter 发送，Ctrl+Enter 保留为换行", async () => {
+  it("Enter sends and Ctrl+Enter is kept for a newline", async () => {
     const messageBodies: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

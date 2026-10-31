@@ -10,7 +10,8 @@ import { setLocale } from "../src/i18n";
 import { StudioWorkspace } from "../src/workspaces/studio";
 import { manuscriptMarkdown } from "./manuscript-helpers";
 
-/* CR-24：正式版本变化后，编辑器必须随新的 currentVersion 重新装载正文。 */
+/* CR-24: after the formal version changes, the editor must reload the
+   manuscript from the new currentVersion. */
 
 const DOCUMENT = {
   id: "doc-1",
@@ -92,7 +93,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("恢复历史版本后编辑器正文随新 currentVersion 重新装载（CR-24）", async () => {
+it("after restoring a past version the editor reloads the manuscript from the new currentVersion (CR-24)", async () => {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === "/api/projects/p-1/studio/documents") return json([DOCUMENT]);

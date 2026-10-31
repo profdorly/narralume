@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { ShelfWorkspace } from "../src/workspaces/shelf";
 
-/* fetch stub 纪律：vi.stubGlobal + URL 匹配，QueryClient 关 retry。 */
+/* fetch stub rules: vi.stubGlobal + URL matching, QueryClient retry off. */
 
 const PROJECTS = [
   {
@@ -92,10 +92,12 @@ function renderShelf(entry = "/shelf") {
 }
 
 beforeEach(() => {
-  /* 字典 zh 保留原文，测试固定中文环境（jsdom 默认 navigator.language 为 en-US）。 */
+  /* The zh dictionary keeps the source text; tests pin a Chinese locale
+     (jsdom's default navigator.language is en-US). */
   setLocale("pt-BR");
-  /* motion 的 useReducedMotion 依赖 matchMedia，jsdom 没有，统一桩掉。
-     matches 置 true：reduced-motion 下 Lenis 不启、动效静态，最稳。 */
+  /* motion's useReducedMotion depends on matchMedia, which jsdom lacks, so stub
+     it everywhere. matches is true: under reduced-motion Lenis does not start
+     and animations are static, the most stable setup. */
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     writable: true,
@@ -119,7 +121,7 @@ afterEach(() => {
 });
 
 describe("A Estante", () => {
-  it("打开作品后进入项目概览", async () => {
+  it("opening a book goes to the project overview", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
@@ -134,7 +136,7 @@ describe("A Estante", () => {
     ).toBeInTheDocument();
   });
 
-  it("更多操作菜单支持方向键、Esc 和焦点恢复（CR-107）", async () => {
+  it("the more-actions menu supports arrow keys, Esc and focus restore (CR-107)", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
@@ -151,7 +153,7 @@ describe("A Estante", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("自动加载 100 本之后的项目页", async () => {
+  it("loads project pages beyond the first 100 books automatically", async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) => ({
       ...PROJECTS[0],
       id: `project-${index}`,
@@ -178,7 +180,7 @@ describe("A Estante", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/projects?offset=100", expect.any(Object));
   });
 
-  it("渲染默认与自定义封面书架，点击封面进入项目概览", async () => {
+  it("renders a shelf with default and custom covers, and clicking a cover opens the project overview", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
@@ -197,7 +199,7 @@ describe("A Estante", () => {
     await screen.findByText("已入馆：项目概览");
   });
 
-  it("在同一对话框编辑书籍资料并保存（不动封面）", async () => {
+  it("edits the book profile in the same dialog and saves it (leaving the cover alone)", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/projects") return json(PROJECTS);
@@ -222,7 +224,8 @@ describe("A Estante", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar livro" }));
 
-    // 仅改资料时不上传封面：PUT 不携带 cover 字段（CR-83 的原子提交仍成立）。
+    // Editing only the profile uploads no cover: the PUT carries no cover field
+    // (CR-83's atomic commit still holds).
     await waitFor(() => {
       const projectCall = fetchMock.mock.calls.find(
         ([url, init]) =>
@@ -238,7 +241,7 @@ describe("A Estante", () => {
     });
   });
 
-  it("检索过滤编目行", async () => {
+  it("search filters the catalog rows", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
@@ -256,7 +259,7 @@ describe("A Estante", () => {
     expect(screen.getByText("Nenhum livro correspondente")).toBeInTheDocument();
   });
 
-  it("可切换到列表与书脊视图，并记住用户选择", async () => {
+  it("can switch to list and spine views and remembers the user's choice", async () => {
     vi.stubGlobal("fetch", stubBaseFetch());
     renderShelf();
 
@@ -276,7 +279,7 @@ describe("A Estante", () => {
     expect(window.localStorage.getItem("shelf:view")).toBe("covers");
   });
 
-  it("将归档作品移入回收站，并可恢复或永久删除", async () => {
+  it("moves an archived book to the trash, where it can be restored or deleted permanently", async () => {
     const archivedProject = {
       ...PROJECTS[0],
       archivedAt: "2026-08-14T10:00:00.000Z",
@@ -362,7 +365,7 @@ describe("A Estante", () => {
     });
   });
 
-  it("空白建书发起 POST，入藏后写 store 并进入项目概览", async () => {
+  it("blank book creation POSTs, then writes the store and opens the project overview once shelved", async () => {
     const createBodies: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -423,7 +426,7 @@ describe("A Estante", () => {
     expect(createBodies[1]?.requestId).toBe(createBodies[0]?.requestId);
   });
 
-  it("AI 建书内容变化后使用新的 requestId", async () => {
+  it("AI book creation uses a new requestId after its content changes", async () => {
     const createBodies: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

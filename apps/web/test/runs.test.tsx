@@ -126,7 +126,7 @@ afterEach(() => {
 });
 
 describe("Central de execuções", () => {
-  it("电影期号目录 + 期主档按 EDIÇÃO Nº 组合", async () => {
+  it("film-style issue index + issue master record grouped by EDIÇÃO Nº", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/runs") return json([RUN_COMPLETED, RUN_RUNNING]);
@@ -137,9 +137,9 @@ describe("Central de execuções", () => {
 
     await screen.findAllByText("EDIÇÃO Nº 202608");
     expect(screen.getByRole("heading", { name: "EDIÇÃO Nº 202608" })).toBeInTheDocument();
-    // 左栏期号索引
+    // issue index in the left column
     expect(screen.getByRole("button", { name: /Edição 2026-08/ })).toBeInTheDocument();
-    // 行项
+    // row items
     expect(screen.getAllByText(/chapter-production/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Concluído|Em andamento/).length).toBeGreaterThan(0);
     expect(screen.getByText(/run-2/)).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe("Central de execuções", () => {
     expect(screen.queryByText(/3\/8 调/)).not.toBeInTheDocument();
   });
 
-  it("运行详情把流程进度与包含重试的模型调用拆开显示", async () => {
+  it("run detail shows flow progress separately from model calls, including retries", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/runs") return json([RUN_COMPLETED]);
@@ -163,7 +163,7 @@ describe("Central de execuções", () => {
     expect(screen.queryByText("步骤 2")).not.toBeInTheDocument();
   });
 
-  it("可恢复故障单列为等待重试，且没有服务端动作时不猜测推进按钮", async () => {
+  it("a recoverable fault is listed as waiting for retry, and no advance button is guessed when there is no server action", async () => {
     const recoverable = {
       ...RUN_RUNNING,
       id: "run-retry",
@@ -187,7 +187,7 @@ describe("Central de execuções", () => {
     expect(screen.queryByRole("button", { name: "推进一步" })).not.toBeInTheDocument();
   });
 
-  it("快速创作子任务回到所属任务，不显示独立重试", async () => {
+  it("a quick-creation child task points back to its parent task and shows no separate retry", async () => {
     const failed = {
       ...RUN_COMPLETED,
       id: "run-owned",
@@ -215,7 +215,7 @@ describe("Central de execuções", () => {
     expect(screen.queryByRole("button", { name: "Tentar de novo este capítulo" })).not.toBeInTheDocument();
   });
 
-  it("运行列表正在轮询问于运行中（轮询1.25s），且 body 不带 policy/profile", async () => {
+  it("the run list polls while a run is in progress (every 1.25s), and the body carries no policy/profile", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/runs") return json([RUN_RUNNING]);
@@ -225,20 +225,20 @@ describe("Central de execuções", () => {
     renderRuns();
 
     await screen.findByRole("heading", { name: "EDIÇÃO Nº 202608" });
-    // 检查轮询已发起
+    // check that polling has started
     await new Promise((resolve) => setTimeout(resolve, 1800));
     const calls = fetchMock.mock.calls.filter(([u]) =>
       String(u).includes("/api/projects/p-1/runs"),
     );
     expect(calls.length).toBeGreaterThanOrEqual(2);
-    // 反断言：无 profileId/policy 字段
+    // Negative assertion: no profileId/policy fields
     for (const call of calls) {
       expect(String(call[1]?.body ?? "")).not.toContain("profileId");
       expect(String(call[1]?.body ?? "")).not.toContain("outputReserve");
     }
   });
 
-  it("无作品时藏起空馆态且不发请求", () => {
+  it("with no book, hides the empty library state and sends no request", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });

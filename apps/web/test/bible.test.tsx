@@ -16,7 +16,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { BibleWorkspace } from "../src/workspaces/bible";
 
-/* 故事圣经摊开的整本 spread：intent 首语、大纲、实体、事实、关系、时间线、伏笔七大板块。 */
+/* The story bible laid out as a full spread: the seven sections intent,
+   outline, entities, facts, relations, timeline and foreshadowing. */
 
 const BIBLE = {
   occupiedOutlineNodeIds: [],
@@ -234,7 +235,7 @@ afterEach(() => {
 });
 
 describe("Bíblia da história", () => {
-  it("全书看板沿用章节顺序，支持筛选并跳转伏笔证据", async () => {
+  it("the whole-book board follows chapter order, supports filters and jumps to foreshadowing evidence", async () => {
     const bible = { ...structuredClone(BIBLE), foreshadows: BIBLE.foreshadows.map((clue) => ({ ...clue,
       targetFromNodeId: "n-ch-1", targetToNodeId: "n-ch-1", evidenceNodeIds: ["n-ch-1"],
     })) };
@@ -256,7 +257,7 @@ describe("Bíblia da história", () => {
     expect(screen.getByRole("link", { name: "Abrir na mesa de escrita" })).toBeInTheDocument();
   });
 
-  it("Editar 每次只摊开一个 Canon Spread，并在同一纸幅", async () => {
+  it("Editar opens only one Canon Spread at a time, on the same sheet", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1-tides/story-bible") return json(BIBLE);
@@ -319,7 +320,7 @@ describe("Bíblia da história", () => {
     expect(screen.getAllByText("空白信与消失的记忆").length).toBeGreaterThan(0);
   });
 
-  it("未选择作品时给出空馆态且不拉取 story-bible", () => {
+  it("shows the empty library state and does not fetch story-bible when no book is selected", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });
@@ -331,7 +332,7 @@ describe("Bíblia da história", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("请求失败时给出错误注记而非摊书页", async () => {
+  it("shows an error note instead of the spread when the request fails", async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(
         new Response(
@@ -344,12 +345,12 @@ describe("Bíblia da história", () => {
     renderBible();
 
     await screen.findByText("Rota não encontrada");
-    // 反断言：不渲染板块
+    // Negative assertion: no sections are rendered
     expect(screen.queryByText("Intenção da autoria")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Estrutura" })).not.toBeInTheDocument();
   });
 
-  it("在当前分页面内展示候选差异，并对锁定内容进行二次确认", async () => {
+  it("shows candidate diffs inside the current page and asks for a second confirmation on locked content", async () => {
     const item = {
       id: "item-1",
       operation: "update",

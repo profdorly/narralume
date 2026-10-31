@@ -116,7 +116,8 @@ function renderAutopilot(entry = "/projects/p-1/autopilot") {
   );
 }
 
-/* 慢启动会话：首轮读回 pending，等待协调器推进。 */
+/* Slow-start session: the first read returns pending while waiting for the
+   coordinator to advance. */
 const PENDING_SESSION = { ...SESSION, id: "session-slow", status: "pending", completedChapters: 0, currentRunId: null, currentOutlineNodeId: null };
 const RUNNING_SESSION = { ...SESSION, id: "session-slow", status: "running", completedChapters: 1 };
 const COMPLETED_SESSION = { ...SESSION, id: "session-slow", status: "completed", completedChapters: 6, currentRunId: null, currentOutlineNodeId: null };
@@ -207,8 +208,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("自动驾驶", () => {
-  it("创作记录显示时间、完成进度、当前章节与稳定短 ID（CR-96）", async () => {
+describe("autopilot", () => {
+  it("creation records show time, progress, current chapter and a stable short ID (CR-96)", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -226,7 +227,7 @@ describe("自动驾驶", () => {
     expect(record).toHaveTextContent("Capítulo atual n-ch-3");
   });
 
-  it("表单使用共享资源边界，但不限制每章参考字数", async () => {
+  it("the form uses the shared resource limits but does not cap reference length per chapter", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -245,7 +246,7 @@ describe("自动驾驶", () => {
     expect(screen.getByLabelText("Capítulos planejados à frente")).toHaveAttribute("max", "20");
   });
 
-  it("快速创作参数变化后使用新的 requestId", async () => {
+  it("quick creation uses a new requestId after its parameters change", async () => {
     const requestBodies: Array<Record<string, unknown>> = [];
     const compass = {
       projectId: "p-1",
@@ -296,7 +297,7 @@ describe("自动驾驶", () => {
     expect(requestBodies[1]?.requestId).not.toBe(requestBodies[0]?.requestId);
   });
 
-  it("指南针异步到达时同步未编辑的目标章数", async () => {
+  it("syncs the unedited target chapter count when the compass arrives asynchronously", async () => {
     const compass = {
       projectId: "p-1",
       corePromise: "异步抵达的方向",
@@ -325,7 +326,7 @@ describe("自动驾驶", () => {
     await waitFor(() => expect(screen.getByLabelText("Capítulos desta vez")).toHaveValue(12));
   });
 
-  it("指南针异步到达时不覆盖作者已经修改的目标章数", async () => {
+  it("does not overwrite a target chapter count the author already changed when the compass arrives asynchronously", async () => {
     const compass = {
       projectId: "p-1",
       corePromise: "异步抵达的方向",
@@ -356,7 +357,7 @@ describe("自动驾驶", () => {
     expect(target).toHaveValue(5);
   });
 
-  it("提交过的「这次写几章」按项目记忆，重进页面不被罗盘覆盖", async () => {
+  it("the submitted chapters-this-time count is remembered per project and not overwritten by the compass on revisit", async () => {
     const compass = {
       projectId: "p-1",
       corePromise: "每次寄信都要付出记忆代价。",
@@ -395,7 +396,7 @@ describe("自动驾驶", () => {
     expect(await screen.findByLabelText("Capítulos desta vez")).toHaveValue(5);
   });
 
-  it("数字输入清空时不被 0 占位，失焦后回到有效值", async () => {
+  it("a cleared number input is not filled with 0 and returns to a valid value on blur", async () => {
     const compass = {
       projectId: "p-1",
       corePromise: "每次寄信都要付出记忆代价。",
@@ -426,7 +427,7 @@ describe("自动驾驶", () => {
     expect(input).toHaveValue(12);
   });
 
-  it("会话没有服务端动作时不显示客户端猜测的继续处理", async () => {
+  it("does not show a client-guessed continue action when the session has no server action", async () => {
     const pending = { ...PENDING_SESSION, id: "session-no-action" };
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -445,7 +446,7 @@ describe("自动驾驶", () => {
     expect(screen.queryByRole("button", { name: "继续处理" })).not.toBeInTheDocument();
   });
 
-  it("罗盘画面 + 航次簿 + 指令口全到齐", async () => {
+  it("compass view, session log and instruction input all render", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -469,7 +470,7 @@ describe("自动驾驶", () => {
     expect(screen.queryByText("Motivo da pausa")).not.toBeInTheDocument();
   });
 
-  it("汇总连续创作已完成章节的最终审稿状态", async () => {
+  it("summarizes the final review status of chapters finished by series creation", async () => {
     const completedLinks = [
       {
         sessionId: "session-1",
@@ -547,7 +548,7 @@ describe("自动驾驶", () => {
     expect(summary).not.toHaveTextContent("sem relatório");
   });
 
-  it("分类任务取消后把创作指示显示为未应用", async () => {
+  it("shows the creation instruction as not applied after its classification task is cancelled", async () => {
     const detail = {
       ...SESSION_DETAIL,
       steers: [
@@ -588,7 +589,7 @@ describe("自动驾驶", () => {
     ).toBeInTheDocument();
   });
 
-  it("致命子任务中断后显示恢复动作而不是无效推进", async () => {
+  it("shows a recovery action instead of a useless advance after a fatal child task interruption", async () => {
     const awaitingSession = {
       ...SESSION,
       status: "awaiting_user",
@@ -642,7 +643,7 @@ describe("自动驾驶", () => {
     ).toBeInTheDocument();
   });
 
-  it("章节确认使用当前子任务生成稳定 requestId", async () => {
+  it("chapter confirmation builds a stable requestId from the current child task", async () => {
     const awaitingSession = { ...SESSION, status: "awaiting_user" };
     const awaitingDetail = {
       ...SESSION_DETAIL,
@@ -688,7 +689,7 @@ describe("自动驾驶", () => {
     });
   });
 
-  it("审稿阻断时展示问题，并在确认后保留正文继续", async () => {
+  it("shows the issues when review blocks, and keeps the manuscript and continues after confirmation", async () => {
     const awaitingSession = {
       ...SESSION,
       status: "awaiting_user",
@@ -791,7 +792,7 @@ describe("自动驾驶", () => {
     });
   });
 
-  it("推舵令 POST /steers，目标 session id 与船身份取至当页，不含 profileId", async () => {
+  it("steer command POSTs /steers with the target session id and identity from the current page, without profileId", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -815,8 +816,9 @@ describe("自动驾驶", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderAutopilot();
 
-    // 舵令推进后服务端返回即可；火 steer 接口
-    // 必须等 session detail 加载齐，才能选定 selectedSessionId
+    // After the steer command the server response is enough. Before firing the
+    // steer endpoint, the session detail must finish loading so that
+    // selectedSessionId can be chosen.
     await screen.findByText(/Planejando 6 capítulos/);
     await new Promise((resolve) => setTimeout(resolve, 50));
     fireEvent.change(screen.getByLabelText("Nova instrução"), {
@@ -835,7 +837,7 @@ describe("自动驾驶", () => {
     expect(body).not.toHaveProperty("outputReserve");
   });
 
-  it("从任务入口按 session 参数回到对应航次", async () => {
+  it("returns to the matching session from the task entry via the session parameter", async () => {
     const olderSession = {
       ...SESSION,
       id: "session-older",
@@ -869,7 +871,7 @@ describe("自动驾驶", () => {
     );
   });
 
-  it("刷新后从服务端恢复建书任务，并明确正在等待自动重试", async () => {
+  it("after a reload restores the book-setup task from the server and states that it is waiting for an automatic retry", async () => {
     const failedRun = {
       id: "run-foundation",
       projectId: "p-1",
@@ -908,7 +910,7 @@ describe("自动驾驶", () => {
     expect(screen.queryByRole("button", { name: "重新尝试" })).not.toBeInTheDocument();
   });
 
-  it("无作品时可点击回藏书室，不拉会话", () => {
+  it("with no book, the link back to the shelf works and no sessions are fetched", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });
@@ -920,7 +922,7 @@ describe("自动驾驶", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("慢启动会话首读 pending 仍持续轮询，推进后停轮", async () => {
+  it("a slow-start session keeps polling when the first read is pending and stops once it advances", async () => {
     vi.useFakeTimers();
     const sessionByRead = [PENDING_SESSION, RUNNING_SESSION, COMPLETED_SESSION, COMPLETED_SESSION];
     let readIndex = 0;
@@ -945,12 +947,12 @@ describe("自动驾驶", () => {
       expect(readIndex).toBe(1);
     });
 
-    /* pending 首读后仍轮询：1.4s 后读到 running */
+    /* Still polling after the pending first read: running is read after 1.4s */
     await vi.advanceTimersByTimeAsync(1_500);
     await vi.waitFor(() => expect(readIndex).toBe(2));
     await vi.waitFor(() => expect(screen.queryByText(/Planejando 6 capítulos/)).not.toBeNull());
 
-    /* running 继续轮询；读到 completed（终态）后停止 */
+    /* running keeps polling; it stops once it reads completed (terminal) */
     await vi.advanceTimersByTimeAsync(1_500);
     await vi.waitFor(() => expect(readIndex).toBe(3));
     await vi.waitFor(() => expect(screen.queryByText("Concluído")).not.toBeNull());
@@ -958,7 +960,7 @@ describe("自动驾驶", () => {
     expect(readIndex).toBe(3);
   });
 
-  it("候选生成 Run 进行期间候选列表持续轮询，Run 落定后补拉并停轮", async () => {
+  it("the candidate list keeps polling while the candidate generation Run is in progress, then refetches and stops once the Run settles", async () => {
     vi.useFakeTimers();
     let runStatus = "pending";
     let candidatesFetchCount = 0;
@@ -981,20 +983,21 @@ describe("自动驾驶", () => {
       expect(candidatesFetchCount).toBe(1);
     });
 
-    /* 空候选列表也随进行中的 Run 轮询 */
+    /* An empty candidate list also polls along with the in-progress Run */
     await vi.advanceTimersByTimeAsync(2_100);
     await vi.waitFor(() => expect(candidatesFetchCount).toBeGreaterThanOrEqual(2));
 
-    /* Run 落定：轮询补拉到已写入的候选，随后停止轮询 */
+    /* Run settled: polling refetches the written candidates, then stops */
     runStatus = "completed";
     await vi.advanceTimersByTimeAsync(2_100);
     await vi.waitFor(() => expect(screen.queryByText("灯灯的方向")).not.toBeNull());
-    /* 候选进入 open 态：按既有契约继续轮询，直到作者处理候选集 */
+    /* Candidates in open state: keep polling per the existing contract until
+       the author handles the candidate set */
     await vi.advanceTimersByTimeAsync(6_000);
     expect(candidatesFetchCount).toBeGreaterThan(3);
   });
 
-  it("指南针查询失败时显示错误，不渲染可提交的空白表单", async () => {
+  it("shows an error when the compass query fails and does not render a blank submittable form", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -1012,7 +1015,7 @@ describe("自动驾驶", () => {
     expect(screen.queryByRole("button", { name: /Confirmar 创作方向|更新创作方向/ })).not.toBeInTheDocument();
   });
 
-  it("新书尚无指南针时展示正常的创作方向表单", async () => {
+  it("shows the normal creative direction form when a new book has no compass yet", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       const setup = setupResponse(url);
@@ -1030,7 +1033,7 @@ describe("自动驾驶", () => {
     expect(screen.queryByText("Não foi possível carregar a direção da história")).not.toBeInTheDocument();
   });
 
-  it("切换到终态创作记录后隐藏舵令，返回活动记录时草稿已清空", async () => {
+  it("hides the steer command after switching to a finished creation record, and the draft is cleared on return to the active record", async () => {
     const completedSession = { ...SESSION, id: "session-done", status: "completed", targetChapters: 3, completedChapters: 3, currentRunId: null, currentOutlineNodeId: null };
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -1058,7 +1061,7 @@ describe("自动驾驶", () => {
     expect(screen.getByLabelText("Nova instrução")).toHaveValue("");
   });
 
-  it("高影响创作指示显示采纳重排和拒绝继续动作", async () => {
+  it("a high-impact creation instruction shows adopt-and-replan and reject-and-continue actions", async () => {
     const awaiting = {
       ...SESSION_DETAIL,
       session: {

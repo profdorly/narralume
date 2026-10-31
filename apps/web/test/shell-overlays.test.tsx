@@ -82,8 +82,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("壳层的协作侧栏与命令面板", () => {
-  it("首屏只渲染协作入口；首次打开时才加载侧栏，关闭后入口回来", async () => {
+describe("shell collaboration sidebar and command palette", () => {
+  it("the first screen renders only the collaboration entry; the sidebar loads on first open and the entry returns after closing", async () => {
     renderShell();
     expect(await screen.findByText("overview")).toBeInTheDocument();
 
@@ -101,7 +101,7 @@ describe("壳层的协作侧栏与命令面板", () => {
     expect(window.localStorage.getItem("lapis:assistant-open")).toBe("0");
   });
 
-  it("项目已有协作会话时预先加载侧栏数据，入口仍是关闭态（显示进行中任务数）", async () => {
+  it("preloads sidebar data when the project already has collaboration conversations, while the entry stays closed (showing the in-progress task count)", async () => {
     window.localStorage.setItem(
       "lapis:assistant-conversation:project-1",
       CONVERSATION.id,
@@ -122,7 +122,7 @@ describe("壳层的协作侧栏与命令面板", () => {
     );
   });
 
-  it("上次保持打开时，载入后直接显示侧栏", async () => {
+  it("shows the sidebar right after load when it was left open last time", async () => {
     window.localStorage.setItem("lapis:assistant-open", "1");
     renderShell();
 
@@ -130,7 +130,7 @@ describe("壳层的协作侧栏与命令面板", () => {
     expect(screen.queryByRole("button", { name: "Abrir colaboração no projeto" })).not.toBeInTheDocument();
   });
 
-  it("⌘J 在首次加载前也能打开侧栏", async () => {
+  it("⌘J opens the sidebar even before the first load", async () => {
     renderShell();
     expect(await screen.findByText("overview")).toBeInTheDocument();
 
@@ -138,7 +138,7 @@ describe("壳层的协作侧栏与命令面板", () => {
     expect(await screen.findByRole("complementary", { name: "Colaboração no projeto" })).toBeInTheDocument();
   });
 
-  it("命令面板经快捷键或按钮打开", async () => {
+  it("the command palette opens from the shortcut or the button", async () => {
     renderShell();
     expect(await screen.findByText("overview")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

@@ -43,7 +43,7 @@ afterEach(() => {
 
 describe("Gerenciador de importação", () => {
   it.each(["applied", "discarded"])(
-    "%s 批次只允许刷新，不能再修改候选或重新执行",
+    "a %s batch can only be refreshed; its candidates can no longer be edited or rerun",
     async (status) => {
       const detail = {
         batch: {
@@ -103,7 +103,7 @@ describe("Gerenciador de importação", () => {
     },
   );
 
-  it("刷新后恢复历史批次，并持续轮询正在分析的批次", async () => {
+  it("restores past batches after a reload and keeps polling the batch under analysis", async () => {
     vi.useFakeTimers();
     const analyzing = {
       batch: {

@@ -147,13 +147,14 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     })),
   });
-  // jsdom 不实现 createObjectURL；断言只需拦截
+  // jsdom does not implement createObjectURL; the assertion only needs to
+  // intercept it
   if (!URL.createObjectURL) {
-    // @ts-expect-error 测试替身
+    // @ts-expect-error test double
     URL.createObjectURL = vi.fn(() => "blob:mock");
   }
   if (!URL.revokeObjectURL) {
-    // @ts-expect-error 测试替身
+    // @ts-expect-error test double
     URL.revokeObjectURL = vi.fn();
   }
   window.localStorage.clear();setLocale("pt-BR");
@@ -165,7 +166,7 @@ afterEach(() => {
 });
 
 describe("Entrega", () => {
-  it("未选择作品时显示交付页自己的朱印空状态", () => {
+  it("shows the delivery page's own seal empty state when no book is selected", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     renderDelivery("/delivery");
@@ -175,7 +176,7 @@ describe("Entrega", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("质量门 / 校样注 / 五格出厂 / 备份档 同步出现", async () => {
+  it("quality gate / proof notes / five export formats / backups appear together", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/quality") return json(QUALITY);
@@ -187,42 +188,43 @@ describe("Entrega", () => {
     renderDelivery();
 
     await screen.findByText("有大纲");
-    // readiness 印 + 通过率
+    // readiness seal + pass rate
     const readiness = document.querySelector(".delivery__readiness");
     expect(readiness?.textContent).toMatch(/Revisão sugerida/);
     expect(readiness?.textContent).toMatch(/2\/3/);
     expect(screen.getByText("伏笔已收")).toBeInTheDocument();
     expect(screen.getByText(/仍有 2 处未收/)).toBeInTheDocument();
 
-    // issues 校样注出现
+    // issue proof notes appear
     expect(screen.getByText(/第五章与第十章/)).toBeInTheDocument();
     expect(screen.getByText(/第三章还有 3 条批注未档/)).toBeInTheDocument();
 
-    // 五格式
+    // five formats
     expect(await screen.findByText("Formatos de exportação")).toBeInTheDocument();
     expect(screen.getByText("Markdown")).toBeInTheDocument();
     expect(screen.getByText("DOCX")).toBeInTheDocument();
     expect(screen.getByText("EPUB")).toBeInTheDocument();
     expect(screen.getByText("Pacote da história")).toBeInTheDocument();
 
-    // 创作内容快照区（完整系统备份档已迁设置，不在本页）
+    // creative content snapshot area (full system backups moved to settings,
+    // not on this page)
     expect(screen.getByText("Instantâneos do conteúdo")).toBeInTheDocument();
     expect(screen.getByText(/Um instantâneo cobre por completo/)).toBeInTheDocument();
     expect(screen.getByText(/上卷交付留底/)).toBeInTheDocument();
     expect(screen.queryByText("备份档")).not.toBeInTheDocument();
-    // 至少见到一份备份的哈希（正断言）
+    // see at least one backup hash (positive assertion)
     const hashSpans = document.querySelectorAll(".delivery__backup-hash");
     expect(hashSpans.length).toBeGreaterThan(0);
     expect(hashSpans[0]?.textContent).toMatch(/abc123de/);
 
-    // 反断言：全列表请求都不携带禁字段
+    // Negative assertion: no list request carries the forbidden fields
     for (const call of fetchMock.mock.calls) {
       const bodyAsString = String(call[1]?.body ?? "");
       expect(bodyAsString).not.toContain("profileId");
     }
   });
 
-  it("出厂五格点任一格都走 /projects/:id/exports/:format，不携带 profileId", async () => {
+  it("each of the five export formats goes to /projects/:id/exports/:format without profileId", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/quality") return json(QUALITY);
@@ -243,7 +245,7 @@ describe("Entrega", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderDelivery();
 
-    // 等质量门落地后再按
+    // wait for the quality gate to load before clicking
     await screen.findByText(/Revisão sugerida/);
     const epubBtn = await screen.findByRole("button", {
       name: /Exportar a obra atual como EPUB/,
@@ -258,7 +260,7 @@ describe("Entrega", () => {
       return found;
     });
     expect(call).toBeDefined();
-    // GET 请求，body 为空，自然不含 profileId
+    // GET request with an empty body, so it naturally has no profileId
     const init = call[1];
     expect(String(init?.method ?? "GET")).toBe("GET");
     const bodyAsString = String(init?.body ?? "");
@@ -266,7 +268,7 @@ describe("Entrega", () => {
     expect(bodyAsString).not.toContain("policy");
   });
 
-  it("创建内容快照 POST /api/projects/:id/backups，body 仅 { label }", async () => {
+  it("creating a content snapshot POSTs /api/projects/:id/backups with only { label } in the body", async () => {
     let created = false;
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

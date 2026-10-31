@@ -17,7 +17,8 @@ import { CanonEntityTypeSchema } from "@lapis/contracts";
 import { setLocale } from "../src/i18n";
 import { BibleWorkspace } from "../src/workspaces/bible";
 
-/* CR-17/CR-18：实体表单枚举与事实表单宾语必须以后端契约为准。 */
+/* CR-17/CR-18: entity form enums and fact form objects must follow the backend
+   contract. */
 
 const ENTITIES = [
   {
@@ -173,7 +174,8 @@ function optionValues(combobox: HTMLElement) {
     .map((option) => option.getAttribute("value"));
 }
 
-// 编辑面板里还有上下文预览表单的“保存”，板块表单的在 DOM 中排第一。
+// The edit panel also has the context preview form's "Save"; the section form's
+// comes first in the DOM.
 function clickSave() {
   const button = screen.getAllByRole("button", { name: "Salvar" })[0];
   expect(button).toBeDefined();
@@ -203,7 +205,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("实体表单的类型/状态选项与契约枚举一致（CR-17）", async () => {
+it("entity form type/status options match the contract enums (CR-17)", async () => {
   renderBible("/projects/p-1/bible?spread=entities", []);
 
   const typeSelect = await screen.findByRole("combobox", { name: "Tipo" });
@@ -216,7 +218,7 @@ it("实体表单的类型/状态选项与契约枚举一致（CR-17）", async (
   expect(optionValues(statusSelect)).toEqual(["active", "retired"]);
 });
 
-it("新建/更新实体只提交契约内的枚举值（CR-17）", async () => {
+it("creating/updating an entity only submits enum values from the contract (CR-17)", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=entities", requests);
 
@@ -257,7 +259,7 @@ it("新建/更新实体只提交契约内的枚举值（CR-17）", async () => {
   );
 });
 
-it("新建事实默认提交文本值，objectEntityId 置 null（CR-18）", async () => {
+it("a new fact submits a text value by default with objectEntityId set to null (CR-18)", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
@@ -285,7 +287,7 @@ it("新建事实默认提交文本值，objectEntityId 置 null（CR-18）", asy
   });
 });
 
-it("新建事实可选择实体作为宾语，value 不随请求提交（CR-18）", async () => {
+it("a new fact can pick an entity as its object, and value is not sent with the request (CR-18)", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
@@ -310,14 +312,15 @@ it("新建事实可选择实体作为宾语，value 不随请求提交（CR-18�
   expect("value" in (requests[0]?.body ?? {})).toBe(false);
 });
 
-it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18）", async () => {
+it("revising an entity-object fact can keep the entity object or switch back to a text value (CR-18)", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests);
 
   fireEvent.change(await screen.findByRole("combobox", { name: "Alvo da edição" }), {
     target: { value: "f-entity" },
   });
-  // 既有实体宾语事实进入实体模式，不再被迫填写文本值。
+  // An existing entity-object fact opens in entity mode and no longer forces a
+  // text value.
   expect(await screen.findByRole("combobox", { name: "Objeto" })).toHaveValue(
     "entity",
   );
@@ -334,7 +337,8 @@ it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18�
   expect(requests[0]?.body.objectEntityId).toBe("e-post-office");
   expect("value" in (requests[0]?.body ?? {})).toBe(false);
 
-  // 切换为文本值后，objectEntityId 置 null、提交新文本。
+  // After switching to a text value, objectEntityId is set to null and the new
+  // text is submitted.
   fireEvent.change(screen.getByRole("combobox", { name: "Objeto" }), {
     target: { value: "value" },
   });
@@ -349,7 +353,7 @@ it("修订实体宾语事实时可保留实体宾语或改回文本值（CR-18�
   });
 });
 
-it("新建大纲时只允许领域树规定的父子层级（CR-20）", async () => {
+it("a new outline node only allows the parent/child levels defined by the domain tree (CR-20)", async () => {
   renderBible("/projects/p-1/bible?spread=outline", [], { ...BIBLE, outline: [...OUTLINE] });
 
   const parent = await screen.findByRole("combobox", { name: "Nó pai" });
@@ -370,7 +374,7 @@ it("新建大纲时只允许领域树规定的父子层级（CR-20）", async ()
   expect(screen.getByText("Permitido sob Capítulo: Cena, Beat")).toBeInTheDocument();
 });
 
-it("修改或撤回锁定事实前要求用户明确确认（CR-19）", async () => {
+it("asks the user to confirm explicitly before editing or withdrawing a locked fact (CR-19)", async () => {
   const requests: CapturedRequest[] = [];
   renderBible("/projects/p-1/bible?spread=facts", requests, { ...BIBLE, facts: [FACT_ENTITY, FACT_LOCKED] });
 

@@ -15,7 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { CanonCandidatePanel } from "../src/workspaces/bible/candidate-panel";
 
-/* Canon 候选桌：指示文本与 startedRunId 绑定 Spread 身份，切页重挂载。 */
+/* Canon candidate desk: the instruction text and startedRunId are bound to the
+   Spread identity and remount on page switch. */
 
 function json(value: unknown, status = 200) {
   return Promise.resolve(
@@ -48,8 +49,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Canon 候选桌", () => {
-  it("所有未裁定候选始终可见，终态历史只补最近三组", async () => {
+describe("Canon candidate desk", () => {
+  it("all undecided candidates stay visible; finished history only adds the three most recent groups", async () => {
     const candidate = (index: number, status: "candidate" | "applied") => ({
       id: `set-${index}`,
       projectId: "p-1",
@@ -96,7 +97,7 @@ describe("Canon 候选桌", () => {
     expect(screen.queryByText("候选组 4")).not.toBeInTheDocument();
   });
 
-  it("可恢复失败仍显示活动任务和自动重试状态", async () => {
+  it("a recoverable failure still shows the active task and the automatic retry status", async () => {
     const recoverableRun = {
       id: "run-recoverable",
       projectId: "p-1",
@@ -157,7 +158,7 @@ describe("Canon 候选桌", () => {
     expect(screen.queryByText("Nenhum candidato gerado")).not.toBeInTheDocument();
   });
 
-  it("失败后重试同一指示时复用 requestId，修改指示后换新键", async () => {
+  it("retrying the same instruction after a failure reuses the requestId; editing the instruction uses a new key", async () => {
     const requestBodies: Array<Record<string, unknown>> = [];
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -198,7 +199,7 @@ describe("Canon 候选桌", () => {
     expect(requestBodies[2]?.requestId).not.toBe(requestBodies[0]?.requestId);
   });
 
-  it("切换 Spread 后未提交的指示与进行中的任务提示都被重置", async () => {
+  it("switching Spread resets the unsubmitted instruction and the in-progress task notice", async () => {
     const runs = [
       {
         id: "run-intent",
@@ -239,14 +240,15 @@ describe("Canon 候选桌", () => {
     vi.stubGlobal("fetch", fetchMock);
     const view = renderPanel("intent");
 
-    /* intent 页：输入指示，同时存在进行中的 intent Run */
+    /* intent page: type an instruction while an intent Run is in progress */
     fireEvent.change(screen.getByLabelText("Instrução de edição do cânone"), {
       target: { value: "写给意图页的指示" },
     });
     expect(screen.getByLabelText("Instrução de edição do cânone")).toHaveValue("写给意图页的指示");
     await screen.findByText("A IA está preparando candidatos para esta página");
 
-    /* 切到 outline 页：输入框与 Run 提示都不应从 intent 页串过来 */
+    /* Switch to the outline page: neither the input nor the Run notice may leak
+       over from the intent page */
     view.rerender(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
         <MemoryRouter>

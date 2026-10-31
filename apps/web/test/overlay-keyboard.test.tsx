@@ -17,7 +17,7 @@ function Harness() {
   return <><button type="button" onClick={() => setOpen(true)}>Excluir</button>{open ? <ConfirmDialog title="Confirmar exclusão" confirmLabel="Confirmado" onCancel={() => setOpen(false)} onConfirm={() => setOpen(false)}><p>Confirme esta operação.</p></ConfirmDialog> : null}</>;
 }
 
-it("对话框按 Esc 关闭后恢复触发点焦点（CR-107）", () => {
+it("a dialog closed with Esc restores focus to its trigger (CR-107)", () => {
   render(<Harness />);
   const trigger = screen.getByRole("button", { name: "Excluir" });
   trigger.focus();
@@ -28,7 +28,7 @@ it("对话框按 Esc 关闭后恢复触发点焦点（CR-107）", () => {
   expect(trigger).toHaveFocus();
 });
 
-it("命令面板用 combobox 关联活动选项", () => {
+it("the command palette links the active option through combobox", () => {
   Object.defineProperty(Element.prototype, "scrollIntoView", {
     configurable: true,
     value: vi.fn(),

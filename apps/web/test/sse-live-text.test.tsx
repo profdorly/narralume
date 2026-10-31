@@ -41,8 +41,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   EventSourceStub.current = null;
 });
-describe("运行实时文本", () => {
-  it("持久化流到达后清空同一运行的本地增量", () => {
+describe("run live text", () => {
+  it("clears the local deltas of a run once its persisted stream arrives", () => {
     vi.stubGlobal("EventSource", EventSourceStub);
     const view = render(<Probe clearSignal={null} />);
 

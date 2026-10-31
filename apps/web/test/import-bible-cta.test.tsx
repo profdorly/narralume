@@ -11,7 +11,8 @@ import "./i18n-en";
 import { ImportManager } from "../src/workspaces/delivery/production-tools";
 import { ShelfWorkspace } from "../src/workspaces/shelf";
 
-/* 导入应用成功后提供「用 AI 补全故事圣经」入口（藏书室对话框与交付台导入管理）。 */
+/* After a successful import, offer a "Complete the story bible with AI" entry
+   (shelf dialog and delivery import management). */
 
 const NOW = "2026-09-28T10:00:00.000Z";
 

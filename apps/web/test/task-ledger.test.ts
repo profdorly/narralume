@@ -7,7 +7,7 @@ beforeEach(() => {
   setLocale("pt-BR");
 });
 
-describe("任务现场链接", () => {
+describe("task links", () => {
   it("an old co-creation run opens on the runs page", () => {
     expect(
       taskHref("p-1", "assistant", "run-1", {

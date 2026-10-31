@@ -25,7 +25,8 @@ import type {
 import { BibleWorkspace } from "../src/workspaces/bible";
 import { BibleBackfillPanel } from "../src/workspaces/bible/backfill-panel";
 
-/* 「从正文补全故事圣经」面板：开始确认、进度、逐章裁定、停机处理与完成指引。 */
+/* "Complete the story bible from the manuscript" panel: start confirmation,
+   progress, per-chapter decisions, stop handling and completion guidance. */
 
 const NOW = "2026-09-28T10:00:00.000Z";
 
@@ -167,7 +168,10 @@ interface Recorded {
   body: Record<string, unknown> | null;
 }
 
-/** 路由式 fetch 桩：current 可在测试中替换；未知请求返回 404。 */
+/**
+ * Route-style fetch stub: current can be replaced in a test; unknown requests
+ * return 404.
+ */
 function stubApi(routes: {
   current: () => BibleBackfillDetailDto;
   onStart?: (body: Record<string, unknown>) => Promise<Response>;
@@ -204,7 +208,10 @@ function renderPanel(
   options: {
     focus?: boolean;
     onOpen?: (section: string) => void;
-    /** 预先放入缓存的变更集列表（模拟写作台已读取过）。 */
+    /**
+     * Changeset list put in the cache up front (simulates the studio having
+     * read it already).
+     */
     cachedChangeSets?: unknown[];
   } = {},
 ) {

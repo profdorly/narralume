@@ -9,7 +9,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { BibleWorkspace } from "../src/workspaces/bible";
 
-/* CR-65：故事圣经表单在资源刷新后必须重置本地字段，不能用新令牌提交旧内容。 */
+/* CR-65: story bible forms must reset local fields after a resource refresh and
+   must not submit old content with a new token. */
 
 const BASE_ENTITY = {
   id: "e-shenyan",
@@ -80,7 +81,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("实体在别处更新后，已打开的编辑表单重置为最新内容（CR-65）", async () => {
+it("an open edit form resets to the latest content after the entity is updated elsewhere (CR-65)", async () => {
   let bible = buildBible(BASE_ENTITY);
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
@@ -109,7 +110,7 @@ it("实体在别处更新后，已打开的编辑表单重置为最新内容（C
   await waitFor(() =>
     expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("沈砚"),
   );
-  // 用户开始编辑但尚未保存。
+  // The user starts editing but has not saved yet.
   fireEvent.change(screen.getByRole("textbox", { name: "Nome" }), {
     target: { value: "沈砚（未保存草稿）" },
   });
@@ -117,8 +118,9 @@ it("实体在别处更新后，已打开的编辑表单重置为最新内容（C
     "沈砚（未保存草稿）",
   );
 
-  // 同页 AI 候选采纳或另一标签页改了这个实体；查询刷新后表单必须重置，
-  // 而不是把“新 updatedAt + 旧表单内容”提交成静默覆盖。
+  // An AI candidate adopted on the same page or another tab changed this
+  // entity; after the query refresh the form must reset instead of submitting
+  // "new updatedAt + old form content" as a silent overwrite.
   bible = buildBible({
     ...BASE_ENTITY,
     description: "AI 候选刚采纳的描述。",

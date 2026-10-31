@@ -159,8 +159,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("设置（默认生成模型与岗位继承）", () => {
-  it("Provider/Modelos/派岗全到齐，队伍不出现反排；请求体不带 profileId / outputReserve", async () => {
+describe("settings (default generation model and role inheritance)", () => {
+  it("Provider/Modelos/role assignments all render, the rerank role lists no generation models; request bodies carry no profileId / outputReserve", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -186,9 +186,9 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(within(defaultRole).getByRole("button", { name: /环境 · DeepSeek · deepseek-reasoner/ })).toBeEnabled();
 
     await openChannelManagement();
-    // 高级管理中的渠道卡
+    // provider card in advanced management
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
-    // 模型条
+    // model strip
     const cards = await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
     expect(cards.length).toBeGreaterThan(1);
     expect(screen.getByText("128k")).toBeInTheDocument();
@@ -196,7 +196,9 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(screen.getByText("A especificação precisa de revisão")).toBeInTheDocument();
     expect(screen.getByText(/o modelo continua funcionando, e as execuções usam um orçamento conservador/)).toBeInTheDocument();
 
-    // 岗位分配：默认生成模型已派；重排（Decisions API）在高级岗位里，候选只限重排模型
+    // Role assignment: the default generation model is assigned; reranking
+    // (Decisions API) lives under advanced roles, and its candidates are rerank
+    // models only
     expect(screen.getAllByText("Modelo padrão de geração").length).toBeGreaterThan(0);
     expect(screen.getByText("Atribuído")).toBeInTheDocument();
     const rerankRole = screen.getByRole("group", { name: "Reordenação da busca (opcional)" });
@@ -205,7 +207,9 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(within(rerankRole).queryByRole("button", { name: /deepseek/ })).not.toBeInTheDocument();
     expect(within(rerankRole).getByText("Não atribuído")).toBeInTheDocument();
 
-    // 未声明物理上限的规划模型也可成为默认生成模型；生成类模型不再按岗位互斥。
+    // A planning model with no declared physical limit can also become the
+    // default generation model; generation models are no longer exclusive per
+    // role.
     const reasonerButton = within(defaultRole).getByRole("button", { name: /deepseek-reasoner/ });
     expect(reasonerButton).toBeEnabled();
     fireEvent.click(reasonerButton);
@@ -215,7 +219,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     );
     expect(JSON.parse(String(assignmentCall?.[1]?.body))).toEqual({ modelId: "m-2" });
 
-    // 反断言：全列表请求都不包含禁用字段
+    // Negative assertion: no list request includes the forbidden fields
     for (const call of fetchMock.mock.calls) {
       const bodyAsString = String(call[1]?.body ?? "");
       expect(bodyAsString).not.toContain("profileId");
@@ -223,7 +227,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     }
   });
 
-  it("探测调 POST /api/providers/test 并渲染四阶段报告", async () => {
+  it("probing calls POST /api/providers/test and renders the four-stage report", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -258,7 +262,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
 
     await openChannelManagement();
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
-    // 等模型卡落地
+    // wait for the model cards to load
     await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
 
     const probeButtons = screen.getAllByRole("button", { name: /Testar/ });
@@ -280,7 +284,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(body).not.toHaveProperty("profileId");
   });
 
-  it("编辑渠道和模型时提交当前 updatedAt（CR-48）", async () => {
+  it("editing a provider or model submits the current updatedAt (CR-48)", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/providers/env-deepseek" && init?.method === "PUT") {
@@ -352,7 +356,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     });
   });
 
-  it("岗派 PUT /api/assignments/:role 且 body 仅 { modelId }", async () => {
+  it("role assignment PUTs /api/assignments/:role with only { modelId } in the body", async () => {
     let assigned = false;
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
@@ -386,9 +390,11 @@ describe("设置（默认生成模型与岗位继承）", () => {
 
     await openChannelManagement();
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
-    // 等待模型卡真的渲染（role 按钮存在才可选）
+    // wait for the model cards to actually render (a role button must exist
+    // before one can be picked)
     await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
-    // 在「写作」列挑一个可指派的Model（其 arised 同时包含 modelId）
+    // pick an assignable model in the "writing" column (its accessible name
+    // also includes modelId)
     const deepseekBtns = screen.getAllByRole("button", { name: /deepseek-chat/, });
     const assignButton = deepseekBtns.find((b) =>
       b.className.includes("supply__role-assign-btn"),
@@ -396,7 +402,7 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(assignButton).toBeDefined();
     fireEvent.click(assignButton!);
 
-    // 同步骤推 assigned 到设甲 produce
+    // the same step pushes assigned to the writing role
     await screen.findByText("Atribuído", undefined, { timeout: 3_000 });
     const call = fetchMock.mock.calls.find(([u]) =>
       String(u) === "/api/assignments/writing",
@@ -404,14 +410,15 @@ describe("设置（默认生成模型与岗位继承）", () => {
     expect(call).toBeDefined();
     const body = JSON.parse(String(call?.[1]?.body));
     expect(body).toEqual({ modelId: "m-1" });
-    // 反断言：不带禁用字段
+    // Negative assertion: no forbidden fields
     for (const forbidden of ["profileId", "outputReserve", "policy"]) {
       expect(JSON.stringify(body)).not.toContain(forbidden);
     }
   });
 });
 
-/* ---- 回归：CR-43 / CR-92 / CR-100 --------------------------------------- */
+/* ---- regressions: CR-43 / CR-92 / CR-100
+   ---------------------------------------- */
 
 const DISABLED_PROVIDER = {
   id: "prov-disabled",
@@ -487,8 +494,8 @@ function stubSettingsFetch(routes: Record<string, unknown>) {
   return fetchMock;
 }
 
-describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
-  it("同名作品在生产资产选择器中显示稳定身份（CR-78）", async () => {
+describe("settings regressions (CR-43 / CR-92 / CR-100)", () => {
+  it("books with the same title show a stable identity in the production asset picker (CR-78)", async () => {
     const duplicateProjects = [
       { ...PROJECTS[0], id: "alpha-project", title: "同名作品", subtitle: "主线版" },
       { ...PROJECTS[0], id: "beta-project", title: "同名作品", subtitle: null },
@@ -509,7 +516,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     expect(within(selector).getByRole("option", { name: "同名作品 · beta-pro" })).toBeInTheDocument();
   });
 
-  it("模型组合查询失败时不把已有派岗误报为失效", async () => {
+  it("a failed model combination query does not report existing role assignments as invalid", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -532,7 +539,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     expect(screen.queryByRole("group", { name: "Modelo padrão de geração" })).not.toBeInTheDocument();
   });
 
-  it("项目与生产资产查询失败时显示错误并隐藏依赖写入", async () => {
+  it("a failed project or production asset query shows an error and hides the writes that depend on it", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -555,7 +562,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     expect(screen.queryByRole("button", { name: "Salvar estilo" })).not.toBeInTheDocument();
   });
 
-  it("风格和 Writing Skill 查询失败时不显示空白创建表单", async () => {
+  it("a failed style or Writing Skill query does not show a blank creation form", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/providers") return json(PROVIDERS);
@@ -582,7 +589,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     expect(screen.queryByRole("button", { name: "Salvar habilidade" })).not.toBeInTheDocument();
   });
 
-  it("已停用渠道下的启用模型不出现在岗位候选中", async () => {
+  it("enabled models under a disabled provider do not appear among the role candidates", async () => {
     stubSettingsFetch({
       "/api/providers": [...PROVIDERS, DISABLED_PROVIDER],
       "/api/models": [...MODELS, ...DISABLED_PROVIDER_MODELS],
@@ -606,7 +613,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("切换生产资产所属项目后风格与 Skill 表单草稿重置", async () => {
+  it("switching the project that owns the production assets resets the style and Skill form drafts", async () => {
     stubSettingsFetch({
       "/api/providers": PROVIDERS,
       "/api/models": MODELS,
@@ -637,7 +644,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     expect(within(nextSkillForm!).getByLabelText("Nome")).toHaveValue("");
   });
 
-  it("生产资产刷新到新版本时重载表单内容，避免用新令牌覆盖旧草稿", async () => {
+  it("reloads the form content when the production asset refreshes to a new version, so a new token never overwrites an old draft", async () => {
     let styles = [{
       id: "style-1", projectId: "p-1", name: "旧风格", description: null,
       rules: ["旧规则"], examples: [], negativeRules: [], source: "manual",
@@ -684,7 +691,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     });
   });
 
-  it("切换编辑渠道后表单字段重置为目标渠道", async () => {
+  it("switching the edited provider resets the form fields to the target provider", async () => {
     stubSettingsFetch({
       "/api/providers": [PROVIDERS[0], SECOND_PROVIDER],
       "/api/models": MODELS,
@@ -717,7 +724,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     );
   });
 
-  it("模型编辑器随切换模型或渠道重置", async () => {
+  it("the model editor resets when the model or provider changes", async () => {
     stubSettingsFetch({
       "/api/providers": [PROVIDERS[0], SECOND_PROVIDER],
       "/api/models": MODELS,
@@ -732,7 +739,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     await screen.findByText("环境 · DeepSeek", { selector: ".supply__provider-name" });
     await screen.findAllByRole("article", { name: /Modelo deepseek-/ });
 
-    // 编辑模型 A，留下未保存草稿，再切到模型 B
+    // Edit model A, leave an unsaved draft, then switch to model B
     fireEvent.click(
       within(screen.getByRole("article", { name: "Modelo deepseek-chat" })).getByRole("button", { name: "Editar" }),
     );
@@ -747,7 +754,7 @@ describe("设置回归（CR-43 / CR-92 / CR-100）", () => {
     const switchedForm = (await screen.findByText("Editar modelo")).closest("form");
     expect(within(switchedForm!).getByLabelText("Nome do modelo na origem")).toHaveValue("deepseek-reasoner");
 
-    // 新建表单随渠道切换重置
+    // the new-item form resets when the provider changes
     fireEvent.click(within(switchedForm!).getByRole("button", { name: "Cancelar" }));
     const modelSection = screen.getByRole("region", { name: "Modelos" });
     fireEvent.click(within(modelSection).getByRole("button", { name: /Novo/ }));

@@ -12,24 +12,24 @@ import { setLocale } from "../src/i18n";
 afterEach(cleanup);
 beforeEach(() => setLocale("pt-BR"));
 
-describe("项目导航", () => {
+describe("project navigation", () => {
   const shelf = WORKSPACES.find((item) => item.id === "shelf")!;
   const studio = WORKSPACES.find((item) => item.id === "studio")!;
 
-  it("未选择作品时进入目标工作区的空状态", () => {
+  it("goes to the target workspace's empty state when no book is selected", () => {
     const view = render(<MemoryRouter>{NaviLink(studio, null, shelf, "/shelf")}</MemoryRouter>);
     expect(view.getByRole("link", { name: "Ir para Escrita" })).toHaveAttribute("href", "/studio");
     expect(workspaceByPath("/studio")).toBe(studio);
   });
 
-  it("选择作品后生成真实工作区链接", () => {
+  it("builds real workspace links once a book is selected", () => {
     const view = render(<MemoryRouter>{NaviLink(studio, "project-1", shelf, "/shelf")}</MemoryRouter>);
     expect(view.getByRole("link", { name: "Ir para Escrita" })).toHaveAttribute("href", "/projects/project-1/studio");
   });
 });
 
-describe("源码入口", () => {
-  it("指向公开仓库并在新窗口打开", () => {
+describe("source code link", () => {
+  it("points to the public repository and opens in a new window", () => {
     const view = render(<RepositoryLink />);
     const link = view.getByRole("link", { name: "Ver o código no GitHub" });
 

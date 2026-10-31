@@ -14,7 +14,7 @@ import {
   setManuscriptMarkdown,
 } from "./manuscript-helpers";
 
-/* 写作台：目录 + 稿编辑器 + 批注/版本印记。 */
+/* Studio: table of contents + manuscript editor + annotation/version marks. */
 
 const DOC_LIST = [
   {
@@ -170,7 +170,7 @@ afterEach(() => {
 });
 
 describe("Mesa de escrita", () => {
-  it("没有稿件时在真实三栏中给出开卷引导", async () => {
+  it("shows an opening guide in the real three-column layout when there is no manuscript", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
@@ -186,7 +186,7 @@ describe("Mesa de escrita", () => {
     expect(screen.getByRole("link", { name: "Planejar capítulos na página História" })).toHaveAttribute("href", "/projects/p-1/bible");
   });
 
-  it("场景稿只开放局部 AI 编辑，不显示章节生产入口", async () => {
+  it("a scene draft only offers local AI edits and shows no chapter production entry", async () => {
     const sceneDocument = {
       ...DOC_LIST[0]!,
       id: "doc-scene",
@@ -217,7 +217,7 @@ describe("Mesa de escrita", () => {
     expect(screen.queryByRole("button", { name: /Passar para a IA/ })).not.toBeInTheDocument();
   });
 
-  it("空章节给出有效的起笔提示，不再显示只聚焦编辑器的按钮", async () => {
+  it("an empty chapter gets a useful writing prompt and no longer shows a button that only focuses the editor", async () => {
     const emptyDetail = {
       ...DOC_DETAIL,
       currentVersion: { ...DOC_DETAIL.currentVersion, content: "", contentHash: "empty" },
@@ -242,7 +242,7 @@ describe("Mesa de escrita", () => {
     expect(screen.getByRole("button", { name: /Passar para a IA/ })).toBeInTheDocument();
   });
 
-  it("返回写作台时从任务台账恢复当前章节候选稿和采纳入口", async () => {
+  it("returning to the studio restores the current chapter's candidate draft and adopt entry from the task ledger", async () => {
     const targetDocument = {
       ...DOC_LIST[0]!,
       id: "doc-ch-2",
@@ -315,7 +315,7 @@ describe("Mesa de escrita", () => {
     );
   });
 
-  it("单章任务可恢复故障明确显示等待自动重试", async () => {
+  it("a recoverable fault in a single-chapter task clearly shows that it is waiting for an automatic retry", async () => {
     const run = {
       id: "run-recoverable",
       projectId: "p-1",
@@ -369,7 +369,7 @@ describe("Mesa de escrita", () => {
     expect(screen.queryByText("A IA está concluindo este capítulo")).not.toBeInTheDocument();
   });
 
-  it("终态失败的单章任务展示失败原因，重试本章发起新 run", async () => {
+  it("a single-chapter task that failed for good shows the failure reason, and retrying the chapter starts a new run", async () => {
     const failedRun = {
       id: "run-failed",
       projectId: "p-1",
@@ -465,7 +465,7 @@ describe("Mesa de escrita", () => {
     expect(await screen.findByText("A IA está concluindo este capítulo")).toBeInTheDocument();
   });
 
-  it("目录 + 中央编辑器 + 一次只展开一项的右侧工具坞", async () => {
+  it("table of contents + central editor + a right-hand tool dock that expands one item at a time", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1/studio/documents") return json(DOC_LIST);
@@ -489,7 +489,7 @@ describe("Mesa de escrita", () => {
     expect(
       screen.getByRole("button", { name: /全书要约/ }),
     ).toBeInTheDocument();
-    // 编辑器默认带现稿正文
+    // the editor starts with the current draft text
     const editor = await screen.findByLabelText("Editor do corpo em Markdown");
     expect(editor).toBeInTheDocument();
     expect(manuscriptMarkdown(editor)).toContain("潮水在午夜越过旧钟楼。");
@@ -508,7 +508,7 @@ describe("Mesa de escrita", () => {
     expect(screen.queryByText(/「越过」动了不够透/)).not.toBeInTheDocument();
   });
 
-  it("保存新版本 POST /versions；body 不含 profileId/outputReserve", async () => {
+  it("saving a new version POSTs /versions; the body has no profileId/outputReserve", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === "/api/projects/p-1/studio/documents") return json(DOC_LIST);
@@ -548,7 +548,7 @@ describe("Mesa de escrita", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar nova versão" }));
 
     await screen.findByText("Versão registrada");
-    // 反断言
+    // Negative assertion
     const call = fetchMock.mock.calls.find(
       ([u, init]) =>
         String(u) === "/api/projects/p-1/documents/doc-ch-1/versions" &&
@@ -561,7 +561,7 @@ describe("Mesa de escrita", () => {
     expect(body).not.toHaveProperty("outputReserve");
   });
 
-  it("手动结算运行中在故事变化面板显示提取状态，失败时给出排查入口", async () => {
+  it("a running manual settlement shows the extraction status in the story changes panel and offers a troubleshooting link on failure", async () => {
     const settlementRun = (status: string) => ({
       id: `run-settle-${status}`,
       projectId: "p-1",
@@ -619,7 +619,7 @@ describe("Mesa de escrita", () => {
     );
   });
 
-  it("新建章节必须选择尚未绑定的章节大纲节点", async () => {
+  it("a new chapter must pick a chapter outline node that is not bound yet", async () => {
     const createBodies: Array<Record<string, unknown>> = [];
     const createdDocument = {
       ...DOC_LIST[0],
@@ -668,7 +668,7 @@ describe("Mesa de escrita", () => {
     expect(createBodies[1]?.requestId).toBe(createBodies[0]?.requestId);
   });
 
-  it("切换稿件前强制同步当前草稿，并在切回时保留最新正文", async () => {
+  it("switching manuscripts forces a sync of the current draft, and switching back keeps the latest text", async () => {
     const changed = "# 第一章 灯下潮痕\n\n这一行必须先保存，再允许切换。";
     const secondDetail = { document: DOC_LIST[1], currentVersion: null, draft: null, versions: [], comments: [], proposals: [] };
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -701,7 +701,7 @@ describe("Mesa de escrita", () => {
     );
   });
 
-  it("草稿选区批注会先建立稳定版本，再把批注锚定到新版本", async () => {
+  it("an annotation on a draft selection first creates a stable version, then anchors the annotation to the new version", async () => {
     const changed = `${DOC_DETAIL.currentVersion.content}\n新写的一句。`;
     let commentBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -731,7 +731,7 @@ describe("Mesa de escrita", () => {
     expect(commentBody).toMatchObject({ versionId: "ver-comment", body: "这里需要回看。" });
   });
 
-  it("AI 选区修改同步最新草稿并提交 draftContentHash", async () => {
+  it("an AI selection edit syncs the latest draft and submits draftContentHash", async () => {
     const changed = `${DOC_DETAIL.currentVersion.content}\n等待 AI 改写。`;
     const draftHash = "c".repeat(64);
     let editBody: Record<string, unknown> | null = null;
@@ -763,7 +763,7 @@ describe("Mesa de escrita", () => {
     expect(editBody).toMatchObject({ baseVersionId: "ver-1", draftContentHash: draftHash, instruction: "让句子更克制。" });
   });
 
-  it("空态 + 无项目时不拉接口", () => {
+  it("empty state + no project fetches nothing", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });
@@ -772,13 +772,15 @@ describe("Mesa de escrita", () => {
 
     expect(screen.getByRole("heading", { name: "Escrita" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Voltar à estante" })).toBeInTheDocument();
-    // 反断言：骨架、目录都不必渲染；fetchides也不为故事圣经发请求
+    // Negative assertion: neither the skeleton nor the table of contents needs
+    // to render, and no request goes out for the story bible
     expect(screen.queryByText("Rascunhos")).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
-/* ---- 合并：审稿 + 修订提案 + 故事变化 + 单章「交给 AI」 ----------------------- */
+/* ---- combined: review + revision proposal + story changes + single-chapter
+   "hand to AI" ----------------------- */
 
 const REPORT = {
   id: "rev-1",
@@ -811,7 +813,7 @@ const REPORT = {
   createdAt: "2026-08-10T10:00:00.000Z",
 };
 
-it("可以只审当前正式版本且不会触发正文改写", async () => {
+it("can review only the current formal version without triggering a manuscript rewrite", async () => {
   let reviewPayload: Record<string, unknown> | null = null;
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -852,7 +854,7 @@ it("可以只审当前正式版本且不会触发正文改写", async () => {
   ).toBe(false);
 });
 
-it("后台章节完成后刷新稿件与审稿，不再停留在连续创作前的缓存", async () => {
+it("refreshes the manuscript and review after a background chapter finishes instead of keeping the cache from before series creation", async () => {
   let reviewRequests = 0;
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
@@ -925,7 +927,7 @@ const CHANGE_SET = {
   decidedAt: null,
 };
 
-it("审稿内容完整展开：summary/scores/被审正文全文 + issue 裁定", async () => {
+it("review content is fully expanded: summary/scores/full reviewed text + issue decisions", async () => {
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === "/api/projects/p-1/studio/documents") return json(DOC_LIST);
@@ -952,7 +954,8 @@ it("审稿内容完整展开：summary/scores/被审正文全文 + issue 裁定"
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
 
-  // 审稿内容不得被截断：全文字符都在 DOM 里
+  // Review content must not be truncated: every character of the full text is
+  // in the DOM
   await screen.findByText("两处以主角视角写到了他尚不知道的真相；其余结构成立。");
   const deskBodies = document.querySelectorAll(".review__doc-body--desk");
   const joined = [...deskBodies].map((node) => node.textContent).join("\n");
@@ -963,11 +966,11 @@ it("审稿内容完整展开：summary/scores/被审正文全文 + issue 裁定"
   ]) {
     expect(joined).toContain(fragment);
   }
-  // 证据提警元素存在
+  // the evidence warning element exists
   expect(document.querySelector(".review__doc-body--desk mark")).not.toBeNull();
-  // 评分细项
+  // score breakdown
   expect(screen.getByText("POV · 4")).toBeInTheDocument();
-  // 裁定调用
+  // decision call
   fireEvent.click(screen.getAllByRole("button", { name: "Aceitar" })[0]!);
   await screen.findByText(/Aceito/);
   const call = fetchMock.mock.calls.find(([u]) =>
@@ -979,7 +982,7 @@ it("审稿内容完整展开：summary/scores/被审正文全文 + issue 裁定"
   expect(body).not.toHaveProperty("profileId");
 });
 
-it("修订提案完整 revised + apply/reject 决策端点", async () => {
+it("revision proposal shows the full revised text + apply/reject decision endpoints", async () => {
   let propStatus: string = "proposed";
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -1006,7 +1009,7 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
 
-  // 修改差异完整展开
+  // the edit diff is fully expanded
   fireEvent.click(await screen.findByRole("tab", { name: "Reescritas" }));
   await screen.findByLabelText(/Manuscrito reescrito \(completo\)/);
   expect(
@@ -1014,7 +1017,8 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
       "潮水在午夜越过旧钟楼。沈砚把信纸放进煤油灯下，名字显影。",
     ),
   ).toBeInTheDocument();
-  // 先走 reject（决策后按钮隐去），再重渲染走 apply。
+  // Take reject first (the buttons disappear after the decision), then
+  // re-render and take apply.
   fireEvent.click(
     await screen.findByRole("button", { name: "Recusar" }),
   );
@@ -1046,7 +1050,7 @@ it("修订提案完整 revised + apply/reject 决策端点", async () => {
   });
 });
 
-it("故事变化裁定：apply/reject 带 expectedStatus 与 conflictPolicy", async () => {
+it("story change decisions: apply/reject send expectedStatus and conflictPolicy", async () => {
   let setStatus: string = "candidate";
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -1094,7 +1098,7 @@ it("故事变化裁定：apply/reject 带 expectedStatus 与 conflictPolicy", as
   });
 });
 
-it("故事变化冲突只在服务端允许时提供强制采纳", async () => {
+it("a story change conflict offers forced adoption only when the server allows it", async () => {
   let applied = false;
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -1144,7 +1148,7 @@ it("故事变化冲突只在服务端允许时提供强制采纳", async () => {
   });
 });
 
-it("交给 AI 发起单章 chapter run，并在失败重试时复用 requestId", async () => {
+it("hand to AI starts a single-chapter chapter run and reuses the requestId when retrying after a failure", async () => {
   const requestBodies: Array<Record<string, unknown>> = [];
   const detail = {
     ...DOC_DETAIL,
@@ -1273,20 +1277,21 @@ it("交给 AI 发起单章 chapter run，并在失败重试时复用 requestId",
   expect(body.planningMode).toBe("auto");
   expect(body.origin).toEqual({ surface: "writing", documentId: "doc-ch-1" });
   expect(body).not.toHaveProperty("mode");
-  // 台账已登记（离页恢复）
+  // recorded in the ledger (restored after leaving the page)
   const ledger = JSON.parse(
     window.localStorage.getItem("lapis:task-ledger") ?? "[]",
   ) as Array<{ taskId: string; kind: string }>;
   expect(
     ledger.some((entry) => entry.taskId === "run-ai-1" && entry.kind === "chapter"),
   ).toBe(true);
-    // 普通用户留在写作台；任务详情仍可按需进入。
+    // A regular user stays in the studio; task details can still be opened when
+    // needed.
   expect(
     screen.getByRole("link", { name: /Ver os detalhes da tarefa/ }),
   ).toHaveAttribute("href", "/projects/p-1/runs?run=run-ai-1");
 });
 
-it("从任务深链在写作台展示候选正文、轻量审稿并完成采纳", async () => {
+it("a task deep link shows the candidate text and a light review in the studio and completes adoption", async () => {
   let accepted = false;
   const candidate = "潮水越过旧钟楼，沈砚在回声里拆开那封信。";
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {

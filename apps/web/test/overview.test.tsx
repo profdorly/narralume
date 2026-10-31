@@ -9,8 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLocale } from "../src/i18n";
 import { OverviewWorkspace } from "../src/workspaces/overview";
 
-/* 项目概览：刊头（书名 / 卷首语 / 进度注记）+ 当前章节卡 + 下一步入口。
-   数据源为服务端 overview 聚合契约。 */
+/* Project overview: masthead (title / epigraph / progress note) + current
+   chapter card + next-step entry. The data comes from the server overview
+   aggregate contract. */
 
 const OVERVIEW = {
   project: {
@@ -96,7 +97,7 @@ afterEach(() => {
 });
 
 describe("Visão geral do projeto", () => {
-  it("渲染刊头、当前章节与下一步入口", async () => {
+  it("renders the masthead, the current chapter and the next-step entry", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url === "/api/projects/p-1-tides/overview") return json(OVERVIEW);
@@ -123,7 +124,7 @@ describe("Visão geral do projeto", () => {
     expect(screen.getByRole("link", { name: "Criação rápida com IA" })).toBeInTheDocument();
   });
 
-  it("全部章节定稿时提示走交付", async () => {
+  it("points to delivery when all chapters are final", async () => {
     const allCommitted = {
       ...OVERVIEW,
       currentChapter: null,
@@ -142,7 +143,7 @@ describe("Visão geral do projeto", () => {
     await screen.findByText("Todos os capítulos estão registrados; próximo passo: conferir e entregar.");
   });
 
-  it("定稿后有审稿待办时说明真实下一步，并直达对应正文", async () => {
+  it("after finalizing, explains the real next step when review work is pending and links straight to the manuscript", async () => {
     const needsReview = {
       ...OVERVIEW,
       currentChapter: null,
@@ -194,7 +195,7 @@ describe("Visão geral do projeto", () => {
     expect(screen.getByRole("link", { name: "Propostas de reescrita · 1" })).toHaveAttribute("data-kind", "proposals");
   });
 
-  it("活跃任务卡只呈现任务协议字段并给出回到任务现场链接", async () => {
+  it("the active task card shows only task protocol fields and links back to the task", async () => {
     const withTask = {
       ...OVERVIEW,
       activeTask: {
@@ -237,7 +238,7 @@ describe("Visão geral do projeto", () => {
     expect(restore).toHaveTextContent("Tratar candidatos e decisões");
   });
 
-  it("活动任务的暂停动作是真实按钮，并调用统一任务动作接口", async () => {
+  it("the active task's pause action is a real button and calls the shared task action endpoint", async () => {
     const withTask = {
       ...OVERVIEW,
       activeTask: {
@@ -266,7 +267,7 @@ describe("Visão geral do projeto", () => {
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({ action: "pause", projectId: "p-1-tides" });
   });
 
-  it("AI 建书后台任务返回故事方向，不再误入写作台", async () => {
+  it("the AI book-setup background task returns to story direction instead of landing in the studio", async () => {
     const withFoundation = {
       ...OVERVIEW,
       activeTask: {
@@ -294,7 +295,7 @@ describe("Visão geral do projeto", () => {
     );
   });
 
-  it("未选择作品时给出空态且不拉取 overview", () => {
+  it("shows an empty state and does not fetch overview when no book is selected", () => {
     const fetchMock = vi.fn(() => {
       throw new Error("should not fetch");
     });
@@ -306,7 +307,7 @@ describe("Visão geral do projeto", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("轮询切换活动任务后，为旧任务打开的取消确认随之关闭", async () => {
+  it("after polling switches the active task, the cancel confirmation opened for the old task closes with it", async () => {
     vi.useFakeTimers();
     const taskA = {
       kind: "chapter",
@@ -337,7 +338,8 @@ describe("Visão geral do projeto", () => {
     fireEvent.click(screen.getByRole("button", { name: /Cancelar/ }));
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
 
-    /* 3 秒轮询后活动任务从 A 换成 B：确认框必须随任务 A 一起消失 */
+    /* After the 3-second poll the active task changes from A to B: the
+       confirmation must disappear along with task A */
     active = taskB;
     await vi.advanceTimersByTimeAsync(3_100);
     await vi.waitFor(() => expect(screen.queryByText("第三章 灯骸")).not.toBeNull());
