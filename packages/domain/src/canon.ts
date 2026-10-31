@@ -176,7 +176,3 @@ export function canAccessFact(fact: CanonFact, access: CanonAccess): boolean {
       return false;
   }
 }
-
-export function authorityRank(authority: CanonAuthority): number {
-  return { candidate: 0, inferred: 1, confirmed: 2, locked: 3 }[authority];
-}

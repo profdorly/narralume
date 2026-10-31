@@ -300,7 +300,7 @@ export function commitDocumentVersion(
   return version;
 }
 
-export const MAX_COVER_BYTES = 8 * 1024 * 1024;
+const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
 /**
  * 在作品更新事务内应用封面变更；校验失败会回滚资料修改。base64 解码

@@ -115,7 +115,3 @@ export const AGENT_SKILL_REGISTRY: readonly AgentSkillDto[] = [
     builtin: true,
   },
 ].map((skill) => AgentSkillSchema.parse(skill));
-
-export function getBuiltinAgentSkill(id: string): AgentSkillDto | null {
-  return AGENT_SKILL_REGISTRY.find((skill) => skill.id === id) ?? null;
-}

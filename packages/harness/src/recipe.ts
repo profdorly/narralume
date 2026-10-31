@@ -79,11 +79,6 @@ export function buildChapterRecipe(
   };
 }
 
-/** Conto / texto curto: um único ciclo de revisão (sem voltas de rewrite). */
-export function buildShortStoryRecipe(runId: string): ChapterRecipe {
-  return { ...buildChapterRecipe(runId, 0), name: "short-story" };
-}
-
 export function buildRequestedRevisionRecipe(
   runId: string,
 ): RequestedRevisionRecipe {

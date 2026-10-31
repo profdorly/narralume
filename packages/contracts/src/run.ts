@@ -74,17 +74,6 @@ export const RunStepKindSchema = z.enum([
   "canon.stage",
 ]);
 
-export const ChapterStepKindSchema = RunStepKindSchema.extract([
-  "context.compile",
-  "scene.plan",
-  "draft.generate",
-  "deterministic.check",
-  "semantic.review",
-  "revision.generate",
-  "chapter.settle",
-  "chapter.commit",
-]);
-
 export const RunBudgetUsageSchema = z.object({
   inputTokens: z.number().int().nonnegative(),
   outputTokens: z.number().int().nonnegative(),

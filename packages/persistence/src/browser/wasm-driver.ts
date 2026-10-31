@@ -16,7 +16,7 @@ import type { SqliteRawDatabase, SqliteStatement } from "../driver.js";
  * lapis-<date>.sqlite).
  */
 export const OPFS_DATABASE_FILE = "narralume.sqlite";
-export const OPFS_POOL_NAME = "narralume-pool";
+const OPFS_POOL_NAME = "narralume-pool";
 
 export async function createOpfsSahpoolDriver(
   filename = OPFS_DATABASE_FILE,
