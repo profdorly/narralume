@@ -490,6 +490,7 @@ export async function buildApp(
     await autopilotCoordinator?.stop();
     await bibleBackfillCoordinator?.stop();
     await coordinator.stop();
+    streams.flush();
     events.close();
     if (ownsDatabase) database.close();
   });

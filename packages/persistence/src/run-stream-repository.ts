@@ -10,12 +10,85 @@ export interface RunTextStream {
   updatedAt: string;
 }
 
+/* Streamed model text arrives in many small deltas. Writing each one used to
+   rewrite the whole growing row (content || delta), so a chapter cost writes
+   quadratic in its length. Deltas are now buffered per step and written at
+   most once per FLUSH_MS or FLUSH_CHARS, and before any read, status change
+   or discard. The buffer is shared by every repository on the same database,
+   so readers in this process always see the full text. A crash loses at most
+   FLUSH_MS of text, which the interrupted-run recovery already tolerates. */
+const FLUSH_MS = 1_000;
+const FLUSH_CHARS = 16_000;
+
+interface PendingText {
+  runId: string;
+  stepId: string;
+  attempt: number;
+  text: string;
+  now: string;
+  startedAt: number;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+const pendingByDatabase = new WeakMap<
+  NarrativeDatabase,
+  Map<string, PendingText>
+>();
+
 export class SqliteRunStreamRepository {
-  constructor(private readonly database: NarrativeDatabase) {}
+  private readonly pending: Map<string, PendingText>;
+
+  constructor(private readonly database: NarrativeDatabase) {
+    let pending = pendingByDatabase.get(database);
+    if (!pending) {
+      pending = new Map();
+      pendingByDatabase.set(database, pending);
+    }
+    this.pending = pending;
+  }
 
   appendText(runId: string, stepId: string, text: string, now: string): void {
     if (!text) return;
-    const step = this.requireStep(runId, stepId);
+    const key = `${runId}\0${stepId}`;
+    let entry = this.pending.get(key);
+    if (!entry) {
+      entry = {
+        runId,
+        stepId,
+        attempt: this.requireStep(runId, stepId).attempt,
+        text: "",
+        now,
+        startedAt: Date.now(),
+        timer: null,
+      };
+      this.pending.set(key, entry);
+    }
+    entry.text += text;
+    entry.now = now;
+    if (
+      entry.text.length >= FLUSH_CHARS ||
+      Date.now() - entry.startedAt >= FLUSH_MS
+    ) {
+      this.flushEntry(key);
+      return;
+    }
+    if (!entry.timer) {
+      const timer = setTimeout(() => this.flushEntry(key), FLUSH_MS);
+      (timer as { unref?: () => void }).unref?.();
+      entry.timer = timer;
+    }
+  }
+
+  /** Writes every buffered delta. Readers and status changes call it. */
+  flush(): void {
+    for (const key of [...this.pending.keys()]) this.flushEntry(key);
+  }
+
+  private flushEntry(key: string): void {
+    const entry = this.pending.get(key);
+    if (!entry) return;
+    this.pending.delete(key);
+    if (entry.timer) clearTimeout(entry.timer);
     this.database.raw
       .prepare(
         `INSERT INTO run_stream_attempts(
@@ -26,7 +99,7 @@ export class SqliteRunStreamRepository {
            status = 'streaming',
            updated_at = excluded.updated_at`,
       )
-      .run(runId, stepId, step.attempt, text, now);
+      .run(entry.runId, entry.stepId, entry.attempt, entry.text, entry.now);
   }
 
   markStatus(
@@ -35,6 +108,7 @@ export class SqliteRunStreamRepository {
     status: RunTextStream["status"],
     now: string,
   ): void {
+    this.flush();
     const step = this.requireStep(runId, stepId);
     this.database.raw
       .prepare(
@@ -45,6 +119,7 @@ export class SqliteRunStreamRepository {
   }
 
   interruptOrphaned(now = new Date().toISOString()): number {
+    this.flush();
     return Number(
       this.database.raw
         .prepare(
@@ -56,6 +131,7 @@ export class SqliteRunStreamRepository {
   }
 
   listForRun(runId: string): RunTextStream[] {
+    this.flush();
     const rows = this.database.raw
       .prepare(
         `SELECT * FROM run_stream_attempts
@@ -66,6 +142,7 @@ export class SqliteRunStreamRepository {
   }
 
   get(runId: string, stepId: string, attempt: number): RunTextStream | null {
+    this.flush();
     const row = this.database.raw
       .prepare(
         `SELECT * FROM run_stream_attempts
@@ -76,6 +153,7 @@ export class SqliteRunStreamRepository {
   }
 
   discard(runId: string, stepId: string, attempt: number): boolean {
+    this.flush();
     return (
       this.database.raw
         .prepare(

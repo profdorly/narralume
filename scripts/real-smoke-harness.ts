@@ -525,6 +525,7 @@ function collectAggregates(database: NarrativeDatabase) {
       .prepare("SELECT COUNT(*) AS count FROM run_steps WHERE attempt > 1")
       .get() as { count: number }
   ).count;
+  new SqliteRunStreamRepository(database).flush();
   const partialStreamChars = (
     database.raw
       .prepare(

@@ -80,6 +80,28 @@ describe("SqliteRunRepository", () => {
     unsubscribe();
   });
 
+  it("buffers streamed deltas and shows them to every reader on the database", () => {
+    seedRun(1);
+    runs.leaseNext("worker-a", now, 30_000);
+    const step = runs.startStep("run-1", "run-1:context", now);
+    const writer = new SqliteRunStreamRepository(database);
+    const deltas = Array.from({ length: 200 }, (_, index) => `d${index};`);
+    for (const delta of deltas) writer.appendText("run-1", step.id, delta, now);
+    const rowCount = () =>
+      (
+        database.raw
+          .prepare("SELECT COUNT(*) AS count FROM run_stream_attempts")
+          .get() as { count: number }
+      ).count;
+    // Nothing reached the table yet: 200 deltas, well under the size limit.
+    expect(rowCount()).toBe(0);
+    // Another repository on the same database still reads the whole text.
+    expect(
+      new SqliteRunStreamRepository(database).get("run-1", step.id, 1),
+    ).toMatchObject({ content: deltas.join(""), status: "streaming" });
+    expect(rowCount()).toBe(1);
+  });
+
   it("leases atomically, records hashed artifacts, checkpoints, usage, and events", () => {
     seedRun(1);
     const lease = runs.leaseNext("worker-a", now, 30_000);
