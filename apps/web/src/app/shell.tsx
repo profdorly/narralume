@@ -80,6 +80,14 @@ const SettingsWorkspace = lazy(() => import("../workspaces/settings").then((modu
 const CommandPalette = lazy(() => import("./command-palette").then((module) => ({ default: module.CommandPalette })));
 const ProjectAssistant = lazy(() => import("./assistant").then((module) => ({ default: module.ProjectAssistant })));
 
+/** Reloads the page once rendered; used when an updated app's chunk is gone. */
+function ReloadOnMount() {
+  useEffect(() => {
+    window.location.reload();
+  }, []);
+  return null;
+}
+
 /* The rail's collapsed state has two sources: the wide-screen memory
    (localStorage) and automatic collapse on narrow screens (≤1100px). A manual
    collapse / expand on a narrow screen is a session-level override and is not
@@ -432,7 +440,10 @@ function ShellFrame() {
         </Suspense>
       </main>
       {paletteOpen ? (
-        <ChunkBoundary fallback={null}>
+        <ChunkBoundary
+          // The palette's file is gone (the app was updated): reload to get it.
+          fallback={<ReloadOnMount />}
+        >
           <Suspense fallback={null}>
             <CommandPalette
               projectId={projectId}

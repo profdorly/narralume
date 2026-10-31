@@ -1,4 +1,4 @@
-import { QueryClientContext } from "@tanstack/react-query";
+import { QueryClientContext, type QueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
 
 import type { ServerEvent } from "@lapis/contracts";
@@ -59,9 +59,8 @@ interface ServerEventHandlers {
    */
   onBibleBackfillStatus?: (event: BibleBackfillStatusEvent) => void;
   /**
-   * The stream went down or came back. Events sent meanwhile are not
-   * replayed, so refetch what the events would have refreshed; queries also
-   * switch between their slow and fast polling interval when refetched.
+   * The stream went down or came back. The module already refetches the
+   * affected queries once per change; this is for extra local reactions.
    */
   onConnectionChange?: (live: boolean) => void;
 }
@@ -133,9 +132,43 @@ function bindKernel(): void {
   });
 }
 
+/** The app's query client, registered by useServerEvents. */
+let queryClient: QueryClient | null = null;
+function registerQueryClient(client: QueryClient): void {
+  queryClient = client;
+}
+
+/** Whether this connection has been live before (its first open is not a reconnect). */
+let wasLive = false;
+
 function setLive(next: boolean): void {
   if (live === next) return;
   live = next;
+  if (next && wasLive) {
+    // Reconnected: events sent meanwhile are not replayed, so refresh what is
+    // on screen once. In-flight fetches are kept, not restarted.
+    void queryClient?.invalidateQueries(
+      { refetchType: "active" },
+      { cancelRefetch: false },
+    );
+  } else if (!next) {
+    // Dropped: only the queries whose polling depends on the stream (a
+    // function refetchInterval, see eventAwareInterval) refetch, which
+    // reschedules them at their fast interval. Others keep their data, so a
+    // Server that is down does not turn every screen into an error.
+    void queryClient?.refetchQueries(
+      {
+        type: "active",
+        // refetchInterval lives on the observer options, not on the query's.
+        predicate: (query) =>
+          query.observers.some(
+            (observer) => typeof observer.options.refetchInterval === "function",
+          ),
+      },
+      { cancelRefetch: false },
+    );
+  }
+  if (next) wasLive = true;
   for (const handlers of subscribers) handlers.onConnectionChange?.(next);
 }
 
@@ -183,6 +216,7 @@ function disconnect(): void {
   if (reopenTimer) clearTimeout(reopenTimer);
   reopenTimer = null;
   live = false;
+  wasLive = false;
 }
 
 /** Subscribes to server events; returns the unsubscribe function. */
@@ -206,12 +240,13 @@ export function useServerEvents(
 ): void {
   const ref = useRef(handlers);
   // Optional: components rendered without a QueryClientProvider still get events.
-  const queryClient = useContext(QueryClientContext);
+  const client = useContext(QueryClientContext);
   useEffect(() => {
     ref.current = handlers;
   });
   useEffect(() => {
     if (!enabled) return;
+    if (client) registerQueryClient(client);
     return subscribeServerEvents({
       onModelEvent: (runId, event) => ref.current.onModelEvent?.(runId, event),
       onRunStatus: (runId, status) =>
@@ -220,16 +255,9 @@ export function useServerEvents(
         ref.current.onRunEvent?.(runId, stepId, sequence, eventType, payload),
       onBibleBackfillStatus: (event) =>
         ref.current.onBibleBackfillStatus?.(event),
-      onConnectionChange: (isLive) => {
-        // Events sent while the stream was down are not replayed, and polling
-        // intervals depend on the stream state: refresh what is on screen.
-        // Several hooks share one connection; refetching active queries once
-        // per change is enough, and invalidateQueries dedupes in-flight work.
-        void queryClient?.invalidateQueries({ refetchType: "active" });
-        ref.current.onConnectionChange?.(isLive);
-      },
+      onConnectionChange: (isLive) => ref.current.onConnectionChange?.(isLive),
     });
-  }, [enabled, queryClient]);
+  }, [enabled, client]);
 }
 
 /**

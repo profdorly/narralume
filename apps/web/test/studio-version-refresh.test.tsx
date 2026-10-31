@@ -148,3 +148,59 @@ it("after restoring a past version the editor reloads the manuscript from the ne
     expect(screen.getByText("Rascunho sincronizado")).toBeInTheDocument(),
   );
 });
+
+it("keeps the editor when the event stream drops and the Server is unreachable", async () => {
+  // Regression: refetching every query on a drop made the documents list fail
+  // and replaced the whole Studio, editor included, with an error note.
+  class EventSourceStub {
+    static current: EventSourceStub | null = null;
+    readyState = 0;
+    onopen: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    constructor() {
+      EventSourceStub.current = this;
+    }
+    addEventListener() {}
+    close() {}
+  }
+  vi.stubGlobal("EventSource", EventSourceStub);
+  let serverUp = true;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo | URL) => {
+      if (!serverUp) return Promise.reject(new TypeError("Failed to fetch"));
+      const url = String(input);
+      if (url === "/api/projects/p-1/studio/documents") return json([DOCUMENT]);
+      if (url === "/api/projects/p-1/studio/documents/doc-1") return json(detail);
+      if (url === "/api/projects/p-1/reviews")
+        return json({ reports: [], proposals: [] });
+      if (url === "/api/projects/p-1/canon-change-sets")
+        return json({ changeSets: [] });
+      return json({});
+    }),
+  );
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/projects/p-1/studio"]}>
+        <Routes>
+          <Route path="/projects/:projectId/studio" element={<StudioWorkspace />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  const editor = await screen.findByLabelText("Editor do corpo em Markdown");
+  await waitFor(() => expect(manuscriptMarkdown(editor)).toBe("VERSION-TWO"));
+
+  const source = EventSourceStub.current!;
+  source.readyState = 1;
+  source.onopen?.();
+  serverUp = false;
+  source.readyState = 0;
+  source.onerror?.();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  expect(screen.getByLabelText("Editor do corpo em Markdown")).toBeInTheDocument();
+});
