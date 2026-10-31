@@ -1,5 +1,4 @@
 @echo off
-setlocal
-cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\update-and-start.ps1"
-if errorlevel 1 pause
+rem Kept for shortcuts made before the rename; remove in a later release.
+echo UpdateAndStart-NarraLume.bat was renamed to UpdateAndStart-Lapis.bat.
+call "%~dp0UpdateAndStart-Lapis.bat"

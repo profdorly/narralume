@@ -7,14 +7,25 @@ LOGS="$RUNTIME/logs"
 PID_FILE="$RUNTIME/server.pid"
 LOCK_FILE="$ROOT/package-lock.json"
 INSTALL_MARKER="$RUNTIME/package-lock.sha256"
-PORT=${NARRALUME_PORT:-4317}
+# LAPIS_* settings win; the NARRALUME_* names from before the rename still
+# work and print a notice.
+for old_name in $(env | sed -n 's/^\(NARRALUME_[A-Z_]*\)=.*/\1/p'); do
+  new_name="LAPIS_${old_name#NARRALUME_}"
+  if eval "[ -z \"\${$new_name+x}\" ]"; then
+    echo "$old_name is deprecated; use $new_name." >&2
+  fi
+done
+PORT=${LAPIS_PORT:-${NARRALUME_PORT:-4317}}
 URL="http://127.0.0.1:$PORT"
-DATA_DIRECTORY=${NARRALUME_DATA_DIR:-${NARRATIVE_DATA_DIR:-"$ROOT/data"}}
+DATA_DIRECTORY=${LAPIS_DATA_DIR:-${NARRALUME_DATA_DIR:-${NARRATIVE_DATA_DIR:-"$ROOT/data"}}}
 BACKUP_DIRECTORY=${NARRATIVE_BACKUP_DIR:-"$DATA_DIRECTORY/backups"}
-PORTABLE_NODE_VERSION=${NARRALUME_NODE_VERSION:-24.19.0}
+PORTABLE_NODE_VERSION=${LAPIS_NODE_VERSION:-${NARRALUME_NODE_VERSION:-24.19.0}}
+FORCE_PORTABLE_NODE=${LAPIS_FORCE_PORTABLE_NODE:-${NARRALUME_FORCE_PORTABLE_NODE:-0}}
+FORCE_BUILD=${LAPIS_FORCE_BUILD:-${NARRALUME_FORCE_BUILD:-0}}
+NO_BROWSER=${LAPIS_NO_BROWSER:-${NARRALUME_NO_BROWSER:-0}}
 
 mkdir -p "$LOGS" "$DATA_DIRECTORY" "$BACKUP_DIRECTORY"
-command -v curl >/dev/null 2>&1 || { echo "curl is required by the NarraLume launcher." >&2; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "curl is required by the Lapis launcher." >&2; exit 1; }
 
 node_is_supported() {
   "$1" -e 'const major=Number(process.versions.node.split(".")[0]);process.exit(major >= 24 ? 0 : 1)' >/dev/null 2>&1
@@ -24,7 +35,7 @@ install_portable_node() {
   case "$(uname -s)" in
     Darwin) node_os=darwin ;;
     Linux) node_os=linux ;;
-    *) echo "NarraLume supports macOS and Linux on this launcher." >&2; exit 1 ;;
+    *) echo "Lapis supports macOS and Linux on this launcher." >&2; exit 1 ;;
   esac
   case "$(uname -m)" in
     x86_64|amd64) node_arch=x64 ;;
@@ -63,7 +74,7 @@ install_portable_node() {
   printf '%s\n' "$node_home"
 }
 
-if [ "${NARRALUME_FORCE_PORTABLE_NODE:-0}" != "1" ] && command -v node >/dev/null 2>&1 && node_is_supported "$(command -v node)"; then
+if [ "$FORCE_PORTABLE_NODE" != "1" ] && command -v node >/dev/null 2>&1 && node_is_supported "$(command -v node)"; then
   NODE_BIN=$(command -v node)
   NODE_HOME=$(dirname -- "$NODE_BIN")
 else
@@ -78,7 +89,7 @@ NPM_MAJOR=$($NPM_BIN --version | awk -F. '{print $1}')
 case "$NPM_MAJOR" in
   ''|*[!0-9]*) echo "Unable to determine npm version." >&2; exit 1 ;;
 esac
-[ "$NPM_MAJOR" -ge 11 ] || { echo "NarraLume requires npm 11 or newer." >&2; exit 1; }
+[ "$NPM_MAJOR" -ge 11 ] || { echo "Lapis requires npm 11 or newer." >&2; exit 1; }
 
 LOCK_HASH=$($NODE_BIN -e 'const fs=require("fs"),c=require("crypto");process.stdout.write(c.createHash("sha256").update(fs.readFileSync(process.argv[1])).digest("hex"))' "$LOCK_FILE")
 INSTALLED_HASH=$([ -f "$INSTALL_MARKER" ] && cat "$INSTALL_MARKER" || true)
@@ -90,13 +101,13 @@ fi
 
 SERVER_ENTRY="$ROOT/apps/server/dist/main.js"
 WEB_INDEX="$ROOT/apps/web/dist/index.html"
-if [ "${NARRALUME_FORCE_BUILD:-0}" = "1" ] || [ ! -f "$SERVER_ENTRY" ] || [ ! -f "$WEB_INDEX" ]; then
-  echo "Building NarraLume..."
+if [ "$FORCE_BUILD" = "1" ] || [ ! -f "$SERVER_ENTRY" ] || [ ! -f "$WEB_INDEX" ]; then
+  echo "Building Lapis..."
   (cd "$ROOT" && VITE_TRIAL_MODE=0 "$NPM_BIN" run build)
 fi
 
 if curl --fail --silent "$URL/api/health" >/dev/null 2>&1; then
-  echo "NarraLume is already running at $URL"
+  echo "Lapis is already running at $URL"
 else
   NODE_ENV=production \
     NARRATIVE_SERVER_HOST=127.0.0.1 \
@@ -115,15 +126,15 @@ else
     sleep 0.5
   done
   if ! curl --fail --silent "$URL/api/health" >/dev/null 2>&1; then
-    echo "NarraLume failed to start. See $LOGS/server-error.log." >&2
+    echo "Lapis failed to start. See $LOGS/server-error.log." >&2
     exit 1
   fi
 fi
 
-echo "NarraLume is running at $URL"
+echo "Lapis is running at $URL"
 echo "Data: $DATA_DIRECTORY"
 echo "Logs: $LOGS"
-if [ "${NARRALUME_NO_BROWSER:-0}" != "1" ]; then
+if [ "$NO_BROWSER" != "1" ]; then
   if command -v open >/dev/null 2>&1; then
     open "$URL"
   elif command -v xdg-open >/dev/null 2>&1; then

@@ -7,5 +7,5 @@ try {
   Write-Host "Backup completed: $($backup.databaseFile)"
   $backup
 } catch {
-  throw "Could not create a consistent Docker backup. Start NarraLume first. $($_.Exception.Message)"
+  throw "Could not create a consistent Docker backup. Start Lapis first. $($_.Exception.Message)"
 }

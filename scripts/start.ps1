@@ -12,10 +12,27 @@ $lockFile = Join-Path $root "package-lock.json"
 $installMarker = Join-Path $runtime "package-lock.sha256"
 $minimumNodeVersion = [version]"24.0.0"
 $minimumNpmMajor = 11
-$portableVersion = if ($env:NARRALUME_NODE_VERSION) { $env:NARRALUME_NODE_VERSION } else { "24.15.0" }
-$port = if ($env:NARRALUME_PORT) { [int]$env:NARRALUME_PORT } else { 4317 }
+# LAPIS_* settings win; the NARRALUME_* names from before the rename still
+# work and print a notice.
+function Get-LapisSetting([string]$name) {
+  $value = [Environment]::GetEnvironmentVariable("LAPIS_$name")
+  if ($value) { return $value }
+  $legacy = [Environment]::GetEnvironmentVariable("NARRALUME_$name")
+  if ($legacy) {
+    Write-Warning "NARRALUME_$name is deprecated; use LAPIS_$name."
+    return $legacy
+  }
+  return $null
+}
+
+$portableSetting = Get-LapisSetting "NODE_VERSION"
+$portableVersion = if ($portableSetting) { $portableSetting } else { "24.15.0" }
+$portSetting = Get-LapisSetting "PORT"
+$port = if ($portSetting) { [int]$portSetting } else { 4317 }
 $url = "http://127.0.0.1:$port"
-$dataDirectory = if ($env:NARRALUME_DATA_DIR) { $env:NARRALUME_DATA_DIR } else { Join-Path $root "data" }
+$dataSetting = Get-LapisSetting "DATA_DIR"
+$dataDirectory = if ($dataSetting) { $dataSetting } else { Join-Path $root "data" }
+$forcePortableNode = Get-LapisSetting "FORCE_PORTABLE_NODE"
 
 New-Item -ItemType Directory -Force -Path $runtime, $logs | Out-Null
 
@@ -34,7 +51,7 @@ function Test-Npm([string]$candidate) {
 
 function Install-PortableNode {
   if (-not [Environment]::Is64BitOperatingSystem) {
-    throw "The NarraLume portable runtime requires 64-bit Windows."
+    throw "The Lapis portable runtime requires 64-bit Windows."
   }
   $folderName = "node-v$portableVersion-win-x64"
   $nodeHome = Join-Path $runtime $folderName
@@ -59,7 +76,7 @@ function Install-PortableNode {
 }
 
 $systemNode = Get-Command node -ErrorAction SilentlyContinue
-$nodeExe = if ($env:NARRALUME_FORCE_PORTABLE_NODE -ne "1" -and $systemNode -and (Test-Node $systemNode.Source)) {
+$nodeExe = if ($forcePortableNode -ne "1" -and $systemNode -and (Test-Node $systemNode.Source)) {
   $systemNode.Source
 } else {
   Install-PortableNode
@@ -71,7 +88,7 @@ if (-not (Test-Path -LiteralPath $npmCommand)) {
   $npmCommand = $systemNpm.Source
 }
 if (-not (Test-Npm $npmCommand)) {
-  throw "NarraLume requires npm $minimumNpmMajor or newer."
+  throw "Lapis requires npm $minimumNpmMajor or newer."
 }
 
 $lockHash = (Get-FileHash -LiteralPath $lockFile -Algorithm SHA256).Hash
@@ -93,7 +110,12 @@ if (-not (Test-Path -LiteralPath $nodeModules) -or $installedHash -ne $lockHash)
 
 $serverEntry = Join-Path $root "apps\server\dist\main.js"
 $webIndex = Join-Path $root "apps\web\dist\index.html"
-$localBuildMarker = Join-Path (Split-Path -Parent $webIndex) ".narralume-local-build"
+$localBuildMarker = Join-Path (Split-Path -Parent $webIndex) ".lapis-local-build"
+# Builds made before the rename recorded their hash under the old name.
+$legacyLocalBuildMarker = Join-Path (Split-Path -Parent $webIndex) ".narralume-local-build"
+if (-not (Test-Path -LiteralPath $localBuildMarker) -and (Test-Path -LiteralPath $legacyLocalBuildMarker)) {
+  Move-Item -LiteralPath $legacyLocalBuildMarker -Destination $localBuildMarker
+}
 $sourceCheckout = Test-Path -LiteralPath (Join-Path $root "apps\web\src")
 $localBuildHash = ""
 if ($sourceCheckout) {
@@ -139,14 +161,14 @@ $needsBuild = -not (Test-Path -LiteralPath $serverEntry) -or
   -not (Test-Path -LiteralPath $webIndex) -or
   ($sourceCheckout -and $recordedLocalBuildHash -ne $localBuildHash)
 if ($needsBuild) {
-  Write-Host "Building NarraLume..."
-  # Start-NarraLume.bat always produces the local variant. The production
+  Write-Host "Building Lapis..."
+  # Start-Lapis.bat always produces the local variant. The production
   # deployment script sets the online-only Relay and trial variables separately.
   $env:VITE_TRIAL_MODE = "0"
   Remove-Item Env:VITE_DEMO_RELAY_URL -ErrorAction SilentlyContinue
   Remove-Item Env:VITE_DEMO_RELAY_MODEL -ErrorAction SilentlyContinue
   & $npmCommand run build --prefix $root
-  if ($LASTEXITCODE -ne 0) { throw "The NarraLume build failed." }
+  if ($LASTEXITCODE -ne 0) { throw "The Lapis build failed." }
   if ($sourceCheckout) {
     Set-Content -LiteralPath $localBuildMarker -Value $localBuildHash -Encoding ASCII
   }
@@ -155,7 +177,7 @@ if ($needsBuild) {
 try {
   $health = Invoke-RestMethod "$url/api/health" -TimeoutSec 2
   if ($health.status -eq "ok") {
-    Write-Host "NarraLume is already running at $url"
+    Write-Host "Lapis is already running at $url"
     if (-not $NoBrowser) { Start-Process $url }
     return
   }
@@ -182,16 +204,16 @@ for ($attempt = 0; $attempt -lt 60; $attempt++) {
   Start-Sleep -Milliseconds 500
 }
 if (-not $ready) {
-  throw "NarraLume failed to start. See $stderr."
+  throw "Lapis failed to start. See $stderr."
 }
-Write-Host "NarraLume is running at $url"
+Write-Host "Lapis is running at $url"
 Write-Host "Data: $dataDirectory"
 Write-Host "Logs: $logs"
 if (-not $NoBrowser) { Start-Process $url }
 
 if ($NoWait) { return }
 try {
-  [void](Read-Host "Press Enter to stop NarraLume (or press Ctrl+C / close this window)")
+  [void](Read-Host "Press Enter to stop Lapis (or press Ctrl+C / close this window)")
 } finally {
   if (-not $process.HasExited) {
     & (Join-Path $PSScriptRoot "stop.ps1")

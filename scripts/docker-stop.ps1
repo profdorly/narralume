@@ -13,4 +13,4 @@ try {
   Pop-Location
 }
 
-Write-Host "NarraLume containers have stopped. The data volume was preserved."
+Write-Host "Lapis containers have stopped. The data volume was preserved."

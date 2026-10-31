@@ -65,7 +65,7 @@ if (
 }
 const releaseVersion = tagVersion ?? pkg.version;
 const releaseRoot = join(root, ".tmp", "release");
-const releaseName = `NarraLume-${releaseVersion}`;
+const releaseName = `Lapis-${releaseVersion}`;
 const stage = join(releaseRoot, releaseName);
 const archive = join(
   releaseRoot,
@@ -117,22 +117,22 @@ const commonFiles = [
 ];
 const launcherFiles = windowsTarget
   ? [
-      "Start-NarraLume.bat",
-      "UpdateAndStart-NarraLume.bat",
+      "Start-Lapis.bat",
+      "UpdateAndStart-Lapis.bat",
       "scripts/start.ps1",
       "scripts/stop.ps1",
       "scripts/backup.ps1",
       "scripts/update-and-start.ps1",
     ]
   : [
-      "Start-NarraLume.sh",
-      "UpdateAndStart-NarraLume.sh",
+      "Start-Lapis.sh",
+      "UpdateAndStart-Lapis.sh",
       "scripts/start.sh",
       "scripts/stop.sh",
       "scripts/backup.sh",
       "scripts/update-and-start.sh",
       ...(target.startsWith("macos-")
-        ? ["Start-NarraLume.command", "UpdateAndStart-NarraLume.command"]
+        ? ["Start-Lapis.command", "UpdateAndStart-Lapis.command"]
         : []),
     ];
 for (const file of [...commonFiles, ...launcherFiles]) copy(file);

@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $pidFile = Join-Path $root ".runtime\server.pid"
 if (-not (Test-Path -LiteralPath $pidFile)) {
-  Write-Host "No launcher-managed NarraLume process is recorded."
+  Write-Host "No launcher-managed Lapis process is recorded."
   return
 }
 $serverPid = [int](Get-Content -LiteralPath $pidFile -Raw)
@@ -15,11 +15,11 @@ if ($process -and $process.CommandLine -like "*apps*server*dist*main.js*") {
     $running = Get-Process -Id $serverPid -ErrorAction SilentlyContinue
   } while ($running -and [DateTime]::UtcNow -lt $deadline)
   if ($running) {
-    Write-Warning "Graceful stop timed out; forcing NarraLume to stop."
+    Write-Warning "Graceful stop timed out; forcing Lapis to stop."
     Stop-Process -Id $serverPid -Force
   }
-  Write-Host "NarraLume has stopped."
+  Write-Host "Lapis has stopped."
 } else {
-  Write-Warning "PID $serverPid does not belong to NarraLume and was not stopped."
+  Write-Warning "PID $serverPid does not belong to Lapis and was not stopped."
 }
 Remove-Item -LiteralPath $pidFile -Force

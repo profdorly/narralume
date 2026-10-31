@@ -31,7 +31,7 @@ try {
 for ($attempt = 0; $attempt -lt 60; $attempt++) {
   try {
     if ((Invoke-RestMethod "http://127.0.0.1:4318/api/health" -TimeoutSec 2).status -eq "ok") {
-      Write-Host "NarraLume Docker deployment is updated."
+      Write-Host "Lapis Docker deployment is updated."
       exit 0
     }
   } catch { }

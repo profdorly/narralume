@@ -69,12 +69,12 @@ jobs:
           tar -xzf "${archive[0]}" -C "$smoke_root"
           package_root=$(find "$smoke_root" -mindepth 1 -maxdepth 1 -type d -print -quit)
           trap '"$package_root/scripts/stop.sh" || true' EXIT
-          NARRALUME_PORT=14327 \
-            NARRALUME_NO_BROWSER=1 \
-            NARRALUME_FORCE_PORTABLE_NODE=1 \
+          LAPIS_PORT=14327 \
+            LAPIS_NO_BROWSER=1 \
+            LAPIS_FORCE_PORTABLE_NODE=1 \
             "$package_root/scripts/start.sh"
           curl --fail --silent http://127.0.0.1:14327/api/health
-          NARRALUME_PORT=14327 "$package_root/scripts/backup.sh" release-smoke
+          LAPIS_PORT=14327 "$package_root/scripts/backup.sh" release-smoke
           "$package_root/scripts/stop.sh"
           trap - EXIT
       - name: Smoke test packaged launcher (Windows)
@@ -83,13 +83,13 @@ jobs:
         run: |
           $archive = Get-ChildItem -Path ".tmp/release/*-windows-x64.zip" | Select-Object -First 1
           if (-not $archive) { throw "Windows release archive was not created." }
-          $smokeRoot = Join-Path $env:RUNNER_TEMP "narralume-release-$([guid]::NewGuid())"
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "lapis-release-$([guid]::NewGuid())"
           New-Item -ItemType Directory -Path $smokeRoot | Out-Null
           Expand-Archive -LiteralPath $archive.FullName -DestinationPath $smokeRoot
           $packageRoot = (Get-ChildItem -LiteralPath $smokeRoot -Directory | Select-Object -First 1).FullName
           if (-not $packageRoot) { throw "Windows release archive has no package directory." }
-          $env:NARRALUME_PORT = "14327"
-          $env:NARRALUME_FORCE_PORTABLE_NODE = "1"
+          $env:LAPIS_PORT = "14327"
+          $env:LAPIS_FORCE_PORTABLE_NODE = "1"
           try {
             & (Join-Path $packageRoot "scripts/start.ps1") -NoBrowser -NoWait
             $health = Invoke-RestMethod "http://127.0.0.1:14327/api/health" -TimeoutSec 10
