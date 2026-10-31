@@ -1,16 +1,16 @@
-import { randomUuid, sha256Hex } from "@narralume/domain";
+import { randomUuid, sha256Hex } from "@lapis/domain";
 import { hashBytes } from "./internal/bytes.js";
 
 import {
   IMPORTABLE_AGENT_SKILL_CAPABILITIES,
   ImportedAgentSkillSchema,
   type ImportedAgentSkillDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   SqliteImportedAgentSkillRepository,
   type ImportedAgentSkill,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import JSZip from "jszip";
 
 import { declaredUncompressedSize } from "./internal/zip.js";

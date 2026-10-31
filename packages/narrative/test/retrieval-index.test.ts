@@ -4,7 +4,7 @@ import {
   createProject,
   type NarrativeRun,
   type NarrativeRunStep,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteDocumentRepository,
   SqliteManuscriptIndexer,
@@ -12,8 +12,8 @@ import {
   SqliteRetrievalRepository,
   SqliteStoryRepository,
   type RetrievalHit,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

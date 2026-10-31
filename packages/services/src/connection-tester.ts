@@ -11,7 +11,7 @@ import {
   type ModelProtocol,
   type ModelRequest,
   type ModelResponse,
-} from "@narralume/llm";
+} from "@lapis/llm";
 
 /**
  * Reasoning effort of every probe request. Narrative task workers send a

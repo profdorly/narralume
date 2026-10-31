@@ -1,10 +1,10 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import type {
   Document,
   DocumentKind,
   DocumentVersion,
-} from "@narralume/domain";
+} from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { PersistenceNotFoundError } from "./project-repository.js";

@@ -1,10 +1,10 @@
-import type { NarrativeRun } from "@narralume/domain";
+import type { NarrativeRun } from "@lapis/domain";
 import {
   SettlementApplicationError,
   SettlementApplicationService,
   SettlementConflictError,
   type SettlementChangedRecord,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteBibleBackfillRepository,
   SqliteDeliveryRepository,
@@ -15,7 +15,7 @@ import {
   type BibleBackfillItem,
   type BibleBackfillJob,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   BIBLE_BACKFILL_REREAD_POLICY_FLAG,

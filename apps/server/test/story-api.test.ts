@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import { buildCanonCandidateRecipe } from "@narralume/harness";
+import { buildCanonCandidateRecipe } from "@lapis/harness";
 import {
   SqliteRunRepository,
   SqliteStoryRepository,
   SqliteDocumentRepository,
-} from "@narralume/persistence";
-import { createOutlineNode, createDocument } from "@narralume/domain";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { createOutlineNode, createDocument } from "@lapis/domain";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

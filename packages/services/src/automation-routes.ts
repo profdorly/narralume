@@ -2,7 +2,7 @@ import {
   StoryLineProposalService,
   requireCurrentChapterOutline,
   requirePlanningEntitiesReady,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   AutopilotSessionDetailSchema,
   AutopilotSessionCreatedSchema,
@@ -26,9 +26,9 @@ import {
   StorySteerSchema,
   SteerDecisionRequestSchema,
   PutCompassRequestSchema,
-} from "@narralume/contracts";
-import { type AutopilotSession, randomUuid } from "@narralume/domain";
-import { buildSteerClassificationRecipe } from "@narralume/harness";
+} from "@lapis/contracts";
+import { type AutopilotSession, randomUuid } from "@lapis/domain";
+import { buildSteerClassificationRecipe } from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -40,11 +40,11 @@ import {
   SqliteStoryRepository,
   SqliteNarrativeStateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
-import type { AutopilotCoordinator, RouteApp } from "@narralume/services";
-import type { RunCoordinator } from "@narralume/services";
+import type { AutopilotCoordinator, RouteApp } from "@lapis/services";
+import type { RunCoordinator } from "@lapis/services";
 import {
   adoptCandidate,
   AutomationServiceError,
@@ -64,8 +64,8 @@ import {
   sessionProductProjection,
   runProductProjection,
   withRuntimeModelPolicy,
-} from "@narralume/services";
-import { bootstrapProject } from "@narralume/services";
+} from "@lapis/services";
+import { bootstrapProject } from "@lapis/services";
 import { RunRouteError } from "./route-error.js";
 import { validateLongLineReferences } from "./story-compass.js";
 

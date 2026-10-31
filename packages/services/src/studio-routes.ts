@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
 import {
   BackgroundRunCreatedSchema,
@@ -49,9 +49,9 @@ import {
   type PersonaCardImportReport,
   type PersonaCardImportTarget,
   type CharacterCardV3Lorebook,
-} from "@narralume/contracts";
-import type { StoryPersona } from "@narralume/domain";
-import { buildSceneAdoptionRecipe } from "@narralume/harness";
+} from "@lapis/contracts";
+import type { StoryPersona } from "@lapis/domain";
+import { buildSceneAdoptionRecipe } from "@lapis/harness";
 import {
   CreativePersistenceError,
   SqliteCreativeRepository,
@@ -61,10 +61,10 @@ import {
   SqliteRequestReplayRepository,
   SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
-import type { RunCoordinator, RouteApp } from "@narralume/services";
+import type { RunCoordinator, RouteApp } from "@lapis/services";
 import {
   acceptEditProposal,
   cancelRunsInvalidatedByRevert,
@@ -85,7 +85,7 @@ import {
   resolveCoCreateSpeaker,
   runProductProjection,
   withRuntimeModelPolicy,
-} from "@narralume/services";
+} from "@lapis/services";
 import { StudioRouteError } from "./route-error.js";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().trim().min(1) });

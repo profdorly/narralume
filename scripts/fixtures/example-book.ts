@@ -8,7 +8,7 @@ import {
   createOutlineNode,
   createProject,
   transitionProjectPhase,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteCreativeRepository,
@@ -18,7 +18,7 @@ import {
   SqliteProjectRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export const EXAMPLE_PROJECT_ID = "example-tidal-post-office";
 

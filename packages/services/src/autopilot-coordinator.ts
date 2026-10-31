@@ -1,11 +1,11 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
 import {
   buildRollingOutlineRecipe,
   buildClosingReviewRecipe,
   classifyStepError,
   compileChapterRecipeTemplate,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteProjectRepository,
@@ -13,7 +13,7 @@ import {
   SqliteStoryRepository,
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { RunCoordinator } from "./run-coordinator.js";
 import { withRuntimeModelPolicy } from "./run-policy.js";
@@ -555,7 +555,7 @@ export class AutopilotCoordinator {
  * effectivePolicy, so this is idempotent for them; legacy rows holding a
  * partial policy are upgraded with built-in defaults.
  */
-// 迁移至 @narralume/services（automation-service）；本文件与路由都从那里取用。
+// 迁移至 @lapis/services（automation-service）；本文件与路由都从那里取用。
 export { resolveSessionEffectivePolicy } from "./automation-service.js";
 import { resolveSessionEffectivePolicy } from "./automation-service.js";
 

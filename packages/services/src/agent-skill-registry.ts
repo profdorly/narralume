@@ -1,4 +1,4 @@
-import { AgentSkillSchema, type AgentSkillDto } from "@narralume/contracts";
+import { AgentSkillSchema, type AgentSkillDto } from "@lapis/contracts";
 
 /**
  * Built-in Agent Skill registry: code-owned, separate from Writing Skill

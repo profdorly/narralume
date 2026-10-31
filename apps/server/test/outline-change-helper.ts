@@ -1,4 +1,4 @@
-import type { OutlineChangeRequest } from "@narralume/contracts";
+import type { OutlineChangeRequest } from "@lapis/contracts";
 import type { buildApp } from "../src/app.js";
 
 export async function applyOutlineChangeViaApi(

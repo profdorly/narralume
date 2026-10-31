@@ -1,11 +1,11 @@
-import { randomUuid, sha256Hex } from "@narralume/domain";
+import { randomUuid, sha256Hex } from "@lapis/domain";
 
 import type {
   NarrativeRun,
   NarrativeRunStep,
   RunBudgetUsage,
   RunStepError,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   createModelAdapter,
   collectModelEvents,
@@ -24,7 +24,7 @@ import {
   type ModelRequest,
   type ModelEvent,
   type StructuredValidator,
-} from "@narralume/llm";
+} from "@lapis/llm";
 import {
   SqliteAssignmentRepository,
   SqliteLlmCallRepository,
@@ -38,7 +38,7 @@ import {
   type ResolvedModelAssignment,
   type StoredModel,
   type StoredProvider,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   addBudgetUsage,

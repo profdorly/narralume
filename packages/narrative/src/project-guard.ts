@@ -1,4 +1,4 @@
-import type { NarrativeDatabase } from "@narralume/persistence";
+import type { NarrativeDatabase } from "@lapis/persistence";
 
 /**
  * Runs keep executing after their project is soft-deleted unless every step

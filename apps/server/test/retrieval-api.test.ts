@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 
-import { createDocument, createOutlineNode } from "@narralume/domain";
+import { createDocument, createOutlineNode } from "@lapis/domain";
 import {
   LEGACY_DOCUMENT_SOURCE,
   SqliteDocumentRepository,
   SqliteRetrievalRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

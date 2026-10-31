@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCanonFact, createOutlineNode } from "@narralume/domain";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { createCanonFact, createOutlineNode } from "@lapis/domain";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { seedStoryState } from "../../../scripts/fixtures/story-state.js";
 import { StoryStatePacketBuilder } from "../src/story-state-packet.js";
 

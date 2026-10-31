@@ -1,4 +1,4 @@
-import { randomUuid, sha256Hex } from "@narralume/domain";
+import { randomUuid, sha256Hex } from "@lapis/domain";
 import {
   AUTOMATION_DEFAULTS,
   PersonaCardProfileSchema,
@@ -8,7 +8,7 @@ import {
   KnowledgeCorrectionSchema,
   BundleCountsSchema,
   type BundleCounts,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { decodeBase64 as decodeBase64Bytes } from "../internal/bytes.js";
 import { encodeBase64, hashBytes } from "../internal/bytes.js";
 import {
@@ -19,8 +19,8 @@ import {
   type CanonEntity,
   type ProjectPhase,
   type WritingSkill,
-} from "@narralume/domain";
-import { SqliteProjectCoverRepository } from "@narralume/persistence";
+} from "@lapis/domain";
+import { SqliteProjectCoverRepository } from "@lapis/persistence";
 import { z } from "zod";
 import type {
   NarrativeDatabase,
@@ -35,7 +35,7 @@ import type {
   SqliteProjectRepository,
   SqliteManuscriptIndexer,
   SqliteStoryRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export interface DeliveryContext {
   readonly database: NarrativeDatabase;

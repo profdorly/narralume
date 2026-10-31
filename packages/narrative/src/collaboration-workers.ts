@@ -1,6 +1,6 @@
-import { activateLoreEntries, sha256Hex } from "@narralume/domain";
+import { activateLoreEntries, sha256Hex } from "@lapis/domain";
 
-import { ContextCompiler, type ContextSource } from "@narralume/context";
+import { ContextCompiler, type ContextSource } from "@lapis/context";
 import {
   createDocument,
   createOutlineNode,
@@ -8,16 +8,16 @@ import {
   type NarrativeRunStep,
   type RunBudgetUsage,
   type RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   promptDefaultInstructions,
   promptInvariants,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteCanonRepository,
   SqliteContextReceiptRepository,
@@ -33,7 +33,7 @@ import {
   SqliteStoryRepository,
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { NarrativeModelClient } from "./model-client.js";
 import {

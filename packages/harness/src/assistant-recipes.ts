@@ -1,4 +1,4 @@
-import type { RunStepKind } from "@narralume/domain";
+import type { RunStepKind } from "@lapis/domain";
 
 import type { RunStepSeed } from "./recipe.js";
 

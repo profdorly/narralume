@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 import {
   createCanonEntity,
   createDocument,
@@ -11,7 +11,7 @@ import {
   type CanonEntity,
   type StyleProfile,
   type WritingSkill,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   docxDocumentText,
   htmlToText,
@@ -21,7 +21,7 @@ import {
 } from "../manuscript-import.js";
 import { bytesToText, concatBytes, encodeBase64 } from "../internal/bytes.js";
 import { declaredUncompressedSize } from "../internal/zip.js";
-import type { ImportUploadSession } from "@narralume/persistence";
+import type { ImportUploadSession } from "@lapis/persistence";
 import JSZip from "jszip";
 
 import {

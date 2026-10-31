@@ -1,5 +1,5 @@
-import { type NarrativeRunStep, type RunSnapshot } from "@narralume/domain";
-import type { StepExecutionResult } from "@narralume/harness";
+import { type NarrativeRunStep, type RunSnapshot } from "@lapis/domain";
+import type { StepExecutionResult } from "@lapis/harness";
 
 import {
   SCENE_PLAN_CONTRACT,

@@ -3,12 +3,12 @@ import {
   createOutlineNode,
   createDocument,
   ZERO_BUDGET_USAGE,
-} from "@narralume/domain";
-import { buildClosingReviewRecipe } from "@narralume/harness";
+} from "@lapis/domain";
+import { buildClosingReviewRecipe } from "@lapis/harness";
 import {
   AutomationWorkerSuite,
   type NarrativeModelClient,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteProjectRepository,
   SqliteStoryRepository,
@@ -18,7 +18,7 @@ import {
   SqliteAutomationRepository,
   SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export async function seedStoryLineProposals(
   database: NarrativeDatabase,

@@ -5,7 +5,7 @@ import type {
   PublicProviderDto,
   UpsertModelRequest,
   UpsertProviderRequest,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 import { jsonRequest, requestJson, requestVoid } from "./transport";
 

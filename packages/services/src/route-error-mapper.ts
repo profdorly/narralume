@@ -3,9 +3,9 @@ import { ZodError } from "zod";
 import {
   POLICY_UNKNOWN_FIELD,
   extractPolicyUnknownFields,
-} from "@narralume/contracts";
-import { ContextCompileError } from "@narralume/context";
-import { DomainError } from "@narralume/domain";
+} from "@lapis/contracts";
+import { ContextCompileError } from "@lapis/context";
+import { DomainError } from "@lapis/domain";
 import {
   AssignmentPersistenceError,
   AssistantPersistenceError,
@@ -22,8 +22,8 @@ import {
   PersistenceNotFoundError,
   RunPersistenceError,
   TemplatePersistenceError,
-} from "@narralume/persistence";
-import { RecipeTemplateError, PromptTemplateError } from "@narralume/harness";
+} from "@lapis/persistence";
+import { RecipeTemplateError, PromptTemplateError } from "@lapis/harness";
 import {
   AgentSkillImportError,
   AssistantRouteError,

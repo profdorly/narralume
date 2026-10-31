@@ -1,4 +1,4 @@
-import type { HealthResponse } from "@narralume/contracts";
+import type { HealthResponse } from "@lapis/contracts";
 
 import { kernelRequest } from "../../kernel/kernel-client";
 import { getLocale, translate, type MessageKey } from "../../i18n";

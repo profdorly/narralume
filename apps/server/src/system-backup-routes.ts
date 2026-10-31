@@ -1,12 +1,12 @@
-import type { RouteApp } from "@narralume/services";
+import type { RouteApp } from "@lapis/services";
 import {
   CreateSystemBackupRequestSchema,
   RestoreSystemBackupRequestSchema,
   SystemBackupManifestSchema,
   SystemBackupPreviewSchema,
   SystemBackupRestoreResultSchema,
-} from "@narralume/contracts";
-import type { NarrativeDatabase } from "@narralume/persistence";
+} from "@lapis/contracts";
+import type { NarrativeDatabase } from "@lapis/persistence";
 import { z } from "zod";
 
 import type { ServerConfig } from "./config.js";

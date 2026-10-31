@@ -1,6 +1,6 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
-import type { Project, ProjectForm, ProjectPhase } from "@narralume/domain";
+import type { Project, ProjectForm, ProjectPhase } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 

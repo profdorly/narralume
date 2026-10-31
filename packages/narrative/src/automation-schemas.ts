@@ -1,8 +1,8 @@
-import type { JsonSchemaContract, StructuredValidator } from "@narralume/llm";
+import type { JsonSchemaContract, StructuredValidator } from "@lapis/llm";
 import {
   StoryLongLineSchema,
   StoryLineProgressProposalSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { z } from "zod";
 
 const IntentProposalSchema = z.object({

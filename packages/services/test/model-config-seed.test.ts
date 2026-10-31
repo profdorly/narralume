@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import {
   SqliteModelRepository,
   SqliteProviderRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { seedEnvironmentModelConfig } from "../src/model-config.js";
 

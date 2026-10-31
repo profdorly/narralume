@@ -1,5 +1,5 @@
 {
-  "name": "narralume",
+  "name": "lapis",
   "version": "0.2.0",
   "private": true,
   "description": "Lapis is a local-first AI writing studio for stories, from short fiction to novels.",
@@ -15,8 +15,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc -b --pretty false && npm run bundle -w @narralume/web",
-    "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev -w @narralume/server\" \"npm run dev -w @narralume/web\"",
+    "build": "tsc -b --pretty false && npm run bundle -w @lapis/web",
+    "dev": "concurrently -n server,web -c yellow,cyan \"npm run dev -w @lapis/server\" \"npm run dev -w @lapis/web\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "release:build": "node scripts/build-release.mjs",
@@ -24,7 +24,7 @@
     "licenses:check": "node scripts/check-licenses.mjs --check",
     "licenses:update": "node scripts/check-licenses.mjs --write",
     "test": "vitest run",
-    "pretest:e2e": "npm run build && npm run bundle:spike -w @narralume/web",
+    "pretest:e2e": "npm run build && npm run bundle:spike -w @lapis/web",
     "test:e2e": "playwright test",
     "test:golden": "vitest run packages/persistence/test/long-novel-golden.test.ts",
     "test:evidence": "tsx scripts/evidence-protocol-eval.ts",

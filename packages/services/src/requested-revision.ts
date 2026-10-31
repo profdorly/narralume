@@ -1,12 +1,12 @@
-import type { RunSnapshot } from "@narralume/domain";
-import { requireCurrentChapterOutline } from "@narralume/narrative";
-import { buildRequestedRevisionRecipe } from "@narralume/harness";
+import type { RunSnapshot } from "@lapis/domain";
+import { requireCurrentChapterOutline } from "@lapis/narrative";
+import { buildRequestedRevisionRecipe } from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteReviewRepository,
   SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { sha256Hex } from "./internal/crypto.js";
 import { latestAwaitReason, RunServiceError } from "./run-policy.js";

@@ -1,4 +1,4 @@
-import type { ProjectCoverMutation, ProjectLanguage } from "@narralume/contracts";
+import type { ProjectCoverMutation, ProjectLanguage } from "@lapis/contracts";
 
 import {
   currentDriverMode,

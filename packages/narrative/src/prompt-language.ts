@@ -1,4 +1,4 @@
-import type { ProjectLanguage } from "@narralume/contracts";
+import type { ProjectLanguage } from "@lapis/contracts";
 
 /** AI instructions and output follow project.language, not the UI locale.
  *  Unknown values fall back to Brazilian Portuguese. */

@@ -8,8 +8,8 @@ import type {
   StoryPersona,
   StoryTurn,
   TurnSwipe,
-} from "@narralume/domain";
-import { requireCreativeText, validateTextRange } from "@narralume/domain";
+} from "@lapis/domain";
+import { requireCreativeText, validateTextRange } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { PersistenceNotFoundError } from "./project-repository.js";

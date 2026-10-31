@@ -3,10 +3,10 @@ import {
   createCanonEntity,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
-import { SqliteProjectRepository } from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
-import { StoryStateSnapshotSchema } from "@narralume/contracts";
+} from "@lapis/domain";
+import { SqliteProjectRepository } from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
+import { StoryStateSnapshotSchema } from "@lapis/contracts";
 import { seedStoryState } from "../../../scripts/fixtures/story-state.js";
 import { buildApp } from "../src/app.js";
 

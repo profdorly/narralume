@@ -1,4 +1,4 @@
-import type { Project } from "@narralume/domain";
+import type { Project } from "@lapis/domain";
 
 import {
   SqliteProjectRepository,

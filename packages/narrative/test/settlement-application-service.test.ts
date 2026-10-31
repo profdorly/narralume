@@ -4,11 +4,11 @@ import {
   createDocument,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   buildChapterRecipe,
   buildManualSettlementRecipe,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
@@ -17,8 +17,8 @@ import {
   SqliteReviewRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

@@ -1,6 +1,6 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
-import { canonContextSources, type ContextSource } from "@narralume/context";
+import { canonContextSources, type ContextSource } from "@lapis/context";
 import {
   type CanonEntity,
   type CanonFact,
@@ -8,12 +8,12 @@ import {
   type OutlineNode,
   type RelationshipEvent,
   type TimelineEvent,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   selectStoryState,

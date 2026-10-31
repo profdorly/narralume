@@ -4,7 +4,7 @@ import type {
   RunBudgetUsage,
   RunSnapshot,
   RunStepError,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

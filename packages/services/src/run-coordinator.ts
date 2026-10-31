@@ -1,6 +1,6 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
-import type { HarnessSupervisor } from "@narralume/harness";
+import type { HarnessSupervisor } from "@lapis/harness";
 
 export class RunCoordinator {
   readonly #workerId = `server:${randomUuid()}`;

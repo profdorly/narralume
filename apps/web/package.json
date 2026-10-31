@@ -1,5 +1,5 @@
 {
-  "name": "@narralume/web",
+  "name": "@lapis/web",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@narralume/contracts": "^0.2.0",
-    "@narralume/harness": "^0.2.0",
-    "@narralume/narrative": "^0.2.0",
-    "@narralume/persistence": "0.2.0",
-    "@narralume/services": "^0.2.0",
+    "@lapis/contracts": "^0.2.0",
+    "@lapis/harness": "^0.2.0",
+    "@lapis/narrative": "^0.2.0",
+    "@lapis/persistence": "0.2.0",
+    "@lapis/services": "^0.2.0",
     "@tanstack/react-query": "^5.101.4",
     "@tiptap/extension-placeholder": "^3.10.7",
     "@tiptap/pm": "^3.10.7",

@@ -1,4 +1,4 @@
-import type { RunStepKind } from "@narralume/domain";
+import type { RunStepKind } from "@lapis/domain";
 
 import type { ChapterRecipe, RunStepSeed } from "./recipe.js";
 import type { CollaborationRecipe } from "./collaboration-recipes.js";

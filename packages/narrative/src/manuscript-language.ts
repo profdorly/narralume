@@ -2,7 +2,7 @@
  *  不依赖外部库：CJK 原稿看书写系统，拉丁字母原稿数各语言独有的高频功能词。
  *  结果只作为拆书、章节结算与故事圣经候选提示中的参考行；语言不变量仍要求模型跟随正文本身。 */
 
-import type { ProjectLanguage } from "@narralume/contracts";
+import type { ProjectLanguage } from "@lapis/contracts";
 
 export type DetectedManuscriptLanguage =
   "Portuguese" | "Spanish" | "English" | "Chinese" | "unknown";

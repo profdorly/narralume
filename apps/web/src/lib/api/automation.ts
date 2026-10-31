@@ -1,4 +1,4 @@
-import type { ModelExecutionPolicy } from "@narralume/contracts";
+import type { ModelExecutionPolicy } from "@lapis/contracts";
 
 import { jsonRequest, requestJson } from "./transport";
 import type {

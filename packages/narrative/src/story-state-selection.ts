@@ -8,12 +8,12 @@ import {
   type OutlineNode,
   type RelationshipEvent,
   type TimelineEvent,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export type StoryStateAudience = "author" | "reader" | "character";
 

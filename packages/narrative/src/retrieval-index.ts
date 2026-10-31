@@ -2,14 +2,14 @@ import type {
   NarrativeRun,
   NarrativeRunStep,
   RunBudgetUsage,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteManuscriptIndexer,
   SqliteRetrievalRepository,
   type IndexDocumentInput,
   type NarrativeDatabase,
   type PlannedPassage,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   optionalEmbeddings,

@@ -2,13 +2,13 @@ import {
   canonContextSources,
   ContextCompiler,
   type ContextSource,
-} from "@narralume/context";
-import type { CanonAccess } from "@narralume/domain";
+} from "@lapis/context";
+import type { CanonAccess } from "@lapis/domain";
 import {
   RETRIEVAL_LIMIT,
   RETRIEVAL_MAX_PER_DOCUMENT,
   retrievalContextSources,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteCanonRepository,
   SqliteContextReceiptRepository,
@@ -17,7 +17,7 @@ import {
   SqliteRetrievalRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export interface StoryContextPreviewInput {
   projectId: string;

@@ -1,11 +1,11 @@
-import type { NarrativeModelClient } from "@narralume/narrative";
-import { buildFoundationRecipe } from "@narralume/harness";
+import type { NarrativeModelClient } from "@lapis/narrative";
+import { buildFoundationRecipe } from "@lapis/harness";
 import {
   SqliteAssistantRepository,
   SqliteAutomationRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

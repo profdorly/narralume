@@ -2,7 +2,7 @@ import type {
   AutopilotSession,
   OutlineStatus,
   RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteAutomationRepository,
   SqliteDocumentRepository,
@@ -12,7 +12,7 @@ import {
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { runProductProjection } from "./run-policy.js";
 import {

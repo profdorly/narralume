@@ -1,10 +1,10 @@
-import { sha256Hex } from "@narralume/domain";
-import { estimateTokens } from "@narralume/context";
+import { sha256Hex } from "@lapis/domain";
+import { estimateTokens } from "@lapis/context";
 import type {
   NarrativeRun,
   RunBudgetUsage,
   RunStepError,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   ModelError,
   StructuredOutputError,
@@ -13,12 +13,12 @@ import {
   type ModelRequest,
   type NormalizedUsage,
   type StructuredMode,
-} from "@narralume/llm";
+} from "@lapis/llm";
 import {
   type AssignmentRole,
   type StoredModel,
   type StoredProvider,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   type CandidateRuntime,

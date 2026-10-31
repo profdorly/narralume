@@ -3,7 +3,7 @@ import {
   type CanonCandidateItemDto,
   type CanonCandidateSetDto,
   type CanonSpread,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   createCanonEntity,
   createCanonFact,
@@ -14,7 +14,7 @@ import {
   type Foreshadow,
   type RelationshipEvent,
   type TimelineEvent,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
@@ -23,7 +23,7 @@ import {
   SqliteStoryRepository,
   type CanonChangeSetView,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { fingerprint, readCanonSpread } from "./canon-candidate-context.js";
 import {

@@ -1,4 +1,4 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import {
   CanonCandidateRunAcceptedSchema,
@@ -7,21 +7,21 @@ import {
   CreateCanonCandidateRequestSchema,
   DecideCanonCandidateItemRequestSchema,
   DecideCanonCandidateItemResponseSchema,
-} from "@narralume/contracts";
-import { buildCanonCandidateRecipe } from "@narralume/harness";
-import { CanonCandidateService } from "@narralume/narrative";
+} from "@lapis/contracts";
+import { buildCanonCandidateRecipe } from "@lapis/harness";
+import { CanonCandidateService } from "@lapis/narrative";
 import {
   SqliteProjectRepository,
   SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
-import type { RunCoordinator, RouteApp } from "@narralume/services";
+import type { RunCoordinator, RouteApp } from "@lapis/services";
 import {
   requireWritingAssignment,
   withRuntimeModelPolicy,
-} from "@narralume/services";
+} from "@lapis/services";
 
 const SpreadParamsSchema = z.object({
   projectId: z.string().trim().min(1),

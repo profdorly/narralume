@@ -1,17 +1,17 @@
-import { CanonSpreadSchema, type CanonSpread } from "@narralume/contracts";
-import { estimateTokens } from "@narralume/context";
+import { CanonSpreadSchema, type CanonSpread } from "@lapis/contracts";
+import { estimateTokens } from "@lapis/context";
 import type {
   NarrativeRunStep,
   NarrativeSummary,
   OutlineNode,
   RunBudgetUsage,
   RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
@@ -20,7 +20,7 @@ import {
   SqliteReviewRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   candidateAfterInstructions,

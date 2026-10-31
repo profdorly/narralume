@@ -3,12 +3,12 @@ import {
   createProject,
   type Project,
   type ProjectForm,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteProjectRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 export interface ProjectBootstrapInput {
   projectId: string;

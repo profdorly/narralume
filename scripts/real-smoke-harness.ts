@@ -13,7 +13,7 @@ import {
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { scrubSecrets } from "@narralume/llm";
+import { scrubSecrets } from "@lapis/llm";
 import {
   resolveCredential,
   SqliteAssignmentRepository,
@@ -22,7 +22,7 @@ import {
   SqliteProviderRepository,
   SqliteRunStreamRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const MAX_LOG_STRING = 240;

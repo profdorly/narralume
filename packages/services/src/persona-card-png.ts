@@ -1,6 +1,6 @@
 import extractPngChunks from "png-chunks-extract";
 import crc32 from "crc-32";
-import { PERSONA_CARD_LIMITS } from "@narralume/contracts";
+import { PERSONA_CARD_LIMITS } from "@lapis/contracts";
 
 const PNG_SIGNATURE = Uint8Array.of(
   0x89,

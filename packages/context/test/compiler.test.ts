@@ -1,4 +1,4 @@
-import { createCanonEntity, createCanonFact } from "@narralume/domain";
+import { createCanonEntity, createCanonFact } from "@lapis/domain";
 import { describe, expect, it } from "vitest";
 
 import {

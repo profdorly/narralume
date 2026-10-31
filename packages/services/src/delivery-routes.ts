@@ -1,4 +1,4 @@
-import { sha256Hex, randomUuid } from "@narralume/domain";
+import { sha256Hex, randomUuid } from "@lapis/domain";
 
 import {
   AnalyzeImportRequestSchema,
@@ -26,26 +26,26 @@ import {
   ValidateWritingSkillRequestSchema,
   WritingSkillPackageSchema,
   WritingSkillValidationSchema,
-} from "@narralume/contracts";
-import type { StyleProfile, WritingSkill } from "@narralume/domain";
+} from "@lapis/contracts";
+import type { StyleProfile, WritingSkill } from "@lapis/domain";
 import {
   buildImportAnalysisRecipe,
   buildStyleExtractionRecipe,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteDeliveryRepository,
   SqliteProjectRepository,
   SqliteRequestReplayRepository,
   SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
 import {
   DeliveryService,
   type DeliveryServiceError,
-} from "@narralume/services";
-import type { RunCoordinator, RouteApp } from "@narralume/services";
+} from "@lapis/services";
+import type { RunCoordinator, RouteApp } from "@lapis/services";
 import {
   deterministicRequestId,
   hashRequest,
@@ -54,7 +54,7 @@ import {
   withRuntimeModelPolicy,
   buildWritingSkillZip,
   parseWritingSkillPackage,
-} from "@narralume/services";
+} from "@lapis/services";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().trim().min(1) });
 const StyleParamsSchema = z.object({ styleId: z.string().trim().min(1) });

@@ -6,17 +6,17 @@ import {
   CreateAutopilotSessionRequestSchema,
   extractPolicyUnknownFields,
   type StoryCompassDto,
-} from "@narralume/contracts";
-import type { NarrativeModelClient } from "@narralume/narrative";
-import { createOutlineNode } from "@narralume/domain";
-import { buildRollingOutlineRecipe } from "@narralume/harness";
+} from "@lapis/contracts";
+import type { NarrativeModelClient } from "@lapis/narrative";
+import { createOutlineNode } from "@lapis/domain";
+import { buildRollingOutlineRecipe } from "@lapis/harness";
 import {
   SqliteRunRepository,
   SqliteStoryRepository,
   SqliteContextReceiptRepository,
   SqliteAutomationRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

@@ -1,14 +1,14 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 import {
   StoryCompassSchema,
   StoryLineProposalChangesSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   StoryLineProposalService,
   storyLineReviewEvidence,
   storyLineProposalIssues,
 } from "./story-line-proposals.js";
-import { ContextCompiler, type ContextSource } from "@narralume/context";
+import { ContextCompiler, type ContextSource } from "@lapis/context";
 
 import {
   createOutlineNode,
@@ -16,16 +16,16 @@ import {
   type OutlineNode,
   type RunBudgetUsage,
   type RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   promptDefaultInstructions,
   promptInvariants,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -36,7 +36,7 @@ import {
   SqliteStoryRepository,
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { NarrativeModelClient } from "./model-client.js";
 import {

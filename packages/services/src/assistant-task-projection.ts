@@ -5,8 +5,8 @@ import {
   type AssistantActivityDto,
   type AssistantActivityTextDto,
   type AssistantContext,
-} from "@narralume/contracts";
-import type { NarrativeRun, RunSnapshot } from "@narralume/domain";
+} from "@lapis/contracts";
+import type { NarrativeRun, RunSnapshot } from "@lapis/domain";
 import {
   SqliteAssistantLongGoalRepository,
   SqliteAssistantRepository,
@@ -17,7 +17,7 @@ import {
   type AssistantActivity,
   type AssistantLongGoal,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { runProductProjection } from "./run-policy.js";
 import {

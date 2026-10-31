@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
 import {
   AssignmentRoleSchema,
@@ -11,7 +11,7 @@ import {
   UpdateProviderRequestSchema,
   UpsertModelRequestSchema,
   UpsertProviderRequestSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   ConfigurationVersionConflictError,
   PersistenceNotFoundError,
@@ -23,20 +23,20 @@ import {
   type NarrativeDatabase,
   type StoredModel,
   type StoredProvider,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
-import type { RouteApp } from "@narralume/services";
+import type { RouteApp } from "@lapis/services";
 import {
   testAuxiliaryModelConnection,
   testModelConnection,
   type ConnectionTestProfile,
   type ConnectionTestStage,
-} from "@narralume/services";
+} from "@lapis/services";
 import {
   requireProviderDeletable,
   requireProviderDisablable,
-} from "@narralume/services";
+} from "@lapis/services";
 
 import { withoutProbedCapabilities } from "./probed-capabilities.js";
 

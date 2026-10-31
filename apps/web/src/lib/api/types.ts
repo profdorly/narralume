@@ -9,7 +9,7 @@ import type {
   StoryDevelopmentReviewDto,
   StoryLongLineDto,
   StorySteerDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 export interface RetrievalHit {
   id: string;
@@ -358,7 +358,7 @@ export interface ImportBatchDetail {
   }[];
 }
 
-export type { BundleCounts } from "@narralume/contracts";
+export type { BundleCounts } from "@lapis/contracts";
 
 export interface ProjectBackup {
   id: string;

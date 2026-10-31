@@ -3,7 +3,7 @@ import {
   type CanonEntity,
   type OutlineNode,
   type RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -11,7 +11,7 @@ import {
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   RollingOutlineProposalSchema,

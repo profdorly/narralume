@@ -11,12 +11,12 @@ import {
   SqliteManuscriptIndexer,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import type {
   ImportFormat,
   ProjectQualityReport,
   QualityIssue,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   DeliveryServiceError,
   count,

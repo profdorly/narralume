@@ -3,14 +3,14 @@ import {
   createCanonFact,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { StoryStatePacketBuilder } from "../src/story-state-packet.js";

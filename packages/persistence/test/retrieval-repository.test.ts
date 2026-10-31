@@ -1,4 +1,4 @@
-import { createDocument, createProject } from "@narralume/domain";
+import { createDocument, createProject } from "@lapis/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

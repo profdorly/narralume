@@ -3,8 +3,8 @@ import {
   createDocument,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
-import { buildChapterRecipe, HarnessSupervisor } from "@narralume/harness";
+} from "@lapis/domain";
+import { buildChapterRecipe, HarnessSupervisor } from "@lapis/harness";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -19,8 +19,8 @@ import {
   SqliteRetrievalRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

@@ -1,4 +1,4 @@
-import type { CanonAuthority, CanonEntity, CanonFact } from "@narralume/domain";
+import type { CanonAuthority, CanonEntity, CanonFact } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { PersistenceNotFoundError } from "./project-repository.js";

@@ -1,9 +1,9 @@
-import type { Document, NarrativeRun } from "@narralume/domain";
-import { buildManualSettlementRecipe } from "@narralume/harness";
+import type { Document, NarrativeRun } from "@lapis/domain";
+import { buildManualSettlementRecipe } from "@lapis/harness";
 import {
   type NarrativeDatabase,
   SqliteRunRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { RunServiceError, withRuntimeModelPolicy } from "./run-policy.js";
 

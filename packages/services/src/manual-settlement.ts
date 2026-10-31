@@ -1,5 +1,5 @@
-import type { Document } from "@narralume/domain";
-import type { NarrativeDatabase } from "@narralume/persistence";
+import type { Document } from "@lapis/domain";
+import type { NarrativeDatabase } from "@lapis/persistence";
 
 import { retargetBackfillChapter } from "./bible-backfill-service.js";
 import { randomUuid } from "./internal/crypto.js";

@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 import JSZip from "jszip";
 import { DOCX_TITLE_PAGE_STYLE } from "../manuscript-import.js";
 

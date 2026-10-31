@@ -1,4 +1,4 @@
-import { createCanonFact, type CanonFact } from "@narralume/domain";
+import { createCanonFact, type CanonFact } from "@lapis/domain";
 import {
   CanonChangeSetDecisionConflictError,
   SqliteCanonRepository,
@@ -9,7 +9,7 @@ import {
   SqliteStoryRepository,
   type CanonChangeSetView,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
 import {

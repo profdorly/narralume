@@ -6,7 +6,7 @@ import {
   SqliteRunRepository,
   type NarrativeDatabase,
   type ReviewRevisionProposalDetail,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { requireCurrentChapterOutline } from "./outline-baseline.js";
 
 export interface RevisionApplicationResult {

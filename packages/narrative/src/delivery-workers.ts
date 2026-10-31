@@ -1,19 +1,19 @@
-import type { ProjectLanguage } from "@narralume/contracts";
+import type { ProjectLanguage } from "@lapis/contracts";
 import type {
   NarrativeRunStep,
   RunBudgetUsage,
   RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteDeliveryRepository,
   SqliteProjectRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   detectManuscriptLanguage,
@@ -951,4 +951,4 @@ function permanent(code: string, message: string) {
   error.retryable = false;
   return error;
 }
-import { randomUuid, sha256Hex } from "@narralume/domain";
+import { randomUuid, sha256Hex } from "@lapis/domain";

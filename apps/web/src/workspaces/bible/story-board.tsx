@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { outlineChapterSpan } from "@narralume/domain";
+import { outlineChapterSpan } from "@lapis/domain";
 import { Link } from "react-router";
 import { useI18n } from "../../i18n";
 import type { OutlineNode, StoryBible } from "../../lib/api";

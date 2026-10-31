@@ -1,4 +1,4 @@
-import type { OutlineNode, StoryLongLine } from "@narralume/domain";
+import type { OutlineNode, StoryLongLine } from "@lapis/domain";
 
 import { ServiceError } from "./service-error.js";
 

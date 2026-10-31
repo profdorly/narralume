@@ -2,24 +2,24 @@ import { randomUUID } from "node:crypto";
 import type {
   OutlineChangeRequest,
   OutlineChangePreview,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   createDocument,
   createOutlineNode,
   type OutlineNode,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   chapterOutlineIsCurrent,
   outlineStructureFingerprint,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
   SqliteNarrativeStateRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { applyOutlineChangeViaApi } from "./outline-change-helper.js";

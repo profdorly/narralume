@@ -1,4 +1,4 @@
-import { sha256Hex, type TimelineEvent } from "@narralume/domain";
+import { sha256Hex, type TimelineEvent } from "@lapis/domain";
 import { describe, expect, it } from "vitest";
 
 import {

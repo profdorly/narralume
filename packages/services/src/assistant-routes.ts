@@ -1,4 +1,4 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import {
   AssistantActivityActionRequestSchema,
@@ -14,8 +14,8 @@ import {
   CreateAssistantConversationRequestSchema,
   CreateAssistantMessageRequestSchema,
   StartAssistantLongGoalRequestSchema,
-} from "@narralume/contracts";
-import { buildAssistantTurnRecipe } from "@narralume/harness";
+} from "@lapis/contracts";
+import { buildAssistantTurnRecipe } from "@lapis/harness";
 import {
   activityText,
   toolGoalParams,
@@ -36,20 +36,20 @@ import {
   SqliteStoryRepository,
   type AssistantActivity,
   type NarrativeDatabase,
-} from "@narralume/persistence";
-import { AGENT_SKILL_REGISTRY } from "@narralume/services";
+} from "@lapis/persistence";
+import { AGENT_SKILL_REGISTRY } from "@lapis/services";
 import { z } from "zod";
 
-import type { AutopilotCoordinator, RouteApp } from "@narralume/services";
-import { isRetryableAssistantActivityError } from "@narralume/services";
-import { AssistantTaskProjectionService } from "@narralume/services";
+import type { AutopilotCoordinator, RouteApp } from "@lapis/services";
+import { isRetryableAssistantActivityError } from "@lapis/services";
+import { AssistantTaskProjectionService } from "@lapis/services";
 import {
   AssistantToolExecutionError,
   AssistantToolExecutor,
-} from "@narralume/services";
-import { ASSISTANT_TOOL_REGISTRY } from "@narralume/services";
-import type { LongGoalCoordinator } from "@narralume/services";
-import type { RunCoordinator } from "@narralume/services";
+} from "@lapis/services";
+import { ASSISTANT_TOOL_REGISTRY } from "@lapis/services";
+import type { LongGoalCoordinator } from "@lapis/services";
+import type { RunCoordinator } from "@lapis/services";
 import {
   requireAliveAssistantModel,
   requireAssistantProject,
@@ -57,7 +57,7 @@ import {
   requireWritingAssignment,
   validateAssistantContext,
   withRuntimeModelPolicy,
-} from "@narralume/services";
+} from "@lapis/services";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().trim().min(1) });
 const ConversationParamsSchema = z.object({

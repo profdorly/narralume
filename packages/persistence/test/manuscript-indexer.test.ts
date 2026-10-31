@@ -4,7 +4,7 @@ import {
   createOutlineNode,
   createProject,
   type OutlineNode,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

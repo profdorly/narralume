@@ -10,7 +10,7 @@ import {
   type RouteApp,
   type RouteMethod,
   type RouteResponse,
-} from "@narralume/services";
+} from "@lapis/services";
 
 /**
  * RouteApp → Fastify 适配器：同一份 register*Routes 在 HTTP 宿主注册。

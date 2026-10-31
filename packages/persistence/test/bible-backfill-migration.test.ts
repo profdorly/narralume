@@ -5,7 +5,7 @@ import {
   createDocument,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import {

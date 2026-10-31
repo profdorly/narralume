@@ -1,4 +1,4 @@
-import type { SqliteDeliveryRepository } from "@narralume/persistence";
+import type { SqliteDeliveryRepository } from "@lapis/persistence";
 
 /**
  * Whether a record whose source id is `sourceId` was created by applying an

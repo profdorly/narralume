@@ -1,5 +1,5 @@
-import { type RunSnapshot } from "@narralume/domain";
-import type { StepExecutionResult } from "@narralume/harness";
+import { type RunSnapshot } from "@lapis/domain";
+import type { StepExecutionResult } from "@lapis/harness";
 
 import { proseLintIssues, type ProseLintIssue } from "../prose-lint.js";
 

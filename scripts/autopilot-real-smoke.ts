@@ -9,8 +9,8 @@ import {
   SqliteDocumentRepository,
   SqliteLlmCallRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 
 import {
   configureSmokeModelTarget,

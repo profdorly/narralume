@@ -1,4 +1,4 @@
-import { randomUuid, sha256Hex } from "@narralume/domain";
+import { randomUuid, sha256Hex } from "@lapis/domain";
 
 import { estimateTokens } from "./token-estimator.js";
 import type {

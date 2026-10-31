@@ -8,8 +8,8 @@ import {
   type CharacterCardV3Input,
   type CharacterCardV3Lorebook,
   type PersonaCardImportReport,
-} from "@narralume/contracts";
-import type { PersonaCardProfile, StoryPersona } from "@narralume/domain";
+} from "@lapis/contracts";
+import type { PersonaCardProfile, StoryPersona } from "@lapis/domain";
 
 import { ServiceError } from "./service-error.js";
 

@@ -13,7 +13,7 @@ import {
   type ModelRequest,
   type NormalizedUsage,
   type StructuredAttemptMode,
-} from "@narralume/llm";
+} from "@lapis/llm";
 
 import {
   createSmokeWorkspace,

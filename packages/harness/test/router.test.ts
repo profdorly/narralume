@@ -3,7 +3,7 @@ import type {
   NarrativeRunEvent,
   NarrativeRunStep,
   RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { describe, expect, it } from "vitest";
 
 import {

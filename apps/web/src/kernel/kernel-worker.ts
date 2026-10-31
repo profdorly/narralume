@@ -11,17 +11,17 @@
  * - 事件 {type:"event", eventName, payload}（run/model/autopilot 状态四类）
  * - 就绪 {type:"ready"} / 失败 {type:"fatal", message}
  */
-import { NARRALUME_VERSION } from "@narralume/contracts";
+import { NARRALUME_VERSION } from "@lapis/contracts";
 import {
   NarrativeDatabase,
   createOpfsSahpoolDriver,
-} from "@narralume/persistence/browser";
+} from "@lapis/persistence/browser";
 import {
   SqliteAutomationRepository,
   SqliteRunStreamRepository,
   SqliteRunRepository,
   SqliteProjectRepository,
-} from "@narralume/persistence/browser";
+} from "@lapis/persistence/browser";
 import {
   AssistantToolExecutor,
   AutopilotCoordinator,
@@ -48,7 +48,7 @@ import {
   seedEnvironmentModelConfig,
   seedHarnessTemplates,
   type RouteMethod,
-} from "@narralume/services";
+} from "@lapis/services";
 import {
   AssistantWorkerSuite,
   AutomationWorkerSuite,
@@ -57,8 +57,8 @@ import {
   CollaborationWorkerSuite,
   DeliveryWorkerSuite,
   GatewayNarrativeModelClient,
-} from "@narralume/narrative";
-import { HarnessSupervisor } from "@narralume/harness";
+} from "@lapis/narrative";
+import { HarnessSupervisor } from "@lapis/harness";
 
 
 interface KernelRequest {

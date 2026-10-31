@@ -4,14 +4,14 @@ import {
   createOutlineNode,
   createProject,
   type OutlineNode,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 /** Deterministic, synthetic story shared by API and browser boundary tests. */
 export function seedStoryState(database: NarrativeDatabase) {

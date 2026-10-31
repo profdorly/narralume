@@ -1,5 +1,5 @@
-import type { ProjectLanguage } from "@narralume/contracts";
-import type { CanonEntity, TimelineEvent } from "@narralume/domain";
+import type { ProjectLanguage } from "@lapis/contracts";
+import type { CanonEntity, TimelineEvent } from "@lapis/domain";
 
 /**
  * Where an unanchored event's import evidence sits in the reading order:

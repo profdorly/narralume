@@ -1,9 +1,9 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import {
   AUTOMATION_DEFAULTS,
   resolveEffectivePolicy,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   SqliteAssistantLongGoalRepository,
   SqliteAssistantRepository,
@@ -15,7 +15,7 @@ import {
   SqliteStoryRepository,
   type AssistantLongGoal,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { AutopilotCoordinator } from "./autopilot-coordinator.js";
 import { createFoundationRun } from "./automation-service.js";

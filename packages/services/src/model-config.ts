@@ -3,7 +3,7 @@ import {
   SqliteModelRepository,
   SqliteProviderRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { withoutProbedCapabilities } from "./probed-capabilities.js";
 import { resolveProviderDefaults } from "./provider-defaults.js";

@@ -1,6 +1,6 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
-import type { NarrativeRun, RunStepError } from "@narralume/domain";
+import type { NarrativeRun, RunStepError } from "@lapis/domain";
 import {
   isMaxTokensUnsupportedError,
   isSamplingParameterUnsupportedError,
@@ -9,12 +9,12 @@ import {
   type ModelGateway,
   type ModelProtocol,
   type ModelRequest,
-} from "@narralume/llm";
+} from "@lapis/llm";
 import {
   type ResolvedCredential,
   type StoredModel,
   type StoredProvider,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import {
   type AppliedModelRuntime,

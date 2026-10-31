@@ -5,8 +5,8 @@ import { config as loadDotEnv } from "dotenv";
 import {
   testModelConnection,
   type ConnectionTestProfile,
-} from "@narralume/services";
-import { scrubSecrets } from "@narralume/llm";
+} from "@lapis/services";
+import { scrubSecrets } from "@lapis/llm";
 
 import {
   createSmokeWorkspace,

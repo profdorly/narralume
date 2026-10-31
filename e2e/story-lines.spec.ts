@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { StoryCompassDto } from "@narralume/contracts";
+import type { StoryCompassDto } from "@lapis/contracts";
 
 test("长期故事线维护阶段记录并保护并发修改", async ({
   page,

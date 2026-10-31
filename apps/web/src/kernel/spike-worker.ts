@@ -7,7 +7,7 @@
 import {
   NarrativeDatabase,
   createOpfsSahpoolDriver,
-} from "@narralume/persistence/browser";
+} from "@lapis/persistence/browser";
 
 async function runSpike(): Promise<Record<string, unknown>> {
   const results: Record<string, unknown> = {};

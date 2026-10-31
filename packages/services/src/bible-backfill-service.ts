@@ -7,13 +7,13 @@ import {
   type BibleBackfillDetailDto,
   type BibleBackfillUsageDto,
   type CreateBibleBackfillRequest,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import type {
   DocumentVersion,
   NarrativeRun,
   RunSnapshot,
-} from "@narralume/domain";
-import { classifyStepError } from "@narralume/harness";
+} from "@lapis/domain";
+import { classifyStepError } from "@lapis/harness";
 import {
   SqliteBibleBackfillRepository,
   SqliteDeliveryRepository,
@@ -31,7 +31,7 @@ import {
   type BibleBackfillItemSeed,
   type BibleBackfillJob,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { isImportDerivedSource } from "./import-provenance.js";
 import { createManualSettlementRun } from "./manual-settlement-run.js";

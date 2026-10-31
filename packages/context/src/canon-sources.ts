@@ -3,7 +3,7 @@ import {
   type CanonAccess,
   type CanonEntity,
   type CanonFact,
-} from "@narralume/domain";
+} from "@lapis/domain";
 
 import type { ContextSource } from "./types.js";
 

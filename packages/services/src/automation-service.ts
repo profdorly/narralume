@@ -4,10 +4,10 @@ import {
   resolveEffectivePolicy,
   type EffectivePolicy,
   type ModelExecutionPolicy,
-} from "@narralume/contracts";
-import { createCanonEntity } from "@narralume/domain";
-import type { AutopilotSession, RunSnapshot } from "@narralume/domain";
-import { buildFoundationRecipe } from "@narralume/harness";
+} from "@lapis/contracts";
+import { createCanonEntity } from "@lapis/domain";
+import type { AutopilotSession, RunSnapshot } from "@lapis/domain";
+import { buildFoundationRecipe } from "@lapis/harness";
 import {
   type SqliteAutomationRepository,
   type SqliteCanonRepository,
@@ -16,7 +16,7 @@ import {
   type SqliteRunRepository,
   type SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
 import { randomUuid } from "./internal/crypto.js";

@@ -11,7 +11,7 @@ import type {
   SteerClassification,
   StoryCompass,
   StorySteer,
-} from "@narralume/domain";
+} from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { PersistenceNotFoundError } from "./project-repository.js";

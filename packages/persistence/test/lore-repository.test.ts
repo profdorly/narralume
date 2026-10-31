@@ -4,7 +4,7 @@ import {
   type Lorebook,
   type LoreEntry,
   type StoryPersona,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

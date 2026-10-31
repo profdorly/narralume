@@ -1,4 +1,4 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 /** A document import candidate as import analysis reads it. */
 export interface ImportSourceDocument {

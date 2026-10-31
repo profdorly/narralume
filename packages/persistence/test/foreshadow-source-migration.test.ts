@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { createProject } from "@narralume/domain";
+import { createProject } from "@lapis/domain";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import {

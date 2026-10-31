@@ -1,9 +1,9 @@
-import type { ModelExecutionPolicy } from "@narralume/contracts";
-import { selectNaturalSpeaker, sha256Hex } from "@narralume/domain";
+import type { ModelExecutionPolicy } from "@lapis/contracts";
+import { selectNaturalSpeaker, sha256Hex } from "@lapis/domain";
 import {
   buildSelectionEditRecipe,
   compileCoCreateRecipeTemplate,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteCreativeRepository,
   SqliteDocumentRepository,
@@ -13,7 +13,7 @@ import {
   SqliteStoryRepository,
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { randomUuid } from "./internal/crypto.js";
 import {

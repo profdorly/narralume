@@ -1,4 +1,4 @@
-import type { NarrativeRunStep, RunSnapshot } from "@narralume/domain";
+import type { NarrativeRunStep, RunSnapshot } from "@lapis/domain";
 
 import {
   classifyStepError,

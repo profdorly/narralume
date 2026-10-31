@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 
-import type { NarrativeModelClient } from "@narralume/narrative";
-import { createDocument } from "@narralume/domain";
-import { SqliteDocumentRepository } from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import type { NarrativeModelClient } from "@lapis/narrative";
+import { createDocument } from "@lapis/domain";
+import { SqliteDocumentRepository } from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import JSZip from "jszip";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

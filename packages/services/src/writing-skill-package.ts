@@ -1,5 +1,5 @@
-import { CreateWritingSkillRequestSchema } from "@narralume/contracts";
-import type { WritingSkill, WritingSkillScope } from "@narralume/domain";
+import { CreateWritingSkillRequestSchema } from "@lapis/contracts";
+import type { WritingSkill, WritingSkillScope } from "@lapis/domain";
 import JSZip from "jszip";
 
 import { declaredUncompressedSize } from "./internal/zip.js";

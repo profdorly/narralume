@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
 import {
   DecideCanonChangeSetRequestSchema,
@@ -6,7 +6,7 @@ import {
   DecideRevisionProposalRequestSchema,
   ReviewIssueDecisionSchema,
   ReviewWorkspaceSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   CanonChangeSetDecisionConflictError,
   CanonChangeSetNotFoundError,
@@ -21,18 +21,18 @@ import {
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import {
   SettlementApplicationError,
   SettlementApplicationService,
   SettlementConflictError,
   RevisionApplicationError,
   RevisionApplicationService,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import { z } from "zod";
 
-import type { RouteApp } from "@narralume/services";
-import { hashRequest } from "@narralume/services";
+import type { RouteApp } from "@lapis/services";
+import { hashRequest } from "@lapis/services";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().trim().min(1) });
 const IssueParamsSchema = z.object({

@@ -1,5 +1,5 @@
-import { ContextCompiler } from "@narralume/context";
-import type { NarrativeSummary, OutlineNode } from "@narralume/domain";
+import { ContextCompiler } from "@lapis/context";
+import type { NarrativeSummary, OutlineNode } from "@lapis/domain";
 import { describe, expect, it } from "vitest";
 
 import { outlineContextSources } from "../src/outline-context.js";

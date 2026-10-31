@@ -2,7 +2,7 @@ import {
   createCanonEntity,
   createCanonFact,
   createProject,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { NodeNarrativeDatabase } from "../src/node.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 

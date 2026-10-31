@@ -3,7 +3,7 @@ import type {
   KnowledgeEditorDto,
   KnowledgeWrite,
   StoryStateSnapshotDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { useRef, useState } from "react";
 import { ErrorNote } from "../../components/error-note";
 import { Skeleton } from "../../components/skeleton";

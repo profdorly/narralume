@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type {
   StoryStateQuery,
   StoryStateSnapshotDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { Link, useSearchParams } from "react-router";
 import { ErrorNote } from "../../components/error-note";
 import { Skeleton } from "../../components/skeleton";

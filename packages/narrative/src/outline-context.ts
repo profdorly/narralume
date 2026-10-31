@@ -1,5 +1,5 @@
-import type { ContextSource } from "@narralume/context";
-import type { NarrativeSummary, OutlineNode } from "@narralume/domain";
+import type { ContextSource } from "@lapis/context";
+import type { NarrativeSummary, OutlineNode } from "@lapis/domain";
 
 export interface OutlineContextRequest {
   projectId: string;

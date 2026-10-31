@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 
 import cors from "@fastify/cors";
-import { HealthResponseSchema, NARRALUME_VERSION } from "@narralume/contracts";
+import { HealthResponseSchema, NARRALUME_VERSION } from "@lapis/contracts";
 import {
   SqliteAutomationRepository,
   SqliteLlmCallRepository,
   SqliteProjectRepository,
   SqliteRunRepository,
   SqliteRunStreamRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
-import { HarnessSupervisor } from "@narralume/harness";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
+import { HarnessSupervisor } from "@lapis/harness";
 import {
   AutomationWorkerSuite,
   AssistantWorkerSuite,
@@ -20,7 +20,7 @@ import {
   DeliveryWorkerSuite,
   GatewayNarrativeModelClient,
   type NarrativeModelClient,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   AssistantToolExecutor,
   AutopilotCoordinator,
@@ -45,7 +45,7 @@ import {
   registerTemplateRoutes,
   seedEnvironmentModelConfig,
   seedHarnessTemplates,
-} from "@narralume/services";
+} from "@lapis/services";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import type { ServerConfig } from "./config.js";

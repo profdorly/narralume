@@ -1,6 +1,6 @@
-import type { NarrativeRun, NarrativeRunStep } from "@narralume/domain";
-import type { DecisionRequest } from "@narralume/llm";
-import type { RetrievalHit } from "@narralume/persistence";
+import type { NarrativeRun, NarrativeRunStep } from "@lapis/domain";
+import type { DecisionRequest } from "@lapis/llm";
+import type { RetrievalHit } from "@lapis/persistence";
 import { describe, expect, it, vi } from "vitest";
 
 import {

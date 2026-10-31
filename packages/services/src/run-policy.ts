@@ -5,14 +5,14 @@ import {
   resolveEffectivePolicy,
   type EffectivePolicy,
   type ModelExecutionPolicy,
-} from "@narralume/contracts";
-import type { NarrativeRunStep, RunSnapshot } from "@narralume/domain";
+} from "@lapis/contracts";
+import type { NarrativeRunStep, RunSnapshot } from "@lapis/domain";
 import {
   SqliteAssignmentRepository,
   type SqliteProjectRepository,
   type SqliteRunRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { ServiceError } from "./service-error.js";
 

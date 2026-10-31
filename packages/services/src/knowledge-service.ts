@@ -4,13 +4,13 @@ import {
   type KnowledgeEditorDto,
   type KnowledgeWrite,
   type KnowledgeWriteResult,
-} from "@narralume/contracts";
-import type { KnowledgeCorrection, KnowledgeRecord } from "@narralume/domain";
+} from "@lapis/contracts";
+import type { KnowledgeCorrection, KnowledgeRecord } from "@lapis/domain";
 import {
   buildOutlineScope,
   factLineage,
   nodeIsNotAfterTarget,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
@@ -18,7 +18,7 @@ import {
   SqliteRequestReplayRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { randomUuid } from "./internal/crypto.js";
 import { hashRequest } from "./request-idempotency.js";
 import { StoryServiceError } from "./story-service.js";

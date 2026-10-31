@@ -2,16 +2,16 @@ import type {
   NarrativeRunStep,
   RunBudgetUsage,
   RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   assistantToolAccess,
   type AssistantToolName,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteAssistantRepository,
   SqliteAutomationRepository,
@@ -22,7 +22,7 @@ import {
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { instructionsFor, promptLanguageOf } from "./prompt-language.js";
 import type { NarrativeModelClient } from "./model-client.js";

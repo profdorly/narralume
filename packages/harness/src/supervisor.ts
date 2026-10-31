@@ -5,7 +5,7 @@ import type {
   RunBudgetUsage,
   RunSnapshot,
   RunStepError,
-} from "@narralume/domain";
+} from "@lapis/domain";
 
 import { routeRun, type HarnessAction } from "./router.js";
 import {

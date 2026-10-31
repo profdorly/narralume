@@ -1,5 +1,5 @@
-import { randomUuid } from "@narralume/domain";
-import type { BundleCounts } from "@narralume/contracts";
+import { randomUuid } from "@lapis/domain";
+import type { BundleCounts } from "@lapis/contracts";
 import {
   BundleSchema,
   DeliveryServiceError,

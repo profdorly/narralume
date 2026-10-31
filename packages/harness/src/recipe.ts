@@ -1,4 +1,4 @@
-import type { ChapterStepKind, RunStepKind } from "@narralume/domain";
+import type { ChapterStepKind, RunStepKind } from "@lapis/domain";
 
 export interface RunStepSeed {
   id: string;

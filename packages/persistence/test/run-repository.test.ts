@@ -1,6 +1,6 @@
-import { createProject } from "@narralume/domain";
+import { createProject } from "@lapis/domain";
 import { NodeNarrativeDatabase } from "../src/node.js";
-import { buildChapterRecipe, HarnessSupervisor } from "@narralume/harness";
+import { buildChapterRecipe, HarnessSupervisor } from "@lapis/harness";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

@@ -1,6 +1,6 @@
 import { createServer, type Server } from "node:http";
 
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

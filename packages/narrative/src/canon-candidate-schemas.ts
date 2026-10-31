@@ -1,8 +1,8 @@
 import {
   CanonCandidateItemSchema,
   CanonSpreadSchema,
-} from "@narralume/contracts";
-import type { JsonSchemaContract, StructuredValidator } from "@narralume/llm";
+} from "@lapis/contracts";
+import type { JsonSchemaContract, StructuredValidator } from "@lapis/llm";
 import { z } from "zod";
 
 export const CanonCandidateModelItemSchema = z

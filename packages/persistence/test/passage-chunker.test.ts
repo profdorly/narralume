@@ -1,4 +1,4 @@
-import { estimateTokens } from "@narralume/context";
+import { estimateTokens } from "@lapis/context";
 import { describe, expect, it } from "vitest";
 
 import { chunkManuscript } from "../src/passage-chunker.js";

@@ -3,7 +3,7 @@ import {
   AUTOMATION_LIMITS,
   CreateAutopilotSessionRequestSchema,
   GenerateFoundationRequestSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { describe, expect, it } from "vitest";
 
 describe("automation numeric contracts", () => {

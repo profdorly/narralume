@@ -1,4 +1,4 @@
-import { estimateTokens } from "@narralume/context";
+import { estimateTokens } from "@lapis/context";
 
 /**
  * A slice of a manuscript version used as one retrieval segment. `start` and

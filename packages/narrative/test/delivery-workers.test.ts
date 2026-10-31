@@ -1,15 +1,15 @@
-import { createProject, sha256Hex } from "@narralume/domain";
+import { createProject, sha256Hex } from "@lapis/domain";
 import {
   buildImportAnalysisRecipe,
   buildStyleExtractionRecipe,
   HarnessSupervisor,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteDeliveryRepository,
   SqliteProjectRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DeliveryWorkerSuite } from "../src/delivery-workers.js";

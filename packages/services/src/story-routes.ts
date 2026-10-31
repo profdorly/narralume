@@ -39,14 +39,14 @@ import {
   UpdateForeshadowRequestSchema,
   UpdateTimelineEventRequestSchema,
   WithdrawCanonFactRequestSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   createCanonEntity,
   createCanonFact,
   createDocument,
   createOutlineNode,
   randomUuid,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
@@ -57,7 +57,7 @@ import {
   SqliteRequestReplayRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 import { registerStoryStateRoutes } from "./story-state-routes.js";
 import {
@@ -65,12 +65,12 @@ import {
   previewOutlineChange,
 } from "./outline-structure.js";
 
-import type { RunCoordinator, RouteApp } from "@narralume/services";
-import { StoryContextPreviewService } from "@narralume/services";
-import { DeliveryService } from "@narralume/services";
-import { ContextPreviewRequestSchema } from "@narralume/contracts";
-import { bootstrapProject } from "@narralume/services";
-import { ProjectOverviewService } from "@narralume/services";
+import type { RunCoordinator, RouteApp } from "@lapis/services";
+import { StoryContextPreviewService } from "@lapis/services";
+import { DeliveryService } from "@lapis/services";
+import { ContextPreviewRequestSchema } from "@lapis/contracts";
+import { bootstrapProject } from "@lapis/services";
+import { ProjectOverviewService } from "@lapis/services";
 import {
   applyCoverMutation,
   commitDocumentVersion,
@@ -80,7 +80,7 @@ import {
   softDeleteProject,
   StoryServiceError,
   withdrawCanonFact,
-} from "@narralume/services";
+} from "@lapis/services";
 
 const ProjectParamsSchema = z.object({ projectId: z.string().min(1) });
 

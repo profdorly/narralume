@@ -40,13 +40,13 @@ import {
   createDocument,
   createOutlineNode,
   createProject,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   NarrativeRun,
   NarrativeRunStep,
   RunBudgetUsage,
-} from "@narralume/domain";
-import { generateOpenAIDecisions } from "@narralume/llm";
+} from "@lapis/domain";
+import { generateOpenAIDecisions } from "@lapis/llm";
 import {
   limitHitsPerDocument,
   RERANK_CANDIDATES,
@@ -55,7 +55,7 @@ import {
   RETRIEVAL_LIMIT,
   RETRIEVAL_MAX_PER_DOCUMENT,
   type NarrativeModelClient,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   LEGACY_DOCUMENT_SOURCE,
   segmentDocumentId,
@@ -66,8 +66,8 @@ import {
   SqliteRetrievalRepository,
   SqliteStoryRepository,
   type RetrievalHit,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 
 type IndexMode = "passage" | "chapter";
 

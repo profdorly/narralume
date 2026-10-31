@@ -1,4 +1,4 @@
-import { sha256Hex, type Document } from "@narralume/domain";
+import { sha256Hex, type Document } from "@lapis/domain";
 
 import { SqliteCanonRepository } from "./canon-repository.js";
 import type { NarrativeDatabase } from "./database.js";

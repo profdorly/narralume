@@ -1,9 +1,9 @@
-import type { ContextAuthority, ContextSource } from "@narralume/context";
+import type { ContextAuthority, ContextSource } from "@lapis/context";
 import {
   DOCUMENT_PASSAGE_SOURCE,
   segmentDocumentId,
   type RetrievalHit,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { promptLanguageOf } from "./prompt-language.js";
 

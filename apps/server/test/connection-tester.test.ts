@@ -1,4 +1,4 @@
-import type { FetchLike } from "@narralume/llm";
+import type { FetchLike } from "@lapis/llm";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -6,7 +6,7 @@ import {
   PROBE_REASONING_EFFORT,
   testModelConnection,
   type ConnectionTestProfile,
-} from "@narralume/services";
+} from "@lapis/services";
 
 describe("model connection capability fallback", () => {
   it("sends provider query parameters on connection probes", async () => {

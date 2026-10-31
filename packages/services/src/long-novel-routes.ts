@@ -1,4 +1,4 @@
-import type { RouteApp } from "@narralume/services";
+import type { RouteApp } from "@lapis/services";
 import {
   DecidePredictionRequestSchema,
   DryRunRequestSchema,
@@ -10,7 +10,7 @@ import {
   RetrievalIndexStatusSchema,
   RetrievalReindexResultSchema,
   RetrievalSearchRequestSchema,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   SqliteAssignmentRepository,
   SqliteLongNovelRepository,
@@ -18,7 +18,7 @@ import {
   SqliteProjectRepository,
   SqliteRetrievalRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
 import { ServiceError } from "./service-error.js";

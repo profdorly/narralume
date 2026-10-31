@@ -3,9 +3,9 @@ import type {
   NarrativeRunStep,
   RunBudgetUsage,
   RunStepError,
-} from "@narralume/domain";
-import type { DecisionQuestion } from "@narralume/llm";
-import type { RetrievalHit } from "@narralume/persistence";
+} from "@lapis/domain";
+import type { DecisionQuestion } from "@lapis/llm";
+import type { RetrievalHit } from "@lapis/persistence";
 
 import type { NarrativeModelClient } from "./model-client.js";
 import { throwIfAborted } from "./project-guard.js";

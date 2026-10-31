@@ -1,7 +1,7 @@
 import type {
   DocumentReviewRunCreatedDto,
   ModelExecutionPolicy,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 import { jsonRequest, requestBlob, requestJson, requestVoid } from "./transport";
 import type {

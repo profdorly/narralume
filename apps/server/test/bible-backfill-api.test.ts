@@ -2,14 +2,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCanonEntity, createCanonFact } from "@narralume/domain";
+import { createCanonEntity, createCanonFact } from "@lapis/domain";
 import {
   documentCandidateAt,
   importSourceText,
   ParagraphLocator,
   SettlementApplicationService,
   type NarrativeModelClient,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteBibleBackfillRepository,
   SqliteCanonRepository,
@@ -17,8 +17,8 @@ import {
   SqliteNarrativeStateRepository,
   SqliteReviewRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../src/app.js";

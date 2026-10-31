@@ -1,14 +1,14 @@
-import { createProject } from "@narralume/domain";
-import { buildChapterRecipe } from "@narralume/harness";
-import type { AssignmentRole, ModelTaskType } from "@narralume/domain";
+import { createProject } from "@lapis/domain";
+import { buildChapterRecipe } from "@lapis/harness";
+import type { AssignmentRole, ModelTaskType } from "@lapis/domain";
 import {
   SqliteAssignmentRepository,
   SqliteModelRepository,
   SqliteProjectRepository,
   SqliteProviderRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

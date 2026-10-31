@@ -1,5 +1,5 @@
-import { SqliteCreativeRepository } from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { SqliteCreativeRepository } from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

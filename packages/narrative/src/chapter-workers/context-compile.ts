@@ -3,9 +3,9 @@ import { outlineStructureFingerprint } from "../outline-baseline.js";
 import {
   type ContextCompileError,
   type ContextSource,
-} from "@narralume/context";
-import { type NarrativeRunStep, type RunSnapshot } from "@narralume/domain";
-import type { StepExecutionResult } from "@narralume/harness";
+} from "@lapis/context";
+import { type NarrativeRunStep, type RunSnapshot } from "@lapis/domain";
+import type { StepExecutionResult } from "@lapis/harness";
 
 import {
   optionalEmbeddings,
@@ -28,7 +28,7 @@ import {
   RERANK_MAX_PER_DOCUMENT,
   rerankRetrievalHits,
 } from "../retrieval-rerank.js";
-import { SqliteManuscriptIndexer } from "@narralume/persistence";
+import { SqliteManuscriptIndexer } from "@lapis/persistence";
 
 import {
   type ChapterWorkerDeps,

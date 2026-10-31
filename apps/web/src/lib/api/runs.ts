@@ -4,7 +4,7 @@ import type {
   ContinueRunStreamRequest,
   ModelExecutionPolicy,
   RegenerateRunStreamResponse,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 import { jsonRequest, requestJson } from "./transport";
 import type {

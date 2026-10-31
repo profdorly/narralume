@@ -1,7 +1,7 @@
-import { createProject } from "@narralume/domain";
-import { buildChapterRecipe } from "@narralume/harness";
-import type { NarrativeModelClient } from "@narralume/narrative";
-import { outlineStructureFingerprint } from "@narralume/narrative";
+import { createProject } from "@lapis/domain";
+import { buildChapterRecipe } from "@lapis/harness";
+import type { NarrativeModelClient } from "@lapis/narrative";
+import { outlineStructureFingerprint } from "@lapis/narrative";
 import {
   SqliteLlmCallRepository,
   SqliteModelRepository,
@@ -10,8 +10,8 @@ import {
   SqliteRunRepository,
   SqliteRunStreamRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

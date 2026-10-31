@@ -1,4 +1,4 @@
-import type { SystemBackupManifestDto } from "@narralume/contracts";
+import type { SystemBackupManifestDto } from "@lapis/contracts";
 import { describe, expect, it, vi } from "vitest";
 
 import { DatabaseBackupScheduler } from "../src/database-backup-scheduler.js";

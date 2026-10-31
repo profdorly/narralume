@@ -1,14 +1,14 @@
 import type {
   OutlineChangeRequest,
   OutlineChangePreview,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   createOutlineNode,
   movablePlannedChapterIds,
   outlineChapterSpan,
   sha256Hex,
   type OutlineNode,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteCanonRepository,
   SqliteDocumentRepository,
@@ -16,7 +16,7 @@ import {
   SqliteRunRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { StoryServiceError } from "./story-service.js";
 
 export function previewOutlineChange(

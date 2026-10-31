@@ -1,4 +1,4 @@
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 
 import { readServerConfig } from "../apps/server/src/config.js";
 import { seedExampleBook } from "./fixtures/example-book.js";

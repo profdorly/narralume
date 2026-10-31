@@ -1,4 +1,4 @@
-export { MIN_VIABLE_PARTIAL_CHARACTERS, QUALITY_PRESETS } from "@narralume/contracts";
+export { MIN_VIABLE_PARTIAL_CHARACTERS, QUALITY_PRESETS } from "@lapis/contracts";
 export type {
   AdoptRunStreamResponse,
   ProjectLanguage,
@@ -38,7 +38,7 @@ export type {
   UpsertModelRequest,
   UpsertProviderRequest,
   WireApi,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 export {
   ApiError,

@@ -1,19 +1,19 @@
 import { randomUUID } from "node:crypto";
-import type { StoryCompassDto, StoryLongLineDto } from "@narralume/contracts";
+import type { StoryCompassDto, StoryLongLineDto } from "@lapis/contracts";
 import {
   createOutlineNode,
   createDocument,
   ZERO_BUDGET_USAGE,
   type OutlineNode,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   buildClosingReviewRecipe,
   buildRollingOutlineRecipe,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   AutomationWorkerSuite,
   type NarrativeModelClient,
-} from "@narralume/narrative";
+} from "@lapis/narrative";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -22,8 +22,8 @@ import {
   SqliteDocumentRepository,
   SqliteRunRepository,
   SqliteReviewRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";

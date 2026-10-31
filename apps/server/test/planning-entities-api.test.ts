@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createCanonEntity } from "@narralume/domain";
+import { createCanonEntity } from "@lapis/domain";
 import type {
   AutopilotSessionDetailDto,
   CanonCandidateSetDto,
-} from "@narralume/contracts";
-import type { NarrativeModelClient } from "@narralume/narrative";
+} from "@lapis/contracts";
+import type { NarrativeModelClient } from "@lapis/narrative";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
   SqliteRunRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import {
   RollingOutlineProposalSchema,
   type RollingOutlineProposal,

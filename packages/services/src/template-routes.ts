@@ -1,22 +1,22 @@
-import { randomUuid } from "@narralume/domain";
-import type { RouteApp } from "@narralume/services";
+import { randomUuid } from "@lapis/domain";
+import type { RouteApp } from "@lapis/services";
 
 import {
   CloneHarnessTemplateRequestSchema,
   HarnessTemplateSchema,
   RestoreHarnessTemplateRequestSchema,
   UpdateHarnessTemplateRequestSchema,
-} from "@narralume/contracts";
-import { validateRecipeTemplateContent } from "@narralume/harness";
+} from "@lapis/contracts";
+import { validateRecipeTemplateContent } from "@lapis/harness";
 import {
   PROMPT_TEMPLATE_DEFINITIONS,
   serializeBilingualPromptText,
   validatePromptTemplateContent,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 
 const ParamsSchema = z.object({ key: z.string().min(1) });

@@ -1,5 +1,5 @@
-import type { ContextCompiler, ContextSource } from "@narralume/context";
-import { sha256Hex } from "@narralume/domain";
+import type { ContextCompiler, ContextSource } from "@lapis/context";
+import { sha256Hex } from "@lapis/domain";
 import type {
   NarrativeDatabase,
   SqliteAutomationRepository,
@@ -14,7 +14,7 @@ import type {
   SqliteRunRepository,
   SqliteStoryRepository,
   SqliteTemplateRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import type { NarrativeModelClient } from "../model-client.js";
 import type { SettlementApplicationService } from "../settlement-application-service.js";
 import type { StoryStatePacketBuilder } from "../story-state-packet.js";
@@ -29,7 +29,7 @@ import {
   type RunBudgetUsage,
   type RunSnapshot,
   type TimelineEvent,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   ParagraphLocator,
   ParagraphLocatorError,
@@ -45,7 +45,7 @@ import {
 import {
   promptDefaultInstructions,
   promptInvariants,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   importEvidenceDocuments,
   importSourceText,

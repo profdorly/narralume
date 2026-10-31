@@ -2,7 +2,7 @@ import {
   createDefaultPersonaCardProfile,
   createProject,
   transitionProjectPhase,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { NodeNarrativeDatabase } from "../src/node.js";
 import { afterEach, describe, expect, it } from "vitest";
 

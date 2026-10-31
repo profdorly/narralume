@@ -1,4 +1,4 @@
-import { randomUuid } from "@narralume/domain";
+import { randomUuid } from "@lapis/domain";
 
 /**
  * 事件广播枢纽：订阅者是「写一帧」回调。Fastify 适配器传入

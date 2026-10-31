@@ -1,5 +1,5 @@
-import type { AssistantActivity } from "@narralume/persistence";
-import type { AssistantActivityTextDto } from "@narralume/contracts";
+import type { AssistantActivity } from "@lapis/persistence";
+import type { AssistantActivityTextDto } from "@lapis/contracts";
 
 /** 展示文案描述符构造器：key 由前端标签表渲染，服务端不产出自然语言。 */
 export function activityText(

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { AUTOMATION_DEFAULTS } from "@narralume/contracts";
+import { AUTOMATION_DEFAULTS } from "@lapis/contracts";
 import { useRef, useState, type FormEvent } from "react";
 
 import { useI18n } from "../../i18n";

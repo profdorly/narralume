@@ -2,8 +2,8 @@ import {
   type NarrativeRunStep,
   type RunStepError,
   type RunSnapshot,
-} from "@narralume/domain";
-import type { StepExecutionResult } from "@narralume/harness";
+} from "@lapis/domain";
+import type { StepExecutionResult } from "@lapis/harness";
 
 import {
   type ChapterWorkerDeps,

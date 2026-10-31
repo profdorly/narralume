@@ -3,8 +3,8 @@ import {
   StoryLineProposalChangesSchema,
   StoryLineProposalSetSchema,
   type StoryLineProgressProposal,
-} from "@narralume/contracts";
-import { sha256Hex } from "@narralume/domain";
+} from "@lapis/contracts";
+import { sha256Hex } from "@lapis/domain";
 import {
   SqliteAutomationRepository,
   SqliteCanonRepository,
@@ -13,7 +13,7 @@ import {
   SqliteReviewRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { requireActiveProject } from "./project-guard.js";
 
 /** Only summaries tied to the current manuscript count as review evidence. */

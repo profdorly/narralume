@@ -2,7 +2,7 @@ import {
   ImportPersonaCardJsonRequestSchema,
   ImportPersonaCardPngRequestSchema,
   PERSONA_CARD_LIMITS,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import { describe, expect, it } from "vitest";
 
 describe("persona card import API contracts", () => {

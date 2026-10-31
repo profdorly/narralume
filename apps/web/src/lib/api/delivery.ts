@@ -2,7 +2,7 @@ import type {
   BundleCounts,
   ImportedAgentSkillDto,
   ModelExecutionPolicy,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 import {
   bytesToBase64,

@@ -1,4 +1,4 @@
-import type { NarrativeRun } from "@narralume/domain";
+import type { NarrativeRun } from "@lapis/domain";
 import { policyIntInRange } from "./transport.js";
 
 /** Structured-output repair budget; defaults to the previous hardcoded 2. */

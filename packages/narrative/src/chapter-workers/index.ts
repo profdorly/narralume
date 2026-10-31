@@ -1,16 +1,16 @@
 import { requireCurrentChapterOutline } from "../outline-baseline.js";
 
-import { ContextCompiler } from "@narralume/context";
+import { ContextCompiler } from "@lapis/context";
 import {
   createDocument,
   type NarrativeRunStep,
   type RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import type {
   StepExecutionResult,
   StepWorker,
   WorkerRegistry,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   SqliteCanonRepository,
   SqliteAutomationRepository,
@@ -26,7 +26,7 @@ import {
   SqliteStoryRepository,
   SqliteTemplateRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { NarrativeModelClient } from "../model-client.js";
 import {

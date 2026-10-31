@@ -1,5 +1,5 @@
 {
-  "name": "@narralume/services",
+  "name": "@lapis/services",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -14,12 +14,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@narralume/context": "0.2.0",
-    "@narralume/contracts": "0.2.0",
-    "@narralume/domain": "0.2.0",
-    "@narralume/harness": "0.2.0",
-    "@narralume/llm": "0.2.0",
-    "@narralume/persistence": "0.2.0",
+    "@lapis/context": "0.2.0",
+    "@lapis/contracts": "0.2.0",
+    "@lapis/domain": "0.2.0",
+    "@lapis/harness": "0.2.0",
+    "@lapis/llm": "0.2.0",
+    "@lapis/persistence": "0.2.0",
     "crc-32": "^1.2.2",
     "jszip": "^3.10.1",
     "png-chunks-extract": "^1.0.0",

@@ -7,11 +7,11 @@ const pkgSource = (name: string, file = "index.ts") =>
 export default defineConfig({
   resolve: {
     alias: {
-      "@narralume/narrative": pkgSource("narrative"),
-      "@narralume/services": pkgSource("services"),
-      "@narralume/persistence/node": pkgSource("persistence", "node.ts"),
-      "@narralume/persistence/browser": pkgSource("persistence", "browser.ts"),
-      "@narralume/persistence": pkgSource("persistence"),
+      "@lapis/narrative": pkgSource("narrative"),
+      "@lapis/services": pkgSource("services"),
+      "@lapis/persistence/node": pkgSource("persistence", "node.ts"),
+      "@lapis/persistence/browser": pkgSource("persistence", "browser.ts"),
+      "@lapis/persistence": pkgSource("persistence"),
     },
   },
   test: {

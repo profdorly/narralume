@@ -1,12 +1,12 @@
-import { createDocument, createProject } from "@narralume/domain";
-import { buildChapterRecipe } from "@narralume/harness";
+import { createDocument, createProject } from "@lapis/domain";
+import { buildChapterRecipe } from "@lapis/harness";
 import {
   SqliteDocumentRepository,
   SqliteProjectRepository,
   SqliteReviewRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

@@ -1,6 +1,6 @@
-import { ContextCompiler } from "@narralume/context";
+import { ContextCompiler } from "@lapis/context";
 import { NodeNarrativeDatabase } from "../src/node.js";
-import { createProject } from "@narralume/domain";
+import { createProject } from "@lapis/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {

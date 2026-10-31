@@ -1,14 +1,14 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import {
   AUTOMATION_DEFAULTS,
   resolveEffectivePolicy,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 import {
   buildCanonCandidateRecipe,
   buildSelectionEditRecipe,
   compileChapterRecipeTemplate,
-} from "@narralume/harness";
+} from "@lapis/harness";
 import {
   AssistantPersistenceError,
   SqliteAssistantRepository,
@@ -22,7 +22,7 @@ import {
   type AssistantActivity,
   type NarrativeDatabase,
   type StoredAssistantContext,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import type { AutopilotCoordinator } from "./autopilot-coordinator.js";
 import type { LongGoalCoordinator } from "./long-goal-coordinator.js";

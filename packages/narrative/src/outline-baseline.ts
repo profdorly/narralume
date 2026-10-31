@@ -2,11 +2,11 @@ import {
   sha256Hex,
   type OutlineNode,
   type RunSnapshot,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 /** Workflow status changes are not structural changes; abandonment is. */
 export function outlineStructureFingerprint(

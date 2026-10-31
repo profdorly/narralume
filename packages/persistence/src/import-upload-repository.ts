@@ -1,4 +1,4 @@
-import type { ImportFormat } from "@narralume/domain";
+import type { ImportFormat } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { PersistenceNotFoundError } from "./project-repository.js";

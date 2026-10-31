@@ -2,15 +2,15 @@ import {
   StoryStateQuerySchema,
   StoryStateSnapshotSchema,
   KnowledgeWriteSchema,
-} from "@narralume/contracts";
-import { StoryStatePacketBuilder } from "@narralume/narrative";
+} from "@lapis/contracts";
+import { StoryStatePacketBuilder } from "@lapis/narrative";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteStoryRepository,
   type NarrativeDatabase,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 import { z } from "zod";
 import type { RouteApp } from "./route-app.js";
 import { StoryServiceError } from "./story-service.js";

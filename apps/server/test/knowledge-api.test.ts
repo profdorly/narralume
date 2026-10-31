@@ -4,15 +4,15 @@ import {
   createOutlineNode,
   createProject,
   sha256Hex,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import {
   KnowledgeEditorSchema,
   KnowledgeWriteResultSchema,
   StoryStateSnapshotSchema,
-} from "@narralume/contracts";
-import { SqliteProjectRepository } from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
-import { StoryStatePacketBuilder } from "@narralume/narrative";
+} from "@lapis/contracts";
+import { SqliteProjectRepository } from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
+import { StoryStatePacketBuilder } from "@lapis/narrative";
 import { seedStoryState } from "../../../scripts/fixtures/story-state.js";
 import { buildApp } from "../src/app.js";
 

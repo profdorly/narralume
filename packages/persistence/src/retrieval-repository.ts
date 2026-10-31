@@ -1,4 +1,4 @@
-import { sha256Hex } from "@narralume/domain";
+import { sha256Hex } from "@lapis/domain";
 
 import type { NarrativeDatabase } from "./database.js";
 import { buildLexicalQuery } from "./lexical-query.js";

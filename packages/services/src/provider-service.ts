@@ -2,7 +2,7 @@ import {
   type SqliteAssignmentRepository,
   type SqliteModelRepository,
   type SqliteProviderRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { ServiceError } from "./service-error.js";
 

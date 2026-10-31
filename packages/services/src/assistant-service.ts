@@ -1,12 +1,12 @@
-import type { AssistantConversationDto } from "@narralume/contracts";
-import type { SqliteAssignmentRepository } from "@narralume/persistence";
+import type { AssistantConversationDto } from "@lapis/contracts";
+import type { SqliteAssignmentRepository } from "@lapis/persistence";
 import {
   type SqliteDocumentRepository,
   type SqliteModelRepository,
   type SqliteProjectRepository,
   type SqliteProviderRepository,
   type SqliteStoryRepository,
-} from "@narralume/persistence";
+} from "@lapis/persistence";
 
 import { ServiceError } from "./service-error.js";
 

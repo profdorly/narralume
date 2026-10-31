@@ -2,8 +2,8 @@ import {
   BibleBackfillActionRequestSchema,
   BibleBackfillActionResponseSchema,
   CreateBibleBackfillRequestSchema,
-} from "@narralume/contracts";
-import type { NarrativeDatabase } from "@narralume/persistence";
+} from "@lapis/contracts";
+import type { NarrativeDatabase } from "@lapis/persistence";
 import { z } from "zod";
 
 import type { BibleBackfillCoordinator } from "./bible-backfill-coordinator.js";

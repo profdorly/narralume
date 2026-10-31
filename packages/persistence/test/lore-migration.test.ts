@@ -2,7 +2,7 @@ import {
   createDefaultPersonaCardProfile,
   createProject,
   type StoryPersona,
-} from "@narralume/domain";
+} from "@lapis/domain";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {

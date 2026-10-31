@@ -1,4 +1,4 @@
-import type { JsonSchemaContract, StructuredValidator } from "@narralume/llm";
+import type { JsonSchemaContract, StructuredValidator } from "@lapis/llm";
 import { z } from "zod";
 
 import { GroundedParagraphEvidenceSchema } from "./schemas.js";

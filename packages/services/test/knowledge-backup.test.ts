@@ -2,15 +2,15 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { sha256Hex } from "@narralume/domain";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+import { sha256Hex } from "@lapis/domain";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import {
   SqliteCanonRepository,
   SqliteNarrativeStateRepository,
   SqliteProjectRepository,
   SqliteStoryRepository,
-} from "@narralume/persistence";
-import { StoryStatePacketBuilder } from "@narralume/narrative";
+} from "@lapis/persistence";
+import { StoryStatePacketBuilder } from "@lapis/narrative";
 import { seedStoryState } from "../../../scripts/fixtures/story-state.js";
 import { DeliveryService } from "../src/delivery-service.js";
 import { KnowledgeService } from "../src/knowledge-service.js";

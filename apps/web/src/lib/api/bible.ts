@@ -16,7 +16,7 @@ import type {
   StoryLineProposalSetDto,
   StoryStateQuery,
   StoryStateSnapshotDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 import { ApiError, jsonRequest, requestJson } from "./transport";
 import type {
@@ -206,7 +206,7 @@ export async function updateOutlineNode(
   );
 }
 
-export type { OutlineChangeRequest, OutlineChangePreview } from "@narralume/contracts";
+export type { OutlineChangeRequest, OutlineChangePreview } from "@lapis/contracts";
 
 export function previewOutlineChange(projectId: string, change: OutlineChangeRequest): Promise<OutlineChangePreview> {
   return requestJson<OutlineChangePreview>(`/api/projects/${encodeURIComponent(projectId)}/outline/changes/preview`, jsonRequest("POST", change));
@@ -391,7 +391,7 @@ export type {
   BibleBackfillJobStatus,
   BibleBackfillMode,
   BibleBackfillUsageDto,
-} from "@narralume/contracts";
+} from "@lapis/contracts";
 
 /** 建任务；同一 requestId 重放返回原任务（idempotentReplay）。 */
 export async function startBibleBackfill(

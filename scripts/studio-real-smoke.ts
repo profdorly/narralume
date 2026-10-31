@@ -11,8 +11,8 @@ import type { ServerConfig } from "../apps/server/src/config.js";
 import {
   SqliteLlmCallRepository,
   SqliteRunRepository,
-} from "@narralume/persistence";
-import { NodeNarrativeDatabase } from "@narralume/persistence/node";
+} from "@lapis/persistence";
+import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 
 import {
   configureSmokeModelTarget,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { movablePlannedChapterIds } from "@narralume/domain";
+import { movablePlannedChapterIds } from "@lapis/domain";
 import { Link } from "react-router";
 import { ConfirmDialog } from "../../components/confirm-dialog";
 import { ErrorNote } from "../../components/error-note";

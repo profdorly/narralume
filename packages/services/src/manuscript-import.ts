@@ -1,7 +1,7 @@
 /** 导入正文的结构识别：章节标题、DOCX 标题样式、HTML/EPUB 标题与统计风格。
  *  这里只做纯文本变换；容器解析与安全上限由 delivery-service 负责。 */
 
-import { detectManuscriptLanguage } from "@narralume/narrative";
+import { detectManuscriptLanguage } from "@lapis/narrative";
 
 export interface ManuscriptSection {
   title: string;
