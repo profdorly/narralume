@@ -181,22 +181,6 @@ export class SqliteRunRepository {
     return rows.map(mapRun);
   }
 
-  /**
-   * Non-terminal runs of one cocreate session (policy.sessionId), used to
-   * cancel reply/adoption workers whose source context was reverted.
-   */
-  listActiveRunsBySession(sessionId: string): NarrativeRun[] {
-    const rows = this.database.raw
-      .prepare(
-        `SELECT * FROM runs
-         WHERE json_extract(policy_json, '$.sessionId') = ?
-         AND status IN ('pending', 'running', 'paused', 'awaiting_user', 'failed_recoverable')
-         ORDER BY created_at DESC`,
-      )
-      .all(sessionId) as unknown as RunRow[];
-    return rows.map(mapRun);
-  }
-
   getSnapshot(runId: string): RunSnapshot {
     const run = this.getRun(runId);
     if (!run) throw new PersistenceNotFoundError("run", runId);

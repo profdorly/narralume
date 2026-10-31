@@ -2,7 +2,10 @@ import { createHash } from "node:crypto";
 
 import type { NarrativeModelClient } from "@lapis/narrative";
 import { createDocument } from "@lapis/domain";
-import { SqliteDocumentRepository } from "@lapis/persistence";
+import {
+  SqliteCreativeRepository,
+  SqliteDocumentRepository,
+} from "@lapis/persistence";
 import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import JSZip from "jszip";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -266,7 +269,7 @@ describe("delivery API", () => {
   });
 
   it("previews, analyzes, applies, exports, backs up, and restores a portable story", async () => {
-    const { app } = await setup();
+    const { app, database } = await setup();
     const project = await request<{ id: string }>(
       app,
       "POST",
@@ -508,33 +511,40 @@ describe("delivery API", () => {
     });
     expect(epub.statusCode).toBe(200);
     expect(epub.rawPayload.subarray(0, 2).toString()).toBe("PK");
-    const portablePersona = await request<{ id: string }>(
-      app,
-      "POST",
-      `/api/projects/${project.id}/personas`,
-      {
-        kind: "character",
-        name: "潮汐观察员",
-        description: "记录潮痕的旅人。",
-        instructions: "不猜测未知事实。",
-        profile: {
-          personality: "审慎、敏锐。",
-          scenario: "旧邮局夜间。",
-          exampleDialogue: "这道水痕比潮位高。",
-          greetings: ["先看窗台的盐。"],
-          creator: {
-            name: "测试作者",
-            notes: "备份必须保留",
-            version: "1.0",
-            tags: ["潮汐"],
-          },
-          source: {
-            format: "character-card-v3",
-            importedAt: "2026-08-30T00:00:00.000Z",
-          },
+    // Personas are co-creation data with no API left; libraries keep them and
+    // bundles carry them, so seed one through the repository.
+    const portablePersona = new SqliteCreativeRepository(
+      database,
+    ).insertPersona({
+      id: "portable-persona",
+      projectId: project.id,
+      kind: "character",
+      entityId: null,
+      name: "潮汐观察员",
+      description: "记录潮痕的旅人。",
+      instructions: "不猜测未知事实。",
+      voice: {},
+      profile: {
+        personality: "审慎、敏锐。",
+        scenario: "旧邮局夜间。",
+        exampleDialogue: "这道水痕比潮位高。",
+        greetings: ["先看窗台的盐。"],
+        creator: {
+          name: "测试作者",
+          notes: "备份必须保留",
+          version: "1.0",
+          tags: ["潮汐"],
+        },
+        source: {
+          format: "character-card-v3",
+          importedAt: "2026-08-30T00:00:00.000Z",
         },
       },
-    );
+      status: "active",
+      createdAt: "2026-08-30T00:00:00.000Z",
+      updatedAt: "2026-08-30T00:00:00.000Z",
+      version: 0,
+    });
     const bundleResponse = await app.inject({
       method: "GET",
       url: `/api/projects/${project.id}/exports/narrative-bundle`,
@@ -607,15 +617,9 @@ describe("delivery API", () => {
         200,
       ),
     ).toHaveLength(bundle.skills.length);
-    const restoredPersonas = await request<
-      Array<{ profile: { personality: string | null; greetings: string[] } }>
-    >(
-      app,
-      "GET",
-      `/api/projects/${restored.projectId}/personas`,
-      undefined,
-      200,
-    );
+    const restoredPersonas = new SqliteCreativeRepository(
+      database,
+    ).listPersonas(restored.projectId, true);
     expect(restoredPersonas).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

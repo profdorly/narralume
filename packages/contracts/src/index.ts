@@ -7,8 +7,6 @@ export * from "./run.js";
 export * from "./automation.js";
 export * from "./studio.js";
 export * from "./persona-card.js";
-export * from "./persona-card-api.js";
-export * from "./lore.js";
 export * from "./delivery.js";
 export * from "./review.js";
 export * from "./long-novel.js";

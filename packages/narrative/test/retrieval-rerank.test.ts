@@ -152,7 +152,7 @@ describe("rerankRetrievalHits", () => {
       client: model,
       run,
       step,
-      purpose: "cocreate-retrieval-rerank",
+      purpose: "context-retrieval-rerank",
       task: "Chapter 3",
       language: "en",
       hits: [hit("long", "c1", "x".repeat(RERANK_MAX_CANDIDATE_CHARS + 500))],

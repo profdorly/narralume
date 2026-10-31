@@ -54,38 +54,6 @@ describe("named creative resource conflicts", () => {
       },
     );
 
-    const firstPersona = await request<VersionedResource>(
-      app,
-      "POST",
-      `/api/projects/${project.id}/personas`,
-      personaPayload("潮声旁白"),
-    );
-    await expectConflict(
-      app,
-      "POST",
-      `/api/projects/${project.id}/personas`,
-      personaPayload("潮声旁白"),
-      "persona.name.conflict",
-    );
-    const secondPersona = await request<VersionedResource>(
-      app,
-      "POST",
-      `/api/projects/${project.id}/personas`,
-      personaPayload("灯塔旁白"),
-    );
-    await expectConflict(
-      app,
-      "PUT",
-      `/api/personas/${secondPersona.id}`,
-      {
-        ...personaPayload("潮声旁白"),
-        status: "active",
-        expectedVersion: secondPersona.version,
-      },
-      "persona.name.conflict",
-    );
-    expect(firstPersona.version).toBe(0);
-
     const firstStyle = await request<VersionedResource>(
       app,
       "POST",
@@ -154,25 +122,6 @@ describe("named creative resource conflicts", () => {
     );
   });
 });
-
-function personaPayload(name: string) {
-  return {
-    kind: "narrator",
-    entityId: null,
-    name,
-    description: null,
-    instructions: "只描述可观察的动作与物证。",
-    voice: {},
-    profile: {
-      personality: null,
-      scenario: null,
-      exampleDialogue: null,
-      greetings: [],
-      creator: { name: null, notes: null, version: null, tags: [] },
-      source: { format: "native", importedAt: null },
-    },
-  };
-}
 
 function stylePayload(name: string, active: boolean) {
   return {

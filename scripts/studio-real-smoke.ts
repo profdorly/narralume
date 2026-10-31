@@ -8,10 +8,7 @@ import type { FastifyInstance } from "fastify";
 
 import { buildApp } from "../apps/server/src/app.js";
 import type { ServerConfig } from "../apps/server/src/config.js";
-import {
-  SqliteLlmCallRepository,
-  SqliteRunRepository,
-} from "@lapis/persistence";
+import { SqliteLlmCallRepository } from "@lapis/persistence";
 import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 
 import {
@@ -35,6 +32,12 @@ import {
 loadDotEnv({ path: resolve(process.cwd(), ".env.local"), quiet: true });
 
 const scenario = "studio-real";
+/** A fixed manuscript scene the selection edit rewrites with the real model. */
+const SCENE_TEXT = [
+  "沈砚把姐姐留下的空白信移到煤油灯上方，先在桌角放了一小碟海盐作对照。",
+  "灯芯向海的方向偏了偏。信纸背面慢慢析出三枚盐晶，排成一支细小的箭头，指向门外退潮后裸露的石阶。",
+  "她没有立刻拆开信封，只用指腹沿着封口的胶痕摸了一遍，确认那道折痕比她记忆中更旧。",
+].join("\n\n");
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const modelIds: Record<string, string> = {
   "openai-chat": "environment-chat",
@@ -58,12 +61,8 @@ interface ResumeState {
   protocol: string;
   modelId: string;
   projectId: string;
-  sessionId: string;
-  mainBranchId: string;
-  assistantTurnId: string;
-  narratorPersonaId: string;
-  lorebookId: string;
-  loreEntryId: string;
+  documentId: string;
+  versionId: string;
   completedRunIds: string[];
   diagnostic: boolean;
   keepArtifacts: boolean;
@@ -135,284 +134,39 @@ async function main() {
       },
       [201],
     );
-    const author = await createPersona(app, project.id, {
-      kind: "author",
-      name: "执灯人",
-      description: "控制故事边界的作者代理",
-      instructions: "不替角色做选择；超自然规则必须通过可观察动作呈现。",
-    });
-    const investigator = await createPersona(app, project.id, {
-      kind: "character",
-      name: "沈砚",
-      description: "二十七岁的纸张修复师，谨慎、敏锐，不轻信直觉。",
-      instructions:
-        "NON_SPEAKER_PRIVATE_SMOKE_SENTINEL；只根据亲眼所见作判断；先验证再冒险。",
-    });
-    const narrator = await createPersona(app, project.id, {
-      kind: "narrator",
-      name: "潮声旁白",
-      description: "贴近沈砚的有限视角叙述者",
-      instructions:
-        "使用克制具体的中文；让情绪通过动作和感官显现；不解释主题，不总结场景。",
-      profile: {
-        personality: "SPEAKER_PROFILE_SMOKE_SENTINEL；冷静，重视实物细节。",
-        scenario: "退潮后的煤油灯邮局。",
-        exampleDialogue: "灯芯偏了。她先去看桌上的盐。",
-        greetings: [],
-        creator: {
-          name: "Smoke Fixture",
-          notes: "CREATOR_METADATA_MUST_NOT_ENTER_SMOKE_PROMPT",
-          version: "1",
-          tags: ["smoke"],
-        },
-        source: { format: "native", importedAt: null },
-      },
-    });
-    const lorebook = await jsonRequest<{ id: string }>(
+    const document = await jsonRequest<{ id: string }>(
       app,
       "POST",
-      `/api/projects/${project.id}/lorebooks`,
-      {
-        name: "退潮信件规则",
-        description: "真实模型验收用世界书",
-        enabledGlobally: false,
-        scanTurns: 24,
-        enabled: true,
-      },
-      [201],
-    );
-    const loreEntry = await jsonRequest<{ id: string }>(
-      app,
-      "POST",
-      `/api/lorebooks/${lorebook.id}/entries`,
-      {
-        title: "煤油灯显字规则",
-        content:
-          "WORLD_LORE_SMOKE_SENTINEL：煤油灯照到未寄出的信时，信纸背面会析出三枚盐晶，排成指向寄信人的箭头；这是可复验规则。",
-        keys: ["煤油灯"],
-        constant: false,
-        priority: 80,
-        enabled: true,
-      },
-      [201],
-    );
-    await jsonRequest(
-      app,
-      "POST",
-      `/api/lorebooks/${lorebook.id}/entries`,
-      {
-        title: "鲸骨口哨",
-        content: "UNMATCHED_LORE_MUST_NOT_ENTER_SMOKE_PROMPT",
-        keys: ["鲸骨口哨"],
-        constant: false,
-        priority: 100,
-        enabled: true,
-      },
-      [201],
-    );
-    await jsonRequest(
-      app,
-      "PUT",
-      `/api/personas/${narrator.id}/lorebooks`,
-      { lorebookIds: [lorebook.id], expectedVersion: 0 },
-      [200],
-    );
-
-    const session = await jsonRequest<SessionDetail>(
-      app,
-      "POST",
-      `/api/projects/${project.id}/cocreate/sessions`,
-      {
-        title: "空白信试演",
-        speakerPolicy: "round_robin",
-        authorPersonaId: author.id,
-        participantIds: [narrator.id, investigator.id],
-        directorNote:
-          "场景发生在煤油灯下。若世界书命中，用可观察动作呈现其中规则；暂不揭示姐姐失踪的真相。",
-        contextTurns: 24,
-      },
-      [201],
-    );
-    const sessionId = session.session.id;
-    const mainBranchId = required(
-      session.session.activeBranchId,
-      "main branch",
-    );
-
-    const posted = await jsonRequest<{
-      turn: { id: string };
-      run: { id: string };
-    }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${sessionId}/turns`,
+      `/api/projects/${project.id}/documents`,
       {
         requestId: globalThis.crypto.randomUUID(),
-        role: "user",
-        personaId: author.id,
-        content:
-          "沈砚把姐姐留下的空白信移到煤油灯上方，先在桌角放了一小碟海盐作对照。",
-        generateReply: true,
-      },
-      [202],
-    );
-    logger.event("run.created", {
-      runId: posted.run.id,
-      projectId: project.id,
-      kind: "room-reply",
-    });
-    watcher.track(posted.run.id);
-    await finishRun(app, watcher, posted.run.id, project.id, "room reply");
-    const completedRunIds: string[] = [posted.run.id];
-    const contextArtifact = new SqliteRunRepository(database)
-      .getSnapshot(posted.run.id)
-      .steps.find((step) => step.kind === "cocreate.context")?.outputArtifact;
-    const compiledContext = String(contextArtifact?.context ?? "");
-    if (!compiledContext.includes("SPEAKER_PROFILE_SMOKE_SENTINEL")) {
-      throw new Error("selected speaker profile did not enter room context");
-    }
-    if (compiledContext.includes("NON_SPEAKER_PRIVATE_SMOKE_SENTINEL")) {
-      throw new Error(
-        "non-speaker private instructions leaked into room context",
-      );
-    }
-    if (
-      compiledContext.includes("CREATOR_METADATA_MUST_NOT_ENTER_SMOKE_PROMPT")
-    ) {
-      throw new Error("persona creator metadata leaked into room context");
-    }
-    recordCheck("selected speaker profile is isolated", true);
-    if (!compiledContext.includes("WORLD_LORE_SMOKE_SENTINEL")) {
-      throw new Error("matched lore did not enter room context");
-    }
-    if (
-      compiledContext.includes("UNMATCHED_LORE_MUST_NOT_ENTER_SMOKE_PROMPT")
-    ) {
-      throw new Error("unmatched lore entered room context");
-    }
-    const activationArtifact = database.raw
-      .prepare(
-        "SELECT content_json FROM run_artifacts WHERE run_id = ? AND kind = 'lore-activation'",
-      )
-      .get(posted.run.id) as { content_json: string } | undefined;
-    const activation = JSON.parse(activationArtifact?.content_json ?? "{}") as {
-      decisions?: { entryId?: string; status?: string }[];
-    };
-    if (
-      !activation.decisions?.some(
-        (decision) =>
-          decision.entryId === loreEntry.id &&
-          decision.status === "activated-key",
-      )
-    ) {
-      throw new Error("lore activation artifact did not explain the key match");
-    }
-    recordCheck("matched lore is isolated and explained", true);
-    let room = await getRoom(app, sessionId);
-    const assistant = required(
-      room.turns.find((turn) => turn.role === "assistant"),
-      "assistant turn",
-    );
-    if (assistant.personaId !== narrator.id) {
-      throw new Error("round-robin did not select the first enabled persona");
-    }
-    if (
-      !/三[枚颗]|箭头|指向/u.test(assistant.content) ||
-      !/盐/u.test(assistant.content)
-    ) {
-      throw new Error("real model reply did not apply the activated lore rule");
-    }
-    process.stdout.write(
-      `room reply: ${assistant.swipes.length} selected swipe, ${assistant.content.length} chars\n`,
-    );
-    recordCheck("room reply generated", true);
-
-    const alternate = await jsonRequest<{ run: { id: string } }>(
-      app,
-      "POST",
-      `/api/turns/${assistant.id}/swipes`,
-      {
-        requestId: globalThis.crypto.randomUUID(),
-        speakerPersonaId: investigator.id,
-      },
-      [202],
-    );
-    logger.event("run.created", {
-      runId: alternate.run.id,
-      projectId: project.id,
-      kind: "alternate-swipe",
-    });
-    watcher.track(alternate.run.id);
-    await finishRun(
-      app,
-      watcher,
-      alternate.run.id,
-      project.id,
-      "alternate swipe",
-    );
-    completedRunIds.push(alternate.run.id);
-    room = await getRoom(app, sessionId);
-    const swipedTurn = required(
-      room.turns.find((turn) => turn.id === assistant.id),
-      "swiped assistant turn",
-    );
-    if (swipedTurn.swipes.length !== 2) {
-      throw new Error(`expected two swipes, got ${swipedTurn.swipes.length}`);
-    }
-    await jsonRequest(
-      app,
-      "POST",
-      `/api/turns/${assistant.id}/swipe-selection`,
-      { swipeId: swipedTurn.swipes[0]!.id },
-      [200],
-    );
-    recordCheck("alternate swipe selected", true);
-
-    const branch = await jsonRequest<{ id: string }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${sessionId}/branches`,
-      {
-        fromTurnId: posted.turn.id,
-        name: "先拆信封",
-        expectedVersion: room.session.version,
+        kind: "manuscript",
+        title: "灯下潮痕",
+        outlineNodeId: null,
       },
       [201],
     );
-    room = await getRoom(app, sessionId);
-    await jsonRequest(
+    const version = await jsonRequest<{ id: string; content: string }>(
       app,
       "POST",
-      `/api/cocreate/sessions/${sessionId}/turns`,
+      `/api/projects/${project.id}/documents/${document.id}/versions`,
       {
-        requestId: globalThis.crypto.randomUUID(),
-        role: "director",
-        content: "让沈砚先检查信封胶痕，不要加热信纸。",
-        generateReply: false,
+        content: SCENE_TEXT,
+        source: "manual",
+        expectedCurrentVersionId: null,
       },
       [201],
     );
-    room = await getRoom(app, sessionId);
-    await jsonRequest(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${sessionId}/branch-selection`,
-      { branchId: mainBranchId, expectedVersion: room.session.version },
-      [200],
-    );
-    process.stdout.write(`branch: fork ${shortId(branch.id)} preserved\n`);
-    recordCheck("branch forked", true);
+    process.stdout.write(`manuscript: ${version.content.length} chars saved\n`);
+    recordCheck("manuscript version saved", true);
+    const completedRunIds: string[] = [];
 
     const state: ResumeState = {
       protocol,
       modelId,
       projectId: project.id,
-      sessionId,
-      mainBranchId,
-      assistantTurnId: assistant.id,
-      narratorPersonaId: narrator.id,
-      lorebookId: lorebook.id,
-      loreEntryId: loreEntry.id,
+      documentId: document.id,
+      versionId: version.id,
       completedRunIds,
       diagnostic: args.diagnostic,
       keepArtifacts: args.keepArtifacts,
@@ -536,7 +290,7 @@ async function resumeMain(resumeFrom: string) {
   watcher.startPolling();
   logger.event("scenario.resumed", {
     workspace: workspace.dir,
-    sessionId: state.sessionId,
+    documentId: state.documentId,
   });
   const recordCheck = (name: string, ok: boolean, detail?: string): void => {
     childChecks.push({ name, ok, ...(detail ? { detail } : {}) });
@@ -546,104 +300,20 @@ async function resumeMain(resumeFrom: string) {
   let app: FastifyInstance | null = null;
   try {
     app = await createApp(database, workspace.dbPath);
-    let room = await getRoom(app, state.sessionId);
-    if (room.turns.length !== 2 || room.branches.length !== 2) {
-      throw new Error("room state did not survive app restart");
-    }
-    process.stdout.write(
-      "recovery: room, branch, and swipes survived restart\n",
-    );
-    recordCheck(
-      "room state survived cross-process restart",
-      true,
-      `${room.turns.length} turns, ${room.branches.length} branches`,
-    );
-    const restoredLorebooks = await jsonRequest<
-      { lorebook: { id: string }; entries: { id: string }[] }[]
-    >(
-      app,
-      "GET",
-      `/api/projects/${state.projectId}/lorebooks`,
-      undefined,
-      [200],
-    );
-    const restoredLorebook = restoredLorebooks.find(
-      (item) => item.lorebook.id === state.lorebookId,
-    );
-    const restoredBindings = await jsonRequest<{
-      lorebookIds: string[];
-    }>(
-      app,
-      "GET",
-      `/api/personas/${state.narratorPersonaId}/lorebooks`,
-      undefined,
-      [200],
-    );
-    if (
-      !restoredLorebook?.entries.some(
-        (entry) => entry.id === state.loreEntryId,
-      ) ||
-      !restoredBindings.lorebookIds.includes(state.lorebookId)
-    ) {
-      throw new Error(
-        "lorebook or persona binding did not survive app restart",
-      );
-    }
-    recordCheck("lorebook and binding survived cross-process restart", true);
-
-    const adoptionRun = await jsonRequest<{ run: { id: string } }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${state.sessionId}/adoptions`,
-      {
-        requestId: globalThis.crypto.randomUUID(),
-        branchId: state.mainBranchId,
-        fromTurnId: room.turns[0]!.id,
-        toTurnId: room.turns[1]!.id,
-        title: "灯下潮痕",
-      },
-      [202],
-    );
-    logger.event("run.created", {
-      runId: adoptionRun.run.id,
-      projectId: state.projectId,
-      kind: "scene-adoption",
-    });
-    watcher.track(adoptionRun.run.id);
-    await finishRun(
-      app,
-      watcher,
-      adoptionRun.run.id,
-      state.projectId,
-      "scene adoption",
-    );
-    state.completedRunIds.push(adoptionRun.run.id);
-    room = await getRoom(app, state.sessionId);
-    const adoption = required(room.adoptions[0], "scene adoption");
-    if (!adoption.canonChangeSetId) {
-      throw new Error("adoption did not stage a canon change set");
-    }
     let document = await jsonRequest<StudioDocument>(
       app,
       "GET",
-      `/api/projects/${state.projectId}/studio/documents/${adoption.documentId}`,
+      `/api/projects/${state.projectId}/studio/documents/${state.documentId}`,
       undefined,
       [200],
     );
-    const current = required(
-      document.currentVersion,
-      "adopted document version",
-    );
-    if (current.content.length < 120) {
-      throw new Error(
-        `adopted scene is unexpectedly short: ${current.content.length}`,
-      );
+    const current = required(document.currentVersion, "manuscript version");
+    if (current.id !== state.versionId || current.content !== SCENE_TEXT) {
+      throw new Error("manuscript version did not survive app restart");
     }
-    process.stdout.write(
-      `scene adoption: ${current.content.length} chars, canon candidate staged\n`,
-    );
+    process.stdout.write("recovery: manuscript survived restart\n");
     recordCheck(
-      "scene adoption staged canon change",
+      "manuscript survived cross-process restart",
       true,
       `${current.content.length} chars`,
     );
@@ -653,7 +323,7 @@ async function resumeMain(resumeFrom: string) {
     await jsonRequest(
       app,
       "POST",
-      `/api/projects/${state.projectId}/studio/documents/${adoption.documentId}/comments`,
+      `/api/projects/${state.projectId}/studio/documents/${state.documentId}/comments`,
       {
         versionId: current.id,
         startOffset: 0,
@@ -667,7 +337,7 @@ async function resumeMain(resumeFrom: string) {
     const editRun = await jsonRequest<{ run: { id: string } }>(
       app,
       "POST",
-      `/api/projects/${state.projectId}/studio/documents/${adoption.documentId}/selection-edits`,
+      `/api/projects/${state.projectId}/studio/documents/${state.documentId}/selection-edits`,
       {
         baseVersionId: current.id,
         selectionStart: 0,
@@ -694,7 +364,7 @@ async function resumeMain(resumeFrom: string) {
     document = await jsonRequest<StudioDocument>(
       app,
       "GET",
-      `/api/projects/${state.projectId}/studio/documents/${adoption.documentId}`,
+      `/api/projects/${state.projectId}/studio/documents/${state.documentId}`,
       undefined,
       [200],
     );
@@ -712,7 +382,7 @@ async function resumeMain(resumeFrom: string) {
     document = await jsonRequest<StudioDocument>(
       app,
       "GET",
-      `/api/projects/${state.projectId}/studio/documents/${adoption.documentId}`,
+      `/api/projects/${state.projectId}/studio/documents/${state.documentId}`,
       undefined,
       [200],
     );
@@ -786,30 +456,6 @@ async function createApp(database: NodeNarrativeDatabase, dbPath: string) {
     logger: false,
     enableRunWorker: false,
   });
-}
-
-async function createPersona(
-  app: FastifyInstance,
-  projectId: string,
-  input: Record<string, unknown>,
-) {
-  return jsonRequest<{ id: string }>(
-    app,
-    "POST",
-    `/api/projects/${projectId}/personas`,
-    input,
-    [201],
-  );
-}
-
-async function getRoom(app: FastifyInstance, sessionId: string) {
-  return jsonRequest<SessionDetail>(
-    app,
-    "GET",
-    `/api/cocreate/sessions/${sessionId}`,
-    undefined,
-    [200],
-  );
 }
 
 async function finishRun(
@@ -895,10 +541,6 @@ function required<T>(value: T | null | undefined, label: string): T {
   return value;
 }
 
-function shortId(value: string) {
-  return value.slice(0, 8);
-}
-
 function safeError(value: unknown) {
   if (!value || typeof value !== "object") return "no structured error";
   const record = value as Record<string, unknown>;
@@ -919,22 +561,6 @@ interface RunSnapshot {
     kind: string;
     status: string;
     error: Record<string, unknown> | null;
-  }[];
-}
-
-interface SessionDetail {
-  session: { id: string; activeBranchId: string | null; version: number };
-  branches: { id: string }[];
-  turns: {
-    id: string;
-    role: string;
-    personaId: string | null;
-    content: string;
-    swipes: { id: string; content: string }[];
-  }[];
-  adoptions: {
-    documentId: string;
-    canonChangeSetId: string | null;
   }[];
 }
 

@@ -38,7 +38,6 @@ export function seedHarnessTemplates(
   new SqliteTemplateRepository(database).seed([
     ...promptSeeds,
     CHAPTER_PRODUCTION_RECIPE(now),
-    COCREATE_REPLY_RECIPE(now),
   ]);
 }
 
@@ -117,23 +116,6 @@ const CHAPTER_PRODUCTION_RECIPE = (now: string) => ({
       ],
       maxRevisionCycles: 2,
     },
-    null,
-    2,
-  ),
-  updatedAt: now,
-});
-
-const COCREATE_REPLY_RECIPE = (now: string) => ({
-  id: "recipe-cocreate-reply",
-  kind: "recipe" as const,
-  key: "recipe.cocreate-reply",
-  name: "Receita de resposta da cocriação",
-  description:
-    "Monta o contexto da sala de história, responde e guarda candidatos.",
-  systemInvariants:
-    "A resposta nunca entra sozinha no cânone ou no manuscrito; adotar exige uma receita própria.",
-  defaultContent: JSON.stringify(
-    { steps: ["cocreate.context", "cocreate.respond", "cocreate.stage"] },
     null,
     2,
   ),

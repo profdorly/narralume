@@ -54,6 +54,8 @@ export const RunStepKindSchema = z.enum([
   "steer.classify",
   "arc.review",
   "volume.review",
+  // Retired co-creation steps: still accepted so runs stored by older
+  // versions keep parsing.
   "cocreate.context",
   "cocreate.respond",
   "cocreate.stage",

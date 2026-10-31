@@ -1,6 +1,5 @@
 import {
   compileChapterRecipeTemplate,
-  compileCoCreateRecipeTemplate,
   RecipeTemplateError,
 } from "../src/index.js";
 import { describe, expect, it } from "vitest";
@@ -65,23 +64,5 @@ describe("recipe template compiler", () => {
         0,
       ),
     ).toThrowError(RecipeTemplateError);
-  });
-
-  it("compiles the co-create template into executable steps", () => {
-    const recipe = compileCoCreateRecipeTemplate(
-      "run-3",
-      JSON.stringify({
-        steps: [
-          "cocreate.context",
-          { kind: "cocreate.respond", maxAttempts: 6 },
-          "cocreate.stage",
-        ],
-      }),
-      2,
-    );
-    expect(recipe.steps[1]).toMatchObject({
-      kind: "cocreate.respond",
-      maxAttempts: 6,
-    });
   });
 });

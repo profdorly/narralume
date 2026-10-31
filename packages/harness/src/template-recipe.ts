@@ -1,7 +1,6 @@
 import type { RunStepKind } from "@lapis/domain";
 
 import type { ChapterRecipe, RunStepSeed } from "./recipe.js";
-import type { CollaborationRecipe } from "./collaboration-recipes.js";
 
 const CHAPTER_TEMPLATE_ORDER = [
   "context.compile",
@@ -12,12 +11,6 @@ const CHAPTER_TEMPLATE_ORDER = [
   "revision.generate?",
   "chapter.settle",
   "chapter.commit",
-] as const;
-
-const COCREATE_TEMPLATE_ORDER = [
-  "cocreate.context",
-  "cocreate.respond",
-  "cocreate.stage",
 ] as const;
 
 /* 与各配方的步数预算保持一致：模型调用步骤 5 次尝试，落库/确定性步骤 1-2 次。 */
@@ -134,37 +127,12 @@ export function compileFormAwareChapterRecipe(
   return short ? { ...recipe, name: "short-story" } : recipe;
 }
 
-export function compileCoCreateRecipeTemplate(
-  runId: string,
-  content: string,
-  templateVersion: number,
-): CollaborationRecipe {
-  const parsed = parseTemplate(content);
-  assertExactOrder(parsed.steps, COCREATE_TEMPLATE_ORDER, "cocreate-reply");
-  return {
-    name: "cocreate-reply",
-    version: Math.max(1, templateVersion + 1),
-    steps: parsed.steps.map((step, ordinal) => ({
-      id: `${runId}:${step.kind.replace(/^cocreate\./u, "")}`,
-      ordinal,
-      kind: step.kind as RunStepKind,
-      cycle: 0,
-      idempotencyKey: `${runId}/${step.kind.replace(/^cocreate\./u, "")}`,
-      maxAttempts: step.maxAttempts,
-    })),
-  };
-}
-
 export function validateRecipeTemplateContent(
   key: string,
   content: string,
 ): void {
   if (key === "recipe.chapter-production") {
     compileChapterRecipeTemplate("validation", content, 5, 0);
-    return;
-  }
-  if (key === "recipe.cocreate-reply") {
-    compileCoCreateRecipeTemplate("validation", content, 0);
     return;
   }
   parseTemplate(content);

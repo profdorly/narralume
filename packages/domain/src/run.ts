@@ -44,6 +44,12 @@ export type AutomationStepKind =
   | "arc.review"
   | "volume.review";
 
+/**
+ * The cocreate.* and adoption.* kinds belong to the retired co-creation
+ * feature: no recipe creates them anymore and no worker runs them, but runs
+ * stored by older versions keep these steps and must still load. A pending
+ * one fails with worker.missing when the harness reaches it.
+ */
 export type CollaborationStepKind =
   | "cocreate.context"
   | "cocreate.respond"

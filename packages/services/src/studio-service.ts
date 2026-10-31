@@ -1,9 +1,5 @@
 import type { ModelExecutionPolicy } from "@lapis/contracts";
-import { selectNaturalSpeaker, sha256Hex } from "@lapis/domain";
-import {
-  buildSelectionEditRecipe,
-  compileCoCreateRecipeTemplate,
-} from "@lapis/harness";
+import { buildSelectionEditRecipe } from "@lapis/harness";
 import {
   SqliteCreativeRepository,
   SqliteDocumentRepository,
@@ -11,7 +7,6 @@ import {
   SqliteManuscriptIndexer,
   SqliteRunRepository,
   SqliteStoryRepository,
-  SqliteTemplateRepository,
   type NarrativeDatabase,
 } from "@lapis/persistence";
 
@@ -28,36 +23,6 @@ export class StudioServiceError extends ServiceError {
     super(code, message, statusCode);
     this.name = "StudioServiceError";
   }
-}
-
-/**
- * 回合撤回：级联取消该分支上上下文已失效的回复 Run 与采纳范围覆盖被
- * 撤回回合的采纳 Run（CR-103/CR-106）。返回受影响的 run 列表供调用方
- * interrupt。
- */
-export function cancelRunsInvalidatedByRevert(
-  database: NarrativeDatabase,
-  input: {
-    sessionId: string;
-    branchId: string;
-    turnOrdinal: number;
-    now: string;
-  },
-) {
-  const runs = new SqliteRunRepository(database);
-  const creative = new SqliteCreativeRepository(database);
-  const affected = runs
-    .listActiveRunsBySession(input.sessionId)
-    .filter((run) => {
-      if (run.policy.branchId !== input.branchId) return false;
-      if (run.recipe === "cocreate-reply") return true;
-      if (run.recipe !== "scene-adoption") return false;
-      const toTurnId = policyString(run.policy, "toTurnId");
-      const toTurn = toTurnId ? creative.getTurn(toTurnId) : null;
-      return toTurn !== null && toTurn.ordinal >= input.turnOrdinal;
-    });
-  for (const run of affected) runs.requestCancel(run.id, input.now);
-  return affected;
 }
 
 /**
@@ -283,73 +248,6 @@ export function acceptEditProposal(
   return creative.decideEditProposal(proposal.id, "accepted", version.id, now);
 }
 
-export function createReplyRun(
-  database: NarrativeDatabase,
-  session: ReturnType<SqliteCreativeRepository["requireSession"]>,
-  input: {
-    runId: string;
-    branchId: string;
-    speakerPersonaId: string | null;
-    targetTurnId: string | null;
-    creationRequestId: string;
-    creationRequestHash: string;
-    speakerSelectionReason: "explicit" | "mention" | "weighted" | "round_robin";
-    speakerSelectionHash: string;
-  },
-  environment: Readonly<Record<string, string | undefined>>,
-  requestPolicy?: ModelExecutionPolicy,
-) {
-  const runs = new SqliteRunRepository(database);
-  const templates = new SqliteTemplateRepository(database);
-  const runId = input.runId;
-  const template = templates.getByKey("recipe.cocreate-reply");
-  if (!template)
-    throw new StudioServiceError(
-      "recipe.template.missing",
-      "The co-creation recipe template does not exist",
-      500,
-    );
-  const recipe = compileCoCreateRecipeTemplate(
-    runId,
-    template.effectiveContent,
-    template.version,
-  );
-  return runs.create({
-    id: runId,
-    projectId: session.projectId,
-    recipe: recipe.name,
-    recipeVersion: recipe.version,
-    mode: "co-create",
-    targetOutlineNodeId: session.targetOutlineNodeId,
-    policy: withRuntimeModelPolicy(
-      {
-        sessionId: session.id,
-        branchId: input.branchId,
-        speakerPersonaId: input.speakerPersonaId,
-        speakerSelectionReason: input.speakerSelectionReason,
-        speakerSelectionHash: input.speakerSelectionHash,
-        targetTurnId: input.targetTurnId,
-        creationRequestId: input.creationRequestId,
-        creationRequestHash: input.creationRequestHash,
-        contextWindow: 32_000,
-        replyMaxOutputTokens: 3_000,
-        origin: {
-          surface: "cocreate",
-          documentId: null,
-          selection: null,
-          sessionId: session.id,
-          branchId: input.branchId,
-        },
-        ...requestPolicy,
-      },
-      environment,
-    ),
-    steps: recipe.steps,
-    now: new Date().toISOString(),
-    priority: 20,
-  });
-}
-
 export function requireSelectionRange(
   content: string,
   start: number,
@@ -373,146 +271,4 @@ export function requireProject(
     throw new StudioServiceError("project.not_found", "Project not found", 404);
   }
   return project;
-}
-
-export function requireActiveCoCreateSession(
-  creative: SqliteCreativeRepository,
-  sessionId: string,
-) {
-  const session = creative.requireSession(sessionId);
-  if (session.status !== "active") {
-    throw new StudioServiceError(
-      "cocreate.session.inactive",
-      "The session is not active; the sandbox cannot be modified and generation tasks cannot be started",
-      409,
-    );
-  }
-  return session;
-}
-
-export function requireActiveCoCreateParticipants(
-  creative: SqliteCreativeRepository,
-  sessionId: string,
-  speakerPersonaId: string | null,
-) {
-  const participants = creative
-    .requireSessionDetail(sessionId)
-    .participants.filter(
-      (participant) =>
-        participant.enabled &&
-        participant.persona.status === "active" &&
-        participant.persona.kind !== "author",
-    );
-  if (participants.length === 0) {
-    throw new StudioServiceError(
-      "cocreate.participants.empty",
-      "Enable at least one non-retired AI participant",
-      422,
-    );
-  }
-  if (
-    speakerPersonaId &&
-    !participants.some(
-      (participant) => participant.personaId === speakerPersonaId,
-    )
-  ) {
-    throw new StudioServiceError(
-      "cocreate.speaker.invalid",
-      "The specified Persona is not enabled or has been retired",
-      422,
-    );
-  }
-  return participants;
-}
-
-export function resolveCoCreateSpeaker(
-  creative: SqliteCreativeRepository,
-  input: {
-    sessionId: string;
-    branchId: string;
-    requestId: string;
-    requestedPersonaId: string | null;
-    recentAuthorInput: string | null;
-  },
-): {
-  speakerPersonaId: string;
-  reason: "explicit" | "mention" | "weighted" | "round_robin";
-  stableHash: string;
-} {
-  const session = requireActiveCoCreateSession(creative, input.sessionId);
-  const branch = creative.requireBranch(input.branchId);
-  if (branch.sessionId !== session.id) {
-    throw new StudioServiceError(
-      "cocreate.branch.mismatch",
-      "The active branch does not belong to the current story room",
-      422,
-    );
-  }
-  const participants = requireActiveCoCreateParticipants(
-    creative,
-    session.id,
-    input.requestedPersonaId,
-  );
-  const turns = creative.listBranchTurns(branch.id);
-  const previousSpeakerPersonaId =
-    [...turns].reverse().find((turn) => turn.role === "assistant")?.personaId ??
-    null;
-  const seed = [
-    session.id,
-    branch.id,
-    branch.headTurnId,
-    input.requestId,
-  ] as const;
-
-  if (input.requestedPersonaId || session.speakerPolicy === "natural") {
-    return selectNaturalSpeaker({
-      sessionId: session.id,
-      branchId: branch.id,
-      headTurnId: branch.headTurnId,
-      requestId: input.requestId,
-      requestedPersonaId: input.requestedPersonaId,
-      recentAuthorInput: input.recentAuthorInput,
-      previousSpeakerPersonaId,
-      candidates: participants.map((participant) => ({
-        personaId: participant.personaId,
-        name: participant.persona.name,
-        position: participant.position,
-        enabled: participant.enabled,
-        talkativeness: participant.talkativeness,
-      })),
-    });
-  }
-
-  if (session.speakerPolicy === "manual") {
-    throw new StudioServiceError(
-      "cocreate.speaker.required",
-      "The manual speaker policy must specify an enabled Persona",
-      422,
-    );
-  }
-
-  const ordered = participants.toSorted(
-    (left, right) =>
-      left.position - right.position ||
-      left.personaId.localeCompare(right.personaId),
-  );
-  const previousIndex = previousSpeakerPersonaId
-    ? ordered.findIndex(
-        (participant) => participant.personaId === previousSpeakerPersonaId,
-      )
-    : -1;
-  return {
-    speakerPersonaId:
-      ordered[(previousIndex + 1 + ordered.length) % ordered.length]!.personaId,
-    reason: "round_robin",
-    stableHash: sha256Hex(JSON.stringify(seed)),
-  };
-}
-
-function policyString(
-  policy: Readonly<Record<string, unknown>>,
-  key: string,
-): string | null {
-  const value = policy[key];
-  return typeof value === "string" ? value : null;
 }

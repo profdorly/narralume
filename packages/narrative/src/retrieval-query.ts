@@ -7,7 +7,7 @@ import {
 
 import { promptLanguageOf } from "./prompt-language.js";
 
-/** Retrieval options shared by the chapter writer and co-creation. */
+/** Retrieval options of the chapter writer. */
 export const RETRIEVAL_LIMIT = 8;
 export const RETRIEVAL_MAX_PER_DOCUMENT = 2;
 

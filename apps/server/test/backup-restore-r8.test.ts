@@ -1,6 +1,11 @@
 import { createHash } from "node:crypto";
 
+import { createDefaultPersonaCardProfile } from "@lapis/domain";
 import type { NarrativeModelClient } from "@lapis/narrative";
+import {
+  SqliteCreativeRepository,
+  SqliteLoreRepository,
+} from "@lapis/persistence";
 import { NodeNarrativeDatabase } from "@lapis/persistence/node";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -32,7 +37,7 @@ afterEach(async () => {
 
 describe("project backup fidelity (R8)", () => {
   it("restores every author-visible section with matching export/restore counts", async () => {
-    const { app } = await setup();
+    const { app, database } = await setup();
     const project = await request<{ id: string; updatedAt: string }>(
       app,
       "POST",
@@ -192,23 +197,32 @@ describe("project backup fidelity (R8)", () => {
       },
     );
 
-    // Persona + 共创会话（含回合）。
-    const persona = await request<{ id: string }>(
-      app,
-      "POST",
-      `/api/projects/${projectId}/personas`,
-      {
-        kind: "narrator",
-        entityId: null,
-        name: "旁白",
-        description: "冷静的旁白。",
-        instructions: "只说必要的话。",
-        voice: {},
-      },
-    );
-    const session = await request<{
-      session: { id: string; activeBranchId: string; version: number };
-    }>(app, "POST", `/api/projects/${projectId}/cocreate/sessions`, {
+    // Co-creation is no longer reachable through the API, but libraries keep
+    // its rows and backups must carry them; seed them through the
+    // repositories: persona, session with a branch and turns, lorebook with
+    // persona and session bindings.
+    const creative = new SqliteCreativeRepository(database);
+    const lore = new SqliteLoreRepository(database);
+    const seededAt = new Date().toISOString();
+    const persona = creative.insertPersona({
+      id: "backup-persona",
+      projectId,
+      kind: "narrator",
+      entityId: null,
+      name: "旁白",
+      description: "冷静的旁白。",
+      instructions: "只说必要的话。",
+      voice: {},
+      profile: createDefaultPersonaCardProfile(),
+      status: "active",
+      createdAt: seededAt,
+      updatedAt: seededAt,
+      version: 0,
+    });
+    const session = creative.createSession({
+      id: "backup-session",
+      branchId: "backup-branch-main",
+      projectId,
       title: "开场 brainstorm",
       speakerPolicy: "manual",
       targetOutlineNodeId: chapter.id,
@@ -216,98 +230,65 @@ describe("project backup fidelity (R8)", () => {
       directorNote: null,
       contextTurns: 24,
       participantIds: [persona.id],
+      now: seededAt,
     });
-    const mainTurn = await request<{ turn: { id: string } }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${session.session.id}/turns`,
-      {
-        requestId: "backup-turn-1",
-        role: "user",
-        personaId: null,
-        content: "她会在第一章拆开信吗？",
-        generateReply: false,
-        speakerPersonaId: null,
-      },
-    );
-    const sessionAfterTurn = await request<{
-      session: { version: number };
-    }>(
-      app,
-      "GET",
-      `/api/cocreate/sessions/${session.session.id}`,
-      undefined,
-      200,
-    );
-    await request<{ id: string }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${session.session.id}/branches`,
-      {
-        fromTurnId: mainTurn.turn.id,
-        name: "不拆信",
-        expectedVersion: sessionAfterTurn.session.version,
-      },
-    );
-    await request<{ turn: { id: string } }>(
-      app,
-      "POST",
-      `/api/cocreate/sessions/${session.session.id}/turns`,
-      {
-        requestId: "backup-turn-2",
-        role: "user",
-        personaId: null,
-        content: "她决定先把信藏进抽屉。",
-        generateReply: false,
-        speakerPersonaId: null,
-      },
-    );
-
-    const lorebook = await request<{ id: string }>(
-      app,
-      "POST",
-      "/api/projects/" + projectId + "/lorebooks",
-      {
-        name: "邮局世界书",
-        description: "恢复后仍应保留作用域绑定。",
-        enabledGlobally: true,
-        scanTurns: 18,
-        enabled: true,
-      },
-    );
-    await request(app, "POST", "/api/lorebooks/" + lorebook.id + "/entries", {
+    const mainTurn = creative.insertTurn({
+      id: "backup-turn-1",
+      sessionId: session.session.id,
+      branchId: session.session.activeBranchId!,
+      role: "user",
+      personaId: null,
+      content: "她会在第一章拆开信吗？",
+      now: seededAt,
+    });
+    const childBranch = creative.createBranch({
+      id: "backup-branch-child",
+      sessionId: session.session.id,
+      fromTurnId: mainTurn.id,
+      name: "不拆信",
+      expectedVersion: creative.requireSession(session.session.id).version,
+      now: seededAt,
+    });
+    creative.insertTurn({
+      id: "backup-turn-2",
+      sessionId: session.session.id,
+      branchId: childBranch.id,
+      role: "user",
+      personaId: null,
+      content: "她决定先把信藏进抽屉。",
+      now: seededAt,
+    });
+    const lorebook = lore.insertLorebook({
+      id: "backup-lorebook",
+      projectId,
+      name: "邮局世界书",
+      description: "恢复后仍应保留作用域绑定。",
+      enabledGlobally: true,
+      scanTurns: 18,
+      enabled: true,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+      version: 0,
+    });
+    lore.insertLoreEntry({
+      id: "backup-lore-entry",
+      lorebookId: lorebook.id,
       title: "灯塔潮汐",
       content: "灯塔熄灭后的第十三分钟，旧邮局会收到无名信。",
       keys: ["灯塔", "无名信"],
       constant: false,
       priority: 30,
       enabled: true,
+      createdAt: seededAt,
+      updatedAt: seededAt,
+      version: 0,
     });
-    await request(
-      app,
-      "PUT",
-      "/api/personas/" + persona.id + "/lorebooks",
-      { lorebookIds: [lorebook.id], expectedVersion: 0 },
-      200,
-    );
-    const sessionBeforeLoreBinding = await request<{
-      session: { version: number };
-    }>(
-      app,
-      "GET",
-      "/api/cocreate/sessions/" + session.session.id,
-      undefined,
-      200,
-    );
-    await request(
-      app,
-      "PUT",
-      "/api/cocreate/sessions/" + session.session.id + "/lorebooks",
-      {
-        lorebookIds: [lorebook.id],
-        expectedVersion: sessionBeforeLoreBinding.session.version,
-      },
-      200,
+    lore.replacePersonaLorebooks(persona.id, [lorebook.id], 0, seededAt);
+    lore.replaceSessionLorebooks(
+      session.session.id,
+      [lorebook.id],
+      creative.requireSession(session.session.id).version,
+      seededAt,
     );
 
     // 助手会话 + 消息（回复在后台推进；备份只关心消息落盘）。
@@ -376,64 +357,32 @@ describe("project backup fidelity (R8)", () => {
       expect(restored.counts[key], `counts.${key}`).toBe(value);
     }
 
-    const restoredLorebooks = await request<
-      Array<{
-        lorebook: { id: string; name: string; scanTurns: number };
-        entries: Array<{ title: string; keys: string[] }>;
-      }>
-    >(
-      app,
-      "GET",
-      "/api/projects/" + restored.projectId + "/lorebooks",
-      undefined,
-      200,
-    );
+    const restoredLorebooks = lore
+      .listLorebooks(restored.projectId)
+      .map((item) => ({
+        lorebook: item,
+        entries: lore.listLoreEntries(item.id),
+      }));
     expect(restoredLorebooks).toMatchObject([
       {
         lorebook: { name: "邮局世界书", scanTurns: 18 },
         entries: [{ title: "灯塔潮汐", keys: ["灯塔", "无名信"] }],
       },
     ]);
-    const restoredPersonas = await request<Array<{ id: string; name: string }>>(
-      app,
-      "GET",
-      "/api/projects/" + restored.projectId + "/personas",
-      undefined,
-      200,
-    );
-    const restoredRoomList = await request<
-      Array<{ id: string; title: string }>
-    >(
-      app,
-      "GET",
-      "/api/projects/" + restored.projectId + "/cocreate/sessions",
-      undefined,
-      200,
-    );
-    const restoredPersonaBinding = await request<{ lorebookIds: string[] }>(
-      app,
-      "GET",
-      "/api/personas/" +
-        restoredPersonas.find(({ name }) => name === "旁白")!.id +
-        "/lorebooks",
-      undefined,
-      200,
-    );
-    const restoredSessionBinding = await request<{ lorebookIds: string[] }>(
-      app,
-      "GET",
-      "/api/cocreate/sessions/" +
-        restoredRoomList.find(({ title }) => title === "开场 brainstorm")!.id +
-        "/lorebooks",
-      undefined,
-      200,
-    );
-    expect(restoredPersonaBinding.lorebookIds).toEqual([
-      restoredLorebooks[0]!.lorebook.id,
-    ]);
-    expect(restoredSessionBinding.lorebookIds).toEqual([
-      restoredLorebooks[0]!.lorebook.id,
-    ]);
+    const restoredPersonas = creative.listPersonas(restored.projectId, true);
+    const restoredRoomList = creative.listSessions(restored.projectId, true);
+    const restoredPersonaBinding = lore
+      .listPersonaLorebooks(
+        restoredPersonas.find(({ name }) => name === "旁白")!.id,
+      )
+      .map(({ id }) => id);
+    const restoredSessionBinding = lore
+      .listSessionLorebooks(
+        restoredRoomList.find(({ title }) => title === "开场 brainstorm")!.id,
+      )
+      .map(({ id }) => id);
+    expect(restoredPersonaBinding).toEqual([restoredLorebooks[0]!.lorebook.id]);
+    expect(restoredSessionBinding).toEqual([restoredLorebooks[0]!.lorebook.id]);
 
     // 关键引用逐项核对。
     const restoredBible = await request<{
@@ -506,39 +455,11 @@ describe("project backup fidelity (R8)", () => {
       studioDetail.versions[0]!.id,
     );
 
-    const restoredSessions = await request<
-      { id: string; activeBranchId: string | null }[]
-    >(
-      app,
-      "GET",
-      `/api/projects/${restored.projectId}/cocreate/sessions`,
-      undefined,
-      200,
-    );
+    const restoredSessions = creative.listSessions(restored.projectId, true);
     expect(restoredSessions).toHaveLength(1);
     expect(restoredSessions[0]!.activeBranchId).not.toBeNull();
-    const restoredSessionDetail = await request<{
-      session: { activeBranchId: string };
-      branches: {
-        id: string;
-        parentBranchId: string | null;
-        forkedFromTurnId: string | null;
-        headTurnId: string | null;
-        name: string;
-      }[];
-      turns: {
-        id: string;
-        content: string;
-        branchId: string;
-        parentTurnId: string | null;
-      }[];
-      participants: { personaId: string }[];
-    }>(
-      app,
-      "GET",
-      `/api/cocreate/sessions/${restoredSessions[0]!.id}`,
-      undefined,
-      200,
+    const restoredSessionDetail = creative.requireSessionDetail(
+      restoredSessions[0]!.id,
     );
     expect(restoredSessionDetail.turns.map((turn) => turn.content)).toContain(
       "她会在第一章拆开信吗？",

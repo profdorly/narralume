@@ -265,32 +265,6 @@ const LINE_EDIT: PromptTemplateDefinition = {
   },
 };
 
-const COCREATE_ADOPTION: PromptTemplateDefinition = {
-  id: "prompt-cocreate-adoption",
-  key: "prompt.cocreate-adoption",
-  name: "Cena a partir da sala",
-  description:
-    "Organiza o turno escolhido da sala colaborativa em prosa de cena.",
-  invariants: {
-    "pt-BR": [
-      "Notas de direção são instrução de reescrita e não podem aparecer ipsis litteris em sceneContent.",
-      "canonCandidates lista só fatos novos com evidência direta na prosa, devolvendo índices de parágrafo 1-based de sceneContent em evidenceParagraphs; use array para vários parágrafos.",
-    ].join("\n"),
-    en: [
-      "Director's notes are rewrite instructions and must not appear verbatim in sceneContent.",
-      "canonCandidates lists only new facts directly evidenced in the prose, returning 1-based paragraph indexes into sceneContent through evidenceParagraphs; use an array for multiple paragraphs.",
-    ].join("\n"),
-  },
-  instructions: {
-    "pt-BR": [
-      "Transforme o turno escolhido em cena de romance pronta para o manuscrito: preserve ações ocorridas, o sentido do diálogo e a agência; complete a costura narrativa necessária, sem inventar evento maior. sceneContent é só prosa de cena, sem título nem cerca Markdown.",
-    ].join("\n"),
-    en: [
-      "Turn the chosen co-writing turn into a novel scene ready for the manuscript: preserve actions that happened, the meaning of dialogue, and character agency; supply necessary narrative connective tissue but never invent major events on your own. sceneContent outputs only scene prose without titles or Markdown fences.",
-    ].join("\n"),
-  },
-};
-
 const BOOK_FOUNDATION: PromptTemplateDefinition = {
   id: "prompt-book-foundation",
   key: "prompt.book-foundation",
@@ -325,7 +299,6 @@ export const PROMPT_TEMPLATE_DEFINITIONS: readonly PromptTemplateDefinition[] =
     CHAPTER_REVISION,
     CHAPTER_SETTLEMENT,
     LINE_EDIT,
-    COCREATE_ADOPTION,
     BOOK_FOUNDATION,
   ];
 
