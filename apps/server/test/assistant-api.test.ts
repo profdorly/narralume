@@ -163,8 +163,9 @@ describe("project assistant API", () => {
       projectId,
       "conversation-configure",
     );
-    /* 环境种子给出 environment-chat（openai-chat）作为全局 writing 分配；
-       手动再造一个同协议模型和一个跨协议模型。 */
+    /* The environment seed provides environment-chat (openai-chat) as the
+       global writing assignment; here we also create one model with the same
+       protocol and one with a different protocol. */
     const chatProvider = (
       await app.inject({ method: "GET", url: "/api/providers" })
     ).json() as { id: string; wireApi: string }[];
@@ -309,7 +310,8 @@ describe("project assistant API", () => {
       assistantReasoningEffort: "medium",
     });
 
-    /* 覆盖模型被停用后，发消息明确失败并提示重选。 */
+    /* Once the override model is disabled, sending a message fails explicitly
+       and asks for a new choice. */
     const disabled = await app.inject({
       method: "PUT",
       url: `/api/models/${modelId}`,
@@ -918,7 +920,8 @@ describe("project assistant API", () => {
       "先暂停",
       context,
     );
-    // R6：task.control 是直接执行的任务控制，不再进入待确认卡片。
+    // R6: task.control is task control that runs directly; it no longer goes to
+    // a confirmation card.
     expect(
       new SqliteAutomationRepository(database).requireSession(sessionId)
         .pauseRequested,
@@ -1004,7 +1007,7 @@ describe("project assistant API", () => {
     expect(secondDetail.activities).toEqual([]);
   });
 
-  it("会话卡吸收快速创作子运行：同一等待只出一张卡", async () => {
+  it("the conversation card absorbs quick-creation child runs: one wait yields a single card", async () => {
     const { app, database } = await setup();
     const projectId = await createProject(app, "去重验证");
     const conversation = await createConversation(
@@ -1016,8 +1019,9 @@ describe("project assistant API", () => {
     const automation = new SqliteAutomationRepository(database);
     const now = new Date().toISOString();
 
-    // 直接用 repository 建会话并挂子运行：assistantConversationId 是
-    // executor 内部注入的字段，HTTP 入口的策略校验不认它。
+    // Create the conversation and attach the child run straight through the
+    // repository: assistantConversationId is injected inside the executor and
+    // the HTTP entry policy check rejects it.
     const sessionId = "dedup-session";
     automation.createSession({
       id: sessionId,
@@ -1071,7 +1075,8 @@ describe("project assistant API", () => {
 
     const ids = detail.activities.map((activity) => activity.id);
     expect(ids).toContain(`autopilot:${sessionId}`);
-    // 子运行已被会话卡吸收，不再单独成卡。
+    // The child run is absorbed by the conversation card and no longer gets a
+    // card of its own.
     expect(ids).not.toContain(`run:${runId}`);
   });
 
@@ -1166,7 +1171,8 @@ describe("project assistant API", () => {
         selection: null,
       },
     );
-    // R6：失败会话的重试属于任务控制，直接执行，不再进入确认卡片。
+    // R6: retrying a failed conversation is task control, so it runs directly
+    // with no confirmation card.
     expect(automation.requireSession(sessionId).status).toBe("running");
     const recovered = (
       await app.inject({
@@ -1368,7 +1374,8 @@ describe("project assistant API", () => {
     expect(sent.statusCode, sent.body).toBe(202);
     const runId = sent.json().runId as string;
 
-    // R6 幂等：同一 requestId 重放不得重复开工。
+    // R6 idempotency: replaying the same requestId must not start the work
+    // twice.
     const replay = await app.inject({
       method: "POST",
       url: `/api/assistant/conversations/${conversation.id}/messages`,
@@ -1405,7 +1412,8 @@ describe("project assistant API", () => {
       }[];
     };
     const tool = detail.activities.find((activity) => activity.kind === "tool");
-    // auto 工具直接交办：不出现 confirm 卡片，活动已完成并关联下游 Run。
+    // auto tools are handed off directly: no confirm card, the activity
+    // completes and links the downstream Run.
     expect(tool).toMatchObject({
       status: "completed",
       toolCall: { name: "canon.candidate.start" },
@@ -1422,7 +1430,8 @@ describe("project assistant API", () => {
       assistantConversationId: conversation.id,
     });
 
-    // 同一活动重复交办不会新建第二个下游 Run（确定性 ID 幂等）。
+    // Handing off the same activity twice does not create a second downstream
+    // Run (deterministic ID idempotency).
     const duplicate = await app.inject({
       method: "POST",
       url: `/api/assistant/activities/${tool!.id.replace("assistant_tool:", "")}/actions`,
@@ -1520,7 +1529,7 @@ describe("project assistant API", () => {
       projectId,
       "assistant-conv-mutex",
     );
-    // 先确认一个 chapter.start，形成活动中的写作链。
+    // First confirm a chapter.start so there is an active writing chain.
     const isFirstReply = await app.inject({
       method: "POST",
       url: `/api/assistant/conversations/${conversation.id}/messages`,
@@ -1553,7 +1562,8 @@ describe("project assistant API", () => {
     });
     expect(confirmed.statusCode, confirmed.body).toBe(200);
 
-    // 第二个 auto 规划请求在活动写作链存在时必须失败接续，而不是排队。
+    // A second auto planning request while the writing chain is active must
+    // fail to continue, not queue up.
     isFirstReplyFlag = false;
     const second = await app.inject({
       method: "POST",

@@ -50,7 +50,7 @@ describe("project backup fidelity (R8)", () => {
     );
     const projectId = project.id;
 
-    // 封面（资料与封面同一事务提交）。
+    // Cover (profile and cover are committed in the same transaction).
     const withCover = await app.inject({
       method: "PUT",
       url: `/api/projects/${projectId}`,
@@ -151,7 +151,7 @@ describe("project backup fidelity (R8)", () => {
       resolutionNodeId: null,
     });
 
-    // 正文版本 + 草稿 + 批注。
+    // Manuscript versions + draft + annotations.
     const document = await request<{ id: string }>(
       app,
       "POST",
@@ -291,7 +291,8 @@ describe("project backup fidelity (R8)", () => {
       seededAt,
     );
 
-    // 助手会话 + 消息（回复在后台推进；备份只关心消息落盘）。
+    // Assistant conversation + messages (the reply advances in the background;
+    // the backup only cares that messages are persisted).
     const conversation = await request<{ id: string }>(
       app,
       "POST",
@@ -351,7 +352,8 @@ describe("project backup fidelity (R8)", () => {
       title: "全量备份样本 · 校验副本",
     });
     expect(restored.projectId).not.toBe(projectId);
-    // 恢复计数与导出计数逐项相等（runs 除外：只作历史，不续跑）。
+    // Restored counts match exported counts item by item (except runs: kept as
+    // history only, not resumed).
     for (const [key, value] of Object.entries(backup.counts)) {
       if (key === "runs") continue;
       expect(restored.counts[key], `counts.${key}`).toBe(value);
@@ -384,7 +386,7 @@ describe("project backup fidelity (R8)", () => {
     expect(restoredPersonaBinding).toEqual([restoredLorebooks[0]!.lorebook.id]);
     expect(restoredSessionBinding).toEqual([restoredLorebooks[0]!.lorebook.id]);
 
-    // 关键引用逐项核对。
+    // Check the key references one by one.
     const restoredBible = await request<{
       outline: { id: string; kind: string; title: string }[];
       entities: { id: string; name: string }[];
@@ -539,7 +541,8 @@ describe("project backup fidelity (R8)", () => {
       assistant: unknown[];
       manifest: { counts: Record<string, number> };
     };
-    // 裁剪掉助手会话但保留 manifest 计数：恢复计数必然对不上。
+    // Drop the assistant conversations but keep the manifest counts: the
+    // restore counts can no longer match.
     bundle.assistant = [];
     database.raw
       .prepare(
@@ -559,7 +562,8 @@ describe("project backup fidelity (R8)", () => {
     expect(response.json()).toMatchObject({
       error: { code: "backup.restore.count_mismatch" },
     });
-    // 校验失败必须整体回滚：不能留下半成品项目。
+    // A failed validation must roll back entirely: no half-restored project may
+    // remain.
     const projects = await request<{ title: string }[]>(
       app,
       "GET",

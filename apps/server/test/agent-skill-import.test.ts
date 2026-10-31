@@ -69,7 +69,7 @@ describe("agent skill import (R9)", () => {
     expect(skills).toHaveLength(1);
     expect(skills[0]?.id).toBe(imported.id);
 
-    // 助手会话详情合并启用的导入技能。
+    // The assistant conversation detail merges in the enabled imported skills.
     const conversation = await app.inject({
       method: "POST",
       url: `/api/projects/${projectId}/assistant/conversations`,
@@ -228,7 +228,8 @@ describe("agent skill import (R9)", () => {
       JSON.stringify(manifest({ label: "路径穿越" })),
     );
     unsafe.file("INSTRUCTIONS.md", "引用路径穿越包外，必须被拒绝。");
-    // JSZip 加载时会清洗 ".."，但保留绝对路径；服务端必须拒绝。
+    // JSZip strips ".." on load but keeps absolute paths; the server must
+    // reject them.
     unsafe.file("/etc/passwd", "越界内容");
     const unsafeBytes = await unsafe.generateAsync({ type: "nodebuffer" });
     const unsafeResponse = await app.inject({
@@ -268,7 +269,7 @@ describe("agent skill import (R9)", () => {
     expect(disabled.statusCode, disabled.body).toBe(200);
     expect(disabled.json().enabled).toBe(false);
 
-    // 停用的技能不再出现在会话详情。
+    // A disabled skill no longer appears in the conversation detail.
     const conversation = await app.inject({
       method: "POST",
       url: `/api/projects/${projectId}/assistant/conversations`,
@@ -283,7 +284,7 @@ describe("agent skill import (R9)", () => {
     });
     expect(detail.json().importedSkills).toHaveLength(0);
 
-    // 旧的 expectedUpdatedAt 触发并发冲突。
+    // A stale expectedUpdatedAt triggers a concurrency conflict.
     const conflict = await app.inject({
       method: "POST",
       url: `/api/agent-skills/${skill.id}/enabled`,

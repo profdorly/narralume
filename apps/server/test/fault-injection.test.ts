@@ -798,22 +798,24 @@ describe("fault injection: protocol faults", () => {
       mode: "repair",
       valid: false,
     });
-    // 校验失败是随机采样问题：harness 把它当 step 级可重试错误退避重试，
-    // 配方 maxAttempts=5 封顶。
+    // A validation failure is a random-sampling problem: the harness treats it
+    // as a step-level retryable error with backoff, capped at the recipe's
+    // maxAttempts=5.
     const retries = events.filter(
       (event) => event.type === "run.step.retry_scheduled",
     );
     expect(retries).toHaveLength(4);
     expect(retries[0]!.payload).toMatchObject({
       reason: "model.structured_output",
-      // "protocol" 不在已知类别集合里：归类 unknown，retryable 由错误自身携带。
+      // "protocol" is not in the known category set: it is classified as
+      // unknown and the error itself carries retryable.
       category: null,
     });
     expect(
       events.find((event) => event.type === "run.step.retry_exhausted"),
     ).toBeDefined();
 
-    // 每个逻辑调用内部烧 2 次物理尝试（prompt/repair）。
+    // Each logical call burns 2 physical attempts internally (prompt/repair).
     const calls = llmCalls(database, runId);
     expect(calls).toHaveLength(5);
     expect(calls.map((call) => call.status)).toEqual([
@@ -841,10 +843,12 @@ describe("fault injection: protocol faults", () => {
   });
 
   it("settlement validation issue then recovery: step retry adopts the next valid output", async () => {
-    // 第一次结算输出带语义违规（非 character 认知携带 knowledgeSubjectId），
-    // 第二个逻辑调用恢复健康——证明随机采样类校验失败值得 step 级重试。
-    // 未知能力只走 prompt；第一次逻辑调用返回违规内容并失败，随后由
-    // harness 进行 step 级重试，第二次逻辑调用拿到健康输出。
+    // The first settlement output has a semantic violation (a non-character
+    // knowledge item carries knowledgeSubjectId); the second logical call
+    // recovers, showing that random-sampling validation failures deserve a
+    // step-level retry. An unknown capability only uses prompt; the first
+    // logical call returns invalid content and fails, then the harness retries
+    // at step level and the second logical call gets a valid output.
     let settlementRequests = 0;
     const { app, database } = await setup((call) => {
       if (schemaNameOf(call.body) === "chapter_settlement_candidates") {
@@ -885,7 +889,8 @@ describe("fault injection: protocol faults", () => {
     const settleStep = new SqliteRunRepository(database)
       .getSnapshot(runId)
       .steps.find((step) => step.kind === "chapter.settle");
-    // 违规输出触发 step 级重试，第二次尝试成功。
+    // The invalid output triggers a step-level retry, and the second attempt
+    // succeeds.
     expect(settleStep).toMatchObject({ status: "succeeded", attempt: 2 });
     expect(settleStep!.outputArtifact).toMatchObject({
       generation: { mode: "prompt", attempts: 1 },

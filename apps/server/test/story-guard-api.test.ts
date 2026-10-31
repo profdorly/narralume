@@ -56,7 +56,8 @@ describe("canon / compass concurrency guards", () => {
       payload: revision({ value: "深水" }),
     });
     expect(first.statusCode, first.body).toBe(201);
-    // 同一旧事实的第二次修订必须显式冲突，不能产生第二条分叉正典。
+    // A second revision of the same old fact must be an explicit conflict and
+    // must not produce a second, forked canon.
     const second = await app.inject({
       method: "PUT",
       url: `/api/projects/${projectId}/facts/${fact.id}`,
@@ -76,7 +77,8 @@ describe("canon / compass concurrency guards", () => {
       bible.facts.filter((item) => item.predicate === "害怕"),
     ).toHaveLength(1);
 
-    // 权威提升同样不能对已被替代的候选重复执行。
+    // An authority promotion also cannot run again on a candidate that was
+    // already superseded.
     const candidate = await createFact(
       app,
       projectId,
@@ -120,7 +122,7 @@ describe("canon / compass concurrency guards", () => {
       "第一版焦点",
     );
     expect(first.statusCode, first.body).toBe(200);
-    // 旧快照的更新必须显式冲突。
+    // An update from an old snapshot must be an explicit conflict.
     const stale = await writeIntent(
       bible.intent?.updatedAt ?? null,
       "旧标签页的覆盖",
@@ -129,7 +131,7 @@ describe("canon / compass concurrency guards", () => {
     expect(stale.json()).toMatchObject({
       error: { code: "intent.version.conflict" },
     });
-    // 最新令牌可以保存。
+    // The latest token can save.
     const fresh = await writeIntent(
       first.json().updatedAt as string,
       "最新标签页的保存",
@@ -246,7 +248,8 @@ describe("canon / compass concurrency guards", () => {
         payload: { action: "adopt" },
       });
 
-    // 生成时的意图基线；采纳前作者手工改过意图 → 409。
+    // Intent baseline at generation time; the author edited the intent by hand
+    // before adoption → 409.
     automation.stageCandidateSet({
       id: "set-intent",
       projectId,
@@ -287,7 +290,7 @@ describe("canon / compass concurrency guards", () => {
     });
     expect(story.getAuthorIntent(projectId)?.currentFocus).toBe("作者手工焦点");
 
-    // 基线一致的指南针候选可以正常采纳。
+    // A compass candidate with a matching baseline can be adopted normally.
     const compassBefore = automation.getCompass(projectId) ?? null;
     expect(compassBefore).toBeNull();
     automation.stageCandidateSet({
@@ -319,7 +322,8 @@ describe("canon / compass concurrency guards", () => {
       "候选指南针承诺",
     );
 
-    // 人工更新指南针后，旧的指南针候选（同一基线 null）不能再覆盖。
+    // After a manual compass update, an old compass candidate (same baseline
+    // null) can no longer overwrite it.
     automation.stageCandidateSet({
       id: "set-compass-2",
       projectId,

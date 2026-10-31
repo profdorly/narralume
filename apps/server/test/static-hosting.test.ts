@@ -8,8 +8,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
 
-/* M4 可选静态托管：NARRATIVE_STATIC_DIR 一个开关——
- * 静态产物 + SPA 回落 index.html；/api 未知路径仍是 JSON 404。 */
+/* M4 optional static hosting: a single NARRATIVE_STATIC_DIR switch. Static
+ * assets + SPA fallback to index.html; unknown /api paths are still a JSON 404.
+ */
 
 const apps: Awaited<ReturnType<typeof buildApp>>[] = [];
 const dirs: string[] = [];
@@ -38,8 +39,8 @@ const baseConfig = (staticDirectory?: string): ServerConfig => ({
   environment: "test",
 });
 
-describe("可选静态托管（NARRATIVE_STATIC_DIR）", () => {
-  it("静态文件、assets 与 SPA 回落 index.html 均可访问", async () => {
+describe("optional static hosting (NARRATIVE_STATIC_DIR)", () => {
+  it("static files, assets and the SPA fallback to index.html are all reachable", async () => {
     const app = await buildApp({
       config: baseConfig(makeStaticDir()),
       database: new NodeNarrativeDatabase(),
@@ -59,13 +60,14 @@ describe("可选静态托管（NARRATIVE_STATIC_DIR）", () => {
     const asset = await app.inject({ method: "GET", url: "/assets/app.js" });
     expect(asset.statusCode).toBe(200);
     expect(asset.body).toContain("console.log");
-    // SPA 深链回落 index.html（前端路由 /shelf、/projects/x/overview）。
+    // SPA deep links fall back to index.html (frontend routes /shelf,
+    // /projects/x/overview).
     const deep = await app.inject({ method: "GET", url: "/shelf" });
     expect(deep.statusCode).toBe(200);
     expect(deep.body).toContain("灯");
   });
 
-  it("/api 未知路径仍返回 JSON 404，不回落 index.html", async () => {
+  it("unknown /api paths still return a JSON 404 and do not fall back to index.html", async () => {
     const app = await buildApp({
       config: baseConfig(makeStaticDir()),
       database: new NodeNarrativeDatabase(),
@@ -84,7 +86,7 @@ describe("可选静态托管（NARRATIVE_STATIC_DIR）", () => {
     );
   });
 
-  it("未配置开关时行为不变：未知路径 JSON 404", async () => {
+  it("without the switch the behavior is unchanged: unknown paths get a JSON 404", async () => {
     const app = await buildApp({
       config: baseConfig(),
       database: new NodeNarrativeDatabase(),

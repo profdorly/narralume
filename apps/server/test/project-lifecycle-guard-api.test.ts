@@ -163,7 +163,8 @@ describe("project lifecycle guards (M3)", () => {
     });
     expect(deleted.statusCode, deleted.body).toBe(202);
 
-    // 活动 Run 被直接置为 cancelled，而不是等 Worker 路由。
+    // The active Run is set to cancelled directly instead of waiting for the
+    // Worker route.
     const detail = await app.inject({
       method: "GET",
       url: `/api/runs/${runId}?projectId=${project.id}`,
@@ -180,7 +181,8 @@ describe("project lifecycle guards (M3)", () => {
     const chapterId = await createChapter(app, project.id, "第一章");
     const runId = await createChapterRun(app, project.id, chapterId, "del-2");
 
-    // 绕过删除路由直接软删除（模拟删除与 Worker 租约的竞态）。
+    // Soft-delete directly, bypassing the delete route (simulates the race
+    // between deletion and the Worker lease).
     new SqliteProjectRepository(database).softDelete(
       project.id,
       project.updatedAt,
@@ -201,7 +203,7 @@ describe("project lifecycle guards (M3)", () => {
     );
     expect(step?.error?.code).toBe("project.not_found");
 
-    // 删除后没有正文文档被写入。
+    // No manuscript document is written after deletion.
     const documents = await app.inject({
       method: "GET",
       url: `/api/projects/${project.id}/studio/documents`,
@@ -393,7 +395,8 @@ describe("project lifecycle guards (M3)", () => {
     const chapterId = await createChapter(app, project.id, "第一章");
     const runs = new SqliteRunRepository(database);
     const now = new Date().toISOString();
-    // 105 条已完成的旧 Run 把活动 Run 挤出 listRuns 的 100 条展示窗口。
+    // 105 finished old Runs push the active Run out of listRuns' 100-entry
+    // display window.
     for (let index = 0; index < 105; index += 1) {
       runs.create({
         id: `history-${index}`,
@@ -433,7 +436,7 @@ describe("project lifecycle guards (M3)", () => {
       steps: [],
       now,
     });
-    //  sanity：展示窗口确实看不到这条活动 Run
+    //  sanity: the display window really does not show this active Run
     expect(
       runs.listRuns(project.id).some((run) => run.id === active.run.id),
     ).toBe(false);
@@ -490,7 +493,7 @@ describe("project lifecycle guards (M3)", () => {
     });
     expect(foreignStream.statusCode, foreignStream.body).toBe(404);
 
-    // 归属正确时可以正常控制。
+    // With the correct ownership, control works normally.
     const ownAction = await app.inject({
       method: "POST",
       url: `/api/runs/${runId}/actions`,

@@ -190,7 +190,7 @@ describe("chapter run API", () => {
     });
   });
 
-  it("失败的章节任务暴露 retry_chapter：新建同章节 run 且重复点击幂等", async () => {
+  it("a failed chapter task exposes retry_chapter: it creates a new run for the same chapter and repeated clicks are idempotent", async () => {
     const database = new NodeNarrativeDatabase();
     const environment = {
       NARRATIVE_LLM_API_KEY: "server-only-test-key",
@@ -203,7 +203,8 @@ describe("chapter run API", () => {
       config,
       database,
       environment,
-      // 结算结构化输出永远无效：烧完重试预算，run 落到终态 failed。
+      // The settlement structured output is always invalid: the retry budget
+      // runs out and the run ends as failed.
       narrativeModelClient: scriptedModel({
         settlementInvalid: true,
       }),
@@ -270,7 +271,8 @@ describe("chapter run API", () => {
     expect(retryRun.status).toBe("pending");
     expect(retryRun.id).not.toBe(sourceRunId);
 
-    // 重复点击：同一 requestId 回到同一个新 run，不翻倍。
+    // Repeated click: the same requestId returns the same new run instead of
+    // doubling it.
     const replay = await app.inject({
       method: "POST",
       url: `/api/runs/${sourceRunId}/actions`,
@@ -282,7 +284,8 @@ describe("chapter run API", () => {
       idempotentReplay: true,
     });
 
-    // 有了进行中的重试任务后，源 run 的重试入口被活跃检查挡住。
+    // Once a retry task is in progress, the source run's retry entry is blocked
+    // by the active check.
     const blocked = await app.inject({
       method: "POST",
       url: `/api/runs/${sourceRunId}/actions`,
@@ -982,7 +985,8 @@ function scriptedModel(
                   factCandidates: [],
                   timelineCandidates: [],
                   relationshipCandidates: [],
-                  // plant 却带 foreshadowId：确定性触发语义校验失败。
+                  // plant with a foreshadowId: deterministically triggers a
+                  // semantic validation failure.
                   foreshadowCandidates: [
                     {
                       foreshadowId: "nonexistent-foreshadow",

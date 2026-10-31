@@ -52,7 +52,8 @@ describe("agent skill registry (R7)", () => {
     ]);
     for (const skill of AGENT_SKILL_REGISTRY) {
       expect(skill.builtin).toBe(true);
-      // Skill 只声明既有领域能力白名单，不允许脚本/网络/直写数据库。
+      // A skill only declares an allowlist of existing domain capabilities; no
+      // scripts, network or direct DB writes.
       expect(skill.allowedCapabilities.length).toBeGreaterThan(0);
     }
   });
@@ -105,7 +106,8 @@ describe("assistant long goals (R7)", () => {
       idempotentReplay: boolean;
     };
     expect(firstGoal.idempotentReplay).toBe(false);
-    // 项目已有 intent/compass（建项目时初始化）时跳过建书阶段，直接建规划会话。
+    // When the project already has intent/compass (initialized at creation),
+    // skip the book-setup stage and create the planning session directly.
     expect(firstGoal.goal).toMatchObject({
       phase: "outline",
       status: "active",
@@ -154,7 +156,8 @@ describe("assistant long goals (R7)", () => {
     }));
     const projectId = await createProject(app, "复合任务推进");
     await seedCompass(app, projectId);
-    // 章节数已满足目标：规划阶段直接移交写作阶段，无需规划会话。
+    // The chapter count already meets the goal: planning hands over to writing
+    // with no planning session.
     await createChapter(app, projectId, "第一章 雾起", 0);
     await createChapter(app, projectId, "第二章 灯塔", 1);
     const conversation = await createConversation(
@@ -186,9 +189,11 @@ describe("assistant long goals (R7)", () => {
     });
     expect(writingSession.chapterPolicy.planningOnly).toBeUndefined();
 
-    // 写作会话完成（章节均为已提交状态、无新章节可写时直接结算）后，
-    // 目标与父活动一起完成。这里直接结算会话，驱动协调器的完成分支；
-    // 章节生产链路本身由 automation-api 测试覆盖。
+    // When the writing session finishes (all chapters committed and nothing
+    // left to write, so it settles directly), the goal completes together with
+    // the parent activity. Settling the session here drives the coordinator's
+    // completion branch; the chapter production chain itself is covered by the
+    // automation-api tests.
     const coordinator = new LongGoalCoordinator(database, {
       runCoordinator: nullCoordinator(),
       autopilotCoordinator: nullAutopilot(),
@@ -242,7 +247,8 @@ describe("assistant long goals (R7)", () => {
     }));
     const projectId = await createProject(app, "复合任务基线");
     await seedCompass(app, projectId);
-    // 预置足量章节，让规划会话结算后目标数达成，进入写作阶段。
+    // Seed enough chapters so the goal count is met once the planning session
+    // settles, entering the writing stage.
     await createChapter(app, projectId, "第一章 雾起", 0);
     await createChapter(app, projectId, "第二章 灯塔", 1);
     const conversation = await createConversation(
@@ -262,12 +268,14 @@ describe("assistant long goals (R7)", () => {
     const goalId = (started.json() as { goal: { id: string } }).goal.id;
     const goals = new SqliteAssistantLongGoalRepository(database);
 
-    // 章节数已满足目标：启动即进入写作阶段并创建确定性写作会话。
+    // The chapter count already meets the goal: start goes straight to the
+    // writing stage and creates a deterministic writing session.
     let goal = goals.requireGoal(goalId);
     expect(goal).toMatchObject({ phase: "writing", status: "active" });
     expect(goal.sessionId).not.toBeNull();
 
-    // 作者在写作阶段修改大纲 → 下一次推进感知基线漂移并停靠。
+    // The author edits the outline during the writing stage → the next advance
+    // detects the baseline drift and parks.
     const coordinator = new LongGoalCoordinator(database, {
       runCoordinator: nullCoordinator(),
       autopilotCoordinator: nullAutopilot(),
@@ -279,7 +287,8 @@ describe("assistant long goals (R7)", () => {
     goal = goals.requireGoal(goalId);
     expect(goal.status).toBe("paused_baseline");
 
-    // 活动卡片暴露 resume/cancel；resume 基于最新基线继续推进。
+    // The activity card exposes resume/cancel; resume continues from the latest
+    // baseline.
     const detail = (
       await app.inject({
         method: "GET",
@@ -383,9 +392,10 @@ describe("assistant long goals (R7)", () => {
       goal.activityId,
     );
     expect(activity.status).toBe("cancelled");
-    // 规划会话不是 goal.sessionId，取消不强行打断；仅写作会话会被请求取消。
+    // The planning session is not goal.sessionId, so cancel does not
+    // force-interrupt it; only the writing session gets a cancel request.
     expect(goal.sessionId).toBeNull();
-    // 取消后允许启动新目标。
+    // After cancelling, a new goal may start.
     const again = await app.inject({
       method: "POST",
       url: `/api/assistant/conversations/${conversation.id}/long-goals`,
@@ -404,7 +414,8 @@ describe("assistant long goals (R7)", () => {
       toolCall: null,
     }));
     const projectId = await createProject(app, "复合任务素材");
-    // 清掉建项目时初始化的作者意图，模拟尚未整理故事方向的作品。
+    // Clear the author intent initialized at project creation, simulating a
+    // book whose story direction is not set yet.
     const story = new SqliteStoryRepository(database);
     const intent = story.getAuthorIntent(projectId);
     expect(intent).not.toBeNull();
@@ -494,7 +505,8 @@ describe("assistant long goals (R7)", () => {
     );
     expect(goal).toMatchObject({ projectId, status: "active" });
 
-    // 重复确认同一活动：复用同一 goal，不产生第二条长期任务。
+    // Confirming the same activity again reuses the same goal and creates no
+    // second long-running task.
     const replay = await app.inject({
       method: "POST",
       url: `/api/assistant/activities/${proposal!.sourceId}/actions`,
@@ -532,11 +544,13 @@ describe("assistant long goals (R7)", () => {
     const goals = new SqliteAssistantLongGoalRepository(database);
     const outlineSessionId = goals.requireGoal(goalId).outlineSessionId!;
     await app.close();
-    // 手动管理生命周期：app 已关闭，app2 与数据库在下方统一收尾。
+    // Lifecycle managed by hand: app is already closed; app2 and the database
+    // are cleaned up together below.
     resources.length = 0;
 
-    // 模拟进程重启：同一数据库重建 app（协调器重新接线），
-    // 目标仍处于 active，会话与确定性 ID 不变，事件回调继续推进。
+    // Simulate a process restart: rebuild app on the same database (the
+    // coordinator is rewired), the goal is still active, the session and
+    // deterministic IDs are unchanged, and event callbacks keep advancing.
     const app2 = await buildApp({
       config,
       database,
@@ -553,8 +567,9 @@ describe("assistant long goals (R7)", () => {
       expect(goal).toMatchObject({ status: "active", phase: "outline" });
       expect(goal.outlineSessionId).toBe(outlineSessionId);
 
-      // 恢复后继续推进：规划会话在无新章节可写时直接结算，
-      // 协调器随后创建确定性写作会话。
+      // Keep advancing after recovery: the planning session settles directly
+      // when there is no new chapter to write, then the coordinator creates the
+      // deterministic writing session.
       await advanceSession(app2, projectId, outlineSessionId);
       const advanced = goals.requireGoal(goalId);
       expect(advanced.phase).toBe("writing");
@@ -623,7 +638,8 @@ function assistantModel(
       throw new Error("assistant turn must not request unstructured text");
     },
     async structured(_run, _step, purpose, _request, _contract, validate) {
-      // 规划/写作链路的子 Run 复用与 automation-api 测试相同的确定性脚本。
+      // Child Runs of the planning/writing chain reuse the same deterministic
+      // script as the automation-api tests.
       if (purpose !== "project-assistant") {
         const checked = validate(scriptedAutomationValue(purpose));
         if (!checked.success) throw new Error(checked.issues.join("; "));
@@ -820,7 +836,8 @@ async function advanceSession(
     ) {
       return;
     }
-    // 推进会话产生的子 Run（规划/章节配方），复用与 worker 相同的 advance 端点。
+    // Child Runs produced by advancing the session (planning/chapter recipes)
+    // reuse the same advance endpoint as the worker.
     for (const run of detail.runs) {
       if (["pending", "running"].includes(run.status)) {
         await finishRun(app, projectId, run.id);

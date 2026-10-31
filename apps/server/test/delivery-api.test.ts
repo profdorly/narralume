@@ -900,8 +900,10 @@ describe("delivery API", () => {
   it("rejects a DOCX whose document.xml and styles.xml together exceed the expansion limit", async () => {
     const { app } = await setup();
     const limit = 100 * 1024 * 1024;
-    // 真实 ZIP 的声明大小与解压校验会先拦下超限条目；这里替换读取结果，
-    // 只让两个 XML 的合计长度越过上限，单个 document.xml 仍在限内。
+    // A real ZIP's declared sizes and unzip checks would stop an oversized
+    // entry first; here we replace the read result so only the combined length
+    // of the two XML files crosses the limit, while document.xml alone stays
+    // within it.
     const documentXml = `<w:document/>${" ".repeat(limit - 1024)}`;
     const stylesXml = `<w:styles/>${" ".repeat(2048)}`;
     const entry = (name: string, text: string) => ({
@@ -1387,7 +1389,8 @@ describe("delivery API", () => {
       },
       201,
     );
-    // 人为让 updated_at 与大纲顺序相反：文档列表先返回第二章
+    // Make updated_at run opposite to the outline order on purpose: the
+    // document list returns chapter two first
     database.raw
       .prepare("UPDATE documents SET updated_at = ? WHERE id = ?")
       .run("2026-08-10T00:00:00.000Z", documentOne.id);

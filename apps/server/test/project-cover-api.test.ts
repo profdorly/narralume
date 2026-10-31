@@ -59,7 +59,10 @@ async function setup() {
 
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
-/** 资料与封面通过同一个 PUT /api/projects/:projectId 原子提交。 */
+/**
+ * Profile and cover are committed atomically through the same PUT
+ * /api/projects/:projectId.
+ */
 function saveProject(
   app: Awaited<ReturnType<typeof buildApp>>,
   project: TestProject,
@@ -179,8 +182,10 @@ describe("project cover API", () => {
   });
 
   it("rolls back the cover change when the profile version precondition fails", async () => {
-    // CR-83：封面与资料必须原子提交。过期 updatedAt 的保存整体 409，
-    // 封面不得被改动（回归前封面会先写入，资料再 409，形成半提交）。
+    // CR-83: cover and profile must be committed atomically. A save with a
+    // stale updatedAt gets a 409 as a whole, and the cover must not change
+    // (before the fix the cover was written first and the profile then got a
+    // 409, a partial commit).
     const { app, project } = await setup();
     const upload = await saveProject(app, project, putCover());
     expect(upload.statusCode, upload.body).toBe(200);
@@ -189,7 +194,7 @@ describe("project cover API", () => {
       app,
       project,
       { action: "remove" },
-      project.updatedAt, // 过期：上传封面已经推进了 updatedAt
+      project.updatedAt, // Stale: uploading the cover already advanced updatedAt
     );
     expect(stale.statusCode, stale.body).toBe(409);
     expect(stale.json()).toMatchObject({

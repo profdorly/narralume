@@ -26,8 +26,9 @@ afterEach(async () => {
   }
 });
 
-/* 捕获 foundation.generate 的 system instructions 后立即中止步骤：
- * 本测试只关心指令语言随项目语言切换，不关心候选内容。 */
+/* Capture the foundation.generate system instructions, then abort the step
+ * immediately: this test only checks that the instruction language follows the
+ * project language, not the candidate content. */
 function capturingModel(captured: {
   instructions: string | null;
 }): NarrativeModelClient {
@@ -71,7 +72,8 @@ async function runFoundationOnce(
   });
   expect(foundation.statusCode, foundation.body).toBe(202);
   const runId = (foundation.json() as { run: { id: string } }).run.id;
-  // 单次 advance 即触发 foundation.generate；模型桩抛错后运行进入 failed。
+  // A single advance triggers foundation.generate; the model stub throws and
+  // the run becomes failed.
   await app.inject({
     method: "POST",
     url: `/api/runs/${runId}/advance`,

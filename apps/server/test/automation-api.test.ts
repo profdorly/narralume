@@ -1175,7 +1175,8 @@ describe("automation API", () => {
     expect(detail.session.status).toBe("planning");
     const planningRunId = detail.session.currentRunId!;
 
-    // 只完成 outline.generate，让 outline.commit 悬停（相当于 Worker 延迟提交）。
+    // Only complete outline.generate and leave outline.commit pending (as if
+    // the Worker committed late).
     await app.inject({
       method: "POST",
       url: `/api/runs/${planningRunId}/advance`,
@@ -1191,7 +1192,7 @@ describe("automation API", () => {
       "failed",
     );
 
-    // 作者在生成后人工修改了大纲。
+    // The author edited the outline by hand after generation.
     const bible = (
       await app.inject({
         method: "GET",
@@ -1211,7 +1212,8 @@ describe("automation API", () => {
     });
     expect(renamed.statusCode, renamed.body).toBe(200);
 
-    // outline.commit 必须因基线漂移失败，而不是覆盖人工修改。
+    // outline.commit must fail on baseline drift instead of overwriting the
+    // manual edit.
     expect(await finishRun(app, projectId, planningRunId)).toBe("failed");
     const bibleAfter = (
       await app.inject({
@@ -1533,8 +1535,9 @@ describe("automation API", () => {
     };
     expect(linkedRun("rolling-plan")?.policy).toMatchObject({
       sessionId,
-      // 显式继承 effectivePolicy.planningMaxOutputTokens 默认值，
-      // 不再由 reviewMaxOutputTokens(2_000) 推导（旧逻辑会得到 6_000）
+      // Explicitly inherits the effectivePolicy.planningMaxOutputTokens
+      // default, no longer derived from reviewMaxOutputTokens (2_000) (the old
+      // logic would give 6_000)
       planningMaxOutputTokens: 24_000,
     });
     expect(linkedRun("closing-review")?.policy).toMatchObject({ sessionId });
@@ -1854,7 +1857,8 @@ describe("automation API", () => {
       sessionId,
       qualityPreset: "fast",
       draftMaxOutputTokens: 1_800,
-      // 显式继承 planningMaxOutputTokens，不由 reviewMaxOutputTokens(2_200) 推导
+      // Explicitly inherits planningMaxOutputTokens, not derived from
+      // reviewMaxOutputTokens (2_200)
       planningMaxOutputTokens: 5_500,
     });
 

@@ -25,8 +25,10 @@ import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
 
 /**
- * 「从正文补全故事圣经」：导入的已完成章节按阅读顺序逐章走手动结算管线，
- * 每章变更集保持可审阅候选（或显式 auto-apply，遇冲突即停）。
+ * "Complete the story bible from the manuscript": imported finished chapters go
+ * through the manual settlement pipeline one by one in reading order, and each
+ * chapter's changeset stays a reviewable candidate (or is auto-applied
+ * explicitly, stopping at the first conflict).
  */
 
 const config: ServerConfig = {

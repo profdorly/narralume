@@ -7,8 +7,10 @@ import { buildApp } from "../src/app.js";
 import type { ServerConfig } from "../src/config.js";
 
 /**
- * 手动章节结算：作者正式提交正文版本（source=manual）、恢复版本后自动开
- * manual-settlement Run；没有可用写作模型时静默跳过，手动写作不被阻塞。
+ * Manual chapter settlement: when the author formally commits a manuscript
+ * version (source=manual) or restores a version, a manual-settlement Run starts
+ * automatically; with no usable writing model it is skipped silently, so manual
+ * writing is never blocked.
  */
 
 const config: ServerConfig = {
@@ -34,7 +36,10 @@ afterEach(async () => {
   }
 });
 
-/** 结算结构化调用的返回体；subjectId 在实体创建后动态注入。 */
+/**
+ * Response body of the settlement structured call; subjectId is injected after
+ * the entity is created.
+ */
 let settlementSubjectId: string | null = null;
 let settlementWithCandidates = true;
 
@@ -288,7 +293,8 @@ async function appendVersion(
   source: string,
   content = MANUSCRIPT,
 ): Promise<string> {
-  /* 版本列表是新→旧排序，第一个即当前版本。 */
+  /* The version list is sorted newest first, so the first entry is the current
+     version. */
   const versions = (
     await app.inject({
       method: "GET",
@@ -349,8 +355,8 @@ async function driveRun(
   return status;
 }
 
-describe("手动章节结算", () => {
-  it("正式提交版本自动开结算 Run，落候选变更集且不追加版本", async () => {
+describe("manual chapter settlement", () => {
+  it("a formal version commit starts a settlement Run, stores a candidate changeset and appends no version", async () => {
     settlementWithCandidates = true;
     const { app } = await setup();
     const world = await createChapterWorld(app);
@@ -399,7 +405,8 @@ describe("手动章节结算", () => {
     expect(facts[0]!.subjectId).toBe(world.entityId);
     expect(facts[0]!.evidence[0]!.documentVersionId).toBe(versionId);
 
-    /* 结算不追加正文版本：仍只有作者提交的那一版。 */
+    /* Settlement appends no manuscript version: there is still only the version
+       the author committed. */
     const versions = (
       await app.inject({
         method: "GET",
@@ -409,7 +416,7 @@ describe("手动章节结算", () => {
     expect(versions).toHaveLength(1);
   });
 
-  it("空结算不建变更集（避免裁定面板噪音）", async () => {
+  it("an empty settlement creates no changeset (avoids noise in the decision panel)", async () => {
     settlementWithCandidates = false;
     const { app } = await setup();
     const world = await createChapterWorld(app);
@@ -436,7 +443,7 @@ describe("手动章节结算", () => {
     expect(changeSets.changeSets).toHaveLength(0);
   });
 
-  it("批注存档点与选区基线不触发结算", async () => {
+  it("annotation save points and selection baselines do not trigger settlement", async () => {
     settlementWithCandidates = false;
     const { app } = await setup();
     const world = await createChapterWorld(app);
@@ -459,7 +466,7 @@ describe("手动章节结算", () => {
     ).toHaveLength(0);
   });
 
-  it("恢复历史版本同样触发结算，且钉住恢复后的版本", async () => {
+  it("restoring a past version also triggers settlement and pins the restored version", async () => {
     settlementWithCandidates = false;
     const { app } = await setup();
     const world = await createChapterWorld(app);
@@ -492,7 +499,8 @@ describe("手动章节结算", () => {
       method: "POST",
       url: `/api/projects/${world.projectId}/documents/${world.documentId}/restore`,
       payload: {
-        /* 列表新→旧：[0] 是当前版本，最后一项是最早的种子版本。 */
+        /* The list is newest first: [0] is the current version and the last
+           entry is the earliest seed version. */
         targetVersionId: versions.at(-1)!.id,
         expectedCurrentVersionId: versions[0]!.id,
       },
@@ -511,7 +519,7 @@ describe("手动章节结算", () => {
     expect(restoreRun).toBeTruthy();
   });
 
-  it("没有可用写作模型时提交照常成功、静默跳过结算", async () => {
+  it("with no usable writing model the commit still succeeds and settlement is skipped silently", async () => {
     settlementWithCandidates = false;
     const { app } = await setup(false);
     const world = await createChapterWorld(app);
@@ -528,7 +536,7 @@ describe("手动章节结算", () => {
     ).toHaveLength(0);
   });
 
-  it("非章节文档（笔记）不触发结算", async () => {
+  it("non-chapter documents (notes) do not trigger settlement", async () => {
     settlementWithCandidates = false;
     const { app } = await setup();
     const world = await createChapterWorld(app);

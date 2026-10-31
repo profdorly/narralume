@@ -140,7 +140,8 @@ describe("Canon Spread candidate API", () => {
     ).json()[0];
     expect(set.items[0].operation).toBe("create");
 
-    // 候选生成后，作者手工创建了同名同类型人物。
+    // After the candidate was generated, the author created a character with
+    // the same name and type by hand.
     const manual = await app.inject({
       method: "POST",
       url: `/api/projects/${projectId}/entities`,
@@ -154,7 +155,8 @@ describe("Canon Spread candidate API", () => {
     });
     expect(manual.statusCode, manual.body).toBe(201);
 
-    // 采纳旧候选必须是明确的业务 409，而不是唯一约束触发的泛化 500。
+    // Adopting the old candidate must be an explicit business 409, not a
+    // generic 500 from a unique constraint.
     const conflict = await app.inject({
       method: "POST",
       url: `/api/projects/${projectId}/canon-candidates/${set.id}/items/${set.items[0].id}/decisions`,
@@ -165,7 +167,8 @@ describe("Canon Spread candidate API", () => {
       error: { code: "canon_candidate.item.conflict" },
     });
 
-    // 人工创建的内容保留，候选仍可重新裁定（例如拒绝）。
+    // The manually created content stays, and the candidate can still be
+    // decided again (for example, rejected).
     const entities = (
       await app.inject({
         method: "GET",

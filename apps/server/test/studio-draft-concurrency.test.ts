@@ -35,7 +35,8 @@ describe("studio draft concurrency", () => {
     });
     expect(first.updatedAt).toBeTruthy();
 
-    // 第二个标签页拿着“没有草稿”的旧快照保存，必须显式冲突而不是静默覆盖。
+    // A second tab saving with an old "no draft" snapshot must get an explicit
+    // conflict instead of a silent overwrite.
     const conflict = await app.inject({
       method: "PUT",
       url: `/api/projects/${projectId}/studio/documents/${documentId}/draft`,
@@ -50,7 +51,7 @@ describe("studio draft concurrency", () => {
       error: { code: "draft.updated_at.conflict" },
     });
 
-    // 刷新快照后使用最新 updatedAt 保存可以成功。
+    // After refreshing the snapshot, saving with the latest updatedAt succeeds.
     const second = await saveDraft(app, projectId, documentId, {
       baseVersionId: null,
       expectedDraftUpdatedAt: first.updatedAt,
@@ -58,7 +59,7 @@ describe("studio draft concurrency", () => {
     });
     expect(second.content).toBe("标签页 B 的草稿。");
 
-    // 标签页 A 的旧令牌继续失效。
+    // Tab A's old token stays invalid.
     const stale = await app.inject({
       method: "PUT",
       url: `/api/projects/${projectId}/studio/documents/${documentId}/draft`,
@@ -87,7 +88,8 @@ describe("studio draft concurrency", () => {
       content: "基于 v1 的旧草稿。",
     });
 
-    // 手动保存新版本（其他入口，例如 AI 候选采纳，走同一 appendVersion 路径）。
+    // Save a new version by hand (other entry points, such as adopting an AI
+    // candidate, use the same appendVersion path).
     const v2 = await appendVersion(
       app,
       projectId,
@@ -99,7 +101,7 @@ describe("studio draft concurrency", () => {
     expect(detail.document.currentVersionId).toBe(v2.id);
     expect(detail.draft).toBeNull();
 
-    // 历史恢复同样必须清除旧草稿。
+    // Restoring from history must also clear the old draft.
     await saveDraft(app, projectId, documentId, {
       baseVersionId: v2.id,
       expectedDraftUpdatedAt: null,
@@ -117,7 +119,8 @@ describe("studio draft concurrency", () => {
   });
 
   it("leaves versions and draft untouched when a selection AI edit fails validation (CR-57)", async () => {
-    // 不配置默认生成模型：选区修改必须以 422 失败且无副作用。
+    // No default generation model configured: a selection edit must fail with
+    // 422 and no side effects.
     const { app, projectId, documentId } = await setupDocument();
     const v1 = await appendVersion(
       app,
