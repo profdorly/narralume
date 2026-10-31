@@ -17,7 +17,16 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Changed
 
-- O nome visível passa a ser Lapis: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE e avisos de terceiros. Na fase 1, pacotes `@narralume/*`, variáveis `NARRALUME_*`, launchers, chaves do navegador e arquivos de dados mantêm o nome antigo.
+- O nome visível passa a ser Lapis: título da página, barra lateral, capas padrão, textos da interface, README, NOTICE, avisos de terceiros e a documentação.
+- Launchers `Start-Lapis.*` e `UpdateAndStart-Lapis.*`; os pacotes de release se chamam `Lapis-<versão>-<plataforma>`. Numa cópia do repositório, `Start-NarraLume.*` e `UpdateAndStart-NarraLume.*` continuam como atalhos que avisam o nome novo e o executam.
+- Variáveis dos launchers `LAPIS_PORT`, `LAPIS_DATA_DIR`, `LAPIS_NODE_VERSION`, `LAPIS_FORCE_PORTABLE_NODE`, `LAPIS_FORCE_BUILD` e `LAPIS_NO_BROWSER`. Os nomes `NARRALUME_*` ainda valem quando o novo não está definido, com um aviso de obsoleto.
+- Bibliotecas novas ficam em `data/lapis.sqlite`. Uma pasta de dados que só tem o `narralume.sqlite` de antes continua usando esse arquivo (sem renomeá-lo), e a restauração de backup grava no arquivo que a pasta usa.
+- As preferências do navegador passam de `narralume:*` para `lapis:*`: na primeira abertura, o app copia as chaves antigas (modo de dados, idioma, tema, painéis, metas e conversas por projeto) antes de lê-las. A biblioteca do modo navegador mantém os nomes internos no OPFS.
+- Pacotes de obra (`.narrative.json`) exportados levam `format: "lapis"`; a importação aceita também os pacotes `"narralume"` já exportados. A folha de rosto do DOCX usa o estilo `LapisTitlePage`, e a importação ainda reconhece `NarraLumeTitlePage`.
+- `/api/health` responde `service: "lapis"`.
+- Os pacotes npm do monorepo passam de `@narralume/*` para `@lapis/*` (o pacote raiz se chama `lapis`).
+- O volume do Docker Compose continua `narralume-data`, para não deixar as obras num volume antigo.
+- Capturas do guia do usuário refeitas com a interface Lapis (`npm run docs:screenshots`), e a capa de demonstração recortada de novo da foto original, sem texto.
 - Paleta nova: azul de caneta para ações do autor, foco e links, grafite para sugestões pendentes e vermelho só para achados, erros e conflitos, nos temas claro e escuro.
 - Os metadados de EPUB e DOCX exportados (editora e autor do arquivo) dizem "Lapis".
 - O arquivo baixado da biblioteca no modo navegador se chama `lapis-<data>.sqlite`.
