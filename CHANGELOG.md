@@ -17,6 +17,9 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Changed
 
+- A interface carrega o assistente do projeto e a paleta de comandos só quando abertos; o pacote inicial caiu de 660 kB para 490 kB (gzip 192 → 150 kB).
+- Rótulos que estavam fixos no código agora vêm dos dicionários pt-BR e en ("EXECUÇÕES · L1", "EDIÇÃO Nº", "URL base", códigos do Laboratório, rótulos das Configurações e da Estante), e a pontuação chinesa saiu de valores de formulário e citações.
+- Comentários do código e nomes dos testes que estavam em chinês agora estão em inglês; o código não mudou.
 - Menos processamento e menos espaço:
   - o texto que a IA escreve é gravado no banco uma vez por segundo, e não a cada pedaço recebido (um capítulo de 42 mil caracteres: de 194 ms para 1 ms de gravação);
   - os vetores da busca passam de texto JSON para binário Float32 (migração 050, que converte os vetores existentes sem chamar o modelo de novo): cerca de 5 vezes menos espaço, e a busca lê só os vetores e o texto dos melhores resultados;
@@ -60,6 +63,7 @@ O projeto segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e ve
 
 ### Removed
 
+- Código sem uso: funções e tipos, 136 textos da interface, regras de CSS de 43 classes e as dependências `crc-32` e `png-chunks-extract`.
 - O teste de viabilidade do sqlite-wasm no navegador (spike) e os pesos 500 e 700 da Alegreya Sans, que o CSS não usava.
 - A cocriação (sala da história, swipes, lorebooks e cartões de personagem), que estava fora da v1 e sem acesso pela interface, saiu do código, junto com as rotas `/api/cocreate/*`, `/api/personas/*`, `/api/lorebooks/*`, `/api/lore-entries/*` e `/api/turns/*`. Bibliotecas, pacotes de obra e backups que já têm esses dados continuam abrindo e restaurando como antes, e os pacotes exportados continuam levando esses dados. Uma tarefa antiga de cocriação que ficou pendente termina como falha (`worker.missing`) em vez de rodar.
 - A fonte Noto Serif SC (6 MB), o ajuste "NL Latin Punctuation" para pontuação latina, a textura de papel de arroz e o selo vermelho 朱印.
