@@ -1098,7 +1098,7 @@ describe("Story Bible backfill API", () => {
   });
 
   it("resumes after a restart and drains in the background", async () => {
-    const directory = mkdtempSync(join(tmpdir(), "narralume-backfill-"));
+    const directory = mkdtempSync(join(tmpdir(), "lapis-backfill-"));
     directories.push(directory);
     const databasePath = join(directory, "story.sqlite");
     let heroId = "";

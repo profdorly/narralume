@@ -134,7 +134,7 @@ describe("persona card contracts", () => {
     ).toBe(false);
   });
 
-  it("only accepts the safe NarraLume CCv3 export surface", () => {
+  it("only accepts the safe Lapis CCv3 export surface", () => {
     const exported = exportCard();
     expect(CharacterCardV3ExportSchema.safeParse(exported).success).toBe(true);
     expect(
@@ -223,7 +223,7 @@ function inputCard() {
       post_history_instructions: "Run an extension",
       alternate_greetings: ["潮水比你先到了。"],
       tags: ["mystery"],
-      creator: "NarraLume test",
+      creator: "Lapis test",
       character_version: "1.0",
       extensions: { risu: { scripts: ["do-not-run"] } },
       group_only_greetings: [],
@@ -254,7 +254,7 @@ function exportCard() {
       post_history_instructions: "" as const,
       alternate_greetings: ["潮水比你先到了。"],
       tags: ["mystery"],
-      creator: "NarraLume test",
+      creator: "Lapis test",
       character_version: "1.0",
       extensions: {},
       group_only_greetings: [],

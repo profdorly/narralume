@@ -48,7 +48,7 @@ describe("Character Card V3 mapping", () => {
     );
   });
 
-  it("exports exact CCv3 without NarraLume instructions or extensions", () => {
+  it("exports exact CCv3 without Lapis instructions or extensions", () => {
     const parsed = parseCharacterCardV3(card(), {
       sourceFormat: "character-card-v3-png",
       importedAt: NOW,

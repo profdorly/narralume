@@ -45,4 +45,6 @@ services:
       NARRATIVE_AUTH_TOKEN: ${NARRATIVE_AUTH_TOKEN:-local-compose-token-change-me-24}
 
 volumes:
+  # Named before the product became Lapis. Renaming it would make Compose
+  # create a new, empty volume and leave the existing library behind.
   narralume-data:

@@ -22,7 +22,7 @@ afterEach(() => {
   for (const path of directories.splice(0)) {
     if (
       dirname(resolve(path)) !== resolve(tmpdir()) ||
-      !basename(path).startsWith("narralume-knowledge-")
+      !basename(path).startsWith("lapis-knowledge-")
     )
       throw new Error("Unexpected test directory");
     rmSync(path, { recursive: true, force: true });
@@ -224,7 +224,7 @@ describe("knowledge backup and restart fidelity", () => {
   });
 
   it("persists corrections and request replays across reopening and blocks a second connection's stale edit", () => {
-    const path = mkdtempSync(join(tmpdir(), "narralume-knowledge-"));
+    const path = mkdtempSync(join(tmpdir(), "lapis-knowledge-"));
     directories.push(path);
     const db = setup(join(path, "state.sqlite"));
     const fixture = seedStoryState(db);

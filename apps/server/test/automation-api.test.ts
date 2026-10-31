@@ -436,7 +436,7 @@ describe("automation API", () => {
 
   it("resumes two planning windows across database reopenings without replaying completed reviews or chapters", async () => {
     const directory = mkdtempSync(
-      join(tmpdir(), "narralume-autopilot-recovery-"),
+      join(tmpdir(), "lapis-autopilot-recovery-"),
     );
     recoveryDirectories.push(directory);
     const databasePath = join(directory, "story.sqlite");
