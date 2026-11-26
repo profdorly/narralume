@@ -16,7 +16,7 @@ services:
       - path: .env.local
         required: false
     volumes:
-      - narralume-data:/app/data
+      - lapis-data:/app/data
       - ${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}:/app/backups
     healthcheck:
       test:
@@ -45,6 +45,4 @@ services:
       NARRATIVE_AUTH_TOKEN: ${NARRATIVE_AUTH_TOKEN:-local-compose-token-change-me-24}
 
 volumes:
-  # Named before the product became Lapis. Renaming it would make Compose
-  # create a new, empty volume and leave the existing library behind.
-  narralume-data:
+  lapis-data:

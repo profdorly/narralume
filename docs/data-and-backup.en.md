@@ -29,7 +29,7 @@ In this mode, works, the story compass, run history, and any bring-your-own mode
 
 ## Local Server and release launchers
 
-By default the database is `data/lapis.sqlite`, and consistency backups are written to `data/backups/`. Libraries created before the rename to Lapis stay in `narralume.sqlite`: when the data directory only has that file, the Server keeps using it and does not create a new database next to it. When you start the Server yourself (for example with `npm run dev`), `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR`, from the environment or from `.env.local`, change these directories; without `NARRATIVE_BACKUP_DIR`, backups go to `backups/` inside the data directory. The launchers set both variables themselves: the data directory comes from `LAPIS_DATA_DIR`, and backups go to `backups/` inside it. Only the macOS/Linux launcher also honors `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR` set in the shell.
+By default the database is `data/lapis.sqlite`, and consistency backups are written to `data/backups/`. When the directory still has only `narralume.sqlite`, the Server renames that file, along with the `-wal` and `-shm` files beside it, to `lapis.sqlite` before opening it. When you start the Server yourself (for example with `npm run dev`), `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR`, from the environment or from `.env.local`, change these directories; without `NARRATIVE_BACKUP_DIR`, backups go to `backups/` inside the data directory. The launchers set both variables themselves: the data directory comes from `LAPIS_DATA_DIR`, and backups go to `backups/` inside it. Only the macOS/Linux launcher also honors `NARRATIVE_DATA_DIR` and `NARRATIVE_BACKUP_DIR` set in the shell.
 
 While the Server runs (Docker included), it makes an automatic backup every 6 hours (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, default `360`), plus one at startup when `NARRATIVE_BACKUP_ON_STARTUP=true`. After each new backup, the directory keeps only the 10 most recent (`NARRATIVE_BACKUP_RETENTION`), counting both automatic and manual backups; copy any backup you need to keep longer somewhere else. Keep only files Lapis created in that directory: a `.sqlite` without a manifest or a leftover `.partial` makes listing and creating backups fail.
 
@@ -43,7 +43,7 @@ In a launcher release package:
 
 ## Docker volumes
 
-Compose places the database on the `narralume-data` volume (the name predates the rename to Lapis and is kept so existing works are not left behind in an old volume) and mounts backups separately to `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}` on the host. To change that directory, set `NARRATIVE_BACKUP_HOST_DIR` in the shell or in a `.env` file at the repository root; it has no effect in `.env.local`. The volume itself is not a backup, and the backup directory must not sit on the same fragile disk as the only copy of the database.
+Compose places the database on the `lapis-data` volume and mounts backups separately to `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}` on the host. To change that directory, set `NARRATIVE_BACKUP_HOST_DIR` in the shell or in a `.env` file at the repository root; it has no effect in `.env.local`. The volume itself is not a backup, and the backup directory must not sit on the same fragile disk as the only copy of the database.
 
 Create an online backup:
 

@@ -12,17 +12,8 @@ $lockFile = Join-Path $root "package-lock.json"
 $installMarker = Join-Path $runtime "package-lock.sha256"
 $minimumNodeVersion = [version]"24.0.0"
 $minimumNpmMajor = 11
-# LAPIS_* settings win; the NARRALUME_* names from before the rename still
-# work and print a notice.
 function Get-LapisSetting([string]$name) {
-  $value = [Environment]::GetEnvironmentVariable("LAPIS_$name")
-  if ($value) { return $value }
-  $legacy = [Environment]::GetEnvironmentVariable("NARRALUME_$name")
-  if ($legacy) {
-    Write-Warning "NARRALUME_$name is deprecated; use LAPIS_$name."
-    return $legacy
-  }
-  return $null
+  return [Environment]::GetEnvironmentVariable("LAPIS_$name")
 }
 
 $portableSetting = Get-LapisSetting "NODE_VERSION"
@@ -111,11 +102,6 @@ if (-not (Test-Path -LiteralPath $nodeModules) -or $installedHash -ne $lockHash)
 $serverEntry = Join-Path $root "apps\server\dist\main.js"
 $webIndex = Join-Path $root "apps\web\dist\index.html"
 $localBuildMarker = Join-Path (Split-Path -Parent $webIndex) ".lapis-local-build"
-# Builds made before the rename recorded their hash under the old name.
-$legacyLocalBuildMarker = Join-Path (Split-Path -Parent $webIndex) ".narralume-local-build"
-if (-not (Test-Path -LiteralPath $localBuildMarker) -and (Test-Path -LiteralPath $legacyLocalBuildMarker)) {
-  Move-Item -LiteralPath $legacyLocalBuildMarker -Destination $localBuildMarker
-}
 $sourceCheckout = Test-Path -LiteralPath (Join-Path $root "apps\web\src")
 $localBuildHash = ""
 if ($sourceCheckout) {

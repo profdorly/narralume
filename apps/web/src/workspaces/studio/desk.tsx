@@ -3,6 +3,7 @@ import {
   Archive,
   BookOpen,
   Check,
+  LibraryBig,
   MessageSquarePlus,
   Plus,
   Save,
@@ -48,11 +49,13 @@ import { rememberTask } from "../../lib/task-ledger";
 import { CanonChangeSetReview } from "../shared/canon-change-review";
 import { ManuscriptEditor } from "./manuscript-editor";
 import { WritingTaskPanel } from "./task-panel";
+import { ChapterCompanion } from "./chapter-companion";
 import { useChapterDraft, type FlushDraft } from "./use-chapter-draft";
 import { useSelection } from "./use-selection";
 import { useVersions } from "./use-versions";
 
 type StudioTool =
+  | "companion"
   | "review"
   | "revisions"
   | "canon"
@@ -61,6 +64,7 @@ type StudioTool =
   | "selection";
 
 const STUDIO_TOOLS: Array<{ id: StudioTool; labelKey: MessageKey }> = [
+  { id: "companion", labelKey: "studio.tools.companion" },
   { id: "review", labelKey: "studio.tools.review" },
   { id: "revisions", labelKey: "studio.tools.revisions" },
   { id: "canon", labelKey: "studio.tools.canon" },
@@ -70,6 +74,7 @@ const STUDIO_TOOLS: Array<{ id: StudioTool; labelKey: MessageKey }> = [
 ];
 
 function studioToolFromFocus(value: string | null): StudioTool {
+  if (value === "companion") return "companion";
   if (value === "canon") return "canon";
   if (value === "revisions") return "revisions";
   if (value === "comments") return "comments";
@@ -121,6 +126,15 @@ export function StudioDesk({
     focusTarget,
     tool: studioToolFromFocus(focusTarget),
   }));
+  const openedCompanionFor = useRef<string | null>(null);
+  useEffect(() => {
+    const open = detail?.document;
+    if (!open || focusTarget) return;
+    if (open.kind !== "chapter" || !open.outlineNodeId) return;
+    if (openedCompanionFor.current === open.id) return;
+    openedCompanionFor.current = open.id;
+    setToolSelection({ focusTarget, tool: "companion" });
+  }, [detail, focusTarget]);
   const activeTool =
     toolSelection.focusTarget === focusTarget
       ? toolSelection.tool
@@ -392,18 +406,38 @@ export function StudioDesk({
             </span>
             <div className="studio__desk-actions">
               {aiReady ? (
-                <button
-                  type="button"
-                  className="studio__save-btn studio__save-btn--ai"
-                  disabled={aiMutation.isPending}
-                  title={t("studio.ai.buttonTitle")}
-                  onClick={() => aiMutation.mutate()}
-                >
-                  <Sparkles size={13} />
-                  {aiMutation.isPending
-                    ? t("studio.ai.submitting")
-                    : t("studio.ai.button")}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="studio__save-btn studio__save-btn--ai"
+                    disabled={aiMutation.isPending}
+                    title={t("studio.ai.buttonTitle")}
+                    onClick={() => aiMutation.mutate()}
+                  >
+                    <Sparkles size={13} />
+                    {aiMutation.isPending
+                      ? t("studio.ai.submitting")
+                      : t("studio.ai.button")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      setToolSelection({ focusTarget, tool: "selection" })
+                    }
+                  >
+                    {t("studio.companion.rewrite")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      setToolSelection({ focusTarget, tool: "companion" })
+                    }
+                  >
+                    {t("studio.tools.companion")}
+                  </button>
+                </>
               ) : detail.document.kind === "manuscript" ? (
                 <span className="studio__desk-hint">
                   {t("studio.hint.manuscriptPrefix")}
@@ -476,6 +510,20 @@ export function StudioDesk({
           role="tabpanel"
           aria-label={t("studio.tools.panelAria", { label: activeToolLabel })}
         >
+          {activeTool === "companion" ? (
+            <ChapterCompanion
+              projectId={projectId}
+              document={detail.document}
+              prose={draft.content}
+              review={review}
+              onOpenSelection={() =>
+                setToolSelection({ focusTarget, tool: "selection" })
+              }
+              onOpenChanges={() =>
+                setToolSelection({ focusTarget, tool: "canon" })
+              }
+            />
+          ) : null}
           {activeTool === "review" ? (
             <ReviewPanel
               projectId={projectId}
@@ -644,6 +692,8 @@ export function StudioDesk({
 function StudioToolIcon({ tool }: { tool: StudioTool }) {
   const props = { size: 15, strokeWidth: 1.6, "aria-hidden": true } as const;
   switch (tool) {
+    case "companion":
+      return <LibraryBig {...props} />;
     case "review":
       return <Check {...props} />;
     case "revisions":

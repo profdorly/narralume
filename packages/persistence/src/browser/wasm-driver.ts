@@ -11,23 +11,79 @@ import type { SqliteRawDatabase, SqliteStatement } from "../driver.js";
  * Multi-tab arbitration is handled by the kernel layer (Web Locks); the driver
  * does not retry.
  */
-/**
- * OPFS names from before the product was renamed to Lapis. Every browser
- * library already lives under them, and a SAH pool cannot be renamed in place,
- * so they stay. They are never shown to the author (the download is named
- * lapis-<date>.sqlite).
- */
-export const OPFS_DATABASE_FILE = "narralume.sqlite";
-const OPFS_POOL_NAME = "narralume-pool";
+export const OPFS_DATABASE_FILE = "lapis.sqlite";
+const OPFS_POOL_NAME = "lapis-pool";
+/** Pool and file created before the product was named Lapis. A SAH pool cannot be renamed, so the bytes are copied once. */
+const LEGACY_OPFS_DATABASE_FILE = "narralume.sqlite";
+const LEGACY_OPFS_POOL_NAME = "narralume-pool";
+const LEGACY_OPFS_DIRECTORY = `.${LEGACY_OPFS_POOL_NAME}`;
+
+type SahPool = Awaited<ReturnType<Sqlite3Static["installOpfsSAHPoolVfs"]>>;
+
+function poolFileName(
+  names: readonly string[],
+  filename: string,
+): string | undefined {
+  const absolute = filename.startsWith("/") ? filename : `/${filename}`;
+  return names.find((name) => name === filename || name === absolute);
+}
+
+async function legacyOpfsDirectoryExists(): Promise<boolean> {
+  const root = await navigator.storage.getDirectory();
+  try {
+    await root.getDirectoryHandle(LEGACY_OPFS_DIRECTORY);
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "NotFoundError")
+      return false;
+    throw error;
+  }
+}
+
+/** Exports the pre-rename library and pauses its pool. An empty leftover pool is removed. */
+async function readLegacyOpfsDatabase(
+  sqlite3: Sqlite3Static,
+): Promise<{ pool: SahPool; bytes: Uint8Array } | undefined> {
+  if (!(await legacyOpfsDirectoryExists())) return undefined;
+  const pool = await sqlite3.installOpfsSAHPoolVfs({
+    name: LEGACY_OPFS_POOL_NAME,
+    initialCapacity: 12,
+  });
+  const stored = poolFileName(pool.getFileNames(), LEGACY_OPFS_DATABASE_FILE);
+  if (!stored) {
+    await pool.removeVfs();
+    return undefined;
+  }
+  const bytes = await pool.exportFile(stored);
+  pool.pauseVfs();
+  return { pool, bytes };
+}
+
+async function openOpfsPool(sqlite3: Sqlite3Static): Promise<SahPool> {
+  const legacy = await readLegacyOpfsDatabase(sqlite3);
+  const pool = await sqlite3.installOpfsSAHPoolVfs({
+    name: OPFS_POOL_NAME,
+    initialCapacity: 12,
+  });
+  if (legacy && !poolFileName(pool.getFileNames(), OPFS_DATABASE_FILE)) {
+    await pool.importDb(`/${OPFS_DATABASE_FILE}`, legacy.bytes);
+  }
+  if (legacy && poolFileName(pool.getFileNames(), OPFS_DATABASE_FILE)) {
+    try {
+      if (legacy.pool.isPaused()) await legacy.pool.unpauseVfs();
+      await legacy.pool.removeVfs();
+    } catch {
+      // The Lapis pool already holds the library. A later boot can drop the old pool.
+    }
+  }
+  return pool;
+}
 
 export async function createOpfsSahpoolDriver(
   filename = OPFS_DATABASE_FILE,
 ): Promise<SqliteRawDatabase> {
   const sqlite3: Sqlite3Static = await sqlite3InitModule();
-  const poolUtil = await sqlite3.installOpfsSAHPoolVfs({
-    name: OPFS_POOL_NAME,
-    initialCapacity: 12,
-  });
+  const poolUtil = await openOpfsPool(sqlite3);
   // The pool's DB/VFS must be used explicitly: a bare oo1.DB lands in the wasm
   // in-memory FS and is lost on reload. (At runtime normalizeArgs accepts
   // (filename, flags); the type declarations only list filename.)

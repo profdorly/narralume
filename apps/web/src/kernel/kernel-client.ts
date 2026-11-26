@@ -66,10 +66,8 @@ function acquireKernelLock(): Promise<void> {
   if (kernelLockPromise) return kernelLockPromise;
 
   kernelLockPromise = new Promise<void>((resolve, reject) => {
-    // Lock name from before the rename. Tabs of an older build still take it,
-    // and it guards the same OPFS pool, so it stays with OPFS_POOL_NAME.
     void navigator.locks
-      .request("narralume-kernel", { ifAvailable: true }, (lock) => {
+      .request("lapis-kernel", { ifAvailable: true }, (lock) => {
         if (!lock) {
           reject(new Error(translate(getLocale(), "components.kernel.lockBusy")));
           return;

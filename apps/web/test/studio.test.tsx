@@ -494,6 +494,7 @@ describe("Mesa de escrita", () => {
     expect(editor).toBeInTheDocument();
     expect(manuscriptMarkdown(editor)).toContain("潮水在午夜越过旧钟楼。");
     expect(screen.getByText("Salvar nova versão")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Revisão" }));
     expect(screen.getByRole("tabpanel", { name: "Ferramentas de Revisão" })).toBeInTheDocument();
     expect(screen.queryByText(/「越过」动了不够透/)).not.toBeInTheDocument();
     expect(screen.queryByText("v1")).not.toBeInTheDocument();
@@ -833,6 +834,7 @@ it("can review only the current formal version without triggering a manuscript r
   });
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
+  fireEvent.click(await screen.findByRole("tab", { name: "Revisão" }));
 
   fireEvent.click(
     await screen.findByRole("button", { name: "Revisar a versão atual" }),
@@ -875,6 +877,7 @@ it("refreshes the manuscript and review after a background chapter finishes inst
   vi.stubGlobal("fetch", fetchMock);
   vi.stubGlobal("EventSource", EventSourceStub);
   renderStudio();
+  fireEvent.click(await screen.findByRole("tab", { name: "Revisão" }));
 
   await screen.findByText(/Ainda não há relatório de revisão/);
   expect(EventSourceStub.instances).toHaveLength(1);
@@ -953,6 +956,7 @@ it("review content is fully expanded: summary/scores/full reviewed text + issue 
   });
   vi.stubGlobal("fetch", fetchMock);
   renderStudio();
+  fireEvent.click(await screen.findByRole("tab", { name: "Revisão" }));
 
   // Review content must not be truncated: every character of the full text is
   // in the DOM

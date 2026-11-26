@@ -29,7 +29,7 @@ Nesse modo, as obras, a bússola da história, o histórico de execuções e as 
 
 ## Server local e launchers de release
 
-Por padrão, o banco fica em `data/lapis.sqlite` e os backups consistentes vão para `data/backups/`. Bibliotecas criadas antes da troca de nome para Lapis continuam no arquivo `narralume.sqlite`: se a pasta de dados só tem esse arquivo, o Server segue usando ele e não cria um banco novo ao lado. Quando você inicia o Server por conta própria (por exemplo, com `npm run dev`), `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR`, no ambiente ou no `.env.local`, mudam essas pastas; sem `NARRATIVE_BACKUP_DIR`, os backups vão para `backups/` dentro da pasta de dados. Os próprios launchers definem essas duas variáveis: a pasta de dados vem de `LAPIS_DATA_DIR` e os backups ficam em `backups/` dentro dela. Só o launcher de macOS/Linux também aceita `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR` definidos no shell.
+Por padrão, o banco fica em `data/lapis.sqlite` e os backups consistentes vão para `data/backups/`. Se a pasta ainda tiver só `narralume.sqlite`, o Server renomeia esse arquivo, junto com os `-wal` e `-shm` ao lado, para `lapis.sqlite` antes de abrir. Quando você inicia o Server por conta própria (por exemplo, com `npm run dev`), `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR`, no ambiente ou no `.env.local`, mudam essas pastas; sem `NARRATIVE_BACKUP_DIR`, os backups vão para `backups/` dentro da pasta de dados. Os próprios launchers definem essas duas variáveis: a pasta de dados vem de `LAPIS_DATA_DIR` e os backups ficam em `backups/` dentro dela. Só o launcher de macOS/Linux também aceita `NARRATIVE_DATA_DIR` e `NARRATIVE_BACKUP_DIR` definidos no shell.
 
 Enquanto roda (também no Docker), o Server faz um backup automático a cada 6 horas (`NARRATIVE_BACKUP_INTERVAL_MINUTES`, padrão `360`) e mais um ao iniciar, se `NARRATIVE_BACKUP_ON_STARTUP=true`. A cada backup novo, a pasta mantém só os 10 mais recentes (`NARRATIVE_BACKUP_RETENTION`), contando os automáticos e os feitos à mão; copie para outro lugar os que precisar guardar por mais tempo. Deixe nessa pasta só o que o Lapis criou: um `.sqlite` sem manifesto ou um `.partial` esquecido faz a listagem e a criação de backups darem erro.
 
@@ -43,7 +43,7 @@ No pacote de release dos launchers:
 
 ## Volumes do Docker
 
-O Compose põe o banco no volume `narralume-data` (o nome vem de antes da troca para Lapis e foi mantido para não deixar as obras num volume antigo) e monta os backups à parte, na pasta do host `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`. Para mudar essa pasta, defina `NARRATIVE_BACKUP_HOST_DIR` no shell ou num arquivo `.env` na raiz do repositório; no `.env.local` ela não tem efeito. O volume em si não é backup, e a pasta de backups não deve ficar no mesmo disco frágil que guarda a única cópia do banco.
+O Compose põe o banco no volume `lapis-data` e monta os backups à parte, na pasta do host `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`. Para mudar essa pasta, defina `NARRATIVE_BACKUP_HOST_DIR` no shell ou num arquivo `.env` na raiz do repositório; no `.env.local` ela não tem efeito. O volume em si não é backup, e a pasta de backups não deve ficar no mesmo disco frágil que guarda a única cópia do banco.
 
 Crie um backup consistente com o serviço rodando:
 

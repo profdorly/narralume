@@ -64,7 +64,7 @@ cp .env.example .env.local
 | `NARRATIVE_AUTH_TOKEN`                                             | Empty                        | Remote access token, at least 24 characters                                                    |
 | `NARRATIVE_STATIC_DIR`                                             | Empty                        | Directory for serving Web static files in production mode                                      |
 
-The release launchers have three more variables that affect only the launcher: `LAPIS_PORT` changes the local listen port, `LAPIS_DATA_DIR` changes the data directory, and `LAPIS_NODE_VERSION` selects the portable Node.js version. They are not general Server environment variables; the Windows, macOS, and Linux launchers pass their final values to the Server. Normal use usually only needs the first two. The names from before the rename to Lapis (`NARRALUME_PORT`, `NARRALUME_DATA_DIR`, and so on) still work when the new name is not set; the launcher warns that they are deprecated.
+The release launchers have three more variables that affect only the launcher: `LAPIS_PORT` changes the local listen port, `LAPIS_DATA_DIR` changes the data directory, and `LAPIS_NODE_VERSION` selects the portable Node.js version. They are not general Server environment variables; the Windows, macOS, and Linux launchers pass their final values to the Server. Normal use usually only needs the first two.
 
 ## Docker-specific variables
 

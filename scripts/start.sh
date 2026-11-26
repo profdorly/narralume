@@ -7,22 +7,14 @@ LOGS="$RUNTIME/logs"
 PID_FILE="$RUNTIME/server.pid"
 LOCK_FILE="$ROOT/package-lock.json"
 INSTALL_MARKER="$RUNTIME/package-lock.sha256"
-# LAPIS_* settings win; the NARRALUME_* names from before the rename still
-# work and print a notice.
-for old_name in $(env | sed -n 's/^\(NARRALUME_[A-Z_]*\)=.*/\1/p'); do
-  new_name="LAPIS_${old_name#NARRALUME_}"
-  if eval "[ -z \"\${$new_name+x}\" ]"; then
-    echo "$old_name is deprecated; use $new_name." >&2
-  fi
-done
-PORT=${LAPIS_PORT:-${NARRALUME_PORT:-4317}}
+PORT=${LAPIS_PORT:-4317}
 URL="http://127.0.0.1:$PORT"
-DATA_DIRECTORY=${LAPIS_DATA_DIR:-${NARRALUME_DATA_DIR:-${NARRATIVE_DATA_DIR:-"$ROOT/data"}}}
+DATA_DIRECTORY=${LAPIS_DATA_DIR:-${NARRATIVE_DATA_DIR:-"$ROOT/data"}}
 BACKUP_DIRECTORY=${NARRATIVE_BACKUP_DIR:-"$DATA_DIRECTORY/backups"}
-PORTABLE_NODE_VERSION=${LAPIS_NODE_VERSION:-${NARRALUME_NODE_VERSION:-24.19.0}}
-FORCE_PORTABLE_NODE=${LAPIS_FORCE_PORTABLE_NODE:-${NARRALUME_FORCE_PORTABLE_NODE:-0}}
-FORCE_BUILD=${LAPIS_FORCE_BUILD:-${NARRALUME_FORCE_BUILD:-0}}
-NO_BROWSER=${LAPIS_NO_BROWSER:-${NARRALUME_NO_BROWSER:-0}}
+PORTABLE_NODE_VERSION=${LAPIS_NODE_VERSION:-24.19.0}
+FORCE_PORTABLE_NODE=${LAPIS_FORCE_PORTABLE_NODE:-0}
+FORCE_BUILD=${LAPIS_FORCE_BUILD:-0}
+NO_BROWSER=${LAPIS_NO_BROWSER:-0}
 
 mkdir -p "$LOGS" "$DATA_DIRECTORY" "$BACKUP_DIRECTORY"
 command -v curl >/dev/null 2>&1 || { echo "curl is required by the Lapis launcher." >&2; exit 1; }

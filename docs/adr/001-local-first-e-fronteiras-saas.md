@@ -6,7 +6,7 @@ Aceito (2026-10-20).
 
 ## Contexto
 
-NarraLume nasceu como estúdio local-first: SQLite no Node (`data/narralume.sqlite`) e o mesmo esquema via sqlite-wasm em OPFS no navegador. Não há usuário, tenant nem autenticação além de um token Bearer opcional. O objetivo de produto é uma suíte de escrita em português (conto até romance), com importação de manuscrito ou geração a partir de uma ideia. SaaS multiusuário é um horizonte, não o MVP.
+O Lapis é um estúdio local-first: SQLite no Node (`data/lapis.sqlite`) e o mesmo esquema via sqlite-wasm em OPFS no navegador. Não há usuário, tenant nem autenticação além de um token Bearer opcional. O objetivo de produto é uma suíte de escrita em português (conto até romance), com importação de manuscrito ou geração a partir de uma ideia. SaaS multiusuário é um horizonte, não o MVP.
 
 ## Decisão
 

@@ -1,4 +1,4 @@
-// First: copies the pre-rename "narralume:" settings before any module reads them.
+// First: copies browser settings saved before the rename, then drops those keys.
 import "./lib/storage-migration";
 
 import "./styles/tokens.css";

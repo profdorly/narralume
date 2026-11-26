@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-PORT=${LAPIS_PORT:-${NARRALUME_PORT:-4317}}
+PORT=${LAPIS_PORT:-4317}
 LABEL=${1:-launcher}
 ESCAPED_LABEL=$(printf '%s' "$LABEL" | sed 's/\\/\\\\/g; s/"/\\"/g')
 RESPONSE=$(curl --fail --silent --show-error \

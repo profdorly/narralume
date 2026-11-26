@@ -64,7 +64,7 @@ O `.env.local` nunca deve ir para o Git. Variáveis comuns:
 | `NARRATIVE_AUTH_TOKEN`                                             | Vazio                        | Token de acesso remoto, com pelo menos 24 caracteres                                     |
 | `NARRATIVE_STATIC_DIR`                                             | Vazio                        | Pasta dos arquivos estáticos da Web no modo de produção                                  |
 
-Os launchers de release têm mais três variáveis, que só afetam o launcher: `LAPIS_PORT` muda a porta local, `LAPIS_DATA_DIR` muda a pasta de dados e `LAPIS_NODE_VERSION` escolhe a versão portátil do Node.js. Elas não são variáveis gerais do Server; os launchers de Windows, macOS e Linux repassam os valores finais ao Server. No uso normal, só as duas primeiras costumam ser necessárias. Os nomes anteriores à troca para Lapis (`NARRALUME_PORT`, `NARRALUME_DATA_DIR` etc.) ainda funcionam quando o nome novo não está definido; o launcher avisa que estão obsoletos.
+Os launchers de release têm mais três variáveis, que só afetam o launcher: `LAPIS_PORT` muda a porta local, `LAPIS_DATA_DIR` muda a pasta de dados e `LAPIS_NODE_VERSION` escolhe a versão portátil do Node.js. Elas não são variáveis gerais do Server; os launchers de Windows, macOS e Linux repassam os valores finais ao Server. No uso normal, só as duas primeiras costumam ser necessárias.
 
 ## Variáveis específicas do Docker
 

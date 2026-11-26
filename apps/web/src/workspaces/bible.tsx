@@ -26,9 +26,11 @@ import { BIBLE_BACKFILL_PARAM, useProjectId } from "../lib/project-route";
 import { BibleBackfillPanel } from "./bible/backfill-panel";
 import { BibleEditor, type BibleEditorSection } from "./bible/editor";
 import { CanonCandidatePanel } from "./bible/candidate-panel";
+import { CharacterSheet } from "./bible/character-sheet";
 import { StoryBoard } from "./bible/story-board";
 import { StoryLines } from "./bible/story-lines";
 import { StoryState } from "./bible/story-state";
+import { WorldSheet } from "./bible/world-sheet";
 
 /** Author-intent field ids shown as locked, by their form label. */
 const INTENT_FIELD_LABELS: Record<string, MessageKey> = {
@@ -57,6 +59,7 @@ export function BibleWorkspace() {
   const { t } = useI18n();
   const projectId = useProjectId();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [moreBook, setMoreBook] = useState(false);
   const requestedSection = searchParams.get("spread");
   const outlineView = ["board", "lines", "state"].includes(searchParams.get("view") ?? "") ? searchParams.get("view") : "list";
   const [activeSectionState, setActiveSectionState] =
@@ -112,6 +115,16 @@ export function BibleWorkspace() {
   });
 
   const bible = query.data;
+  const shortStory = bible?.project.form === "short-story" && !moreBook;
+  const visibleTabs = shortStory
+    ? SECTION_TABS.filter((tab) =>
+        ["intent", "entities", "facts"].includes(tab.id),
+      )
+    : SECTION_TABS;
+  const shownSection = visibleTabs.some((tab) => tab.id === activeSection)
+    ? activeSection
+    : "intent";
+  const sheet = searchParams.get("sheet");
 
   if (!projectId) {
     return (
@@ -172,7 +185,7 @@ export function BibleWorkspace() {
         <div className="bible__spread">
           <aside className="bible__rail" aria-label={t("bible.railLabel")}>
             <p className="bible__rail-title">{t("bible.title")}</p>
-            {SECTION_TABS.map((tab, index) => {
+            {visibleTabs.map((tab, index) => {
               const count = countForSection(bible, tab.id);
               const name = t(`bible.tabs.${tab.id}`);
               return (
@@ -180,8 +193,8 @@ export function BibleWorkspace() {
                   key={tab.id}
                   type="button"
                   className="bible__tab"
-                  data-active={activeSection === tab.id ? "true" : undefined}
-                  aria-pressed={activeSection === tab.id}
+                  data-active={shownSection === tab.id ? "true" : undefined}
+                  aria-pressed={shownSection === tab.id}
                   aria-label={t("bible.tabs.view", { name })}
                   onClick={() => setActiveSection(tab.id)}
                 >
@@ -193,37 +206,107 @@ export function BibleWorkspace() {
                 </button>
               );
             })}
+            {bible.project.form === "short-story" ? (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setMoreBook((open) => !open)}
+              >
+                {moreBook ? t("bible.sheets.less") : t("bible.sheets.more")}
+              </button>
+            ) : null}
           </aside>
 
           <div className="bible__main">
-            {activeSection === "outline" ? <div className="story-board__views" aria-label={t("bible.board.views")}>
-              {(["list", "board", "lines", "state"] as const).map((view) => <button key={view} type="button" className="btn" aria-pressed={outlineView === view} onClick={() => setSearchParams((current) => { const next = new URLSearchParams(current); next.set("view", view); return next; }, { replace: true })}>{t(`bible.board.${view}`)}</button>)}
-            </div> : null}
-            {activeSection === "outline" && outlineView === "state" ? <StoryState key={projectId} bible={bible} /> : activeSection === "outline" && outlineView === "lines" ? <StoryLines key={projectId} bible={bible} /> : activeSection === "outline" && outlineView === "board" ? <StoryBoard key={projectId} bible={bible} /> :
-            <article
-              className="bible__active-spread"
-              aria-label={t("bible.spreadAriaLabel", {
-                name: SECTION_TABS.some((tab) => tab.id === activeSection)
-                  ? t(`bible.tabs.${activeSection}`)
-                  : t("bible.fallbackSpreadName"),
-              })}
-            >
-              <div className="bible__reader">
-                <ActiveSection id={activeSection} bible={bible} />
+            {shownSection === "entities" ? (
+              <div className="story-board__views" aria-label={t("bible.sheets.views")}>
+                {(["list", "character", "world"] as const).map((view) => (
+                  <button
+                    key={view}
+                    type="button"
+                    className="btn"
+                    aria-pressed={(sheet ?? "list") === view}
+                    onClick={() =>
+                      setSearchParams(
+                        (current) => {
+                          const next = new URLSearchParams(current);
+                          if (view === "list") next.delete("sheet");
+                          else next.set("sheet", view);
+                          return next;
+                        },
+                        { replace: true },
+                      )
+                    }
+                  >
+                    {t(`bible.sheets.${view}`)}
+                  </button>
+                ))}
               </div>
-              <aside className="bible__editor">
-                <BibleEditor
-                  key={activeSection}
-                  projectId={projectId}
-                  bible={bible}
-                  section={activeSection}
-                />
-                <CanonCandidatePanel
-                  projectId={projectId}
-                  spread={activeSection}
-                />
-              </aside>
-            </article>}
+            ) : null}
+            {shownSection === "entities" && sheet === "character" ? (
+              <CharacterSheet key={projectId} projectId={projectId} bible={bible} />
+            ) : shownSection === "entities" && sheet === "world" ? (
+              <WorldSheet bible={bible} />
+            ) : (
+              <>
+                {shownSection === "outline" ? (
+                  <div className="story-board__views" aria-label={t("bible.board.views")}>
+                    {(["list", "board", "lines", "state"] as const).map((view) => (
+                      <button
+                        key={view}
+                        type="button"
+                        className="btn"
+                        aria-pressed={outlineView === view}
+                        onClick={() =>
+                          setSearchParams(
+                            (current) => {
+                              const next = new URLSearchParams(current);
+                              next.set("view", view);
+                              return next;
+                            },
+                            { replace: true },
+                          )
+                        }
+                      >
+                        {t(`bible.board.${view}`)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {shownSection === "outline" && outlineView === "state" ? (
+                  <StoryState key={projectId} bible={bible} />
+                ) : shownSection === "outline" && outlineView === "lines" ? (
+                  <StoryLines key={projectId} bible={bible} />
+                ) : shownSection === "outline" && outlineView === "board" ? (
+                  <StoryBoard key={projectId} bible={bible} />
+                ) : (
+                  <article
+                    className="bible__active-spread"
+                    aria-label={t("bible.spreadAriaLabel", {
+                      name: visibleTabs.some((tab) => tab.id === shownSection)
+                        ? t(`bible.tabs.${shownSection}`)
+                        : t("bible.fallbackSpreadName"),
+                    })}
+                  >
+                    <div className="bible__reader">
+                      <ActiveSection id={shownSection} bible={bible} />
+                    </div>
+                    <aside className="bible__editor">
+                      <BibleEditor
+                        key={shownSection}
+                        projectId={projectId}
+                        bible={bible}
+                        section={shownSection}
+                      />
+                      <CanonCandidatePanel
+                        projectId={projectId}
+                        spread={shownSection}
+                      />
+                    </aside>
+                  </article>
+                )}
+              </>
+            )}
           </div>
         </div>
       ) : null}

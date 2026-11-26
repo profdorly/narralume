@@ -1,8 +1,7 @@
 param([string]$Label = "launcher")
 
 $ErrorActionPreference = "Stop"
-$portSetting = if ($env:LAPIS_PORT) { $env:LAPIS_PORT } else { $env:NARRALUME_PORT }
-$port = if ($portSetting) { [int]$portSetting } else { 4317 }
+$port = if ($env:LAPIS_PORT) { [int]$env:LAPIS_PORT } else { 4317 }
 try {
   $backup = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$port/api/system/backups" -ContentType "application/json" -Body (@{ label = $Label } | ConvertTo-Json) -TimeoutSec 60
   Write-Host "Backup completed: $($backup.databaseFile)"

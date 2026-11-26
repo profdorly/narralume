@@ -23,7 +23,7 @@ O script verifica o Docker, grava um `NARRATIVE_AUTH_TOKEN` aleatório num arqui
 docker compose up -d --build
 ```
 
-Acesse `http://127.0.0.1:4318`. O Server não publica porta no host; o Nginx encaminha `/api` na mesma origem e acrescenta o token de autenticação. As obras ficam no volume `narralume-data`, e os backups vão para `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`.
+Acesse `http://127.0.0.1:4318`. O Server não publica porta no host; o Nginx encaminha `/api` na mesma origem e acrescenta o token de autenticação. As obras ficam no volume `lapis-data`, e os backups vão para `${NARRATIVE_BACKUP_HOST_DIR:-./data/backups}`.
 
 O Compose só preenche `${NARRATIVE_AUTH_TOKEN}`, `${NARRATIVE_WEB_BIND_HOST}` e `${NARRATIVE_BACKUP_HOST_DIR}` com valores do shell ou de um arquivo `.env` na raiz do repositório (o Git e o build do Docker ignoram esse arquivo). O `.env.local` é repassado ao contêiner do Server, então serve para chaves de modelo e outras variáveis do Server, mas não muda essas três nem os valores que o `docker-compose.yml` fixa em `environment`: sem `.env` nem variável no shell, os dois contêineres usam o token padrão `local-compose-token-change-me-24`. Versões anteriores do `docker-start.ps1` gravavam o token no `.env.local`, onde ele não tem efeito; rode o script de novo para criar o `.env`. No Linux/macOS, crie o token assim antes do primeiro `docker compose up`:
 
